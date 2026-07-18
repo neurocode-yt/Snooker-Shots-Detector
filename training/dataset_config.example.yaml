@@ -1,0 +1,43 @@
+# Example dataset config for Phase 2/3 training
+# Split by COMPLETE match / source video — never random clip splits from same match.
+
+root: data/datasets/snooker
+
+splits:
+  train:
+    - matches/masters_2023_session1
+    - matches/uk_championship_2022_qf
+    - matches/world_2024_r1_a
+  val:
+    - matches/german_masters_2023_final
+  test:
+    - matches/world_2024_final_session
+  edge_cases:
+    - matches/edge_slow_safety
+    - matches/edge_replay_heavy
+    - matches/edge_partial_table
+
+classes:
+  - cue_ball
+  - object_ball
+  - cue
+  - player
+  - table
+  - pocket
+  - replay_indicator
+  - scoreboard
+
+temporal_labels:
+  - preparation_start
+  - player_down
+  - final_cueing
+  - cue_strike
+  - first_ball_motion
+  - last_ball_motion
+  - balls_stopped
+  - reaction_end
+  - replay_start
+  - replay_end
+  - non_play
+
+leakage_policy: split_by_source_video
