@@ -1,0 +1,1034 @@
+# Build a Production-Ready Automatic Snooker Shot Detection and Video Editing System
+
+You are a senior computer-vision engineer, machine-learning engineer, video-processing engineer, and full-stack developer.
+
+Build a complete, production-ready application that accepts a full snooker match or highlights video, detects every actual snooker shot played, separates the shots into clips, removes unnecessary pauses between shots, and exports a smooth edited video.
+
+Do not build a basic silence remover or simple motion detector. Snooker broadcasts contain camera movement, score graphics, replays, audience movement, player movement, commentary, close-ups, and long safety battles. The system must understand the sequence of a snooker shot.
+
+## 1. Main objective
+
+The user uploads a snooker video.
+
+The system must:
+
+1. Detect every genuine cue strike.
+2. Determine when each shot begins.
+3. Determine when all relevant balls have stopped moving.
+4. Create a clip for every detected shot.
+5. Remove unnecessary waiting time between shots.
+6. Preserve the complete action of each shot.
+7. Keep audio perfectly synchronized.
+8. Avoid cutting a ball while it is still moving.
+9. Avoid counting television replays as new shots.
+10. Avoid false detections caused by camera cuts, player movement, audience movement, score graphics, or zooming.
+11. Join all retained clips into one smooth final video.
+12. Allow the user to review and correct uncertain detections.
+
+A “shot” includes:
+
+* Potting attempts
+* Safety shots
+* Break-building shots
+* Missed pots
+* Fouls
+* Snookers and escapes
+* Plants
+* Break-offs
+* Shots where no ball is potted
+
+## 2. Required editing modes
+
+Provide three operating modes.
+
+### Mode A: Action Only
+
+Keep approximately:
+
+* 1–2 seconds before the cue strike
+* The cue strike
+* Complete ball movement
+* 1–2 seconds after all balls stop
+
+Remove almost all waiting and player preparation.
+
+### Mode B: Natural Highlights
+
+Keep:
+
+* The final aiming and cueing sequence
+* The complete shot
+* Ball movement
+* A short player or audience reaction
+* Important scoreboard changes when visible
+
+Remove long walks, extended thinking, and empty table footage.
+
+### Mode C: Full Shot Sequence
+
+Keep:
+
+* Player approaching or entering the shot
+* Aiming and feathering
+* Cue strike
+* Complete ball movement
+* Immediate reaction and result
+
+Remove only excessive pauses between consecutive shots.
+
+Make all pre-roll, post-roll, inactivity, and reaction durations configurable.
+
+## 3. Important product requirements
+
+The application must support:
+
+* MP4, MOV, MKV, AVI and WebM input
+* 720p, 1080p and 4K video
+* Common frame rates, including variable frame-rate video
+* H.264 and H.265 inputs
+* Stereo and mono audio
+* Long videos of several hours
+* GPU acceleration when available
+* CPU fallback
+* Batch processing
+* Resume after interruption
+* Progress reporting
+* Configurable export quality
+* Windows support as the first priority
+* Docker support for server deployment
+
+Preserve:
+
+* Original aspect ratio
+* Original resolution by default
+* Frame rate
+* Audio quality
+* Audio/video synchronization
+* Colour information
+* Commentary and crowd audio
+
+## 4. System architecture
+
+Create a modular pipeline with the following components:
+
+1. Video ingestion and validation
+2. Video normalization and proxy generation
+3. Camera-shot and table-view detection
+4. Snooker table localization
+5. Ball, cue and player detection
+6. Object tracking
+7. Motion and audio feature extraction
+8. Temporal shot-phase classification
+9. Cue-strike event detection
+10. Ball-stop event detection
+11. Replay and slow-motion detection
+12. Segment boundary refinement
+13. Confidence calculation
+14. Pause-removal logic
+15. Video cutting and concatenation
+16. Review interface
+17. Final export
+18. Evaluation and reporting
+
+Each component must have a clean interface so it can later be improved or replaced.
+
+## 5. Video ingestion
+
+Use FFprobe to inspect every uploaded video.
+
+Record:
+
+* Duration
+* Width and height
+* Display aspect ratio
+* Frame rate
+* Whether the frame rate is variable
+* Video codec
+* Audio codec
+* Audio sample rate
+* Rotation metadata
+* Number of audio streams
+* Time-base information
+
+Generate a lower-resolution analysis proxy while preserving exact timestamp mapping to the original video.
+
+Run AI analysis on the proxy when possible, but cut and export from the original-quality source.
+
+Do not assume all input videos use a constant frame rate.
+
+## 6. Detect television camera shots
+
+Detect hard cuts, fades, dissolves and major camera-angle changes.
+
+Classify each television segment as one of:
+
+* Main table view
+* Wide arena view
+* Player close-up
+* Ball close-up
+* Scoreboard or graphics
+* Audience
+* Commentator or studio
+* Replay
+* Slow-motion replay
+* Advertisement
+* Other
+
+Only table-related views should contribute strongly to shot detection.
+
+Camera cuts must not automatically be considered snooker shots.
+
+## 7. Snooker table detection
+
+Build a model that detects or segments the visible playing surface.
+
+The model should identify:
+
+* Table playing area
+* Table corners
+* Cushions
+* Pockets
+* Approximate table orientation
+
+Where possible, calculate a homography that maps the visible table to a normalized top-down table coordinate system.
+
+Maintain a table mask so motion outside the table does not cause false shot detections.
+
+The system must handle:
+
+* Full-table views
+* Side views
+* Angled views
+* Partial table views
+* Zoomed views
+* Players partially blocking the table
+* Score graphics overlapping part of the table
+
+When table confidence is low, the system should rely more heavily on temporal context and nearby camera views.
+
+## 8. Object detection and tracking
+
+Train or fine-tune models to detect:
+
+* Cue ball
+* Red balls
+* Yellow ball
+* Green ball
+* Brown ball
+* Blue ball
+* Pink ball
+* Black ball
+* Cue
+* Cue tip when visible
+* Player
+* Bridge hand when visible
+* Table
+* Pockets
+
+For the first working version, coloured balls may be grouped as “object ball” if individual colour classification reduces accuracy. Cue-ball detection should receive special priority.
+
+Track detected balls across frames and assign stable track identities where possible.
+
+Because balls are small objects, use:
+
+* High-resolution table crops
+* Tiled inference where useful
+* Multi-scale training
+* Temporal tracking
+* Motion-based recovery of temporarily missed detections
+* Confidence smoothing between frames
+
+Do not rely on object detection alone. Some balls may be hidden, blurred, overexposed, or too small.
+
+## 9. Camera-motion compensation
+
+Camera pans and zooms can make the entire table appear to move.
+
+Before measuring ball motion:
+
+1. Estimate global camera movement.
+2. Use table corners, cushion lines, static table features or homography.
+3. Compensate for global movement.
+4. Calculate residual motion inside the table area.
+5. Distinguish actual ball movement from camera movement.
+
+A camera zoom, pan or cut must not trigger a shot.
+
+## 10. Multimodal feature extraction
+
+For every frame or short time window, calculate features including:
+
+### Visual features
+
+* Number and confidence of detected balls
+* Cue-ball position
+* Cue-ball speed
+* Maximum tracked-ball speed
+* Mean tracked-ball speed
+* Total motion inside the table mask
+* Optical-flow magnitude
+* Direction and acceleration of ball motion
+* Cue position and direction
+* Cue-tip movement
+* Distance between cue tip and cue ball
+* Player pose and stance
+* Whether the player appears to be down on the shot
+* Camera movement
+* Camera-view classification
+* Presence of graphics
+* Scene-cut confidence
+
+### Audio features
+
+* Sudden cue-contact transient
+* Ball-to-ball collision sounds
+* Cushion contact sounds
+* Pocket-drop sounds
+* Commentary energy
+* Crowd applause
+* General loudness
+* Spectral onset strength
+
+Audio must be supporting evidence only. Commentary, applause, editing effects or delayed broadcast audio must not independently create a shot.
+
+### Temporal features
+
+* Features from the previous several seconds
+* Current shot-state probability
+* Time since last confirmed strike
+* Time since detected ball motion
+* Time since balls became stationary
+* Previous and next camera-view type
+* Whether the current footage resembles a replay
+
+## 11. Temporal shot-state model
+
+Implement a state machine for the first functional version.
+
+Use states such as:
+
+* NO_TABLE
+* BETWEEN_SHOTS
+* PLAYER_APPROACHING
+* PLAYER_AIMING
+* FINAL_CUEING
+* STRIKE_CANDIDATE
+* BALLS_MOVING
+* BALLS_SLOWING
+* BALLS_STOPPED
+* REACTION
+* REPLAY
+* GRAPHICS
+* UNKNOWN
+
+Later, train a temporal neural network to predict these states.
+
+Suitable temporal approaches include:
+
+* Temporal convolutional network
+* Bidirectional recurrent network for offline processing
+* Video transformer
+* Multi-stage temporal convolutional network
+* Frame-feature transformer
+
+Because the application processes completed videos, it may use both previous and future frames to refine boundaries.
+
+Do not detect shots using a single frame.
+
+## 12. Cue-strike detection
+
+Create multiple cue-strike candidates using:
+
+* Cue tip approaching the cue ball
+* Sudden cue movement
+* Cue-ball acceleration from stationary to moving
+* Multiple-ball motion beginning shortly afterward
+* Audio contact transient
+* Player changing from cueing to follow-through
+* Temporal model probability
+* Main-table camera confidence
+
+Fuse the evidence into a strike confidence score.
+
+A strong cue-strike event usually has several agreeing signals. However, the system must still detect shots when the cue, player or cue ball is temporarily hidden.
+
+Record:
+
+* Estimated cue-strike timestamp
+* Confidence score
+* Evidence used
+* Uncertainty interval
+* Camera view
+* Whether the event may be a replay
+
+Run a second boundary-refinement pass around every candidate at full temporal resolution.
+
+Do not use a rule such as “make a cut every time motion starts.” That would create false cuts from camera movement and player activity.
+
+## 13. Shot-end detection
+
+A shot ends only after the relevant ball motion has finished.
+
+Determine the shot-end timestamp using:
+
+* Tracked-ball velocity
+* Residual motion inside the table mask
+* Optical flow
+* Ball position stability
+* Temporal state predictions
+* Nearby camera cuts
+* Audio evidence
+
+Require motion to remain below a configurable threshold for a continuous settling period.
+
+Do not end a clip when:
+
+* A slow ball is still travelling
+* A ball is moving along a cushion
+* A ball is entering a pocket
+* A replay camera cut occurs during movement
+* A player temporarily blocks a moving ball
+* The camera changes before all balls visibly stop
+
+When a camera cut hides the final movement, estimate the end using temporal context and mark the boundary confidence appropriately.
+
+## 14. Segment construction
+
+For every confirmed shot, create a record containing:
+
+```json
+{
+  "shot_id": 1,
+  "preparation_start": 0.0,
+  "cue_strike": 0.0,
+  "ball_motion_start": 0.0,
+  "ball_motion_end": 0.0,
+  "clip_start": 0.0,
+  "clip_end": 0.0,
+  "shot_confidence": 0.0,
+  "start_confidence": 0.0,
+  "end_confidence": 0.0,
+  "camera_views": [],
+  "possible_replay": false,
+  "manual_review_required": false,
+  "evidence": {}
+}
+```
+
+Use configurable pre-roll and post-roll.
+
+Prevent overlapping shot clips from creating duplicate footage.
+
+When two clips overlap, intelligently merge or adjust their boundaries.
+
+Never remove frames from the middle of an individual shot unless the user explicitly enables an advanced compression mode.
+
+## 15. Removing pauses
+
+Pause removal must be based on detected shot structure, not only audio silence.
+
+The system should remove:
+
+* Long player thinking periods
+* Empty table footage
+* Repeated arena shots
+* Extended walks around the table
+* Unnecessary waiting for the referee
+* Long pauses between consecutive shots
+* Advertisements and studio sections when enabled
+
+The system should preserve:
+
+* Cueing and final aiming
+* Complete ball travel
+* Important reactions
+* Significant applause
+* Scoreboard changes
+* Foul announcements
+* Referee actions that affect understanding
+* Short tactical pauses in safety exchanges when using Natural Highlights mode
+
+Add a configurable maximum gap between shots.
+
+Example defaults:
+
+* Action Only: retain 1 second before strike and 1 second after ball stop
+* Natural Highlights: retain 3–6 seconds before strike and 2–4 seconds after ball stop
+* Full Shot Sequence: retain the detected preparation phase and 3–5 seconds after the result
+
+These values must be user-adjustable and must not be hardcoded.
+
+## 16. Replay and duplicate-shot detection
+
+Television broadcasts often replay a previous shot.
+
+Detect replays using a combination of:
+
+* Replay graphics
+* Slow-motion frame characteristics
+* Repeated visual embeddings
+* Matching ball trajectories
+* Matching table arrangements
+* Broadcast transition patterns
+* Abnormal frame cadence
+* Temporal proximity to a confirmed live shot
+
+By default:
+
+* Do not count a replay as a new live shot.
+* Do not include replays in the final action-only video.
+* Provide an option to retain one replay for high-value shots.
+* Link a replay to its original live shot in metadata.
+
+## 17. Shot importance scoring
+
+Create an optional importance score for each shot.
+
+Possible evidence:
+
+* Ball potted
+* Number of balls moving
+* Crowd reaction
+* Commentary excitement
+* Replay shown by broadcaster
+* Player reaction
+* Scoreboard change
+* Difficult long pot
+* Multiple cushion contacts
+* Foul or miss
+* High break context
+
+This score must not control basic shot detection. It is only for optional highlight filtering.
+
+Provide options such as:
+
+* Keep every shot
+* Keep likely pots only
+* Keep high-importance shots
+* Keep shots involving a selected player
+* Keep safety exchanges
+* Keep shots above a confidence or importance threshold
+
+## 18. Annotation and training data
+
+Create a proper annotation specification.
+
+### Timeline labels
+
+Annotators must mark:
+
+* Preparation start
+* Player down on shot
+* Final cueing start
+* Exact cue strike
+* First ball motion
+* Last meaningful ball motion
+* Balls completely stopped
+* Reaction end
+* Camera cut
+* Replay start and end
+* Slow-motion start and end
+* Advertisement or studio segment
+* Non-play footage
+* Uncertain event
+
+### Object labels
+
+Annotate:
+
+* Table polygon
+* Table corners
+* Cue ball
+* Other balls
+* Cue
+* Player
+* Replay indicator
+* Scoreboard region
+
+### Dataset requirements
+
+Collect videos from many different conditions:
+
+* Multiple tournaments
+* Different broadcasters
+* Different table lighting
+* Different resolutions
+* Different frame rates
+* Different camera angles
+* Different players
+* Different graphics packages
+* Commentary and non-commentary videos
+* Videos with and without replays
+* Videos containing slow motion
+* Compressed YouTube footage
+* Clean source footage
+* Old and modern broadcasts
+
+Do not split random clips from the same match across training and test sets. Split by complete match, event, broadcaster or source video to prevent data leakage.
+
+Create:
+
+* Training set
+* Validation set
+* Unseen test set
+* Difficult-edge-case test set
+
+Include negative examples such as:
+
+* Camera moving over a stationary table
+* Player walking beside the table
+* Referee replacing balls
+* Audience applause
+* Replay transitions
+* Scoreboard animations
+* Cueing without a completed strike
+* Practice strokes
+* Player standing up from a shot
+* A close-up of a ball
+* Advertisement transitions
+
+## 19. Recommended development strategy
+
+### Phase 1: Baseline system
+
+Build a working baseline using:
+
+* Scene detection
+* Table segmentation
+* Camera-motion compensation
+* Motion measurement inside the table
+* Audio onset detection
+* Rule-based temporal state machine
+* FFmpeg segment export
+* Manual review timeline
+
+The baseline must already produce usable clips.
+
+### Phase 2: Object-aware system
+
+Add:
+
+* Ball detection
+* Cue-ball detection
+* Ball tracking
+* Cue and player detection
+* Better strike detection
+* Better ball-stop detection
+* Replay filtering
+
+### Phase 3: Learned temporal model
+
+Train a model using the labelled timeline data to predict:
+
+* Preparation
+* Cueing
+* Strike
+* Ball movement
+* Ball stop
+* Reaction
+* Replay
+* Non-play
+
+Fuse model predictions with object-tracking and audio evidence.
+
+### Phase 4: Active learning
+
+During real usage:
+
+1. Save uncertain events.
+2. Allow users to correct boundaries.
+3. Convert corrections into new labelled examples.
+4. Retrain the model periodically.
+5. Compare each new model with the previous model.
+6. Deploy only when evaluation improves.
+
+## 20. Human review interface
+
+Build a clean desktop-friendly web interface.
+
+The interface must show:
+
+* Uploaded video
+* Processing progress
+* Timeline
+* Detected shots
+* Cue-strike markers
+* Ball-stop markers
+* Removed sections
+* Confidence score for each shot
+* Replay markers
+* Warning markers
+* Before-and-after duration
+
+The user must be able to:
+
+* Play each detected shot
+* Move clip start and end boundaries
+* Add a missed shot
+* Delete a false shot
+* Mark footage as a replay
+* Merge clips
+* Split clips
+* Choose editing mode
+* Change pre-roll and post-roll
+* Keep or remove selected pauses
+* Reprocess only a selected area
+* Export corrected labels for retraining
+
+Use keyboard shortcuts for fast review.
+
+## 21. Outputs
+
+Produce all of the following:
+
+### Final video
+
+A single edited video containing all selected shots.
+
+### Individual clips
+
+```text
+shot_0001.mp4
+shot_0002.mp4
+shot_0003.mp4
+```
+
+### Timeline JSON
+
+Include every detected event, boundary, confidence score and review status.
+
+### CSV report
+
+Include:
+
+* Shot number
+* Start time
+* Cue-strike time
+* End time
+* Duration
+* Confidence
+* Replay status
+* Review status
+
+### Editing files
+
+Where practical, export:
+
+* EDL
+* Final Cut Pro XML or equivalent timeline format
+* Chapter markers
+
+### Diagnostic output
+
+Optional debug video showing:
+
+* Table mask
+* Detected balls
+* Tracking paths
+* Cue-strike probability
+* Ball-motion score
+* Current state
+* Confidence score
+
+## 22. Video cutting requirements
+
+Use FFmpeg for final cutting and concatenation.
+
+Provide two export methods:
+
+### Fast export
+
+Use stream copying when safe and when exact keyframe limitations are acceptable.
+
+### Accurate export
+
+Re-encode around exact frame boundaries to achieve precise cuts.
+
+The accurate mode should be the default.
+
+Normalize timestamps before concatenation and verify audio/video synchronization.
+
+Handle videos without audio.
+
+Do not create black frames, frozen frames, duplicate frames, missing audio, timestamp jumps or drift.
+
+## 23. Suggested technology stack
+
+Use a maintainable stack such as:
+
+### AI and video processing
+
+* Python
+* PyTorch
+* OpenCV
+* FFmpeg and FFprobe
+* A modern object-detection and tracking framework
+* NumPy
+* SciPy
+* Librosa or equivalent audio-analysis library
+
+### Backend
+
+* FastAPI
+* Pydantic
+* Background job processing
+* SQLite for local mode
+* PostgreSQL for server mode
+
+### Frontend
+
+* React or Next.js
+* Video player with frame-accurate timeline controls
+* WebSocket or server-sent progress updates
+
+### Deployment
+
+* Docker
+* NVIDIA GPU support when available
+* CPU fallback
+* Configurable model paths
+* Local filesystem storage
+* Optional object storage support
+
+Pin tested dependency versions. Do not automatically use the newest package version without compatibility testing.
+
+## 24. Repository structure
+
+Use a clean structure similar to:
+
+```text
+snooker-editor/
+├── apps/
+│   ├── api/
+│   └── web/
+├── snooker_ai/
+│   ├── ingestion/
+│   ├── scene_detection/
+│   ├── table_detection/
+│   ├── object_detection/
+│   ├── tracking/
+│   ├── motion/
+│   ├── audio/
+│   ├── temporal_model/
+│   ├── event_fusion/
+│   ├── segmentation/
+│   ├── replay_detection/
+│   ├── rendering/
+│   └── evaluation/
+├── training/
+├── annotation/
+├── tests/
+├── configs/
+├── scripts/
+├── models/
+├── docs/
+├── docker/
+└── README.md
+```
+
+## 25. Configuration
+
+Create configuration files for:
+
+* Model paths
+* Device selection
+* Proxy resolution
+* Sampling frame rate
+* Detection thresholds
+* Motion thresholds
+* Stationary duration
+* Strike fusion weights
+* Audio weights
+* Pre-roll
+* Post-roll
+* Replay handling
+* Export codec
+* Export bitrate or quality
+* Output directory
+* Debug mode
+
+Do not scatter magic numbers throughout the code.
+
+## 26. Evaluation metrics
+
+Measure performance on unseen full matches.
+
+Report:
+
+* Shot-event precision
+* Shot-event recall
+* F1 score
+* Missed-shot rate
+* False-shot rate
+* Cue-strike timestamp error
+* Shot-end timestamp error
+* Replay false-positive rate
+* Replay false-negative rate
+* Percentage of pauses correctly removed
+* Percentage of useful action incorrectly removed
+* Audio synchronization error
+* Processing speed
+* GPU memory use
+* CPU memory use
+
+Evaluate boundaries independently from event detection.
+
+Suggested production targets on the user’s target broadcast formats:
+
+* Shot recall: at least 98%
+* Shot precision: at least 97%
+* Median cue-strike boundary error: no more than 0.25 seconds
+* Median ball-stop boundary error: no more than 0.50 seconds
+* Replay duplicate rate: below 1%
+* Audio synchronization error: less than one video frame
+* No useful ball movement removed in reviewed test videos
+* No more than one incorrect segment per 100 shots
+
+Treat these as targets, not fabricated results. Provide an honest benchmark report.
+
+## 27. Confidence and fallback behaviour
+
+Every event must receive a confidence score.
+
+Use confidence levels such as:
+
+* High: automatically accept
+* Medium: include but highlight for review
+* Low: do not delete surrounding footage automatically; require review
+
+The system must prefer keeping a little extra footage over cutting away an actual cue strike or moving ball.
+
+When uncertain, fail safely.
+
+Never silently delete low-confidence footage.
+
+## 28. Testing requirements
+
+Create:
+
+* Unit tests
+* Integration tests
+* End-to-end tests
+* Timestamp tests
+* Audio-sync tests
+* Variable-frame-rate tests
+* No-audio tests
+* Long-video tests
+* Interrupted-job recovery tests
+* GPU and CPU tests
+* Export validation tests
+
+Create edge-case tests for:
+
+* A very slow safety shot
+* Several balls moving for a long time
+* Cue ball hidden behind the player
+* Camera cut immediately after contact
+* Ball still moving when camera changes
+* Immediate replay after a shot
+* Slow-motion replay
+* Audience applause before the strike
+* Commentary audio spike
+* Player feathers the cue repeatedly
+* Player abandons the shot without striking
+* Referee touches or replaces a ball
+* Camera zoom over a stationary table
+* Two shots close together
+* Long tactical safety exchange
+* No visible cue
+* Partial table view
+* Heavy video compression
+* Frame drops or timestamp irregularities
+
+## 29. Deliverables
+
+Deliver:
+
+1. Fully working source code
+2. Installation instructions
+3. Windows setup instructions
+4. Docker setup
+5. GPU and CPU modes
+6. Command-line interface
+7. Web review interface
+8. Training scripts
+9. Inference scripts
+10. Annotation instructions
+11. Sample configuration
+12. Automated tests
+13. Evaluation script
+14. Benchmark report template
+15. API documentation
+16. Architecture documentation
+17. Troubleshooting guide
+18. Example input and output workflow
+
+## 30. Required commands
+
+Provide commands similar to:
+
+```bash
+snooker-ai analyze input.mp4 --mode natural
+snooker-ai review job-id
+snooker-ai export job-id --output highlights.mp4
+snooker-ai batch ./matches --mode action-only
+snooker-ai evaluate ./test-dataset
+snooker-ai train ./dataset/config.yaml
+```
+
+Also provide REST API endpoints for:
+
+* Upload
+* Start processing
+* Get progress
+* Get detected shots
+* Update a boundary
+* Add or delete a shot
+* Export final video
+* Download metadata
+
+## 31. Implementation behaviour
+
+Do not return only an explanation or pseudo-code.
+
+Build the application incrementally.
+
+For every development stage:
+
+1. Explain the component briefly.
+2. Implement it.
+3. Add tests.
+4. Demonstrate how to run it.
+5. State current limitations honestly.
+6. Continue to the next component.
+
+Do not leave major functions as empty placeholders.
+
+Do not claim accuracy that has not been measured.
+
+Use clean typing, structured logging, error handling, reproducible configuration and documented code.
+
+When a decision is ambiguous, choose a sensible default, document it and continue.
+
+## 32. First implementation milestone
+
+The first complete milestone must allow the user to:
+
+1. Upload a snooker video.
+2. Analyze it.
+3. Detect likely cue strikes and ball-stop points.
+4. Display the detections on a timeline.
+5. Correct the detections manually.
+6. Export individual shot clips.
+7. Export one joined highlights video.
+8. Save corrections as training data.
+
+After that milestone works, improve the model using object tracking and learned temporal classification.
+
+## 33. Final success condition
+
+The project is successful only when it works on complete unseen snooker matches, not just carefully selected test clips.
+
+The final system should automatically perform most of the editing while sending only uncertain detections to the review interface.
+
+Accuracy, preservation of complete shots, correct replay handling, exact timestamps, and audio synchronization are more important than processing speed.

@@ -1,0 +1,94 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "snooker-ai"
+version = "0.1.0"
+description = "Production snooker shot detection and automatic video editing"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Snooker AI Team" }]
+keywords = ["snooker", "computer-vision", "video-editing", "sports-analytics"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "numpy>=1.24.0,<2.0.0",
+    "opencv-python-headless>=4.8.0,<4.11.0",
+    "scipy>=1.11.0,<1.15.0",
+    "librosa>=0.10.0,<0.11.0",
+    "soundfile>=0.12.0",
+    "pydantic>=2.5.0,<3.0.0",
+    "pydantic-settings>=2.1.0",
+    "pyyaml>=6.0.1",
+    "fastapi>=0.109.0,<0.116.0",
+    "uvicorn[standard]>=0.27.0",
+    "python-multipart>=0.0.6",
+    "aiofiles>=23.2.1",
+    "httpx>=0.26.0",
+    "typer>=0.9.0",
+    "rich>=13.7.0",
+    "tqdm>=4.66.0",
+    "scikit-image>=0.22.0",
+    "matplotlib>=3.8.0",
+    "pandas>=2.1.0",
+    "sqlalchemy>=2.0.25",
+    "websockets>=12.0",
+    "python-dateutil>=2.8.2",
+    "orjson>=3.9.0",
+]
+
+[project.optional-dependencies]
+gpu = [
+    "torch>=2.1.0",
+    "torchvision>=0.16.0",
+]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.1.0",
+    "mypy>=1.8.0",
+]
+web = [
+    "jinja2>=3.1.0",
+]
+
+[project.scripts]
+snooker-ai = "snooker_ai.cli:app"
+
+[project.urls]
+Documentation = "https://github.com/example/snooker-ai/docs"
+Repository = "https://github.com/example/snooker-ai"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["snooker_ai*", "apps*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

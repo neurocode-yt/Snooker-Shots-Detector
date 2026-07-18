@@ -1,0 +1,347 @@
+# Snooker AI — default configuration
+# All thresholds and timing values live here (no magic numbers in code).
+
+device: auto  # auto selects the NVIDIA RTX/OpenCL backend; cpu disables GPU work
+debug: false
+log_level: INFO
+
+paths:
+  data_dir: data
+  uploads_dir: data/uploads
+  jobs_dir: data/jobs
+  outputs_dir: data/outputs
+  models_dir: models
+  proxy_subdir: proxy
+  analysis_subdir: analysis
+  clips_subdir: clips
+  export_subdir: export
+
+# Analysis proxy (AI runs on proxy; export cuts from original)
+proxy:
+  max_width: 960
+  max_height: 540
+  target_fps: 30.0  # retain source cadence for frame-accurate strike/stop refinement
+  video_codec: libx264
+  crf: 28
+  preset: veryfast
+  seek_keyframe_seconds: 2.0  # quick random access when selecting review shots
+  review_audio_bitrate: 96k  # keep lightweight commentary/cue audio in the proxy
+  audio_sample_rate: 16000
+  extract_audio: true
+
+# Frame sampling during analysis
+analysis:
+  # Sparse proposal pass.  Candidate windows are then decoded at refine_fps
+  # from just before the proposed strike through ball-stop/reacquisition.
+  sample_fps: 2.0
+  refine_window_seconds: 2.0  # second-pass temporal resolution around candidates
+  refine_fps: 30.0
+  refine_merge_gap_seconds: 0.25  # avoid repeated decode/flow for nearby shots
+  strike_refine_post_seconds: 1.0  # native-fps evidence immediately after impact
+  stop_refine_window_seconds: 1.5  # tracker warm-up before the coarse stop estimate
+  refine_backward_seconds: 2.0  # native-rate context before the proposed strike
+  reacquisition_tail_seconds: 2.0  # native-rate context after a coarse stop
+  coarse_table_refresh_fps: 2.0  # reuse stable masks; camera cuts refresh immediately
+  refine_table_refresh_fps: 10.0
+  coarse_flow_scale: 0.25  # broad proposals need less spatial flow detail than boundary refinement
+  coarse_hough_fps: 5.0  # contours run at 10fps; costly circle proposals run at 5fps
+  refine_hough_fps: 15.0  # contours still run at 30fps for exact tracking
+  min_shot_gap_seconds: 1.5
+  max_video_hours: 12.0
+
+# Scene / camera cut detection
+scene_detection:
+  hard_cut_threshold: 0.42
+  fade_threshold: 0.18
+  min_scene_seconds: 0.4
+  histogram_bins: 32
+  sample_step: 1  # every Nth analysis frame for cut detection
+
+# Camera view classification (heuristic Phase 1)
+camera_view:
+  table_green_ratio_main: 0.18
+  table_green_ratio_partial: 0.06
+  closeup_face_skin_ratio: 0.12
+  graphics_edge_density: 0.15
+  replay_graphics_score: 0.55
+  slowmo_flow_threshold: 0.35
+
+# Table localisation (HSV green cloth + geometry)
+table_detection:
+  hsv_lower: [35, 40, 40]
+  hsv_upper: [95, 255, 255]
+  min_area_ratio: 0.05
+  morph_kernel: 7
+  approx_epsilon: 0.02
+  min_confidence: 0.25
+  temporal_smooth_frames: 5
+  fallback_centre_crop: [0.1, 0.15, 0.9, 0.85]  # x0,y0,x1,y1 normalised
+
+# Camera motion compensation
+camera_motion:
+  max_corners: 200
+  quality_level: 0.01
+  min_distance: 8
+  lk_win_size: 21
+  ransac_threshold: 3.0
+  min_inliers: 12
+  estimation_scale: 0.5  # estimate pan/zoom on half-size frames, return full-pixel transforms
+  motion_magnitude_cut: 8.0  # px/frame on proxy — treat as cut/unstable
+
+# Residual ball motion inside table mask
+motion:
+  flow_levels: 1
+  flow_winsize: 9
+  flow_scale: 0.33  # compact flow is sufficient after ball-size normalisation
+  residual_mean_threshold: 0.55  # proxy px/frame after camera compensation
+  residual_max_threshold: 1.8
+  motion_area_ratio_threshold: 0.012
+  settling_seconds: 0.50
+  max_ball_travel_seconds: 60.0
+  min_motion_burst_seconds: 0.35
+  ema_alpha: 0.60
+  # Ball-diameter-normalized hysteresis (ball diameters travelled per second).
+  # A moving ball stays moving until it remains below the lower stop threshold.
+  normalized_motion_start_threshold: 0.18
+  normalized_motion_stop_threshold: 0.08
+  # Legacy residual fallback for videos without ball-specific observations.
+  state_motion_start_threshold: 0.35
+  state_motion_stop_threshold: 0.20
+
+# Audio (supporting evidence only)
+audio:
+  sample_rate: 16000
+  hop_length: 512
+  n_fft: 2048
+  onset_delta: 0.15
+  onset_wait: 0.05
+  cue_transient_band_hz: [2000, 8000]
+  collision_band_hz: [500, 4000]
+  applause_band_hz: [200, 2000]
+  commentary_rms_threshold: 0.08
+  max_audio_weight: 0.25  # never allow audio alone to create a shot
+  pre_window_ms: 80
+  post_window_ms: 200
+
+# Cue-strike fusion weights (must sum conceptually; normalised at runtime)
+strike_fusion:
+  residual_motion_onset: 0.40
+  multi_ball_motion: 0.15
+  audio_transient: 0.12
+  table_view_confidence: 0.15
+  motion_acceleration: 0.10
+  not_replay: 0.08
+  min_confidence: 0.35
+  high_confidence: 0.70
+  medium_confidence: 0.50
+  candidate_peak_min_distance_seconds: 1.2
+  refine_search_radius_seconds: 0.5
+  pre_strike_quiet_seconds: 0.50
+  pre_strike_quiet_max_motion: 0.28
+  # Strong cue contact may tolerate one coarse foreground-motion sample as the
+  # player completes the stroke; the quiet-window median must still pass.
+  cue_contact_pre_strike_quiet_min_ratio: 0.70
+  pre_strike_quiet_max_ball_speed: 5.0
+  # Permit isolated object-track jitter when the stationary cue ball, cue
+  # contact, and coherent cue-ball launch all agree.
+  pre_strike_ball_quiet_min_ratio: 0.60
+  fallback_pre_strike_ball_quiet_min_ratio: 0.50
+  cue_contact_noise_override_score: 0.70
+  # A low/acute camera can lose the white-ball centre for one sampled frame at
+  # impact. Bridge only that short hole, and only with strong cue contact plus
+  # a clearly fast white-ball launch.
+  cue_contact_bridge_max_gap_frames: 1
+  cue_contact_bridge_min_peak_normalized_speed: 2.00
+  # The no-cue-track fallback is valid only when impact hides or breaks the
+  # white-ball identity. A fixed white ball plus a moving colour is a respot.
+  occlusion_identity_jump_ball_diameters: 1.50
+  cue_ball_stationary_seconds: 0.30
+  # A sub-pixel Hough centre jitter can appear around 0.3–0.5 diameters/s at
+  # 30 fps; the launch gate below is deliberately much higher.  This threshold
+  # describes the quiet pre-contact state, not the physical stop threshold.
+  cue_ball_stationary_normalized_speed: 0.65
+  cue_ball_motion_start_normalized_speed: 1.00
+  cue_ball_sustained_motion_seconds: 0.12
+  cue_ball_min_track_confidence: 0.45
+  strike_candidate_timeout_seconds: 0.75
+  local_norm_window_frames: 40
+  # Sparse-pass proposal gates.  These deliberately propose broadly; the
+  # native-rate pass confirms the cue transition and removes false positives.
+  sparse_candidate_pre_quiet_seconds: 1.5
+  sparse_candidate_post_seconds: 1.0
+  sparse_candidate_activity_threshold: 0.35
+  sparse_candidate_ball_activity_threshold: 0.45
+  sparse_candidate_min_active_samples: 2
+  sparse_candidate_gap_seconds: 1.2
+
+# Ball-stop detection — baseline-relative decay (see event_fusion/ball_stop.py)
+ball_stop:
+  stationary_confirmation_seconds: 0.50
+  settle_seconds: 0.50          # continuous valid stillness required
+  min_motion_seconds: 0.45      # don't end sooner than this after strike
+  end_pad_seconds: 0.0          # confirmation is look-ahead, never exported padding
+  # Unresolved tracking is capped so false player/rail tracks cannot run away.
+  # Practical broadcast bound: a strict shot may not run away indefinitely
+  # because a false track/occlusion survives after the table has settled.
+  max_seconds_after_strike: 10.0
+  motion_start_normalized_speed: 0.80
+  motion_stop_normalized_speed: 0.60
+  motion_start_activity: 0.18
+  motion_stop_activity: 0.10
+  stationary_tolerance_ball_diameters: 0.08
+  unknown_review_seconds: 0.35
+  # While confirming a stop, ignore a single-frame pseudo-ball jitter. Real
+  # renewed ball movement persists across adjacent observations.
+  stop_motion_reconfirm_samples: 2
+  # Foreground players can leave one or two pseudo-ball occlusions after the
+  # table is still. Keep brief occlusions open, but clear a persistent small
+  # count after continuous low global motion; the boundary stays reviewable.
+  stale_occlusion_max_count: 2
+  stale_occlusion_quiet_seconds: 0.50
+  baseline_window_seconds: 1.2  # pre-strike quiet reference
+  baseline_factor: 1.55          # still if activity <= baseline * factor
+  activity_floor: 0.10
+  peak_decay_fraction: 0.22     # still only after falling under 22% of peak (deeper decay)
+  abs_mean_still: 0.12          # tighter absolute gate for residual mean
+  abs_max_still: 0.55           # tighter absolute gate for residual max
+  abs_area_still: 0.014         # tighter area gate
+  confirm_seconds: 0.50         # look ahead, then report the first stationary frame
+  confirm_burst_activity: 0.32
+  confirm_peak_fraction: 0.45   # lower: more permissive stop confirmation
+  min_peak_activity: 0.18
+  peak_search_seconds: 6.5      # find motion peak only soon after strike
+  # legacy keys kept for older tools
+  velocity_threshold: 0.35
+  residual_max_threshold: 1.2
+  motion_area_ratio_threshold: 0.012
+  motion_score_threshold: 0.14
+  hysteresis_factor: 0.70
+  max_extend_after_cut_seconds: 3.0
+  confidence_penalty_on_cut: 0.2
+
+# Editing modes (pre/post roll seconds relative to strike / ball-stop)
+modes:
+  # STRICT (recommended): 2s before cue hits white, then retain at least 4s
+  # after contact so direct pots and immediately-stopping cue balls are whole.
+  strict:
+    pre_roll: 2.0
+    post_roll: 0.0
+    include_preparation: false
+    include_reaction: false
+    end_at_ball_stop: true
+    drop_mid_motion_peaks: true
+    max_gap_between_shots: 0.0
+    min_seconds_after_strike: 4.0
+    max_seconds_after_strike: 4.0
+    max_clip_seconds: 12.0  # defensive total clip cap
+    retain_replays: false
+  action_only:
+    pre_roll: 1.5
+    post_roll: 1.0
+    include_preparation: false
+    include_reaction: false
+    end_at_ball_stop: true
+    drop_mid_motion_peaks: true
+    max_gap_between_shots: 0.5
+    max_seconds_after_strike: 10.0
+    retain_replays: false
+  natural:
+    pre_roll: 4.0
+    post_roll: 3.0
+    include_preparation: true
+    preparation_max: 6.0
+    include_reaction: true
+    reaction_max: 4.0
+    end_at_ball_stop: false
+    drop_mid_motion_peaks: true
+    max_gap_between_shots: 2.0
+    max_seconds_after_strike: 10.0
+    retain_replays: false
+  full_sequence:
+    pre_roll: 8.0
+    post_roll: 4.0
+    include_preparation: true
+    preparation_max: 15.0
+    include_reaction: true
+    reaction_max: 6.0
+    end_at_ball_stop: false
+    drop_mid_motion_peaks: true
+    max_gap_between_shots: 3.0
+    max_seconds_after_strike: 10.0
+    retain_replays: false
+
+# Replay detection (Phase 1 heuristics)
+replay:
+  enabled: true
+  slowmo_duration_ratio: 1.35  # vs typical shot length
+  embedding_similarity: 0.92   # high bar — avoid false replay flags mid-break
+  min_seconds_after_live: 2.0
+  max_seconds_after_live: 90.0
+  retain_high_value_replays: false
+  high_value_importance: 0.75
+
+# Importance scoring (optional filter — does not affect detection)
+importance:
+  crowd_reaction_weight: 0.2
+  multi_ball_weight: 0.15
+  long_travel_weight: 0.1
+  replay_shown_weight: 0.25
+  motion_energy_weight: 0.2
+  audio_excitement_weight: 0.1
+
+# Confidence bands
+confidence:
+  high: 0.70
+  medium: 0.50
+  low: 0.35
+  fail_safe_keep_extra_seconds: 1.0
+
+# Export
+export:
+  mode: accurate  # accurate | fast
+  video_codec: auto  # auto selects NVIDIA h264_nvenc when available
+  nvenc_preset: p4
+  audio_codec: aac
+  crf: 18
+  preset: medium
+  audio_bitrate: 192k
+  keep_original_resolution: true
+  keep_original_fps: true
+  pixel_format: yuv420p
+  concat_method: filter  # filter | demuxer
+  verify_sync: true
+
+# Job / resume
+jobs:
+  checkpoint_every_seconds: 30.0
+  max_workers: 1
+  resume: true
+
+# API
+api:
+  host: 0.0.0.0
+  port: 8000
+  cors_origins:
+    - "*"
+  max_upload_gb: 50.0
+
+# Object detection (Phase 2 hooks — optional weights)
+object_detection:
+  enabled: false
+  model_path: models/balls_yolo.pt
+  conf_threshold: 0.25
+  iou_threshold: 0.45
+  classes:
+    - cue_ball
+    - object_ball
+    - cue
+    - player
+    - table
+    - pocket
+
+# Temporal neural model (Phase 3 hooks)
+temporal_model:
+  enabled: false
+  model_path: models/temporal_tcn.pt
+  window_seconds: 8.0
+  stride_seconds: 0.5

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Review — Snooker AI</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body class="review-body">
+  <header class="top compact">
+    <div>
+      <a href="/" class="back">← Jobs</a>
+      <h1>Review <span id="job-label">{{JOB_ID}}</span></h1>
+    </div>
+    <div class="header-actions">
+      <select id="mode-select">
+        <option value="strict">Strict (strike−1s → stop)</option>
+        <option value="action_only">Action Only</option>
+        <option value="natural">Natural</option>
+        <option value="full_sequence">Full Sequence</option>
+      </select>
+      <button id="export-btn" class="primary">Export clips</button>
+      <button id="open-clips-btn" title="Open the folder containing the numbered exported clips">
+        Open clips folder
+      </button>
+      <span id="export-status" class="export-status muted" aria-live="polite"></span>
+      <button id="save-labels-btn">Save training labels</button>
+    </div>
+  </header>
+
+  <main class="review-layout">
+    <section class="player-col">
+      <video id="video" controls preload="auto"></video>
+      <div class="transport">
+        <button data-seek="-1">−1s</button>
+        <button data-seek="-0.04">−1f</button>
+        <button id="play-shot">Play shot</button>
+        <button data-seek="0.04">+1f</button>
+        <button data-seek="1">+1s</button>
+        <span id="clock">00:00.000</span>
+      </div>
+      <div class="boundary-edit">
+        <label>Clip start <input type="number" id="edit-start" step="0.01" /></label>
+        <label>Cue strike <input type="number" id="edit-strike" step="0.01" /></label>
+        <label>Clip end <input type="number" id="edit-end" step="0.01" /></label>
+        <button id="apply-bounds">Apply (A)</button>
+        <button id="mark-replay">Toggle replay (R)</button>
+        <button id="toggle-include">Include/Exclude (X)</button>
+        <button id="split-shot">Split at playhead (T)</button>
+        <button id="merge-next">Merge with next (M)</button>
+        <button id="delete-shot" class="danger">Delete (Del)</button>
+      </div>
+      <div class="stats" id="stats"></div>
+      <p class="hint muted">
+        Shortcuts: J/K navigate · Space play · I/O/S set in/out/strike · A apply ·
+        R replay · X include · T split · M merge · N add · Del delete
+      </p>
+    </section>
+
+    <aside class="shots-col">
+      <div class="timeline-legend">
+        <span class="lg strike"></span> Strike
+        <span class="lg review"></span> Needs review
+        <span class="lg replay"></span> Replay
+        <span class="lg excluded"></span> Excluded
+      </div>
+      <div id="timeline" class="timeline"></div>
+      <ul id="shot-list" class="shot-list"></ul>
+      <div class="add-shot">
+        <h3>Add missed shot</h3>
+        <button id="add-at-playhead">Add at playhead (N)</button>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+  <script>
+    window.SNOOKER_JOB_ID = "{{JOB_ID}}";
+  </script>
+  <script src="/static/review.js"></script>
+</body>
+</html>

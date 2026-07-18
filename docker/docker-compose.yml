@@ -1,0 +1,28 @@
+services:
+  snooker-ai:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../data:/app/data
+      - ../models:/app/models
+      - ../configs:/app/configs:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  # Optional GPU service (requires nvidia-container-toolkit)
+  # snooker-ai-gpu:
+  #   build:
+  #     context: ..
+  #     dockerfile: docker/Dockerfile.gpu
+  #   runtime: nvidia
+  #   ports:
+  #     - "8000:8000"
+  #   volumes:
+  #     - ../data:/app/data
+  #     - ../models:/app/models
+  #   environment:
+  #     - NVIDIA_VISIBLE_DEVICES=all
