@@ -2,7 +2,13 @@ import pytest
 
 from snooker_ai.event_fusion.strike import StrikeDetector
 from snooker_ai.segmentation.builder import SegmentBuilder
-from snooker_ai.types import CameraViewType, EditMode, FrameFeatures, StrikeCandidate
+from snooker_ai.types import (
+    CameraViewType,
+    EditMode,
+    FrameFeatures,
+    ShotRecord,
+    StrikeCandidate,
+)
 
 
 def _feat(t, motion=0.0, strike=0.0, onset=0.0, table=0.8):
@@ -448,6 +454,94 @@ def test_overlap_resolution(config):
         assert s.duration() < 15.0
         assert s.clip_end >= s.ball_motion_end - 1e-6
         assert s.clip_end <= s.cue_strike + 10.0 + 1e-6
+
+
+def test_strict_overlap_prefers_real_audio_supported_strike(config):
+    """Preparation motion must lose to the real strike in the same shot window."""
+    cands = [
+        StrikeCandidate(
+            timestamp=1.266667,
+            confidence=1.0,
+            evidence={
+                "audio_onset": 0.02,
+                "pre_ball_quiet_ratio": 0.93,
+                "dense_transition_confirmed": 1.0,
+            },
+        ),
+        StrikeCandidate(
+            timestamp=4.766671,
+            confidence=1.0,
+            evidence={
+                "audio_onset": 0.58,
+                "pre_ball_quiet_ratio": 1.0,
+                "dense_transition_confirmed": 1.0,
+            },
+        ),
+    ]
+    feats = []
+    for i in range(100):
+        t = i * 0.1
+        moving = 1.3 <= t <= 2.0 or 4.8 <= t <= 6.2
+        f = _feat(t, motion=0.7 if moving else 0.04)
+        f.motion_raw = 0.7 if moving else 0.04
+        f.residual_motion_mean = 1.5 if moving else 0.02
+        f.residual_motion_max = 8.0 if moving else 0.05
+        f.motion_area_ratio = 0.10 if moving else 0.004
+        feats.append(f)
+
+    shots = SegmentBuilder(config).build(cands, feats, 10.0, EditMode.STRICT)
+
+    assert len(shots) == 1
+    assert shots[0].cue_strike == pytest.approx(4.766671)
+    assert shots[0].evidence["replaced_conflicting_strike"] == pytest.approx(
+        1.266667
+    )
+
+
+def test_strict_overlap_burst_keeps_valid_shots_around_false_peak(config):
+    """A low-support peak between valid shots cannot create overlapping records."""
+    builder = SegmentBuilder(config)
+
+    def record(
+        shot_id: int,
+        strike: float,
+        confidence: float,
+        stop: float,
+        *,
+        audio: float,
+        quiet: float,
+    ) -> ShotRecord:
+        minimum_end = strike + 4.0
+        return ShotRecord(
+            shot_id=shot_id,
+            cue_strike=strike,
+            cue_strike_timestamp=strike,
+            clip_start=max(0.0, strike - 2.0),
+            clip_end=max(stop, minimum_end),
+            physical_stop_timestamp=stop,
+            ball_motion_end=stop,
+            shot_confidence=confidence,
+            evidence={
+                "uncapped_physical_stop_timestamp": stop,
+                "minimum_clip_end_timestamp": minimum_end,
+                "audio_onset": audio,
+                "pre_ball_quiet_ratio": quiet,
+            },
+        )
+
+    shots = [
+        record(38, 575.567246, 1.0, 579.567246, audio=0.30, quiet=1.0),
+        record(39, 580.167251, 0.78, 582.333919, audio=0.0, quiet=0.0),
+        record(40, 583.700587, 1.0, 587.700587, audio=0.63, quiet=1.0),
+    ]
+
+    resolved = builder._resolve_overlaps(shots, strict=True)
+
+    assert [shot.cue_strike for shot in resolved] == pytest.approx(
+        [575.567246, 583.700587]
+    )
+    assert resolved[1].clip_start >= resolved[0].clip_end
+    assert [shot.shot_id for shot in resolved] == [1, 2]
 
 
 def test_unresolved_long_roll_is_not_cut_by_timeout(config):

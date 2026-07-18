@@ -135,6 +135,10 @@ strike_fusion:
   high_confidence: 0.70
   medium_confidence: 0.50
   candidate_peak_min_distance_seconds: 1.2
+  # When strict shot windows collide, confidence must differ by more than this
+  # before confidence alone selects the winner; otherwise supporting cue audio
+  # and pre-strike ball stillness break the tie.
+  conflict_confidence_margin: 0.05
   refine_search_radius_seconds: 0.5
   pre_strike_quiet_seconds: 0.50
   pre_strike_quiet_max_motion: 0.28

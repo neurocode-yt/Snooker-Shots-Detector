@@ -32,6 +32,10 @@ class SegmentBuilder:
         self.strict_pre_roll = float(
             config.mode_settings(EditMode.STRICT).get("pre_roll", 2.0)
         )
+        self.conflict_confidence_margin = float(
+            config.get("strike_fusion.conflict_confidence_margin", 0.05)
+        )
+        self.audio_support_threshold = float(config.get("audio.onset_delta", 0.15))
 
     def _level(self, score: float) -> ConfidenceLevel:
         if score >= self.high:
@@ -294,14 +298,16 @@ class SegmentBuilder:
         strict: bool = False,
         **_legacy_kwargs,
     ) -> list[ShotRecord]:
-        """Reject impossible mid-motion strikes without mutating boundaries.
+        """Resolve mutually impossible strikes without cutting shot footage.
 
         A genuine next cue strike cannot occur before every ball from the prior
         shot has stopped.  Such a candidate is therefore a collision, cushion
-        impact, feathering artefact, or uncertain prior boundary.  Strict mode
-        keeps the earlier physical shot and flags it when the conflict is not a
-        clear low-confidence duplicate.  Padding overlap alone is permitted so
-        the exact configured pre-roll remains intact.
+        impact, feathering artefact, or uncertain prior boundary.  In strict
+        mode, two records also cannot occupy the same source time: the configured
+        pre-roll and four-second minimum are part of the shot contract.  When
+        two confirmed-looking events conflict, retain the better-supported one
+        instead of blindly keeping the first; this removes opening preparation
+        movements followed shortly by the real, audio-supported strike.
         """
         if not shots:
             return []
@@ -309,35 +315,42 @@ class SegmentBuilder:
         resolved: list[ShotRecord] = []
 
         for shot in ordered:
-            if not resolved:
-                resolved.append(shot)
-                continue
-            prev = resolved[-1]
+            keep_current = True
+            while resolved:
+                prev = resolved[-1]
+                prev_stop = float(
+                    prev.evidence.get("uncapped_physical_stop_timestamp")
+                    or getattr(prev, "physical_stop_timestamp", 0.0)
+                    or prev.ball_motion_end
+                )
+                near_duplicate = abs(shot.cue_strike - prev.cue_strike) < 0.60
+                mid_motion = shot.cue_strike <= prev_stop + 1e-6
+                source_overlap = strict and shot.clip_start < prev.clip_end - 1e-6
 
-            # Near-identical strike events: keep the better-supported event,
-            # preserving its own exact start and stop metadata.
-            if abs(shot.cue_strike - prev.cue_strike) < 0.60:
-                if shot.shot_confidence > prev.shot_confidence:
-                    resolved[-1] = shot
-                continue
+                if not (near_duplicate or mid_motion or source_overlap):
+                    break
 
-            prev_stop = float(
-                prev.evidence.get("uncapped_physical_stop_timestamp")
-                or getattr(prev, "physical_stop_timestamp", 0.0)
-                or prev.ball_motion_end
-            )
-            if shot.cue_strike <= prev_stop + 1e-6:
-                # Impossible second strike while prior balls are moving.  Prefer
-                # the earlier shot; never split its rolling-ball footage.
+                if self._prefer_later_conflicting_shot(prev, shot):
+                    shot.evidence["replaced_conflicting_strike"] = prev.cue_strike
+                    resolved.pop()
+                    # Re-check the replacement against the shot before it. This
+                    # matters for bursts such as valid -> false peak -> valid.
+                    continue
+
                 prev.manual_review_required = prev.manual_review_required or (
                     shot.shot_confidence >= self.high
                 )
-                prev.evidence["rejected_mid_motion_strike"] = shot.cue_strike
-                continue
+                evidence_key = (
+                    "rejected_mid_motion_strike"
+                    if mid_motion
+                    else "rejected_overlapping_strike"
+                )
+                prev.evidence[evidence_key] = shot.cue_strike
+                keep_current = False
+                break
 
-            # Valid consecutive shots may have overlapping source footage due to
-            # the immutable configured pre-roll.  Do not trim either boundary.
-            resolved.append(shot)
+            if keep_current:
+                resolved.append(shot)
 
         for i, shot in enumerate(resolved, start=1):
             shot.shot_id = i
@@ -357,6 +370,43 @@ class SegmentBuilder:
                 shot.clip_start_timestamp = shot.clip_start
                 shot.clip_end_timestamp = shot.clip_end
         return resolved
+
+    def _prefer_later_conflicting_shot(
+        self,
+        previous: ShotRecord,
+        current: ShotRecord,
+    ) -> bool:
+        """Return whether a later incompatible candidate has stronger support.
+
+        Audio remains supporting evidence only: both records have already passed
+        visual strike confirmation.  It is used here only to break a confidence
+        tie, which distinguishes a real cue impact from visually similar player
+        preparation without allowing sound to create a shot by itself.
+        """
+
+        confidence_delta = current.shot_confidence - previous.shot_confidence
+        if abs(confidence_delta) > self.conflict_confidence_margin:
+            return confidence_delta > 0.0
+
+        previous_audio = float(previous.evidence.get("audio_onset", 0.0) or 0.0)
+        current_audio = float(current.evidence.get("audio_onset", 0.0) or 0.0)
+        previous_has_audio = previous_audio >= self.audio_support_threshold
+        current_has_audio = current_audio >= self.audio_support_threshold
+        if current_has_audio != previous_has_audio:
+            return current_has_audio
+
+        previous_quiet = float(
+            previous.evidence.get("pre_ball_quiet_ratio", 0.0) or 0.0
+        )
+        current_quiet = float(
+            current.evidence.get("pre_ball_quiet_ratio", 0.0) or 0.0
+        )
+        if abs(current_quiet - previous_quiet) > 1e-6:
+            return current_quiet > previous_quiet
+
+        # Stable tie-break: preserve the earlier event. This is safer for an
+        # actual shot followed by a cushion/collision peak with equal evidence.
+        return False
 
     def recompute_durations(
         self,
