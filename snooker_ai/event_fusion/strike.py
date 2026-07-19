@@ -715,7 +715,13 @@ class StrikeDetector:
             # Max-ball-speed is intentionally down-weighted above: sparse
             # Hough tracks often report a large identity jump while the table
             # is still.  A median quiet gate tolerates that isolated jitter.
-            quiet = float(np.median(pre)) <= 0.55
+            pre_median = float(np.median(pre))
+            # The proposal pass used to accept a 0.55 "quiet" median, which is
+            # already active table motion under the configured state-machine
+            # threshold.  That produced hundreds of rolling-ball/referee
+            # windows on a full match.  Reuse the detector's real pre-strike
+            # quiet gate so dense refinement is reserved for plausible onsets.
+            quiet = pre_median <= self.pre_quiet_max_motion
             active = [v for v in post if v >= self.sparse_activity_threshold]
             ball_active = sum(
                 self._value(x, "max_ball_normalized_speed") >= 1.5
@@ -735,11 +741,17 @@ class StrikeDetector:
                 if i > 0
                 else False
             )
+            onset_from_quiet = bool(
+                pre_median <= self.sparse_activity_threshold
+                and values[i] >= self.sparse_activity_threshold
+                and values[i] - pre_median >= 0.15
+            )
             # A sparse cadence can land in the middle of a noisy rolling-ball
             # interval.  In that case a clear cue-speed/residual onset is still
             # a useful proposal even though the long quiet median is imperfect.
             if (
-                (not quiet and not rising and not cue_rising)
+                not quiet
+                or not (rising or cue_rising or onset_from_quiet)
                 or len(active) < self.sparse_min_active
                 or ball_active < self.sparse_min_active
             ):
@@ -767,7 +779,7 @@ class StrikeDetector:
                         "sparse_activity_peak": float(peak),
                         "sparse_active_samples": float(len(active)),
                         "sparse_ball_active_samples": float(ball_active),
-                        "sparse_pre_quiet_median": float(np.median(pre)),
+                        "sparse_pre_quiet_median": pre_median,
                     },
                     uncertainty_start=max(0.0, f.t - radius),
                     uncertainty_end=f.t + radius,
