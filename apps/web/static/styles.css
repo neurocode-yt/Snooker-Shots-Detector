@@ -37,7 +37,7 @@ a { color: var(--accent2); text-decoration: none; }
 .sub { color: var(--muted); margin: 0.25rem 0 1rem; }
 .hint { font-size: 0.8rem; line-height: 1.4; margin: 0.75rem 0 0; max-width: 52rem; }
 .muted { color: var(--muted); }
-.panel { max-width: 900px; margin: 1.5rem auto; padding: 0 1rem 3rem; }
+.panel { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem 3rem; }
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -114,6 +114,161 @@ button.danger { border-color: var(--danger); color: var(--danger); }
   align-items: center;
 }
 .job-item .meta { color: var(--muted); font-size: 0.85rem; }
+
+/* Pre-analysis source editor */
+.pre-editor {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.pre-editor-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+.pre-editor-heading h3 { margin: 0; }
+.pre-editor-heading p { margin: 0.3rem 0 0; font-size: 0.85rem; }
+#source-preview {
+  display: block;
+  width: 100%;
+  max-height: 52vh;
+  background: #000;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.pre-transport, .timeline-toolbar, .timeline-zoom-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.pre-transport { margin-top: 0.75rem; }
+#source-clock {
+  margin-left: auto;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.timeline-toolbar {
+  margin-top: 1rem;
+  min-height: 2.2rem;
+}
+.timeline-toolbar > .muted { font-size: 0.8rem; }
+.timeline-zoom-controls { margin-left: auto; }
+#timeline-zoom { width: min(14rem, 30vw); accent-color: var(--accent); }
+#zoom-label {
+  min-width: 2.5rem;
+  color: var(--accent);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.pre-timeline-viewport {
+  width: 100%;
+  margin-top: 0.5rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: #0a1020;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  scrollbar-color: var(--accent2) var(--panel);
+}
+.pre-timeline-content {
+  position: relative;
+  min-width: 100%;
+  height: 88px;
+  user-select: none;
+}
+.pre-timeline-ruler {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 30px;
+  border-bottom: 1px solid var(--border);
+}
+.pre-tick {
+  position: absolute;
+  top: 0;
+  height: 30px;
+  transform: translateX(-1px);
+}
+.pre-tick i {
+  display: block;
+  width: 1px;
+  height: 9px;
+  background: var(--muted);
+}
+.pre-tick b {
+  position: absolute;
+  top: 10px;
+  left: 4px;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 500;
+}
+.pre-timeline-sections { position: absolute; inset: 36px 0 9px; }
+.pre-section {
+  position: absolute;
+  top: 0;
+  height: 40px;
+  min-width: 2px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  border: 1px solid rgba(61, 214, 198, 0.8);
+  background: rgba(61, 214, 198, 0.35);
+}
+.pre-section span {
+  display: inline-block;
+  padding: 0.25rem;
+  font-size: 0.7rem;
+}
+.pre-section.deleted {
+  border-color: rgba(255, 107, 107, 0.9);
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 107, 107, 0.42),
+    rgba(255, 107, 107, 0.42) 8px,
+    rgba(80, 30, 40, 0.55) 8px,
+    rgba(80, 30, 40, 0.55) 16px
+  );
+}
+.pre-section.selected { box-shadow: 0 0 0 2px var(--accent2); z-index: 2; }
+.pre-timeline-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  pointer-events: none;
+  background: var(--warn);
+  box-shadow: 0 0 6px rgba(240, 180, 41, 0.8);
+  z-index: 5;
+}
+.section-list {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 0.6rem 0 0.1rem;
+}
+.section-chip {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.55rem;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+.section-chip.deleted { color: var(--danger); text-decoration: line-through; }
+.section-chip.selected { border-color: var(--accent2); background: #1c2d48; }
+@media (max-width: 720px) {
+  .pre-editor-heading { flex-direction: column; }
+  #source-clock { width: 100%; margin-left: 0; }
+  .timeline-zoom-controls { width: 100%; margin-left: 0; }
+  #timeline-zoom { flex: 1; width: auto; }
+}
 
 /* Review layout */
 .review-layout {

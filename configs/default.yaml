@@ -29,6 +29,16 @@ proxy:
   audio_sample_rate: 16000
   extract_audio: true
 
+# Non-destructive home-page editor used to remove frame breaks before analysis.
+preprocess:
+  max_sections: 200
+  crf: 18
+  preset: veryfast
+  nvenc_preset: p4
+  audio_codec: aac
+  audio_bitrate: 192k
+  pixel_format: yuv420p
+
 # Frame sampling during analysis
 analysis:
   # Sparse proposal pass.  Candidate windows are then decoded at refine_fps

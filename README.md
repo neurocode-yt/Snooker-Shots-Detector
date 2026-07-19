@@ -17,8 +17,10 @@ perfect audio sync — with a web timeline for reviewing uncertain detections.
   (configurable pre/post-roll — not hardcoded)
 - **Multimodal detection** — residual motion after camera compensation + table mask + audio support
 - **Replay-aware** — replays flagged and excluded by default
+- **Pre-analysis match editor** — split/delete frame breaks with a 1×–64× zoomable timeline; original uploads remain untouched
 - **Review UI** — move boundaries, add/delete shots, mark replays, export labels
-- **Export** — individual clips, joined MP4, CSV, EDL, training labels
+- **Selected-shots preview** — immediately play included shots as one continuous virtual timeline
+- **Export** — individual clips, one combined MP4, CSV, EDL, training labels
 - **Jobs** — progress, resume, batch CLI
 - **Windows-first** + **Docker** for servers
 - **GPU optional** (Phase 2 torch); CPU fallback always works
@@ -70,6 +72,11 @@ snooker-ai serve --host 127.0.0.1 --port 8000
 - Upload: http://127.0.0.1:8000/
 - Review: http://127.0.0.1:8000/review/`<job-id>`
 - API docs: http://127.0.0.1:8000/docs
+
+Selecting a video opens the pre-analysis editor. Split at both edges of any
+between-frame break, delete the middle section, zoom the timeline as needed,
+then start analysis. A cleaned MP4 is created from kept sections without
+modifying the original upload.
 
 ## Docker
 

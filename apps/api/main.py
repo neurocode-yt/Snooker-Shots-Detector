@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import subprocess
 import threading
 import time
+import uuid
 from pathlib import Path
 from typing import Any, Optional
 
@@ -17,9 +19,11 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from snooker_ai.config import Config, load_config
+from snooker_ai.ingestion.probe import probe_video
 from snooker_ai.jobs.store import JobStore
 from snooker_ai.pipeline.analyzer import Analyzer
 from snooker_ai.rendering.exporter import Exporter
+from snooker_ai.rendering.preprocessor import KeepRange, VideoPreprocessor
 from snooker_ai.types import (
     EditMode,
     ExportRequest,
@@ -149,6 +153,16 @@ class SplitShotBody(BaseModel):
     at_time: float
 
 
+class SourceRangeBody(BaseModel):
+    start: float
+    end: float
+
+
+class PreprocessBody(BaseModel):
+    source_path: str
+    ranges: list[SourceRangeBody] = Field(..., min_length=1, max_length=200)
+
+
 def create_app(config: Optional[Config] = None) -> FastAPI:
     cfg = config or load_config()
     setup_logging(str(cfg.get("log_level", "INFO")))
@@ -211,9 +225,6 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
 
     @app.post("/api/upload")
     async def upload(file: UploadFile = File(...)) -> dict[str, Any]:
-        import time
-        import uuid
-
         max_gb = float(cfg.get("api.max_upload_gb", 50.0))
         suffix = Path(file.filename or "video.mp4").suffix or ".mp4"
         stem = Path(file.filename or "video").stem
@@ -268,6 +279,38 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             job_id = store.create(source, mode=mode.value)
         background.add_task(_run_analysis, job_id, source, mode, body.resume)
         return {"job_id": job_id, "status": "started", "mode": mode.value}
+
+    @app.post("/api/preprocess")
+    async def preprocess_video(body: PreprocessBody) -> dict[str, Any]:
+        source = Path(body.source_path).resolve()
+        uploads_root = store.uploads.resolve()
+        if not source.is_file() or not source.is_relative_to(uploads_root):
+            raise HTTPException(400, "Preprocessing is limited to uploaded videos")
+
+        safe_stem = "".join(
+            char if char.isalnum() or char in "-_" else "_" for char in source.stem
+        )[:80]
+        output = uploads_root / f"{safe_stem}_cleaned_{uuid.uuid4().hex[:8]}.mp4"
+        ranges = [KeepRange(item.start, item.end) for item in body.ranges]
+        try:
+            rendered = await asyncio.to_thread(
+                VideoPreprocessor(cfg).render,
+                source,
+                ranges,
+                output,
+            )
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        except Exception as exc:
+            logger.exception("Pre-analysis edit failed for %s", source)
+            raise HTTPException(500, f"Could not create cleaned video: {exc}") from exc
+        metadata = probe_video(rendered)
+        return {
+            "path": str(rendered),
+            "duration": metadata.duration,
+            "original_path": str(source),
+            "kept_sections": len(ranges),
+        }
 
     @app.get("/api/jobs")
     async def list_jobs() -> list[dict[str, Any]]:
