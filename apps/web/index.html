@@ -32,10 +32,11 @@
 
           <video id="source-preview" controls preload="metadata"></video>
           <div class="pre-transport">
-            <button type="button" id="split-section" class="primary">Split at playhead</button>
+            <button type="button" id="split-section" class="primary">Split at playhead (Z)</button>
             <button type="button" id="delete-section" class="danger">Delete selected section</button>
             <button type="button" id="restore-section">Restore selected</button>
-            <button type="button" id="undo-edit">Undo</button>
+            <button type="button" id="undo-edit">Undo (Ctrl+Z)</button>
+            <button type="button" id="redo-edit">Redo (Ctrl+Shift+Z)</button>
             <span id="source-clock">00:00.000 / 00:00.000</span>
           </div>
 
@@ -55,12 +56,14 @@
             <div id="timeline-content" class="pre-timeline-content">
               <div id="timeline-ruler" class="pre-timeline-ruler"></div>
               <div id="timeline-sections" class="pre-timeline-sections"></div>
-              <div id="timeline-playhead" class="pre-timeline-playhead"></div>
+              <button type="button" id="timeline-playhead" class="pre-timeline-playhead"
+                      aria-label="Timeline playhead" title="Drag to seek"><span></span></button>
             </div>
           </div>
           <div id="section-list" class="section-list"></div>
           <p class="hint muted">
             Fast workflow: seek to the start of a frame break → Split → seek to its end → Split → select the middle section → Delete.
+            Drag the yellow playhead to seek. Z splits, Ctrl+Z undoes, and Ctrl+Shift+Z redoes.
             Use the zoom controls or Ctrl + mouse wheel over the timeline for long matches.
           </p>
         </section>
