@@ -19,6 +19,8 @@ let editHistory = [];
 let redoHistory = [];
 let localVideoUrl = null;
 let draggingPlayhead = false;
+let dragPointerClientX = 0;
+let dragScrollFrame = 0;
 
 function fmt(t) {
   if (!Number.isFinite(t)) return "00:00.000";
@@ -62,19 +64,41 @@ function niceTickInterval(raw) {
   return step * power;
 }
 
-function updatePlayhead() {
+function playheadPixel() {
+  const time = Math.max(0, Math.min(sourceDuration, sourcePreview.currentTime || 0));
+  return sourceDuration ? (time / sourceDuration) * timelineContent.clientWidth : 0;
+}
+
+function keepPlayheadVisible(center = false) {
+  const pixel = playheadPixel();
+  const padding = 36;
+  const visibleStart = timelineViewport.scrollLeft;
+  const visibleEnd = visibleStart + timelineViewport.clientWidth;
+  if (center) {
+    timelineViewport.scrollLeft = Math.max(0, pixel - timelineViewport.clientWidth / 2);
+  } else if (pixel < visibleStart + padding) {
+    timelineViewport.scrollLeft = Math.max(0, pixel - padding);
+  } else if (pixel > visibleEnd - padding) {
+    timelineViewport.scrollLeft = pixel - timelineViewport.clientWidth + padding;
+  }
+}
+
+function updatePlayhead({ ensureVisible = false } = {}) {
   const time = Math.max(0, Math.min(sourceDuration, sourcePreview.currentTime || 0));
   timelinePlayhead.style.left = `${sourceDuration ? (time / sourceDuration) * 100 : 0}%`;
   document.getElementById("source-clock").textContent = `${fmt(time)} / ${fmt(sourceDuration)}`;
+  if (ensureVisible && !draggingPlayhead) keepPlayheadVisible();
 }
 
 function renderRuler() {
-  const interval = niceTickInterval(sourceDuration / Math.max(8, timelineZoom * 8));
+  const targetTicks = Math.max(2, Math.floor(timelineContent.clientWidth / 110));
+  const interval = niceTickInterval(sourceDuration / targetTicks);
   const ticks = [];
   for (let time = 0; time <= sourceDuration + interval * 0.25; time += interval) {
     const bounded = Math.min(time, sourceDuration);
     const left = sourceDuration ? (bounded / sourceDuration) * 100 : 0;
-    ticks.push(`<span class="pre-tick" style="left:${left}%"><i></i><b>${fmtRuler(bounded)}</b></span>`);
+    const endpointClass = bounded >= sourceDuration ? " last" : "";
+    ticks.push(`<span class="pre-tick${endpointClass}" style="left:${left}%"><i></i><b>${fmtRuler(bounded)}</b></span>`);
     if (bounded >= sourceDuration) break;
   }
   timelineRuler.innerHTML = ticks.join("");
@@ -227,16 +251,11 @@ function handleTimelineClick(event) {
   if (id) selectSectionAndSeek(id, time);
 }
 
-function seekFromPlayheadPointer(event) {
+function seekFromPlayheadClientX(clientX) {
   const viewportRect = timelineViewport.getBoundingClientRect();
-  const edgeSize = 36;
-  if (event.clientX < viewportRect.left + edgeSize) {
-    timelineViewport.scrollLeft = Math.max(0, timelineViewport.scrollLeft - 24);
-  } else if (event.clientX > viewportRect.right - edgeSize) {
-    timelineViewport.scrollLeft += 24;
-  }
+  const boundedClientX = Math.max(viewportRect.left, Math.min(viewportRect.right, clientX));
   const contentRect = timelineContent.getBoundingClientRect();
-  const ratio = Math.max(0, Math.min(1, (event.clientX - contentRect.left) / contentRect.width));
+  const ratio = Math.max(0, Math.min(1, (boundedClientX - contentRect.left) / contentRect.width));
   const time = ratio * sourceDuration;
   sourcePreview.currentTime = time;
   const selected = sectionAt(time);
@@ -244,30 +263,57 @@ function seekFromPlayheadPointer(event) {
   updatePlayhead();
 }
 
+function runDragAutoScroll() {
+  if (!draggingPlayhead) return;
+  const viewportRect = timelineViewport.getBoundingClientRect();
+  const edgeSize = Math.min(64, viewportRect.width * 0.12);
+  let velocity = 0;
+  if (dragPointerClientX < viewportRect.left + edgeSize) {
+    const depth = (viewportRect.left + edgeSize - dragPointerClientX) / edgeSize;
+    velocity = -Math.max(2, 30 * Math.min(1, depth));
+  } else if (dragPointerClientX > viewportRect.right - edgeSize) {
+    const depth = (dragPointerClientX - (viewportRect.right - edgeSize)) / edgeSize;
+    velocity = Math.max(2, 30 * Math.min(1, depth));
+  }
+
+  if (velocity) {
+    const before = timelineViewport.scrollLeft;
+    timelineViewport.scrollLeft += velocity;
+    if (timelineViewport.scrollLeft !== before) seekFromPlayheadClientX(dragPointerClientX);
+  }
+  dragScrollFrame = window.requestAnimationFrame(runDragAutoScroll);
+}
+
+function finishPlayheadDrag(event = null) {
+  if (!draggingPlayhead) return;
+  draggingPlayhead = false;
+  timelinePlayhead.classList.remove("dragging");
+  window.cancelAnimationFrame(dragScrollFrame);
+  dragScrollFrame = 0;
+  if (event && timelinePlayhead.hasPointerCapture(event.pointerId)) {
+    timelinePlayhead.releasePointerCapture(event.pointerId);
+  }
+  renderEditor();
+}
+
 timelinePlayhead.addEventListener("pointerdown", (event) => {
   event.preventDefault();
   event.stopPropagation();
   draggingPlayhead = true;
+  dragPointerClientX = event.clientX;
   timelinePlayhead.classList.add("dragging");
   timelinePlayhead.setPointerCapture(event.pointerId);
-  seekFromPlayheadPointer(event);
+  seekFromPlayheadClientX(event.clientX);
+  window.cancelAnimationFrame(dragScrollFrame);
+  dragScrollFrame = window.requestAnimationFrame(runDragAutoScroll);
 });
 timelinePlayhead.addEventListener("pointermove", (event) => {
-  if (draggingPlayhead) seekFromPlayheadPointer(event);
-});
-timelinePlayhead.addEventListener("pointerup", (event) => {
   if (!draggingPlayhead) return;
-  draggingPlayhead = false;
-  timelinePlayhead.classList.remove("dragging");
-  if (timelinePlayhead.hasPointerCapture(event.pointerId)) {
-    timelinePlayhead.releasePointerCapture(event.pointerId);
-  }
-  renderEditor();
+  dragPointerClientX = event.clientX;
+  seekFromPlayheadClientX(event.clientX);
 });
-timelinePlayhead.addEventListener("pointercancel", () => {
-  draggingPlayhead = false;
-  timelinePlayhead.classList.remove("dragging");
-});
+timelinePlayhead.addEventListener("pointerup", finishPlayheadDrag);
+timelinePlayhead.addEventListener("pointercancel", finishPlayheadDrag);
 timelinePlayhead.addEventListener("click", (event) => event.stopPropagation());
 
 function mergedKeepRanges() {
@@ -328,8 +374,10 @@ sourcePreview.addEventListener("loadedmetadata", () => {
     initializeEditor(sourcePreview.duration);
   }
 });
-sourcePreview.addEventListener("timeupdate", updatePlayhead);
-sourcePreview.addEventListener("seeked", updatePlayhead);
+sourcePreview.addEventListener("timeupdate", () => {
+  updatePlayhead({ ensureVisible: !sourcePreview.paused });
+});
+sourcePreview.addEventListener("seeked", () => updatePlayhead({ ensureVisible: true }));
 document.getElementById("split-section").addEventListener("click", splitAtPlayhead);
 document.getElementById("delete-section").addEventListener("click", () => setSelectedDeleted(true));
 document.getElementById("restore-section").addEventListener("click", () => setSelectedDeleted(false));
