@@ -10,7 +10,7 @@ import numpy as np
 
 from snooker_ai.config import Config
 from snooker_ai.motion.camera import CameraMotionEstimator
-from snooker_ai.utils.acceleration import acceleration_enabled
+from snooker_ai.utils.acceleration import acceleration_enabled, disable_acceleration
 
 
 @dataclass
@@ -72,21 +72,33 @@ class ResidualMotionAnalyzer:
         else:
             flow_prev, flow_gray, flow_mask = aligned, gray, table_mask
 
-        if self.use_opencl:
-            flow_prev = cv2.UMat(flow_prev)
-            flow_gray = cv2.UMat(flow_gray)
-        flow = cv2.calcOpticalFlowFarneback(
-            flow_prev,
-            flow_gray,
-            None,
-            pyr_scale=0.5,
-            levels=self.flow_levels,
-            winsize=self.flow_winsize,
-            iterations=3,
-            poly_n=5,
-            poly_sigma=1.2,
-            flags=0,
-        )
+        def calculate_flow(first, second):
+            return cv2.calcOpticalFlowFarneback(
+                first,
+                second,
+                None,
+                pyr_scale=0.5,
+                levels=self.flow_levels,
+                winsize=self.flow_winsize,
+                iterations=3,
+                poly_n=5,
+                poly_sigma=1.2,
+                flags=0,
+            )
+
+        use_opencl = self.use_opencl and cv2.ocl.useOpenCL()
+        try:
+            flow_inputs = (
+                cv2.UMat(flow_prev),
+                cv2.UMat(flow_gray),
+            ) if use_opencl else (flow_prev, flow_gray)
+            flow = calculate_flow(*flow_inputs)
+        except cv2.error as exc:
+            if not use_opencl:
+                raise
+            disable_acceleration(str(exc))
+            self.use_opencl = False
+            flow = calculate_flow(flow_prev, flow_gray)
         if isinstance(flow, cv2.UMat):
             flow = flow.get()
         mag = np.sqrt(flow[..., 0] ** 2 + flow[..., 1] ** 2)

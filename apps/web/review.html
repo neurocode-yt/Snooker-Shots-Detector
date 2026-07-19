@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Review — Snooker AI</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260719c" />
+  <link rel="stylesheet" href="/static/styles.css?v=20260719d" />
 </head>
 <body class="review-body">
   <header class="top compact">
@@ -21,10 +21,13 @@
       </select>
       <button id="export-combined-btn" class="primary">Export combined video</button>
       <button id="export-clips-btn">Export individual clips</button>
-      <button id="open-clips-btn" title="Open the folder containing the numbered exported clips">
-        Open clips folder
+      <button id="open-export-btn" title="Open the folder containing the combined video and exports">
+        Open export folder
       </button>
       <span id="export-status" class="export-status muted" aria-live="polite"></span>
+      <a id="combined-download-link" class="export-download-link hidden" target="_blank" rel="noopener">
+        Download combined video
+      </a>
       <button id="save-labels-btn">Save training labels</button>
     </div>
   </header>
@@ -102,6 +105,6 @@
   <script>
     window.SNOOKER_JOB_ID = "{{JOB_ID}}";
   </script>
-  <script src="/static/review.js"></script>
+  <script src="/static/review.js?v=20260719d"></script>
 </body>
 </html>

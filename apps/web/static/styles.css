@@ -441,9 +441,14 @@ button.danger { border-color: var(--danger); color: var(--danger); }
   font-size: 0.8rem;
   max-width: 20rem;
 }
-.export-status[data-state="working"] { color: var(--warn); }
-.export-status[data-state="ready"] { color: var(--accent); }
-.export-status[data-state="error"] { color: var(--danger); }
+  .export-status[data-state="working"] { color: var(--warn); }
+  .export-status[data-state="ready"] { color: var(--accent); }
+  .export-status[data-state="error"] { color: var(--danger); }
+  .export-download-link {
+    color: var(--accent);
+    font-weight: 700;
+    white-space: nowrap;
+  }
 #clock {
   margin-left: auto;
   font-variant-numeric: tabular-nums;

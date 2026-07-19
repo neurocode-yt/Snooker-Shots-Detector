@@ -512,6 +512,35 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             "focused": focused,
         }
 
+    @app.post("/api/jobs/{job_id}/open-export-folder")
+    async def open_export_folder(job_id: str) -> dict[str, Any]:
+        """Open the export root so combined output is visible to the user."""
+
+        job_dir = store.job_dir(job_id)
+        if not job_dir.is_dir():
+            raise HTTPException(404, f"Job not found: {job_id}")
+        export_dir = job_dir / "export"
+        export_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            focused = _open_folder(export_dir)
+        except OSError as exc:
+            raise HTTPException(500, f"Could not open export folder: {exc}") from exc
+        clips_dir = export_dir / "clips"
+        clip_count = (
+            sum(1 for path in clips_dir.glob("shot_*.mp4") if path.is_file())
+            if clips_dir.is_dir()
+            else 0
+        )
+        combined = export_dir / "highlights.mp4"
+        return {
+            "folder": str(export_dir.resolve()),
+            "clip_count": clip_count,
+            "combined_exists": combined.is_file(),
+            "combined_video": str(combined.resolve()) if combined.is_file() else None,
+            "opened": True,
+            "focused": focused,
+        }
+
     @app.get("/api/jobs/{job_id}/download/{kind}")
     async def download(job_id: str, kind: str) -> FileResponse:
         base = store.job_dir(job_id)

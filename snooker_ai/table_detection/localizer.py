@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 
 from snooker_ai.config import Config
-from snooker_ai.utils.acceleration import acceleration_enabled
+from snooker_ai.utils.acceleration import acceleration_enabled, disable_acceleration
 from snooker_ai.utils.logging import get_logger
 
 logger = get_logger("table_detection")
@@ -59,14 +59,26 @@ class TableLocalizer:
 
     def detect(self, frame_bgr: np.ndarray) -> TableObservation:
         h, w = frame_bgr.shape[:2]
-        frame_input = cv2.UMat(frame_bgr) if self.use_opencl else frame_bgr
-        hsv = cv2.cvtColor(frame_input, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv, self.hsv_lower, self.hsv_upper)
-        k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (self.morph_k, self.morph_k))
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k, iterations=2)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k, iterations=1)
-        if isinstance(mask, cv2.UMat):
-            mask = mask.get()
+        use_opencl = self.use_opencl and cv2.ocl.useOpenCL()
+        try:
+            frame_input = cv2.UMat(frame_bgr) if use_opencl else frame_bgr
+            hsv = cv2.cvtColor(frame_input, cv2.COLOR_BGR2HSV)
+            mask = cv2.inRange(hsv, self.hsv_lower, self.hsv_upper)
+            k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (self.morph_k, self.morph_k))
+            mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k, iterations=2)
+            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k, iterations=1)
+            if isinstance(mask, cv2.UMat):
+                mask = mask.get()
+        except cv2.error as exc:
+            if not use_opencl:
+                raise
+            disable_acceleration(str(exc))
+            self.use_opencl = False
+            hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
+            mask = cv2.inRange(hsv, self.hsv_lower, self.hsv_upper)
+            k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (self.morph_k, self.morph_k))
+            mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k, iterations=2)
+            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k, iterations=1)
 
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if not contours:
