@@ -12,8 +12,9 @@ const stats = document.getElementById("stats");
 const toast = document.getElementById("toast");
 const exportCombinedBtn = document.getElementById("export-combined-btn");
 const exportClipsBtn = document.getElementById("export-clips-btn");
-const openClipsBtn = document.getElementById("open-clips-btn");
+const openExportBtn = document.getElementById("open-export-btn");
 const exportStatus = document.getElementById("export-status");
+const combinedDownloadLink = document.getElementById("combined-download-link");
 
 let shots = [];
 let activeId = null;
@@ -493,26 +494,35 @@ document.getElementById("add-at-playhead").addEventListener("click", async () =>
   showToast("Shot added");
 });
 
-openClipsBtn.addEventListener("click", async () => {
-  openClipsBtn.disabled = true;
+openExportBtn.addEventListener("click", async () => {
+  openExportBtn.disabled = true;
   try {
-    const res = await fetch(`/api/jobs/${jobId}/open-clips-folder`, { method: "POST" });
+    const res = await fetch(`/api/jobs/${jobId}/open-export-folder`, { method: "POST" });
     if (!res.ok) {
       const detail = await res.text();
-      showToast("Could not open clips folder: " + detail);
-      setExportStatus("Could not open clips folder", "error");
+      showToast("Could not open export folder: " + detail);
+      setExportStatus("Could not open export folder", "error");
       return;
     }
     const data = await res.json();
     const count = Number.isFinite(data.clip_count) ? data.clip_count : 0;
-    const suffix = count === 1 ? "clip" : "clips";
-    showToast(`Opened clips folder in Windows Explorer (${count} ${suffix})`);
-    setExportStatus(`${count} numbered ${suffix} ready for CapCut`, "ready");
+    if (data.combined_exists) {
+      const suffix = count === 1 ? "individual clip" : "individual clips";
+      showToast("Opened export folder — combined video is ready");
+      setExportStatus(
+        `Combined video ready${count ? `; ${count} ${suffix} are in the clips subfolder` : ""}`,
+        "ready",
+      );
+    } else {
+      const suffix = count === 1 ? "clip" : "clips";
+      showToast(`Opened export folder (${count} ${suffix} ready)`);
+      setExportStatus(`${count} numbered ${suffix} ready in the clips subfolder`, "ready");
+    }
   } catch (err) {
-    showToast("Could not open clips folder");
-    setExportStatus("Could not open clips folder", "error");
+    showToast("Could not open export folder");
+    setExportStatus("Could not open export folder", "error");
   } finally {
-    openClipsBtn.disabled = false;
+    openExportBtn.disabled = false;
   }
 });
 
@@ -530,6 +540,8 @@ async function runExport({ combined, clips, button }) {
   button.disabled = true;
   exportCombinedBtn.disabled = true;
   exportClipsBtn.disabled = true;
+  combinedDownloadLink.classList.add("hidden");
+  combinedDownloadLink.removeAttribute("href");
   button.textContent = combined ? "Combining selected shots..." : "Exporting clips...";
   setExportStatus(
     combined
@@ -561,13 +573,16 @@ async function runExport({ combined, clips, button }) {
       ? data.clip_count
       : (data.clips || []).length;
     if (combined && data.download_url) {
+      combinedDownloadLink.href = data.download_url;
+      combinedDownloadLink.download = "highlights.mp4";
+      combinedDownloadLink.classList.remove("hidden");
       downloadArtifact(data.download_url);
       showToast("Combined video ready — download started");
-      setExportStatus("Combined selected-shots video downloaded", "ready");
+      setExportStatus("One combined video ready", "ready");
     } else {
       const suffix = count === 1 ? "clip" : "clips";
       showToast(`Export ready: ${count} ${suffix}`);
-      setExportStatus(`${count} numbered ${suffix} ready — click Open clips folder`, "ready");
+      setExportStatus(`${count} numbered ${suffix} ready — click Open export folder`, "ready");
     }
   } catch (err) {
     showToast("Export failed: " + err.message);

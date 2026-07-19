@@ -93,3 +93,25 @@ def test_review_can_export_combined_video_or_clips_separately(
 
     assert empty.status_code == 400
     assert len(requests) == 2
+
+
+def test_open_export_folder_reports_combined_video(config, tmp_path, monkeypatch):
+    config._data["paths"]["jobs_dir"] = str(tmp_path / "jobs")
+    config._data["paths"]["uploads_dir"] = str(tmp_path / "uploads")
+    source = tmp_path / "source.mp4"
+    source.write_bytes(b"video")
+    store = JobStore(config)
+    job_id = store.create(source, mode="strict")
+    export_dir = store.job_dir(job_id) / "export"
+    export_dir.mkdir(parents=True)
+    (export_dir / "highlights.mp4").touch()
+    monkeypatch.setattr("apps.api.main._open_folder", lambda _path: True)
+
+    with TestClient(create_app(config)) as client:
+        response = client.post(f"/api/jobs/{job_id}/open-export-folder")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["combined_exists"] is True
+    assert payload["clip_count"] == 0
+    assert payload["folder"].endswith("export")

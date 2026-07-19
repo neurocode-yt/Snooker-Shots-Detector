@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 
 from snooker_ai.config import Config
-from snooker_ai.utils.acceleration import acceleration_enabled
+from snooker_ai.utils.acceleration import acceleration_enabled, disable_acceleration
 
 
 @dataclass
@@ -70,38 +70,58 @@ class CameraMotionEstimator:
             # Keep a border of table edges too
             feature_mask = cv2.dilate(feature_mask, np.ones((5, 5), np.uint8))
 
-        prev_input = cv2.UMat(work_prev) if self.use_opencl else work_prev
-        next_input = cv2.UMat(work_gray) if self.use_opencl else work_gray
-        mask_input = cv2.UMat(feature_mask) if self.use_opencl and feature_mask is not None else feature_mask
-        pts = cv2.goodFeaturesToTrack(
-            prev_input,
-            maxCorners=self.max_corners,
-            qualityLevel=self.quality,
-            minDistance=self.min_distance,
-            mask=mask_input,
-        )
-        if pts is None:
+        def track_features(prev_input, next_input, mask_input):
+            pts = cv2.goodFeaturesToTrack(
+                prev_input,
+                maxCorners=self.max_corners,
+                qualityLevel=self.quality,
+                minDistance=self.min_distance,
+                mask=mask_input,
+            )
+            if pts is None:
+                return None, None, None
+            pts_np = pts.get() if isinstance(pts, cv2.UMat) else pts
+            if len(pts_np) < 8:
+                return pts_np, None, None
+            nxt, status, _ = cv2.calcOpticalFlowPyrLK(
+                prev_input,
+                next_input,
+                pts,
+                None,
+                winSize=self.lk_win,
+                maxLevel=3,
+            )
+            if nxt is None:
+                return pts_np, None, None
+            if isinstance(nxt, cv2.UMat):
+                nxt = nxt.get()
+            if isinstance(status, cv2.UMat):
+                status = status.get()
+            return pts_np, nxt, status
+
+        use_opencl = self.use_opencl and cv2.ocl.useOpenCL()
+        try:
+            prev_input = cv2.UMat(work_prev) if use_opencl else work_prev
+            next_input = cv2.UMat(work_gray) if use_opencl else work_gray
+            mask_input = (
+                cv2.UMat(feature_mask)
+                if use_opencl and feature_mask is not None
+                else feature_mask
+            )
+            pts_np, nxt, status = track_features(prev_input, next_input, mask_input)
+        except cv2.error as exc:
+            if not use_opencl:
+                raise
+            disable_acceleration(str(exc))
+            self.use_opencl = False
+            pts_np, nxt, status = track_features(work_prev, work_gray, feature_mask)
+
+        if pts_np is None or nxt is None or status is None or len(pts_np) < 8:
             # Without enough static features we cannot distinguish a genuine
             # table transition from a pan/zoom.  Mark the observation unknown;
             # treating it as a clean zero-motion frame would prematurely close a
             # strict shot.
             return CameraMotion(0.0, 1.0, 0, None, True)
-
-        pts_input = pts
-        pts_np = pts.get() if isinstance(pts, cv2.UMat) else pts
-        if len(pts_np) < 8:
-            return CameraMotion(0.0, 1.0, 0, None, True)
-
-        nxt, status, _ = cv2.calcOpticalFlowPyrLK(
-            prev_input, next_input, pts_input, None, winSize=self.lk_win, maxLevel=3
-        )
-        if nxt is None:
-            return CameraMotion(0.0, 1.0, 0, None, True)
-
-        if isinstance(nxt, cv2.UMat):
-            nxt = nxt.get()
-        if isinstance(status, cv2.UMat):
-            status = status.get()
 
         good_prev = pts_np[status.flatten() == 1]
         good_next = nxt[status.flatten() == 1]

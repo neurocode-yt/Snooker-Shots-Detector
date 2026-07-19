@@ -33,6 +33,29 @@ class AccelerationInfo:
 _active: AccelerationInfo | None = None
 
 
+def disable_acceleration(reason: str = "") -> AccelerationInfo:
+    """Disable OpenCL for this process after a runtime allocation failure.
+
+    OpenCV's Python bindings turn a device-memory failure into a misleading
+    cascade of ``UMat()`` overload errors.  Once that happens, continuing to
+    submit frames to the same OpenCL context only repeats the failure.  The
+    CPU path is slower but deterministic and lets the current analysis finish.
+    """
+
+    global _active
+    requested = _active.requested if _active is not None else "auto"
+    try:
+        cv2.ocl.setUseOpenCL(False)
+    except Exception:  # pragma: no cover - driver-specific cleanup
+        pass
+    _active = AccelerationInfo(requested=requested, backend="cpu")
+    if reason:
+        logger.warning("OpenCL disabled after runtime failure; using CPU: %s", reason)
+    else:
+        logger.warning("OpenCL disabled after runtime failure; using CPU")
+    return _active
+
+
 def configure_acceleration(config: Config) -> AccelerationInfo:
     """Enable the NVIDIA OpenCL device when ``device`` is ``auto``/``cuda``.
 

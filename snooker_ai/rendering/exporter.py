@@ -6,6 +6,7 @@ import csv
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Optional
 
 from snooker_ai.config import Config
@@ -59,7 +60,8 @@ class Exporter:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         clips_dir = output_dir / "clips"
-        clips_dir.mkdir(exist_ok=True)
+        if request.export_clips:
+            clips_dir.mkdir(exist_ok=True)
 
         shots = self._filter_shots(result.shots, request)
         if not shots:
@@ -102,23 +104,42 @@ class Exporter:
                     joined_path = output_dir / joined_path
             else:
                 joined_path = output_dir / "highlights.mp4"
-            # Ensure clips exist for concat
-            if not out.clip_paths:
-                out.clip_paths = self._export_clips(
-                    result.source_path,
-                    shots,
-                    clips_dir,
+            if out.clip_paths:
+                # "Both" export reuses the requested public numbered clips.
+                out.joined_path = self._concat_clips(
+                    out.clip_paths,
+                    joined_path,
                     accurate=accurate,
-                    source_has_audio=result.metadata.has_audio,
+                    has_audio=result.metadata.has_audio,
                     source_fps=result.metadata.fps,
                 )
-            out.joined_path = self._concat_clips(
-                out.clip_paths,
-                joined_path,
-                accurate=accurate,
-                has_audio=result.metadata.has_audio,
-                source_fps=result.metadata.fps,
-            )
+            else:
+                # Combined-only export still needs intermediate encoded parts
+                # for concat, but they are implementation details. Keeping
+                # them in export/clips made the UI appear to have performed an
+                # individual-clips export. Use a temporary hidden directory and
+                # return only the joined artifact.
+                with TemporaryDirectory(
+                    prefix=".combined-parts-", dir=output_dir
+                ) as temporary:
+                    temporary_paths = self._export_clips(
+                        result.source_path,
+                        shots,
+                        Path(temporary),
+                        accurate=accurate,
+                        source_has_audio=result.metadata.has_audio,
+                        source_fps=result.metadata.fps,
+                    )
+                    out.joined_path = self._concat_clips(
+                        temporary_paths,
+                        joined_path,
+                        accurate=accurate,
+                        has_audio=result.metadata.has_audio,
+                        source_fps=result.metadata.fps,
+                    )
+                # The concat manifest points at deleted temporary paths and is
+                # not a user-facing export artifact.
+                (joined_path.parent / "concat_list.txt").unlink(missing_ok=True)
 
         if request.export_csv:
             out.csv_path = self._write_csv(shots, output_dir / "shots.csv")
