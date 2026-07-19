@@ -332,6 +332,22 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
 
     @app.get("/api/jobs/{job_id}/shots")
     async def get_shots(job_id: str) -> dict[str, Any]:
+        # The review page only needs the compact timeline.  Loading the full
+        # analysis (137 MB for a two-hour match) made the UI show a misleading
+        # temporary "0 shots" state while thousands of feature rows parsed.
+        timeline_path = store.job_dir(job_id) / "timeline.json"
+        if timeline_path.exists():
+            try:
+                timeline = json.loads(timeline_path.read_text(encoding="utf-8"))
+                return {
+                    "job_id": job_id,
+                    "mode": timeline.get("mode", "strict"),
+                    "original_duration": timeline.get("original_duration", 0.0),
+                    "edited_duration": timeline.get("edited_duration", 0.0),
+                    "shots": timeline.get("shots", []),
+                }
+            except (OSError, ValueError, TypeError):
+                logger.warning("Could not load compact timeline for %s", job_id)
         try:
             result = store.load_analysis(job_id)
         except FileNotFoundError as exc:
