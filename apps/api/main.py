@@ -127,6 +127,7 @@ class ExportBody(BaseModel):
     include_replays: bool = False
     accurate: bool = True
     export_clips: bool = True
+    export_joined: bool = True
     min_confidence: float = 0.0
     min_importance: float = 0.0
 
@@ -374,6 +375,8 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
 
     @app.post("/api/jobs/{job_id}/export")
     async def export_job(job_id: str, body: ExportBody) -> dict[str, Any]:
+        if not body.export_clips and not body.export_joined:
+            raise HTTPException(400, "Select combined video, individual clips, or both")
         try:
             result = store.load_analysis(job_id)
         except FileNotFoundError as exc:
@@ -390,7 +393,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             mode=result.mode,
             output_path=body.output_name,
             export_clips=body.export_clips,
-            export_joined=True,
+            export_joined=body.export_joined,
             include_replays=body.include_replays,
             accurate=body.accurate,
             min_confidence=body.min_confidence,
@@ -417,6 +420,9 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         )
         return {
             "joined": str(er.joined_path) if er.joined_path else None,
+            "download_url": (
+                f"/api/jobs/{job_id}/download/highlights" if er.joined_path else None
+            ),
             "clips": [str(p) for p in er.clip_paths],
             "clips_dir": str(out_dir / "clips"),
             "clip_count": len(er.clip_paths),
