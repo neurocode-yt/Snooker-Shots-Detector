@@ -78,6 +78,10 @@ between-frame break, delete the middle section, zoom the timeline as needed,
 then start analysis. A cleaned MP4 is created from kept sections without
 modifying the original upload.
 
+The timeline stays inside its own horizontally scrollable viewport at every
+zoom level. Drag the yellow playhead to seek. Use `Z` to split, `Ctrl+Z` to
+undo, and `Ctrl+Shift+Z` to redo.
+
 ## Docker
 
 ```bash

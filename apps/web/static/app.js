@@ -16,7 +16,9 @@ let selectedSectionId = null;
 let nextSectionId = 1;
 let timelineZoom = 1;
 let editHistory = [];
+let redoHistory = [];
 let localVideoUrl = null;
+let draggingPlayhead = false;
 
 function fmt(t) {
   if (!Number.isFinite(t)) return "00:00.000";
@@ -25,6 +27,18 @@ function fmt(t) {
   const seconds = t % 60;
   const base = `${String(minutes).padStart(2, "0")}:${seconds.toFixed(3).padStart(6, "0")}`;
   return hours ? `${String(hours).padStart(2, "0")}:${base}` : base;
+}
+
+function fmtRuler(t) {
+  if (!Number.isFinite(t)) return "00:00";
+  const rounded = Math.max(0, Math.round(t));
+  const hours = Math.floor(rounded / 3600);
+  const minutes = Math.floor((rounded % 3600) / 60);
+  const seconds = rounded % 60;
+  if (hours) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function cloneSections(value = sections) {
@@ -37,6 +51,7 @@ function saveHistory() {
     selectedSectionId,
   });
   if (editHistory.length > 100) editHistory.shift();
+  redoHistory = [];
 }
 
 function niceTickInterval(raw) {
@@ -54,12 +69,12 @@ function updatePlayhead() {
 }
 
 function renderRuler() {
-  const interval = niceTickInterval(sourceDuration / Math.max(10, timelineZoom * 10));
+  const interval = niceTickInterval(sourceDuration / Math.max(8, timelineZoom * 8));
   const ticks = [];
   for (let time = 0; time <= sourceDuration + interval * 0.25; time += interval) {
     const bounded = Math.min(time, sourceDuration);
     const left = sourceDuration ? (bounded / sourceDuration) * 100 : 0;
-    ticks.push(`<span class="pre-tick" style="left:${left}%"><i></i><b>${fmt(bounded)}</b></span>`);
+    ticks.push(`<span class="pre-tick" style="left:${left}%"><i></i><b>${fmtRuler(bounded)}</b></span>`);
     if (bounded >= sourceDuration) break;
   }
   timelineRuler.innerHTML = ticks.join("");
@@ -105,6 +120,7 @@ function renderEditor() {
   document.getElementById("zoom-label").textContent = `${timelineZoom}×`;
   zoomSlider.value = String(timelineZoom);
   document.getElementById("undo-edit").disabled = editHistory.length === 0;
+  document.getElementById("redo-edit").disabled = redoHistory.length === 0;
 
   const selected = sections.find((section) => section.id === selectedSectionId);
   document.getElementById("delete-section").disabled = !selected || selected.deleted;
@@ -118,6 +134,7 @@ function initializeEditor(duration) {
   selectedSectionId = sections[0].id;
   timelineZoom = 1;
   editHistory = [];
+  redoHistory = [];
   preEditor.classList.remove("hidden");
   startBtn.disabled = false;
   window.requestAnimationFrame(renderEditor);
@@ -150,6 +167,33 @@ function setSelectedDeleted(deleted) {
   renderEditor();
 }
 
+function currentEditState() {
+  return {
+    sections: cloneSections(),
+    selectedSectionId,
+  };
+}
+
+function restoreEditState(state) {
+  sections = cloneSections(state.sections);
+  selectedSectionId = state.selectedSectionId;
+  renderEditor();
+}
+
+function undoEdit() {
+  const previous = editHistory.pop();
+  if (!previous) return;
+  redoHistory.push(currentEditState());
+  restoreEditState(previous);
+}
+
+function redoEdit() {
+  const next = redoHistory.pop();
+  if (!next) return;
+  editHistory.push(currentEditState());
+  restoreEditState(next);
+}
+
 function setZoom(requestedZoom) {
   const nextZoom = Math.max(1, Math.min(64, Math.round(requestedZoom)));
   if (nextZoom === timelineZoom) return;
@@ -172,6 +216,7 @@ function selectSectionAndSeek(sectionId, seekTime = null) {
 }
 
 function handleTimelineClick(event) {
+  if (event.target.closest("#timeline-playhead")) return;
   const segmentButton = event.target.closest("[data-section-id]");
   const rect = timelineContent.getBoundingClientRect();
   const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
@@ -181,6 +226,49 @@ function handleTimelineClick(event) {
     : sectionAt(time)?.id;
   if (id) selectSectionAndSeek(id, time);
 }
+
+function seekFromPlayheadPointer(event) {
+  const viewportRect = timelineViewport.getBoundingClientRect();
+  const edgeSize = 36;
+  if (event.clientX < viewportRect.left + edgeSize) {
+    timelineViewport.scrollLeft = Math.max(0, timelineViewport.scrollLeft - 24);
+  } else if (event.clientX > viewportRect.right - edgeSize) {
+    timelineViewport.scrollLeft += 24;
+  }
+  const contentRect = timelineContent.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (event.clientX - contentRect.left) / contentRect.width));
+  const time = ratio * sourceDuration;
+  sourcePreview.currentTime = time;
+  const selected = sectionAt(time);
+  if (selected) selectedSectionId = selected.id;
+  updatePlayhead();
+}
+
+timelinePlayhead.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  draggingPlayhead = true;
+  timelinePlayhead.classList.add("dragging");
+  timelinePlayhead.setPointerCapture(event.pointerId);
+  seekFromPlayheadPointer(event);
+});
+timelinePlayhead.addEventListener("pointermove", (event) => {
+  if (draggingPlayhead) seekFromPlayheadPointer(event);
+});
+timelinePlayhead.addEventListener("pointerup", (event) => {
+  if (!draggingPlayhead) return;
+  draggingPlayhead = false;
+  timelinePlayhead.classList.remove("dragging");
+  if (timelinePlayhead.hasPointerCapture(event.pointerId)) {
+    timelinePlayhead.releasePointerCapture(event.pointerId);
+  }
+  renderEditor();
+});
+timelinePlayhead.addEventListener("pointercancel", () => {
+  draggingPlayhead = false;
+  timelinePlayhead.classList.remove("dragging");
+});
+timelinePlayhead.addEventListener("click", (event) => event.stopPropagation());
 
 function mergedKeepRanges() {
   const kept = sections.filter((section) => !section.deleted).sort((a, b) => a.start - b.start);
@@ -245,13 +333,8 @@ sourcePreview.addEventListener("seeked", updatePlayhead);
 document.getElementById("split-section").addEventListener("click", splitAtPlayhead);
 document.getElementById("delete-section").addEventListener("click", () => setSelectedDeleted(true));
 document.getElementById("restore-section").addEventListener("click", () => setSelectedDeleted(false));
-document.getElementById("undo-edit").addEventListener("click", () => {
-  const previous = editHistory.pop();
-  if (!previous) return;
-  sections = cloneSections(previous.sections);
-  selectedSectionId = previous.selectedSectionId;
-  renderEditor();
-});
+document.getElementById("undo-edit").addEventListener("click", undoEdit);
+document.getElementById("redo-edit").addEventListener("click", redoEdit);
 timelineContent.addEventListener("click", handleTimelineClick);
 sectionList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-section-id]");
@@ -266,6 +349,24 @@ timelineViewport.addEventListener("wheel", (event) => {
   event.preventDefault();
   setZoom(event.deltaY < 0 ? timelineZoom * 2 : timelineZoom / 2);
 }, { passive: false });
+document.addEventListener("keydown", (event) => {
+  if (!sourceDuration || preEditor.classList.contains("hidden")) return;
+  if (
+    event.target.matches('textarea, select, input:not([type="range"])')
+    || event.target.isContentEditable
+  ) return;
+  if (event.key.toLowerCase() !== "z") return;
+
+  const commandKey = event.ctrlKey || event.metaKey;
+  event.preventDefault();
+  if (commandKey && event.shiftKey) {
+    redoEdit();
+  } else if (commandKey) {
+    undoEdit();
+  } else if (!event.repeat) {
+    splitAtPlayhead();
+  }
+});
 window.addEventListener("resize", renderEditor);
 window.addEventListener("beforeunload", () => {
   if (localVideoUrl) URL.revokeObjectURL(localVideoUrl);
