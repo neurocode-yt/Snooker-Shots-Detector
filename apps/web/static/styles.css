@@ -15,6 +15,11 @@
 }
 
 * { box-sizing: border-box; }
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
 body {
   margin: 0;
   background: radial-gradient(1200px 600px at 10% -10%, #1a2a4a, var(--bg));
@@ -37,7 +42,14 @@ a { color: var(--accent2); text-decoration: none; }
 .sub { color: var(--muted); margin: 0.25rem 0 1rem; }
 .hint { font-size: 0.8rem; line-height: 1.4; margin: 0.75rem 0 0; max-width: 52rem; }
 .muted { color: var(--muted); }
-.panel { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem 3rem; }
+.panel {
+  width: 100%;
+  max-width: 1200px;
+  min-width: 0;
+  margin: 1.5rem auto;
+  padding: 0 1rem 3rem;
+}
+.panel form { width: 100%; min-width: 0; }
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -46,6 +58,7 @@ a { color: var(--accent2); text-decoration: none; }
   margin-bottom: 1.25rem;
   box-shadow: 0 10px 40px rgba(0,0,0,0.25);
   min-width: 0;
+  width: 100%;
   max-width: 100%;
   overflow: hidden;
 }
@@ -142,6 +155,7 @@ button.danger { border-color: var(--danger); color: var(--danger); }
 #source-preview {
   display: block;
   width: 100%;
+  max-width: 100%;
   max-height: 52vh;
   background: #000;
   border: 1px solid var(--border);
@@ -153,6 +167,7 @@ button.danger { border-color: var(--danger); color: var(--danger); }
   align-items: center;
   gap: 0.5rem;
 }
+.pre-transport, .timeline-toolbar { width: 100%; min-width: 0; max-width: 100%; }
 .pre-transport { margin-top: 0.75rem; }
 #source-clock {
   margin-left: auto;
@@ -175,9 +190,13 @@ button.danger { border-color: var(--danger); color: var(--danger); }
   font-weight: 700;
 }
 .pre-timeline-viewport {
+  position: relative;
+  display: block;
   width: 100%;
+  inline-size: 100%;
+  max-inline-size: 100%;
   margin-top: 0.5rem;
-  overflow-x: auto;
+  overflow-x: scroll;
   overflow-y: hidden;
   background: #0a1020;
   border: 1px solid var(--border);
@@ -188,8 +207,17 @@ button.danger { border-color: var(--danger); color: var(--danger); }
   contain: inline-size;
   overscroll-behavior-x: contain;
 }
+.pre-timeline-viewport::-webkit-scrollbar { height: 12px; }
+.pre-timeline-viewport::-webkit-scrollbar-track { background: var(--panel); }
+.pre-timeline-viewport::-webkit-scrollbar-thumb {
+  background: var(--accent2);
+  border: 3px solid var(--panel);
+  border-radius: 999px;
+}
 .pre-timeline-content {
   position: relative;
+  display: block;
+  max-width: none;
   min-width: 100%;
   height: 88px;
   user-select: none;
@@ -224,6 +252,7 @@ button.danger { border-color: var(--danger); color: var(--danger); }
   border-radius: 3px;
   background: rgba(10, 16, 32, 0.86);
 }
+.pre-tick.last b { left: auto; right: 4px; }
 .pre-timeline-sections { position: absolute; inset: 36px 0 9px; }
 .pre-section {
   position: absolute;
@@ -260,7 +289,7 @@ button.danger { border-color: var(--danger); color: var(--danger); }
   height: 100%;
   min-width: 18px;
   padding: 0;
-  margin-left: -9px;
+  margin: 0 0 0 -9px;
   cursor: ew-resize;
   touch-action: none;
   border: 0;
