@@ -1,10 +1,17 @@
 const jobId = window.SNOOKER_JOB_ID;
 const video = document.getElementById("video");
+const selectedVideo = document.getElementById("selected-video");
+const previewPlayBtn = document.getElementById("preview-play");
+const previewSeek = document.getElementById("preview-seek");
+const previewClock = document.getElementById("preview-clock");
+const previewCount = document.getElementById("preview-count");
+const sourceEditor = document.getElementById("source-editor");
 const shotList = document.getElementById("shot-list");
 const timeline = document.getElementById("timeline");
 const stats = document.getElementById("stats");
 const toast = document.getElementById("toast");
-const exportBtn = document.getElementById("export-btn");
+const exportCombinedBtn = document.getElementById("export-combined-btn");
+const exportClipsBtn = document.getElementById("export-clips-btn");
 const openClipsBtn = document.getElementById("open-clips-btn");
 const exportStatus = document.getElementById("export-status");
 
@@ -14,6 +21,13 @@ let duration = 0;
 let meta = {};
 let pendingSeek = null;
 let playbackStopAt = null;
+let previewSegments = [];
+let previewIndex = 0;
+let previewTotal = 0;
+let previewSignature = "";
+let previewPendingSourceTime = null;
+let previewFinished = false;
+let previewAdvancing = false;
 
 function showToast(msg) {
   toast.textContent = msg;
@@ -32,6 +46,158 @@ function fmt(t) {
   const s = t % 60;
   return `${String(m).padStart(2, "0")}:${s.toFixed(3).padStart(6, "0")}`;
 }
+
+function previewPosition() {
+  if (!previewSegments.length) return 0;
+  if (previewFinished) return previewTotal;
+  const before = previewSegments
+    .slice(0, previewIndex)
+    .reduce((sum, shot) => sum + Math.max(0, shot.clip_end - shot.clip_start), 0);
+  const shot = previewSegments[previewIndex];
+  const within = Math.max(0, Math.min(
+    shot.clip_end - shot.clip_start,
+    selectedVideo.currentTime - shot.clip_start,
+  ));
+  return Math.min(previewTotal, before + within);
+}
+
+function updatePreviewControls() {
+  const position = previewPosition();
+  previewSeek.max = String(previewTotal);
+  previewSeek.value = String(position);
+  previewSeek.disabled = previewSegments.length === 0;
+  previewPlayBtn.disabled = previewSegments.length === 0;
+  previewPlayBtn.textContent = selectedVideo.paused ? (previewFinished ? "Replay" : "Play") : "Pause";
+  previewClock.textContent = `${fmt(position)} / ${fmt(previewTotal)}`;
+  previewCount.textContent = `${previewSegments.length} ${previewSegments.length === 1 ? "shot" : "shots"}`;
+}
+
+function setPreviewSourceTime(sourceTime) {
+  if (selectedVideo.readyState < HTMLMediaElement.HAVE_METADATA) {
+    previewPendingSourceTime = sourceTime;
+    return;
+  }
+  previewPendingSourceTime = null;
+  selectedVideo.currentTime = sourceTime;
+}
+
+function seekPreviewCombined(requestedTime) {
+  if (!previewSegments.length) return;
+  const target = Math.max(0, Math.min(previewTotal, Number(requestedTime) || 0));
+  let elapsed = 0;
+  let index = previewSegments.length - 1;
+  let sourceTime = previewSegments[index].clip_end;
+
+  for (let i = 0; i < previewSegments.length; i += 1) {
+    const shot = previewSegments[i];
+    const shotDuration = Math.max(0, shot.clip_end - shot.clip_start);
+    if (target < elapsed + shotDuration || i === previewSegments.length - 1) {
+      index = i;
+      sourceTime = shot.clip_start + Math.min(shotDuration, target - elapsed);
+      break;
+    }
+    elapsed += shotDuration;
+  }
+
+  previewIndex = index;
+  previewFinished = target >= previewTotal - 0.001;
+  setPreviewSourceTime(sourceTime);
+  updatePreviewControls();
+}
+
+function refreshPreviewPlaylist() {
+  const selected = shots
+    .filter((shot) => shot.included && shot.clip_end > shot.clip_start)
+    .slice()
+    .sort((a, b) => a.clip_start - b.clip_start);
+  const signature = selected
+    .map((shot) => `${shot.shot_id}:${shot.clip_start}:${shot.clip_end}`)
+    .join("|");
+  if (signature === previewSignature) {
+    updatePreviewControls();
+    return;
+  }
+
+  selectedVideo.pause();
+  previewSignature = signature;
+  previewSegments = selected;
+  previewTotal = selected.reduce(
+    (sum, shot) => sum + Math.max(0, shot.clip_end - shot.clip_start),
+    0,
+  );
+  previewIndex = 0;
+  previewFinished = false;
+  if (selected.length) setPreviewSourceTime(selected[0].clip_start);
+  updatePreviewControls();
+}
+
+async function togglePreviewPlayback() {
+  if (!previewSegments.length) {
+    showToast("Include at least one shot to preview");
+    return;
+  }
+  if (!selectedVideo.paused) {
+    selectedVideo.pause();
+    return;
+  }
+  if (previewFinished) seekPreviewCombined(0);
+  const shot = previewSegments[previewIndex];
+  if (
+    selectedVideo.currentTime < shot.clip_start - 0.02
+    || selectedVideo.currentTime >= shot.clip_end - 0.01
+  ) {
+    setPreviewSourceTime(shot.clip_start);
+  }
+  try {
+    await selectedVideo.play();
+  } catch (_err) {
+    showToast("Preview is still loading; try again");
+  }
+}
+
+function advancePreview() {
+  if (previewAdvancing || previewFinished) return;
+  previewAdvancing = true;
+  if (previewIndex >= previewSegments.length - 1) {
+    previewFinished = true;
+    selectedVideo.pause();
+    previewAdvancing = false;
+    updatePreviewControls();
+    return;
+  }
+  previewIndex += 1;
+  setPreviewSourceTime(previewSegments[previewIndex].clip_start);
+  previewAdvancing = false;
+  updatePreviewControls();
+}
+
+function monitorPreview() {
+  if (!selectedVideo.paused && previewSegments.length && !selectedVideo.seeking) {
+    const shot = previewSegments[previewIndex];
+    if (selectedVideo.currentTime >= shot.clip_end - 0.02) advancePreview();
+  }
+  updatePreviewControls();
+  window.requestAnimationFrame(monitorPreview);
+}
+
+selectedVideo.addEventListener("loadedmetadata", () => {
+  if (previewPendingSourceTime !== null) {
+    const target = previewPendingSourceTime;
+    previewPendingSourceTime = null;
+    selectedVideo.currentTime = target;
+  }
+});
+selectedVideo.addEventListener("click", togglePreviewPlayback);
+previewPlayBtn.addEventListener("click", togglePreviewPlayback);
+previewSeek.addEventListener("input", () => seekPreviewCombined(previewSeek.value));
+document.getElementById("preview-mute").addEventListener("click", (event) => {
+  selectedVideo.muted = !selectedVideo.muted;
+  event.currentTarget.textContent = selectedVideo.muted ? "Unmute" : "Mute";
+});
+document.getElementById("preview-fullscreen").addEventListener("click", () => {
+  if (selectedVideo.requestFullscreen) selectedVideo.requestFullscreen();
+});
+monitorPreview();
 
 function confClass(s) {
   if (!s.included) return "excluded";
@@ -84,6 +250,7 @@ function render() {
     document.getElementById("edit-strike").value = active.cue_strike.toFixed(3);
     document.getElementById("edit-end").value = active.clip_end.toFixed(3);
   }
+  refreshPreviewPlaylist();
 }
 
 async function load() {
@@ -100,7 +267,9 @@ async function load() {
   const data = await res.json();
   shots = data.shots || [];
   duration = data.original_duration || 0;
-  video.src = `/api/jobs/${jobId}/video`;
+  const videoUrl = `/api/jobs/${jobId}/video`;
+  video.src = videoUrl;
+  selectedVideo.src = videoUrl;
   if (shots.length) {
     activeId = shots[0].shot_id;
     seekTo(shots[0].clip_start);
@@ -152,6 +321,7 @@ shotList.addEventListener("click", (e) => {
   activeId = Number(li.dataset.id);
   const s = currentShot();
   if (s) seekTo(s.clip_start);
+  sourceEditor.open = true;
   render();
 });
 
@@ -161,6 +331,7 @@ timeline.addEventListener("click", (e) => {
   activeId = Number(seg.dataset.id);
   const s = currentShot();
   if (s) seekTo(s.clip_start);
+  sourceEditor.open = true;
   render();
 });
 
@@ -345,38 +516,80 @@ openClipsBtn.addEventListener("click", async () => {
   }
 });
 
-exportBtn.addEventListener("click", async () => {
-  exportBtn.disabled = true;
-  exportBtn.textContent = "Exporting clips...";
-  setExportStatus("Rendering numbered clips in chronological order...", "working");
-  showToast("Exporting…");
-  const res = await fetch(`/api/jobs/${jobId}/export`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      output_name: "highlights.mp4",
-      mode: document.getElementById("mode-select").value,
-      accurate: true,
-      export_clips: true,
-    }),
-  });
-  if (!res.ok) {
-    const detail = await res.text();
-    showToast("Export failed: " + detail);
-    setExportStatus("Export failed; clips folder may still contain completed clips", "error");
-    exportBtn.disabled = false;
-    exportBtn.textContent = "Export clips";
-    return;
+function downloadArtifact(url) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+async function runExport({ combined, clips, button }) {
+  const originalLabel = button.textContent;
+  button.disabled = true;
+  exportCombinedBtn.disabled = true;
+  exportClipsBtn.disabled = true;
+  button.textContent = combined ? "Combining selected shots..." : "Exporting clips...";
+  setExportStatus(
+    combined
+      ? "Rendering one continuous video from included shots..."
+      : "Rendering numbered clips in chronological order...",
+    "working",
+  );
+  showToast(combined ? "Creating combined video…" : "Exporting clips…");
+
+  try {
+    const res = await fetch(`/api/jobs/${jobId}/export`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        output_name: "highlights.mp4",
+        mode: document.getElementById("mode-select").value,
+        accurate: true,
+        export_clips: clips,
+        export_joined: combined,
+      }),
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      throw new Error(detail);
+    }
+
+    const data = await res.json();
+    const count = Number.isFinite(data.clip_count)
+      ? data.clip_count
+      : (data.clips || []).length;
+    if (combined && data.download_url) {
+      downloadArtifact(data.download_url);
+      showToast("Combined video ready — download started");
+      setExportStatus("Combined selected-shots video downloaded", "ready");
+    } else {
+      const suffix = count === 1 ? "clip" : "clips";
+      showToast(`Export ready: ${count} ${suffix}`);
+      setExportStatus(`${count} numbered ${suffix} ready — click Open clips folder`, "ready");
+    }
+  } catch (err) {
+    showToast("Export failed: " + err.message);
+    setExportStatus("Export failed; check the analysis log for details", "error");
+  } finally {
+    button.textContent = originalLabel;
+    exportCombinedBtn.disabled = false;
+    exportClipsBtn.disabled = false;
   }
-  const data = await res.json();
-  const count = Number.isFinite(data.clip_count) ? data.clip_count : (data.clips || []).length;
-  showToast(`Export ready: ${count} clips`);
-  setExportStatus(`${count} numbered clips ready â€” click Open clips folder`, "ready");
-  if (data.joined) window.open(`/api/jobs/${jobId}/download/highlights`, "_blank");
-  console.log(data);
-  exportBtn.disabled = false;
-  exportBtn.textContent = "Export clips";
-});
+}
+
+exportCombinedBtn.addEventListener("click", () => runExport({
+  combined: true,
+  clips: false,
+  button: exportCombinedBtn,
+}));
+
+exportClipsBtn.addEventListener("click", () => runExport({
+  combined: false,
+  clips: true,
+  button: exportClipsBtn,
+}));
 
 document.getElementById("save-labels-btn").addEventListener("click", () => {
   window.open(`/api/jobs/${jobId}/download/training`, "_blank");
@@ -415,8 +628,12 @@ document.addEventListener("keydown", (e) => {
     document.getElementById("merge-next").click();
   } else if (e.key === " " && !e.repeat) {
     e.preventDefault();
-    if (video.paused) video.play();
-    else video.pause();
+    if (sourceEditor.open) {
+      if (video.paused) video.play();
+      else video.pause();
+    } else {
+      togglePreviewPlayback();
+    }
   } else if (e.key === "Delete") {
     document.getElementById("delete-shot").click();
   } else if (e.key === "i") {
