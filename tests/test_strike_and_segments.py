@@ -47,6 +47,31 @@ def test_strike_detector_finds_peaks(config):
     assert all(c.confidence >= 0.0 for c in cands)
 
 
+def test_sparse_detector_proposes_only_the_start_of_sustained_motion(config):
+    features = []
+    for index in range(20):
+        t = index * 0.5
+        moving = 2.0 <= t <= 6.0
+        activity = 0.75 if moving else 0.05
+        features.append(
+            FrameFeatures(
+                t=t,
+                table_confidence=0.9,
+                view_type=CameraViewType.MAIN_TABLE,
+                motion_raw=activity,
+                motion_score=activity,
+                ball_residual_motion=activity,
+                max_ball_normalized_speed=2.0 if moving else 0.0,
+                moving_ball_count=1 if moving else 0,
+            )
+        )
+
+    candidates = StrikeDetector(config).detect_sparse_candidates(features)
+
+    assert len(candidates) == 1
+    assert candidates[0].timestamp == pytest.approx(2.0)
+
+
 def test_occluded_cue_ball_uses_sustained_visual_onset_for_review(config):
     """A hidden white ball may infer a strike, but audio/one-frame noise may not."""
 

@@ -69,22 +69,30 @@ class ViewClassifier:
         e = self.edge_density(frame_bgr)
         s = self.skin_ratio(frame_bgr)
         r = self.replay_graphic_score(frame_bgr)
+        # A permanent, saturated tournament banner can score like a replay
+        # graphic on every frame.  A clearly visible main table is stronger
+        # evidence of a live table view; replay duplication is handled later by
+        # temporal signature matching around broadcast cuts.
+        graphic_replay = bool(
+            r >= self.replay_score_thr
+            and self.partial_table_ratio <= g < self.main_table_ratio
+        )
         extra: dict[str, Any] = {
             "green_ratio": g,
             "edge_density": e,
             "skin_ratio": s,
             "replay_graphic_score": r,
-            "is_replay_candidate": r >= self.replay_score_thr,
+            "is_replay_candidate": graphic_replay,
         }
-
-        if r >= self.replay_score_thr and g >= self.partial_table_ratio:
-            return CameraViewType.REPLAY, g, extra
 
         if g >= self.main_table_ratio:
             # Distinguish full table vs zoomed ball close-up: high green + very zoomed feel
             if g > 0.55 and e < 0.08:
                 return CameraViewType.BALL_CLOSEUP, g, extra
             return CameraViewType.MAIN_TABLE, g, extra
+
+        if graphic_replay:
+            return CameraViewType.REPLAY, g, extra
 
         if g >= self.partial_table_ratio:
             if s > self.closeup_skin_threshold:

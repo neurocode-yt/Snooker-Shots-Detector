@@ -33,6 +33,7 @@ from snooker_ai.tracking.tracker import BallTracker
 from snooker_ai.motion.residual import ResidualMotionAnalyzer
 from snooker_ai.types import (
     AnalysisResult,
+    CameraViewType,
     EditMode,
     FrameFeatures,
     JobStatus,
@@ -116,6 +117,19 @@ class Analyzer:
         cached = self._load_coarse_cache(analysis_signature) if resume else None
         if cached is not None:
             features, scenes, candidates = cached
+            if self._repair_pathological_replay_labels(features, scenes):
+                self._annotate_scenes(features, scenes)
+                features = self.strike_det.score_frames(features)
+                features = self.state_machine.label(features)
+                coarse_fps = float(self.config.get("analysis.sample_fps", 10.0))
+                if coarse_fps <= 3.0:
+                    candidates = self.strike_det.detect_sparse_candidates(features)
+                else:
+                    candidates = self.strike_det.detect_candidates(features)
+                candidates = self.replay_det.mark_candidates(candidates, features)
+                self._save_coarse_cache(
+                    analysis_signature, features, scenes, candidates
+                )
             report(
                 0.82,
                 JobStatus.DETECTING.value,
@@ -139,6 +153,7 @@ class Analyzer:
             scenes = self.scene_det.detect_from_observations(
                 scene_observations, metadata.duration
             )
+            self._repair_pathological_replay_labels(features, scenes)
             self._annotate_scenes(features, scenes)
 
             report(0.75, JobStatus.DETECTING.value, "Scoring cue-strike candidates")
@@ -841,6 +856,55 @@ class Analyzer:
             payload, sort_keys=True, separators=(",", ":"), default=str
         ).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
+
+    def _repair_pathological_replay_labels(
+        self,
+        features: list[FrameFeatures],
+        scenes: list[SceneSegment],
+    ) -> bool:
+        """Recover a match globally mislabeled as replay by banner graphics.
+
+        Replay broadcasts are short portions of a match.  If almost every
+        observation is marked replay while a substantial share still contains
+        main-table levels of green cloth, the label came from a persistent
+        tournament banner rather than a replay transition.  This also repairs
+        checkpoints created by the older classifier without repeating the
+        expensive video scan.
+        """
+
+        if not features:
+            return False
+        replay_views = {
+            CameraViewType.REPLAY,
+            CameraViewType.SLOW_MOTION_REPLAY,
+        }
+        replay_fraction = sum(
+            feature.view_type in replay_views for feature in features
+        ) / len(features)
+        main_ratio = float(
+            self.config.get("camera_view.table_green_ratio_main", 0.18)
+        )
+        main_like_fraction = sum(
+            feature.green_ratio >= main_ratio for feature in features
+        ) / len(features)
+        if replay_fraction < 0.90 or main_like_fraction < 0.20:
+            return False
+
+        for feature in features:
+            if feature.green_ratio >= main_ratio:
+                feature.view_type = CameraViewType.MAIN_TABLE
+        for scene in scenes:
+            if scene.table_ratio >= main_ratio:
+                scene.view_type = CameraViewType.MAIN_TABLE
+                scene.is_replay_candidate = False
+
+        logger.warning(
+            "Repaired pathological replay classification "
+            "(%.1f%% replay, %.1f%% main-table observations)",
+            replay_fraction * 100.0,
+            main_like_fraction * 100.0,
+        )
+        return True
 
     @staticmethod
     def _write_json_atomic(path: Path, payload: dict) -> None:
