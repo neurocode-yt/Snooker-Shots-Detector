@@ -37,6 +37,59 @@ class AudioFeatures:
             return self.value_at(t, self.onset_env)
         return float(np.max(self.onset_env[mask]))
 
+    def cue_peaks(
+        self,
+        min_score: float = 0.30,
+        min_distance: float = 1.2,
+        max_peaks: int = 0,
+    ) -> list[tuple[float, float, float, float]]:
+        """Return isolated transient peaks suitable for recovery windows.
+
+        The coarse visual pass is intentionally sparse, so a short cue impact
+        can fall between its samples and never reach native-rate refinement.
+        This method exposes the audio timeline as an independent proposal
+        source.  It is deliberately conservative about spacing, but does not
+        require a visual feature to exist at the same timestamp.
+
+        Each tuple is ``(time, combined_score, onset_score, highband_score)``.
+        Peaks are selected by descending strength and returned chronologically
+        so nearby applause/commentary transients collapse to one window.
+        """
+        if self.times.size < 3:
+            return []
+        onset = np.asarray(self.onset_env, dtype=np.float32)
+        high = np.asarray(self.highband, dtype=np.float32)
+        score = np.maximum(onset, high)
+        local_max = (
+            (score[1:-1] >= score[:-2])
+            & (score[1:-1] > score[2:])
+            & (score[1:-1] >= float(min_score))
+        )
+        indices = np.flatnonzero(local_max) + 1
+        if indices.size == 0:
+            return []
+
+        # Strongest-first NMS is more stable than taking the first peak in a
+        # noisy burst, while the final chronological sort keeps callers simple.
+        ranked = sorted(indices.tolist(), key=lambda idx: float(score[idx]), reverse=True)
+        selected: list[int] = []
+        separation = max(0.0, float(min_distance))
+        for idx in ranked:
+            if all(abs(float(self.times[idx] - self.times[other])) >= separation for other in selected):
+                selected.append(idx)
+                if max_peaks > 0 and len(selected) >= max_peaks:
+                    break
+        selected.sort()
+        return [
+            (
+                float(self.times[idx]),
+                float(score[idx]),
+                float(onset[idx]),
+                float(high[idx]),
+            )
+            for idx in selected
+        ]
+
 
 class AudioFeatureExtractor:
     def __init__(self, config: Config):

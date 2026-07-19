@@ -193,3 +193,34 @@ def test_confirmed_shot_refines_strike_and_stop_edges_not_entire_roll(
     assert len(calls) == 1
     assert calls[0][0] == pytest.approx(98.0)
     assert calls[0][1] == pytest.approx(107.8)
+
+
+def test_audio_seed_uses_bounded_native_rate_verification_window(
+    config, tmp_path: Path, monkeypatch
+):
+    analyzer = Analyzer(config, tmp_path / "job")
+    seed = StrikeCandidate(
+        timestamp=100.0,
+        confidence=0.6,
+        evidence={"audio_seed": 1.0, "audio_peak_score": 0.8},
+    )
+    calls: list[tuple[float, float, float]] = []
+
+    def fake_extract(
+        *_args, sample_fps=None, start_time=0.0, end_time=None, **_kwargs
+    ):
+        calls.append((start_time, float(end_time), float(sample_fps)))
+        return [], [], []
+
+    monkeypatch.setattr(analyzer, "_extract_features", fake_extract)
+    analyzer._refine_candidate_windows(
+        tmp_path / "unused.mp4",
+        None,
+        TimeMapper(source_duration=3600.0, proxy_duration=3600.0),
+        3600.0,
+        [seed],
+        [FrameFeatures(t=99.0), FrameFeatures(t=100.0)],
+        resume=False,
+    )
+
+    assert calls == [(98.5, 106.0, 10.0)]

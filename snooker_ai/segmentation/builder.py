@@ -324,7 +324,17 @@ class SegmentBuilder:
                     or prev.ball_motion_end
                 )
                 near_duplicate = abs(shot.cue_strike - prev.cue_strike) < 0.60
-                mid_motion = shot.cue_strike <= prev_stop + 1e-6
+                # A max-duration cap means tracking never established the true
+                # stop; it is not proof that balls were still moving at the
+                # next independently verified strike.  Treat only a confirmed
+                # stop boundary (or legacy records without this field) as
+                # authoritative for mid-motion suppression.  Strict clip
+                # overlap still rejects genuinely incompatible close events.
+                stop_confirmed = prev.evidence.get("stop_confirmed")
+                reliable_stop = stop_confirmed is not False
+                mid_motion = (
+                    reliable_stop and shot.cue_strike <= prev_stop + 1e-6
+                )
                 source_overlap = strict and shot.clip_start < prev.clip_end - 1e-6
 
                 if not (near_duplicate or mid_motion or source_overlap):
