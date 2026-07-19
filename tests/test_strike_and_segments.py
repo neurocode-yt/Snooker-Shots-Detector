@@ -1,6 +1,9 @@
 import pytest
+import numpy as np
 
 from snooker_ai.event_fusion.strike import StrikeDetector
+from snooker_ai.audio.features import AudioFeatures
+from snooker_ai.pipeline.analyzer import Analyzer
 from snooker_ai.segmentation.builder import SegmentBuilder
 from snooker_ai.types import (
     CameraViewType,
@@ -24,6 +27,49 @@ def _feat(t, motion=0.0, strike=0.0, onset=0.0, table=0.8):
         residual_motion_max=motion * 5,
         motion_area_ratio=motion * 0.02,
     )
+
+
+def test_audio_peaks_are_isolated_for_recovery_windows():
+    times = np.arange(0.0, 5.0, 0.1, dtype=np.float32)
+    onset = np.zeros_like(times)
+    onset[[10, 11, 30, 31, 42]] = [0.35, 0.70, 0.55, 0.45, 0.80]
+    audio = AudioFeatures(
+        times=times,
+        onset_env=onset,
+        rms=np.zeros_like(times),
+        highband=np.zeros_like(times),
+        midband=np.zeros_like(times),
+        sample_rate=16000,
+    )
+
+    peaks = audio.cue_peaks(min_score=0.30, min_distance=1.0)
+
+    assert [round(item[0], 1) for item in peaks] == [1.1, 3.0, 4.2]
+    assert peaks[0][1] == pytest.approx(0.70)
+
+
+def test_audio_seed_adds_only_unmatched_transients(config, tmp_path, monkeypatch):
+    analyzer = Analyzer(config, tmp_path / "job")
+    times = np.arange(0.0, 8.0, 0.1, dtype=np.float32)
+    onset = np.zeros_like(times)
+    onset[[10, 30, 50]] = [0.8, 0.7, 0.9]
+    audio = AudioFeatures(
+        times=times,
+        onset_env=onset,
+        rms=np.zeros_like(times),
+        highband=np.zeros_like(times),
+        midband=np.zeros_like(times),
+        sample_rate=16000,
+    )
+    monkeypatch.setattr(analyzer.audio_ext, "extract", lambda _path: audio)
+    existing = [StrikeCandidate(timestamp=1.0, confidence=0.9)]
+
+    seeded = analyzer._seed_audio_candidates(
+        existing, tmp_path / "audio.wav", duration=8.0
+    )
+
+    assert [round(item.timestamp, 1) for item in seeded] == [1.0, 3.0, 5.0]
+    assert seeded[-1].evidence["audio_seed"] == 1.0
 
 
 def test_strike_detector_finds_peaks(config):
@@ -567,6 +613,44 @@ def test_strict_overlap_burst_keeps_valid_shots_around_false_peak(config):
     )
     assert resolved[1].clip_start >= resolved[0].clip_end
     assert [shot.shot_id for shot in resolved] == [1, 2]
+
+
+def test_unconfirmed_stop_cap_does_not_hide_next_verified_strike(config):
+    """An unresolved prior tracker cannot suppress a later non-overlapping shot."""
+    builder = SegmentBuilder(config)
+    previous = ShotRecord(
+        shot_id=1,
+        cue_strike=10.0,
+        clip_start=8.0,
+        clip_end=14.0,
+        physical_stop_timestamp=14.0,
+        ball_motion_end=14.0,
+        shot_confidence=1.0,
+        evidence={
+            "uncapped_physical_stop_timestamp": 20.0,
+            "minimum_clip_end_timestamp": 14.0,
+            "stop_confirmed": False,
+            "stop_reason": "max_seconds_after_strike_review_cap",
+        },
+    )
+    following = ShotRecord(
+        shot_id=2,
+        cue_strike=19.5,
+        clip_start=17.5,
+        clip_end=23.5,
+        physical_stop_timestamp=23.5,
+        ball_motion_end=23.5,
+        shot_confidence=1.0,
+        evidence={
+            "uncapped_physical_stop_timestamp": 29.5,
+            "minimum_clip_end_timestamp": 23.5,
+            "stop_confirmed": False,
+        },
+    )
+
+    resolved = builder._resolve_overlaps([previous, following], strict=True)
+
+    assert [shot.cue_strike for shot in resolved] == [10.0, 19.5]
 
 
 def test_unresolved_long_roll_is_not_cut_by_timeout(config):

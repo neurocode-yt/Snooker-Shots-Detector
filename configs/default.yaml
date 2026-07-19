@@ -56,6 +56,16 @@ analysis:
   coarse_flow_scale: 0.25  # broad proposals need less spatial flow detail than boundary refinement
   coarse_hough_fps: 5.0  # contours run at 10fps; costly circle proposals run at 5fps
   refine_hough_fps: 15.0  # contours still run at 30fps for exact tracking
+  # Independent audio recovery for impacts missed by the 2fps visual pass.
+  # These peaks only open bounded visual windows; they cannot create a shot
+  # without native-rate table movement.
+  audio_seed_min_score: 0.30
+  audio_seed_min_distance_seconds: 1.2
+  audio_seed_existing_match_seconds: 1.5
+  audio_seed_pre_seconds: 1.5
+  audio_seed_post_seconds: 6.0
+  audio_seed_scan_fps: 10.0  # promote only visually supported peaks to native fps
+  audio_seed_max_count: 0  # 0 = no artificial cap
   min_shot_gap_seconds: 1.5
   max_video_hours: 12.0
 
