@@ -20,6 +20,50 @@
           <input type="file" id="file" accept="video/*,.mp4,.mov,.mkv,.avi,.webm" required />
           <span id="file-name">Choose a snooker video…</span>
         </label>
+
+        <section id="pre-editor" class="pre-editor hidden" aria-labelledby="pre-editor-heading">
+          <div class="pre-editor-heading">
+            <div>
+              <h3 id="pre-editor-heading">Prepare match before analysis</h3>
+              <p class="muted">Split around frame breaks and delete those sections. Your original video is never changed.</p>
+            </div>
+            <span id="edit-summary" class="preview-count">Loading…</span>
+          </div>
+
+          <video id="source-preview" controls preload="metadata"></video>
+          <div class="pre-transport">
+            <button type="button" id="split-section" class="primary">Split at playhead</button>
+            <button type="button" id="delete-section" class="danger">Delete selected section</button>
+            <button type="button" id="restore-section">Restore selected</button>
+            <button type="button" id="undo-edit">Undo</button>
+            <span id="source-clock">00:00.000 / 00:00.000</span>
+          </div>
+
+          <div class="timeline-toolbar">
+            <strong>Match timeline</strong>
+            <span class="muted">Click to seek and select a section</span>
+            <div class="timeline-zoom-controls">
+              <button type="button" id="zoom-out" title="Zoom out">−</button>
+              <button type="button" id="zoom-fit">Fit</button>
+              <input id="timeline-zoom" type="range" min="1" max="64" value="1" step="1"
+                     aria-label="Timeline zoom" />
+              <button type="button" id="zoom-in" title="Zoom in">+</button>
+              <span id="zoom-label">1×</span>
+            </div>
+          </div>
+          <div id="timeline-viewport" class="pre-timeline-viewport">
+            <div id="timeline-content" class="pre-timeline-content">
+              <div id="timeline-ruler" class="pre-timeline-ruler"></div>
+              <div id="timeline-sections" class="pre-timeline-sections"></div>
+              <div id="timeline-playhead" class="pre-timeline-playhead"></div>
+            </div>
+          </div>
+          <div id="section-list" class="section-list"></div>
+          <p class="hint muted">
+            Fast workflow: seek to the start of a frame break → Split → seek to its end → Split → select the middle section → Delete.
+            Use the zoom controls or Ctrl + mouse wheel over the timeline for long matches.
+          </p>
+        </section>
         <div class="row">
           <label>Mode
             <select id="mode">
@@ -29,7 +73,7 @@
               <option value="full_sequence">Full Shot Sequence</option>
             </select>
           </label>
-          <button type="submit" id="start-btn">Start analysis</button>
+          <button type="submit" id="start-btn" disabled>Prepare &amp; start analysis</button>
         </div>
       </form>
       <div id="progress-wrap" class="hidden">
