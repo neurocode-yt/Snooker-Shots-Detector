@@ -108,24 +108,13 @@ def test_combined_only_export_does_not_leave_numbered_clips(
 ):
     exporter = Exporter(config)
     output_dir = tmp_path / "export"
-    temporary_dirs: list[Path] = []
 
-    def fake_export_clips(_source, _shots, clips_dir, **_kwargs):
-        clips_dir = Path(clips_dir)
-        temporary_dirs.append(clips_dir)
-        part = clips_dir / "shot_0001.mp4"
-        part.touch()
-        return [part]
-
-    def fake_concat(clip_paths, output, **_kwargs):
-        assert clip_paths[0].parent.name.startswith(".combined-parts-")
+    def fake_export_joined_direct(_source, _shots, output, **_kwargs):
         output.parent.mkdir(parents=True, exist_ok=True)
-        (output.parent / "concat_list.txt").write_text("temporary", encoding="utf-8")
         output.touch()
         return output
 
-    monkeypatch.setattr(exporter, "_export_clips", fake_export_clips)
-    monkeypatch.setattr(exporter, "_concat_clips", fake_concat)
+    monkeypatch.setattr(exporter, "_export_joined_direct", fake_export_joined_direct)
 
     result = exporter.export(
         _result(_strict_shot()),
@@ -141,7 +130,6 @@ def test_combined_only_export_does_not_leave_numbered_clips(
     assert result.joined_path == output_dir / "highlights.mp4"
     assert result.joined_path.is_file()
     assert result.clip_paths == []
-    assert temporary_dirs and not temporary_dirs[0].exists()
     assert list((output_dir / "clips").glob("shot_*.mp4")) == []
     assert not (output_dir / "concat_list.txt").exists()
 
