@@ -112,34 +112,19 @@ class Exporter:
                     accurate=accurate,
                     has_audio=result.metadata.has_audio,
                     source_fps=result.metadata.fps,
+                    source=result.source_path,
+                    shots=shots,
                 )
             else:
-                # Combined-only export still needs intermediate encoded parts
-                # for concat, but they are implementation details. Keeping
-                # them in export/clips made the UI appear to have performed an
-                # individual-clips export. Use a temporary hidden directory and
-                # return only the joined artifact.
-                with TemporaryDirectory(
-                    prefix=".combined-parts-", dir=output_dir
-                ) as temporary:
-                    temporary_paths = self._export_clips(
-                        result.source_path,
-                        shots,
-                        Path(temporary),
-                        accurate=accurate,
-                        source_has_audio=result.metadata.has_audio,
-                        source_fps=result.metadata.fps,
-                    )
-                    out.joined_path = self._concat_clips(
-                        temporary_paths,
-                        joined_path,
-                        accurate=accurate,
-                        has_audio=result.metadata.has_audio,
-                        source_fps=result.metadata.fps,
-                    )
-                # The concat manifest points at deleted temporary paths and is
-                # not a user-facing export artifact.
-                (joined_path.parent / "concat_list.txt").unlink(missing_ok=True)
+                # Direct single-pass combined-only export: zero temporary files or intermediate clips created on disk!
+                out.joined_path = self._export_joined_direct(
+                    result.source_path,
+                    shots,
+                    joined_path,
+                    accurate=accurate,
+                    has_audio=result.metadata.has_audio,
+                    source_fps=result.metadata.fps,
+                )
 
         if request.export_csv:
             out.csv_path = self._write_csv(shots, output_dir / "shots.csv")
@@ -298,6 +283,97 @@ class Exporter:
                     f"({shot.clip_end_timestamp:.9f} > {source_duration:.9f})"
                 )
 
+    def _export_joined_direct(
+        self,
+        source: str,
+        shots: list[ShotRecord],
+        output: Path,
+        *,
+        accurate: bool,
+        has_audio: bool = True,
+        source_fps: float = 30.0,
+    ) -> Path:
+        """Render concatenated highlights directly from source in a single FFmpeg pass."""
+        ffmpeg = find_ffmpeg()
+        output.parent.mkdir(parents=True, exist_ok=True)
+
+        codec, use_gpu = self._video_codec(ffmpeg)
+        acodec = str(self.ecfg.get("audio_codec", "aac"))
+        crf = str(self.ecfg.get("crf", 18))
+        preset = str(self.ecfg.get("preset", "medium"))
+        if codec == "h264_nvenc" and preset not in {f"p{i}" for i in range(1, 8)}:
+            preset = str(self.ecfg.get("nvenc_preset", "p4"))
+        abitrate = str(self.ecfg.get("audio_bitrate", "192k"))
+        pix = str(self.ecfg.get("pixel_format", "yuv420p"))
+
+        filter_parts = []
+        concat_inputs = []
+        for i, s in enumerate(shots):
+            dur = s.clip_end - s.clip_start
+            if dur <= 0:
+                raise ValueError(
+                    f"Shot {s.shot_id} has non-positive export duration "
+                    f"({s.clip_start:.9f} -> {s.clip_end:.9f})"
+                )
+            filter_parts.append(
+                f"[0:v]trim=start={s.clip_start:.9f}:end={s.clip_end:.9f},setpts=PTS-STARTPTS[v{i}];"
+            )
+            if has_audio:
+                filter_parts.append(
+                    f"[0:a]atrim=start={s.clip_start:.9f}:end={s.clip_end:.9f},asetpts=PTS-STARTPTS[a{i}];"
+                )
+                concat_inputs.append(f"[v{i}][a{i}]")
+            else:
+                concat_inputs.append(f"[v{i}]")
+
+        audio_concat_spec = ":a=1" if has_audio else ":a=0"
+        concat_filter = f"{''.join(concat_inputs)}concat=n={len(shots)}:v=1{audio_concat_spec}[outv]" + (
+            "[outa]" if has_audio else ""
+        )
+        filter_str = "".join(filter_parts) + concat_filter
+
+        args = [
+            ffmpeg,
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            source,
+            "-filter_complex",
+            filter_str,
+            "-map",
+            "[outv]",
+            *(["-map", "[outa]"] if has_audio else []),
+            "-c:v",
+            codec,
+            "-preset",
+            preset,
+            *self._video_quality(codec, crf),
+            *(["-pix_fmt", pix] if not use_gpu else []),
+            *(["-c:a", acodec, "-b:a", abitrate] if has_audio else ["-an"]),
+            "-movflags",
+            "+faststart",
+            str(output),
+        ]
+
+        expected_duration = sum(s.duration() for s in shots)
+        try:
+            run_command(args, timeout=max(300.0, expected_duration * 10))
+            self._verify_media(
+                output,
+                expected_duration=expected_duration,
+                source_has_audio=has_audio,
+                source_fps=source_fps,
+                verify_timing=bool(self.ecfg.get("verify_sync", True)) or accurate,
+            )
+        except Exception:
+            output.unlink(missing_ok=True)
+            raise
+
+        logger.info("Joined highlights direct → %s", output)
+        return output
+
     def _export_clips(
         self,
         source: str,
@@ -318,6 +394,76 @@ class Exporter:
             preset = str(self.ecfg.get("nvenc_preset", "p4"))
         abitrate = str(self.ecfg.get("audio_bitrate", "192k"))
         pix = str(self.ecfg.get("pixel_format", "yuv420p"))
+
+        # Fast single-pass multi-clip extraction for accurate exports
+        if accurate and len(shots) > 1:
+            try:
+                filter_parts = []
+                maps_and_outputs = []
+                temp_paths = []
+                for i, s in enumerate(shots):
+                    out = clips_dir / f"shot_{s.shot_id:04d}.mp4"
+                    duration = s.clip_end - s.clip_start
+                    if duration <= 0:
+                        raise ValueError(
+                            f"Shot {s.shot_id} has non-positive export duration "
+                            f"({s.clip_start:.9f} -> {s.clip_end:.9f})"
+                        )
+                    temp_paths.append((out, s))
+                    filter_parts.append(
+                        f"[0:v]trim=start={s.clip_start:.9f}:end={s.clip_end:.9f},setpts=PTS-STARTPTS[v{i}];"
+                    )
+                    if source_has_audio:
+                        filter_parts.append(
+                            f"[0:a]atrim=start={s.clip_start:.9f}:end={s.clip_end:.9f},asetpts=PTS-STARTPTS[a{i}];"
+                        )
+                        maps_and_outputs.extend(["-map", f"[v{i}]", "-map", f"[a{i}]"])
+                    else:
+                        maps_and_outputs.extend(["-map", f"[v{i}]"])
+
+                    maps_and_outputs.extend([
+                        "-c:v", codec, "-preset", preset, *self._video_quality(codec, crf),
+                        *( ["-pix_fmt", pix] if not use_gpu else [] ),
+                        "-fps_mode:v", "passthrough",
+                        *(["-c:a", acodec, "-b:a", abitrate] if source_has_audio else ["-an"]),
+                        "-avoid_negative_ts", "make_zero",
+                        "-fflags", "+genpts",
+                        "-movflags", "+faststart",
+                        str(out),
+                    ])
+
+                args = [
+                    ffmpeg,
+                    "-y",
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-i",
+                    source,
+                    "-filter_complex",
+                    "".join(filter_parts),
+                    *maps_and_outputs,
+                ]
+                total_duration = sum(s.duration() for s in shots)
+                run_command(args, timeout=max(180.0, total_duration * 20))
+
+                verify_timing = bool(self.ecfg.get("verify_sync", True)) or accurate
+                for out, s in temp_paths:
+                    self._verify_clip(
+                        out,
+                        s,
+                        source_has_audio=source_has_audio,
+                        source_fps=source_fps,
+                        verify_timing=verify_timing,
+                    )
+                    paths.append(out)
+                    logger.info("Exported %s (%.2fs–%.2fs)", out.name, s.clip_start, s.clip_end)
+                return paths
+            except Exception as exc:
+                logger.warning("Single-pass multi-clip export fallback: %s", exc)
+                for out, _ in temp_paths:
+                    out.unlink(missing_ok=True)
+                paths.clear()
 
         for s in shots:
             out = clips_dir / f"shot_{s.shot_id:04d}.mp4"
@@ -418,7 +564,22 @@ class Exporter:
         has_audio: bool = True,
         source_fps: float = 30.0,
         expected_duration: Optional[float] = None,
+        source: Optional[str] = None,
+        shots: Optional[list[ShotRecord]] = None,
     ) -> Path:
+        if source and shots and Path(source).exists():
+            try:
+                return self._export_joined_direct(
+                    source,
+                    shots,
+                    output,
+                    accurate=accurate,
+                    has_audio=has_audio,
+                    source_fps=source_fps,
+                )
+            except Exception as exc:
+                logger.warning("Direct single-pass joined export fallback to clip concat: %s", exc)
+
         ffmpeg = find_ffmpeg()
         output.parent.mkdir(parents=True, exist_ok=True)
         list_file = output.parent / "concat_list.txt"

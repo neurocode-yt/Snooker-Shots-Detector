@@ -24,37 +24,50 @@ class FFmpegError(RuntimeError):
 
 def find_ffmpeg() -> str:
     path = shutil.which("ffmpeg")
-    if path:
+    if path and Path(path).is_file():
         return path
-    # Common Windows install locations
+
     candidates = [
         r"C:\ffmpeg\bin\ffmpeg.exe",
         r"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
         os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Links\ffmpeg.exe"),
     ]
+    winget_pkg = os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Packages")
+    if os.path.isdir(winget_pkg):
+        for root, _, files in os.walk(winget_pkg):
+            for file in files:
+                if file.lower() == "ffmpeg.exe":
+                    candidates.append(os.path.join(root, file))
+
     for c in candidates:
         if Path(c).is_file():
             return c
-    raise FFmpegError(
-        "ffmpeg not found on PATH. Install FFmpeg and ensure ffmpeg/ffprobe are available."
-    )
+
+    return "ffmpeg"
 
 
 def find_ffprobe() -> str:
     path = shutil.which("ffprobe")
-    if path:
+    if path and Path(path).is_file():
         return path
+
     candidates = [
         r"C:\ffmpeg\bin\ffprobe.exe",
         r"C:\Program Files\ffmpeg\bin\ffprobe.exe",
         os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Links\ffprobe.exe"),
     ]
+    winget_pkg = os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Packages")
+    if os.path.isdir(winget_pkg):
+        for root, _, files in os.walk(winget_pkg):
+            for file in files:
+                if file.lower() == "ffprobe.exe":
+                    candidates.append(os.path.join(root, file))
+
     for c in candidates:
         if Path(c).is_file():
             return c
-    raise FFmpegError(
-        "ffprobe not found on PATH. Install FFmpeg and ensure ffmpeg/ffprobe are available."
-    )
+
+    return "ffprobe"
 
 
 @lru_cache(maxsize=8)
@@ -98,6 +111,23 @@ def run_command(
             errors="replace",
         )
     except FileNotFoundError as exc:
+        if len(args) > 0 and (Path(args[0]).is_absolute() or "\\" in str(args[0])):
+            fallback_binary = "ffmpeg" if "ffmpeg" in Path(args[0]).name.lower() else "ffprobe"
+            new_args = [fallback_binary] + list(args[1:])
+            try:
+                result = subprocess.run(
+                    new_args,
+                    check=False,
+                    capture_output=capture,
+                    text=True,
+                    timeout=timeout,
+                    cwd=str(cwd) if cwd else None,
+                    encoding="utf-8",
+                    errors="replace",
+                )
+                return result
+            except FileNotFoundError:
+                pass
         raise FFmpegError(f"Executable not found: {args[0]}") from exc
     except subprocess.TimeoutExpired as exc:
         raise FFmpegError(f"Command timed out after {timeout}s: {args[0]}") from exc

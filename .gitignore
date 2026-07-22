@@ -17,6 +17,7 @@ data/outputs/*
 !data/uploads/.gitkeep
 !data/jobs/.gitkeep
 !data/outputs/.gitkeep
+data/test_tmp/
 data/debug_user_cases/
 data/*.log
 models/*.pt
