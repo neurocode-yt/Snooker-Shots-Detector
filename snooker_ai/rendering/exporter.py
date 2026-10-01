@@ -10,6 +10,7 @@ from typing import Optional
 
 from snooker_ai.config import Config
 from snooker_ai.ingestion.probe import probe_video
+from snooker_ai.rendering.mix import MixPlan, plan_mix, render_mix
 from snooker_ai.types import AnalysisResult, EditMode, ExportRequest, ShotRecord
 from snooker_ai.utils.acceleration import acceleration_enabled
 from snooker_ai.utils.ffmpeg import ffprobe_json, find_ffmpeg, run_command, supports_encoder
@@ -132,8 +133,9 @@ class Exporter:
             out.edl_path = self._write_edl(shots, output_dir / "timeline.edl", result.source_path)
 
         # Chapter markers (ffmpeg metadata file + human-readable list)
-        self._write_chapters(shots, output_dir / "chapters.ffmeta")
-        self._write_chapter_list(shots, output_dir / "chapters.txt")
+        mix_plan = self._mix_plan(shots, result.metadata.fps) if request.export_joined else None
+        self._write_chapters(shots, output_dir / "chapters.ffmeta", mix_plan)
+        self._write_chapter_list(shots, output_dir / "chapters.txt", mix_plan)
 
         out.metadata_path = output_dir / "export_metadata.json"
         out.metadata_path.write_text(
@@ -143,7 +145,10 @@ class Exporter:
                     "mode": result.mode.value,
                     "shots": [s.model_dump() for s in shots],
                     "original_duration": result.original_duration,
-                    "edited_duration": sum(s.duration() for s in shots),
+                    "edited_duration": mix_plan.duration if mix_plan else sum(s.duration() for s in shots),
+                    "transition": "mix" if mix_plan else "cut",
+                    "transition_overlaps": mix_plan.overlaps if mix_plan else [],
+                    "output_shot_starts": mix_plan.starts if mix_plan else [],
                     "export_accurate": accurate,
                 },
                 indent=2,
@@ -324,6 +329,11 @@ class Exporter:
                     f"({shot.clip_end_timestamp:.9f} > {source_duration:.9f})"
                 )
 
+    def _mix_plan(self, shots: list[ShotRecord], fps: float) -> MixPlan | None:
+        if str(self.ecfg.get("transition", "cut")) != "mix" or len(shots) < 2:
+            return None
+        return plan_mix(shots, fps, max(0.0, float(self.ecfg.get("transition_seconds", 0.24))))
+
     def _export_joined_direct(
         self,
         source: str,
@@ -346,6 +356,22 @@ class Exporter:
             preset = str(self.ecfg.get("nvenc_preset", "p4"))
         abitrate = str(self.ecfg.get("audio_bitrate", "192k"))
         pix = str(self.ecfg.get("pixel_format", "yuv420p"))
+
+        mix_plan = self._mix_plan(shots, source_fps)
+        if mix_plan:
+            try:
+                render_mix(
+                    source, shots, output, plan=mix_plan, ffmpeg=ffmpeg,
+                    video_args=["-c:v", codec, "-preset", preset, *self._video_quality(codec, crf)],
+                    has_audio=has_audio, audio_args=["-c:a", acodec, "-b:a", abitrate],
+                )
+                self._verify_media(output, expected_duration=mix_plan.duration,
+                                   source_has_audio=has_audio, source_fps=mix_plan.fps,
+                                   verify_timing=True)
+            except Exception:
+                output.unlink(missing_ok=True)
+                raise
+            return output
 
         filter_parts = []
         concat_inputs = []
@@ -619,6 +645,8 @@ class Exporter:
                     source_fps=source_fps,
                 )
             except Exception as exc:
+                if self._mix_plan(shots, source_fps):
+                    raise  # Never silently replace a requested mix with hard cuts.
                 logger.warning("Direct single-pass joined export fallback to clip concat: %s", exc)
 
         ffmpeg = find_ffmpeg()
@@ -840,13 +868,16 @@ class Exporter:
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         return path
 
-    def _write_chapters(self, shots: list[ShotRecord], path: Path) -> Path:
+    def _write_chapters(self, shots: list[ShotRecord], path: Path, mix_plan: MixPlan | None = None) -> Path:
         """FFmpeg metadata chapters for the joined export timeline."""
         lines = [";FFMETADATA1"]
         t = 0.0
-        for s in shots:
+        for i, s in enumerate(shots):
+            if mix_plan:
+                t = mix_plan.starts[i]
             start_ms = int(round(t * 1000))
-            end_ms = int(round((t + s.duration()) * 1000))
+            end = (mix_plan.starts[i + 1] if i + 1 < len(shots) else mix_plan.duration) if mix_plan else t + s.duration()
+            end_ms = int(round(end * 1000))
             lines.append("[CHAPTER]")
             lines.append("TIMEBASE=1/1000")
             lines.append(f"START={start_ms}")
@@ -856,10 +887,12 @@ class Exporter:
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         return path
 
-    def _write_chapter_list(self, shots: list[ShotRecord], path: Path) -> Path:
+    def _write_chapter_list(self, shots: list[ShotRecord], path: Path, mix_plan: MixPlan | None = None) -> Path:
         lines = ["# edited_time\tsource_start\tsource_end\tshot_id\tcue_strike"]
         t = 0.0
-        for s in shots:
+        for i, s in enumerate(shots):
+            if mix_plan:
+                t = mix_plan.starts[i]
             lines.append(
                 f"{t:.3f}\t{s.clip_start:.3f}\t{s.clip_end:.3f}\t{s.shot_id}\t{s.cue_strike:.3f}"
             )

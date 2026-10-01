@@ -9,6 +9,25 @@ const timelinePlayhead = document.getElementById("timeline-playhead");
 const sectionList = document.getElementById("section-list");
 const zoomSlider = document.getElementById("timeline-zoom");
 const startBtn = document.getElementById("start-btn");
+const workflow = document.getElementById("workflow");
+
+function updateWorkflow() {
+  const classic = workflow.value === "classic";
+  document.getElementById("workflow-heading").textContent = classic
+    ? "Upload & analyze" : "Create snooker highlights";
+  document.getElementById("workflow-description").textContent = classic
+    ? "Detect shots, then open the previous editor with preview, timeline, shot controls, and export buttons."
+    : "Upload the entire match. Remove waiting and setup footage, then export with mix transitions.";
+  document.getElementById("pre-editor-heading").textContent = classic
+    ? "Prepare match before analysis" : "Optional source trimming";
+  document.getElementById("pre-editor-description").textContent = classic
+    ? "Split around frame breaks and delete those sections, or keep the whole video. Your original video is never changed."
+    : "Keep the whole video and start. Shot detection, cutting, and export run automatically.";
+  startBtn.textContent = classic ? "Prepare & start analysis" : "Create video automatically";
+}
+
+workflow.addEventListener("change", updateWorkflow);
+updateWorkflow();
 
 let sourceDuration = 0;
 let sections = [];
@@ -365,7 +384,7 @@ async function refreshJobs() {
         <div class="job-actions">
           <button type="button" class="btn-restart" data-job-id="${job.job_id}">Restart</button>
           ${job.download_url ? `<a href="${job.download_url}">Download video</a>` : ""}
-          <a href="/review/${job.job_id}">View shots</a>
+          <a href="/review/${job.job_id}?editor=classic">Open classic editor</a>
         </div>
       </div>`,
       )
@@ -447,6 +466,7 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
   const fill = document.getElementById("progress-fill");
   const text = document.getElementById("progress-text");
   const mode = "strict";
+  const autoExport = workflow.value !== "classic";
   if (!keepRanges.length) {
     text.textContent = "Keep at least one section before starting analysis.";
     wrap.classList.remove("hidden");
@@ -455,6 +475,7 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
 
   wrap.classList.remove("hidden");
   startBtn.disabled = true;
+  workflow.disabled = true;
   text.textContent = "Uploading original video…";
   fill.style.width = "4%";
 
@@ -487,7 +508,7 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
     const start = await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source_path: path, mode, resume: true, auto_export: true }),
+      body: JSON.stringify({ source_path: path, mode, resume: true, auto_export: autoExport }),
     });
     if (!start.ok) throw new Error(await start.text());
     const { job_id: jobId } = await start.json();
@@ -502,6 +523,7 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
       if (["ready_for_review", "completed", "failed"].includes(metadata.status)) {
         clearInterval(poll);
         startBtn.disabled = false;
+        workflow.disabled = false;
         refreshJobs();
         if (metadata.status === "failed") {
           text.textContent = `Failed: ${metadata.error || metadata.message}`;
@@ -514,13 +536,14 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
             text.appendChild(download);
           }
         } else {
-          window.location.href = `/review/${jobId}`;
+          window.location.href = `/review/${jobId}?editor=classic`;
         }
       }
     }, 1500);
   } catch (error) {
     text.textContent = `Error: ${error.message || error}`;
     startBtn.disabled = false;
+    workflow.disabled = false;
   }
 });
 

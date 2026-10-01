@@ -9,13 +9,20 @@
 <body>
   <header class="top">
     <h1>Snooker AI</h1>
-    <p class="sub">Automatic shot detection &amp; pause-free highlights</p>
+    <p class="sub">Full-match shot detection, break removal &amp; smooth highlights</p>
   </header>
 
   <main class="panel">
     <section class="card">
-      <h2>Create snooker highlights</h2>
+      <h2 id="workflow-heading">Create snooker highlights</h2>
       <form id="upload-form">
+        <label for="workflow">Workflow
+          <select id="workflow" aria-describedby="workflow-description">
+            <option value="automatic">Automatic video</option>
+            <option value="classic">Classic editor (previous interface)</option>
+          </select>
+        </label>
+        <p id="workflow-description" class="muted">Upload the entire match. Remove waiting and setup footage, then export with mix transitions.</p>
         <label class="file-label">
           <input type="file" id="file" accept="video/*,.mp4,.mov,.mkv,.avi,.webm" required />
           <span id="file-name">Choose a snooker video…</span>
@@ -25,7 +32,7 @@
           <div class="pre-editor-heading">
             <div>
               <h3 id="pre-editor-heading">Optional source trimming</h3>
-              <p class="muted">Keep the whole video and start. Shot detection, cutting, and export run automatically.</p>
+              <p id="pre-editor-description" class="muted">Keep the whole video and start. Shot detection, cutting, and export run automatically.</p>
             </div>
             <span id="edit-summary" class="preview-count">Loading…</span>
           </div>
@@ -84,6 +91,6 @@
     </section>
   </main>
 
-  <script src="/static/app.js?v=20261001auto"></script>
+  <script src="/static/app.js?v=20261001classic"></script>
 </body>
 </html>
