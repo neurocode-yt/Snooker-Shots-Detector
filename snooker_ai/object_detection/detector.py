@@ -211,6 +211,32 @@ class ObjectDetector:
         white = cv2.bitwise_and(white, inner_mask)
         cloth = cv2.bitwise_and(cloth, cv2.bitwise_not(white))
         deviation = cv2.bitwise_and(cv2.bitwise_not(cloth), inner_mask)
+        # Keep connected foreground before opening can split a glove, fingers
+        # or cue into plausible ball-sized fragments. Include pixels outside
+        # the table mask so the glove stays connected to its arm. Red clusters
+        # remain eligible; broad foreground regions and long thin cues do not.
+        foreground_components = cv2.morphologyEx(
+            cv2.bitwise_not(cloth), cv2.MORPH_CLOSE, np.ones((3, 3), dtype=np.uint8)
+        )
+        count, labels, stats, _ = cv2.connectedComponentsWithStats(foreground_components)
+        foreground_ids = []
+        ball_area = np.pi * radius_prior * radius_prior
+        for component in range(1, count):
+            _, _, cw, ch, area = stats[component]
+            if area < ball_area * 2.5:
+                continue
+            component_pixels = hsv[labels == component]
+            red = ((component_pixels[:, 0] < 15) | (component_pixels[:, 0] > 165)) & (component_pixels[:, 1] > 110)
+            elongated = max(cw, ch) > 5 * diameter_prior and max(cw, ch) > 4 * min(cw, ch)
+            if elongated or (area > ball_area * 6 and float(np.mean(red)) < 0.65):
+                foreground_ids.append(component)
+        foreground = np.isin(labels, foreground_ids) if foreground_ids else None
+        if foreground is not None:
+            margin = max(1, int(round(diameter_prior * 0.35)))
+            foreground = cv2.dilate(
+                foreground.astype(np.uint8),
+                cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * margin + 1, 2 * margin + 1)),
+            ) > 0
         # A light opening removes codec speckle without joining a cluster of reds.
         deviation = cv2.morphologyEx(
             deviation,
@@ -310,6 +336,11 @@ class ObjectDetector:
         detections: list[Detection] = []
         plausible_diameters: list[float] = []
         for proposal in proposals:
+            if foreground is not None:
+                px = int(np.clip(round(proposal.cx), 0, table_w - 1))
+                py = int(np.clip(round(proposal.cy), 0, table_h - 1))
+                if foreground[py, px]:
+                    continue
             color_conf, deviation_conf, surround_conf = self._colour_scores(
                 hsv, cloth, proposal.cx, proposal.cy, proposal.radius
             )

@@ -18,7 +18,9 @@ A nearly cleared table followed by returned reds and a completed rack confirms
 a preparation interval retrospectively. A camera cut or missing observation
 breaks that inference. Movement of the white while the rack stays intact must
 have cue-contact evidence; hand placement alone cannot qualify as a shot.
-Cache version 10 prevents resuming results from before these checks.
+Cache version 11 also includes the subsequent
+[referee-handling repair](referee_handling_check_2026-10-01.md), which prevents
+foreground detections from extending a genuine shot into ball collection.
 
 These are visual heuristics. Concessions with many reds remaining, obstructed
 tables, unusual cameras, and missed cue contact can remain ambiguous and use
@@ -43,7 +45,7 @@ the mix. Set `export.transition: cut` to disable it.
 
 ## Validation and limits
 
-- All 176 tests passed, including actual video blending, audio/no-audio outputs,
+- All 183 tests passed, including actual video blending, audio/no-audio outputs,
   duration checks across several render batches, preparation inference, camera
   discontinuities, and break-off recovery. Ruff and JavaScript syntax checks pass.
 - A JavaScript workflow check verified both automatic export and classic-editor
@@ -56,9 +58,12 @@ the mix. Set `export.transition: cut` to disable it.
 - In the 2,480–2,600-second excerpt, hand placement at local 31.37 seconds is
   rejected, while break-off at 45.63 and shots at 66.93, 89.53, and 110.83 seconds
   are retained. Contact sheets visually corroborate these four launches.
-- A demonstration combines these five detected shots directly from the original
+- The initial demonstration combined these five detected shots directly from the original
   1080p source, skipping 307.47 seconds between frames. It rendered in 13.22
   seconds and is 57.36 seconds long, 1920 x 1080 at 25 fps, with AAC audio.
+  That initial demo retained referee collection at the first shot's tail. The
+  subsequent repair produces a 39.72-second demo with five shots and removes
+  that handling. See the referee-handling report linked above for current evidence.
 - A fresh regression run on the previous Mark Allen vs Thep sample still
   retains all five shots. Its runtime overlapped other validation and is not
   used as a comparative speed benchmark.

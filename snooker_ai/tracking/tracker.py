@@ -33,6 +33,7 @@ class Track:
     last_update_t: float = 0.0
     _stable_speed_key: tuple | None = field(default=None, repr=False)
     _stable_speed_value: float = field(default=0.0, repr=False)
+    last_visible_stable_speed: float = 0.0
 
     @property
     def radius(self) -> float:
@@ -313,6 +314,11 @@ class BallTracker:
         )
 
     def _mark_missed(self, track: Track, t: float) -> None:
+        if track.visible:
+            # Preserve the same coherent motion estimate used while visible.
+            # Instantaneous centre jitter must not turn a resting ball into an
+            # unresolved moving ball merely because a hand covers it.
+            track.last_visible_stable_speed = track.stable_speed(diameter_px=track.diameter)
         track.visible = False
         track.occluded = True
         track.missed_frames += 1
@@ -436,7 +442,7 @@ class BallTracker:
             # Once a track is hidden, its last measured velocity is the only
             # conservative evidence available; do not pretend the ball stopped
             # merely because no new centre was observed.
-            if track.predicted_speed() / diameter >= min_normalized_speed:
+            if track.last_visible_stable_speed / diameter >= min_normalized_speed:
                 count += 1
         return count
 

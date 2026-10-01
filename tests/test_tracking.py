@@ -160,3 +160,56 @@ def test_cpu_detector_finds_scale_and_white_cue_ball(config) -> None:
     assert cue[0].color_confidence > 0.8
     assert cue[0].diameter_px == pytest.approx(12.0, abs=2.0)
     assert detector.estimated_ball_diameter() == pytest.approx(12.0, abs=3.0)
+
+
+def test_glove_connected_to_forearm_is_not_a_ball(config):
+    frame = np.full((400, 600, 3), 25, dtype=np.uint8)
+    mask = np.zeros((400, 600), dtype=np.uint8)
+    cv2.rectangle(frame, (100, 60), (500, 340), (35, 105, 35), -1)
+    cv2.rectangle(mask, (100, 60), (500, 340), 255, -1)
+    # The glove tip lies inside the table, the connected arm crosses its edge.
+    cv2.rectangle(frame, (105, 20), (123, 133), (20, 20, 20), -1)
+    cv2.circle(frame, (125, 138), 10, (245, 245, 245), -1)
+    cv2.circle(frame, (170, 138), 5, (245, 245, 245), -1)
+    cv2.circle(frame, (300, 230), 5, (20, 20, 210), -1)
+    detector = ObjectDetector(config)
+    for _ in range(3):
+        found = detector.detect(frame, mask)
+        assert not any(np.hypot(d.cx - 125, d.cy - 138) < 14 for d in found)
+        assert any(d.label == "cue_ball" and abs(d.cx - 170) < 3 for d in found)
+        assert any(abs(d.cx - 300) < 3 and abs(d.cy - 230) < 3 for d in found)
+
+
+def test_foreground_filter_preserves_touching_red_balls(config, monkeypatch):
+    frame = np.full((400, 600, 3), (35, 105, 35), dtype=np.uint8)
+    mask = np.full((400, 600), 255, dtype=np.uint8)
+    for row in range(4):
+        for col in range(row + 1):
+            cv2.circle(frame, (300 + 10 * col - 5 * row, 200 + 9 * row), 6, (20, 20, 210), -1)
+    # Feed known circular proposals so this checks foreground classification,
+    # independently of Hough's response to perfectly flat synthetic balls.
+    monkeypatch.setattr(cv2, "HoughCircles", lambda *a, **k: np.array([
+        [[300, 200, 6], [295, 209, 6], [305, 209, 6]],
+    ], dtype=np.float32))
+    found = ObjectDetector(config).detect(frame, mask)
+    assert any(275 < d.cx < 325 and 190 < d.cy < 240 for d in found)
+
+
+def test_stationary_ball_covered_by_hand_does_not_inherit_jitter_velocity():
+    tracker = BallTracker()
+    for i in range(12):
+        # Alternating subpixel detector jitter gives a high instantaneous
+        # derivative at 30 fps but no coherent rolling trajectory.
+        tracker.update(i / 30, [_d(100 + (i % 2) * 0.4, 100)])
+    assert tracker.max_normalized_speed() == 0
+    assert tracker.tracks[0].predicted_speed() / 10 > 0.1
+    tracker.update(12 / 30, [])
+    assert tracker.occluded_moving_count() == 0
+
+
+def test_rolling_ball_covered_by_hand_remains_unresolved():
+    tracker = BallTracker()
+    for i in range(12):
+        tracker.update(i / 30, [_d(100 + i * 0.5, 100)])
+    tracker.update(12 / 30, [])
+    assert tracker.occluded_moving_count(min_normalized_speed=0.6) == 1

@@ -405,13 +405,10 @@ class BallStopDetector:
                     resumed_motion_run = 0
                     continue
 
-                # Once valid stillness has started, require renewed motion to
-                # persist across adjacent observations before reopening the
-                # shot.  A referee/player edge or one-frame Hough identity
-                # jump otherwise resets confirmation and can make the prior
-                # shot absorb an entire respot.  Genuine rolling motion lasts
-                # for multiple video frames and still reopens immediately on
-                # the configured second sample.
+                # One isolated identity jump may be noise, but repeated motion
+                # anywhere in this confirmation window disproves stillness.
+                # Hough and component detections can alternate on a slow roll;
+                # requiring adjacent moving samples would trim that ball early.
                 resumed_motion_run += 1
                 if resumed_motion_run >= self.stop_motion_reconfirm_samples:
                     last_motion = f.t
@@ -419,7 +416,6 @@ class BallStopDetector:
                     resumed_motion_run = 0
                 continue
 
-            resumed_motion_run = 0
             if f.t < strike_t + self.min_travel_s:
                 continue
             if still_since is None:
