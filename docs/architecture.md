@@ -8,7 +8,7 @@ highlight reels. Analysis runs on a lower-resolution **proxy**; cuts use the
 **original** source for quality and A/V sync.
 
 ```
-Upload → Validate (ffprobe) → Proxy + audio extract
+Upload → Validate (ffprobe) → Proxy with preview audio
       → Frame sample → Table mask → Camera motion compensation
       → Residual motion + optional ball blobs → Audio onsets
       → Streaming scene/view classification → Strike fusion → Replay filter
@@ -25,7 +25,7 @@ Upload → Validate (ffprobe) → Proxy + audio extract
 | `scene_detection` | Cuts, view types (table / close-up / replay / …) |
 | `table_detection` | Green-cloth mask, corners, optional homography |
 | `motion` | Global camera affine estimate + residual optical flow |
-| `audio` | Onset / band energy (supporting evidence only) |
+| `audio` | Legacy onset utility; unused by shot detection |
 | `object_detection` | Phase 1 blobs; Phase 2 learned detector hook |
 | `tracking` | Prediction-based, label-aware ball tracks with normalized kinematics and occlusion state |
 | `temporal_model` | Rule-based state machine (Phase 3: TCN/transformer) |

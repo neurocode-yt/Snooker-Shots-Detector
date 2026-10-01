@@ -2,7 +2,7 @@
 Main analysis pipeline.
 
 Phase 1 flow:
-  validate → proxy → sample frames → table/motion/scene/audio features
+  validate → proxy → sample frames → table/motion/scene features
   → strike fusion → replay filter → state machine → segments
 """
 
@@ -11,14 +11,13 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from bisect import bisect_left, bisect_right, insort
+from bisect import bisect_left, bisect_right
 from pathlib import Path
 from typing import Callable, Optional
 
 import cv2
 import numpy as np
 
-from snooker_ai.audio.features import AudioFeatureExtractor
 from snooker_ai.config import Config
 from snooker_ai.event_fusion.strike import StrikeDetector
 from snooker_ai.event_fusion.rack_idle import RackIdleGate
@@ -68,14 +67,12 @@ class Analyzer:
         self.table = TableLocalizer(config)
         self.motion = ResidualMotionAnalyzer(config)
         self.scene_det = SceneDetector(config)
-        self.audio_ext = AudioFeatureExtractor(config)
         self.strike_det = StrikeDetector(config)
         self.replay_det = ReplayDetector(config)
         self.state_machine = ShotStateMachine(config)
         self.segmenter = SegmentBuilder(config)
         self.objects = ObjectDetector(config)
         self.tracker = BallTracker()
-        self._audio_feature_cache: dict[str, object] = {}
         self._last_cue_tip: Optional[tuple[float, float, float]] = None
 
     def analyze(
@@ -144,7 +141,7 @@ class Analyzer:
                 f"Resumed {len(features)} coarse observations from checkpoint",
             )
         else:
-            report(0.2, JobStatus.ANALYZING.value, "Extracting multimodal features")
+            report(0.2, JobStatus.ANALYZING.value, "Extracting visual features")
             features, scene_observations, _ = self._extract_features(
                 proxy.proxy_path,
                 proxy.audio_path,
@@ -177,20 +174,9 @@ class Analyzer:
                 analysis_signature, features, scenes, candidates
             )
 
-        # A 2-fps visual pass is a proposal accelerator, not a complete event
-        # detector.  Strong cue transients must be allowed to open their own
-        # verification windows; otherwise an impact that falls between two
-        # sparse samples is lost before native-rate refinement can see it.
-        audio_seeded = self._seed_audio_candidates(
-            candidates,
-            proxy.audio_path,
-            metadata.duration,
-        )
-        if len(audio_seeded) != len(candidates):
-            candidates = audio_seeded
-            self._save_coarse_cache(
-                analysis_signature, features, scenes, candidates
-            )
+        # Re-propose from observations even when resuming an older checkpoint:
+        # commentary peaks saved by older versions are not shot candidates.
+        candidates = self._visual_proposals(features)
 
         rack_waits = self._rack_wait_intervals(features)
         preparation_intervals = self._preparation_intervals(features)
@@ -245,7 +231,6 @@ class Analyzer:
             # become an exported shot unless the native-rate pass confirmed a
             # cue transition (or the explicit impact-occlusion fallback).
             retained: list[StrikeCandidate] = []
-            dense_times = [feature.t for feature in dense_features]
             for candidate in candidates:
                 confirmed = (
                     candidate.evidence.get("dense_transition_confirmed", 0.0) >= 0.5
@@ -255,76 +240,11 @@ class Analyzer:
                         and candidate.evidence.get("ball_onset_run", 0.0) >= 2.0
                     )
                 )
-                audio_supported = False
-                if candidate.evidence.get("audio_seed", 0.0) >= 0.5:
-                    audio_supported = self._audio_seed_visual_support(
-                        candidate, dense_features, times=dense_times
-                    )
-                    if audio_supported:
-                        candidate.evidence["audio_visual_support"] = 1.0
-                        candidate.evidence["audio_seed_review"] = 1.0
                 in_preparation = any(start <= candidate.timestamp <= end for start, end in preparation_intervals)
-                if (confirmed or audio_supported) and not in_preparation and self._rack_candidate_supported(candidate, rack_reference):
+                if confirmed and not in_preparation and self._rack_candidate_supported(candidate, rack_reference):
                     retained.append(candidate)
             candidates = retained
 
-            # The cheap 10-fps audio pass answers only "is there real table
-            # movement here?".  Once it says yes, follow the recovered shot at
-            # the native refinement cadence through its rough stop, matching
-            # the behavior of visually proposed shots without decoding every
-            # commentary/applause transient at 30 fps.
-            audio_recoveries = [
-                candidate
-                for candidate in candidates
-                if candidate.evidence.get("audio_seed", 0.0) >= 0.5
-                and candidate.evidence.get("refined_stop_confidence", 0.0) < 0.70
-            ]
-            if audio_recoveries:
-                _, native_audio_features = self._refine_candidate_windows(
-                    proxy.proxy_path,
-                    proxy.audio_path,
-                    proxy.mapper,
-                    metadata.duration,
-                    audio_recoveries,
-                    features,
-                    progress=lambda frac, msg: report(
-                        0.88 + 0.02 * frac,
-                        JobStatus.REFINING.value,
-                        f"Recovered shots: {msg}",
-                    ),
-                    signature="",
-                    resume=False,
-                    force_native_audio=True,
-                    existing_dense=dense_features,
-                )
-                if native_audio_features:
-                    self._annotate_scenes(native_audio_features, scenes)
-                    native_audio_features = self.strike_det.score_frames(
-                        native_audio_features
-                    )
-                    features = self._merge_feature_layers(
-                        features, native_audio_features
-                    )
-                    refined_audio = self.strike_det.refine_boundaries(
-                        audio_recoveries, native_audio_features
-                    )
-                    native_times = [feature.t for feature in native_audio_features]
-                    refined_audio = [
-                        candidate for candidate in refined_audio
-                        if candidate.evidence.get("dense_transition_confirmed", 0.0) >= 0.5
-                        or candidate.evidence.get("sparse_dense_transition", 0.0) >= 0.5
-                        or self._audio_seed_visual_support(
-                            candidate, native_audio_features, times=native_times
-                        )
-                    ]
-                    candidates = self._deduplicate_candidates(
-                        [
-                            candidate
-                            for candidate in candidates
-                            if candidate not in audio_recoveries
-                        ]
-                        + refined_audio
-                    )
             candidates = self.replay_det.mark_candidates(candidates, features)
             features = self.state_machine.label(features)
 
@@ -396,73 +316,14 @@ class Analyzer:
         report(1.0, JobStatus.READY_FOR_REVIEW.value, f"Detected {len(shots)} shots")
         return result
 
-    @staticmethod
-    def _audio_seed_visual_support(
-        candidate: StrikeCandidate,
-        dense_features: list[FrameFeatures],
-        *,
-        times: list[float] | None = None,
-    ) -> bool:
-        """Require post-transient table movement before retaining audio-only seeds."""
-
-        if not dense_features:
-            return False
-        if times is None:
-            times = [feature.t for feature in dense_features]
-        lo = bisect_left(times, max(0.0, candidate.timestamp - 0.35))
-        mid = bisect_left(times, candidate.timestamp)
-        hi = bisect_right(times, candidate.timestamp + 1.8)
-        def observable(feature: FrameFeatures) -> bool:
-            return (
-                feature.table_observable
-                and feature.observation_valid
-                and feature.table_confidence >= 0.25
-                and feature.scene_cut_score < 0.5
-                and feature.view_type in {
-                    CameraViewType.MAIN_TABLE, CameraViewType.WIDE_ARENA,
-                    CameraViewType.BALL_CLOSEUP, CameraViewType.OTHER,
-                }
-            )
-
-        pre = [feature for feature in dense_features[lo:mid] if observable(feature)]
-        post = [feature for feature in dense_features[mid:hi] if observable(feature)]
-        if not pre or not post:
-            return False
-
-        def activity(feature: FrameFeatures) -> float:
-            return max(
-                # Whole-table flow includes cueing, players, and graphics.
-                # An audio peak requires independent ball-specific evidence.
-                float(feature.ball_residual_motion),
-                min(1.0, float(feature.max_ball_normalized_speed) / 3.0),
-                min(1.0, float(feature.moving_ball_count) / 2.0),
-            )
-
-        post_values = [activity(feature) for feature in post]
-        peak = max(post_values, default=0.0)
-        sustained = sum(value >= 0.18 for value in post_values)
-        pre_values = [activity(feature) for feature in pre]
-        pre_median = float(np.median(pre_values)) if pre_values else 0.0
-        # A transient is reviewable when the table was reasonably quiet before
-        # contact and native-rate observations show a real post-contact burst.
-        # It need not satisfy every cue-track identity gate, since that is the
-        # precise case audio seeding is meant to recover.
-        return bool(
-            pre_median <= 0.55
-            and peak >= 0.20
-            and peak - pre_median >= 0.15
-            and sustained >= 2
-        )
-
-    def _audio_features_for_path(self, audio_path: Optional[Path]):
-        """Load/cache the full audio timeline used for independent seeding."""
-
-        if not audio_path:
-            return None
-        key = str(audio_path)
-        if key not in self._audio_feature_cache:
-            self._audio_feature_cache[key] = self.audio_ext.extract(audio_path)
-        return self._audio_feature_cache[key]
+    def _visual_proposals(self, features: list[FrameFeatures]) -> list[StrikeCandidate]:
+        """Rebuild proposals independently of audio and stale cached scores."""
+        features = self.strike_det.score_frames(features)
+        if float(self.config.get("analysis.sample_fps", 2.0)) <= 3.0:
+            candidates = self.strike_det.detect_sparse_candidates(features)
+        else:
+            candidates = self.strike_det.detect_candidates(features)
+        return self.replay_det.mark_candidates(candidates, features)
 
     @staticmethod
     def _preparation_intervals(features: list[FrameFeatures]) -> list[tuple[float, float]]:
@@ -549,90 +410,6 @@ class Analyzer:
             active = True
         return intervals
 
-    def _seed_audio_candidates(
-        self,
-        candidates: list[StrikeCandidate],
-        audio_path: Optional[Path],
-        duration: float,
-    ) -> list[StrikeCandidate]:
-        """Add native-rate verification seeds for unmatched cue transients.
-
-        Audio is not allowed to export a shot by itself.  It only creates a
-        bounded visual verification window.  The dense detector/segmenter
-        still requires observed ball movement, while retaining a supported
-        ambiguous event as a manual-review candidate.
-        """
-
-        audio = self._audio_features_for_path(audio_path)
-        if audio is None:
-            return candidates
-        min_score = float(
-            self.config.get("analysis.audio_seed_min_score", 0.30)
-        )
-        min_distance = float(
-            self.config.get("analysis.audio_seed_min_distance_seconds", 1.2)
-        )
-        max_seeds = int(self.config.get("analysis.audio_seed_max_count", 0))
-        peaks = audio.cue_peaks(
-            min_score=min_score,
-            min_distance=min_distance,
-            max_peaks=max_seeds,
-        )
-        if not peaks:
-            return candidates
-
-        match_radius = max(
-            0.75,
-            float(
-                self.config.get(
-                    "analysis.audio_seed_existing_match_seconds", 1.5
-                )
-            ),
-        )
-        ordered = list(candidates)
-        candidate_times = sorted(candidate.timestamp for candidate in candidates)
-        added = 0
-        for timestamp, score, onset, highband in peaks:
-            if timestamp < 0.0 or timestamp > duration + 1e-6:
-                continue
-            pos = bisect_left(candidate_times, timestamp)
-            if (
-                (pos > 0 and timestamp - candidate_times[pos - 1] <= match_radius)
-                or (pos < len(candidate_times) and candidate_times[pos] - timestamp <= match_radius)
-            ):
-                continue
-            confidence = float(np.clip(0.35 + 0.40 * score, 0.35, 0.78))
-            ordered.append(
-                StrikeCandidate(
-                    timestamp=timestamp,
-                    confidence=confidence,
-                    evidence={
-                        "audio_seed": 1.0,
-                        "audio_peak_score": score,
-                        "audio_onset_peak": onset,
-                        "audio_highband_peak": highband,
-                        "audio_seed_review": 1.0,
-                    },
-                    uncertainty_start=max(0.0, timestamp - float(
-                        self.config.get("analysis.audio_seed_pre_seconds", 1.5)
-                    )),
-                    uncertainty_end=min(duration, timestamp + float(
-                        self.config.get("analysis.audio_seed_post_seconds", 6.0)
-                    )),
-                    camera_view=CameraViewType.OTHER,
-                    possible_replay=False,
-                )
-            )
-            insort(candidate_times, timestamp)
-            added += 1
-        if added:
-            logger.info(
-                "Added %d audio-seeded recovery windows (%.2f+ transients)",
-                added,
-                min_score,
-            )
-        return sorted(ordered, key=lambda item: item.timestamp)
-
     def _extract_features(
         self,
         proxy_path: Path,
@@ -650,13 +427,7 @@ class Analyzer:
         sample_fps = float(sample_fps or self.config.get("analysis.sample_fps", 10.0))
         start_time = max(0.0, float(start_time))
         end_time = duration if end_time is None else min(duration, float(end_time))
-        audio_key = str(audio_path) if audio_path else ""
-        if audio_key and audio_key in self._audio_feature_cache:
-            audio_feats = self._audio_feature_cache[audio_key]
-        else:
-            audio_feats = self.audio_ext.extract(audio_path)
-            if audio_key:
-                self._audio_feature_cache[audio_key] = audio_feats
+        # Sound is preserved in preview/export, but never analysed for strikes.
 
         cap = open_capture(
             proxy_path,
@@ -884,9 +655,6 @@ class Analyzer:
                     and (residual is None or residual.observation_valid)
                 )
 
-                audio_onset = audio_feats.peak_near(t, 0.12) if audio_feats else 0.0
-                audio_rms = audio_feats.value_at(t, audio_feats.rms) if audio_feats else 0.0
-                audio_hi = audio_feats.value_at(t, audio_feats.highband) if audio_feats else 0.0
 
                 from snooker_ai.types import CameraViewType
 
@@ -904,9 +672,6 @@ class Analyzer:
                     camera_motion_magnitude=residual.camera_magnitude if residual else 0.0,
                     view_type=CameraViewType.OTHER,
                     green_ratio=table_obs.area_ratio,
-                    audio_onset=audio_onset,
-                    audio_rms=audio_rms,
-                    audio_highband=audio_hi,
                     ball_count=len([tr for tr in tracks if tr.active]),
                     cue_ball_detected=cue is not None and cue.visible,
                     max_ball_speed=float(self.tracker.max_speed()),
@@ -989,7 +754,6 @@ class Analyzer:
         progress: Optional[Callable[[float, str], None]] = None,
         signature: str = "",
         resume: bool = True,
-        force_native_audio: bool = False,
         existing_dense: list[FrameFeatures] | None = None,
     ) -> tuple[list[StrikeCandidate], list[FrameFeatures]]:
         """Extract dense observations around each candidate and its rough stop.
@@ -1006,7 +770,7 @@ class Analyzer:
             return self._refine_adaptive_windows(
                 proxy_path, audio_path, mapper, duration, candidates,
                 progress=progress, signature=signature, resume=resume,
-                force_native_audio=force_native_audio, existing_dense=existing_dense,
+                existing_dense=existing_dense,
                 rack_features=coarse_features,
             )
         dense_fps = float(
@@ -1014,10 +778,6 @@ class Analyzer:
                 "analysis.refine_fps",
                 self.config.get("analysis.sample_fps", 10.0),
             )
-        )
-        audio_scan_fps = min(
-            dense_fps,
-            float(self.config.get("analysis.audio_seed_scan_fps", 10.0)),
         )
         merge_gap = float(
             self.config.get("analysis.refine_merge_gap_seconds", 0.25)
@@ -1043,35 +803,6 @@ class Analyzer:
             float(self.segmenter.ball_stop.confirm_s) + 0.2,
         )
         for i, candidate in enumerate(candidates):
-            # Audio seeds are intentionally short verification windows.  The
-            # coarse stop estimate is unavailable for the very failure this
-            # path repairs, and using the normal 10-second unresolved cap for
-            # every transient would make a long match needlessly expensive.
-            if (
-                candidate.evidence.get("audio_seed", 0.0) >= 0.5
-                and not force_native_audio
-            ):
-                seed_start = max(
-                    0.0,
-                    candidate.timestamp
-                    - float(
-                        self.config.get(
-                            "analysis.audio_seed_pre_seconds", 1.5
-                        )
-                    ),
-                )
-                seed_end = min(
-                    duration,
-                    candidate.timestamp
-                    + float(
-                        self.config.get(
-                            "analysis.audio_seed_post_seconds", 6.0
-                        )
-                    ),
-                )
-                if seed_end > seed_start:
-                    ranges.append((seed_start, seed_end, audio_scan_fps))
-                continue
             rough = self.segmenter.ball_stop.detect_stop(
                 candidate, coarse_features, duration, times=coarse_times
             )
@@ -1224,7 +955,7 @@ class Analyzer:
         self, proxy_path: Path, audio_path: Optional[Path], mapper: TimeMapper,
         duration: float, candidates: list[StrikeCandidate], *,
         progress: Optional[Callable[[float, str], None]] = None,
-        signature: str = "", resume: bool = True, force_native_audio: bool = False,
+        signature: str = "", resume: bool = True,
         existing_dense: list[FrameFeatures] | None = None,
         rack_features: list[FrameFeatures] | None = None,
     ) -> tuple[list[StrikeCandidate], list[FrameFeatures]]:
@@ -1236,7 +967,6 @@ class Analyzer:
         """
         native_fps = float(self.config.get("analysis.refine_fps", 30.0))
         tracking_fps = min(native_fps, float(self.config.get("analysis.stop_tracking_fps", 10.0)))
-        audio_fps = min(native_fps, float(self.config.get("analysis.audio_seed_scan_fps", 10.0)))
         backward = float(self.config.get("analysis.refine_backward_seconds", 2.0))
         strike_post = float(self.config.get("analysis.strike_refine_post_seconds", 2.0))
         stop_warmup = float(self.config.get("analysis.stop_refine_window_seconds", 1.5))
@@ -1309,12 +1039,8 @@ class Analyzer:
             remember(part, priority)
             return part
 
-        # Verify visual proposals first. Their observations can also corroborate
-        # nearby audio peaks without a second decode of the same ball travel.
-        visual = [candidate for candidate in candidates if force_native_audio or candidate.evidence.get("audio_seed", 0.0) < 0.5]
-        audio = [candidate for candidate in candidates if not force_native_audio and candidate.evidence.get("audio_seed", 0.0) >= 0.5]
-        total = max(1, len(visual) + len(audio))
-        for number, candidate in enumerate(visual):
+        total = max(1, len(candidates))
+        for number, candidate in enumerate(candidates):
             start = candidate.timestamp - backward
             if candidate.evidence.get("rack_restart", 0) >= 0.5:
                 start = min(start, candidate.uncertainty_start)
@@ -1324,10 +1050,7 @@ class Analyzer:
             verified = bool(
                 candidate.evidence.get("dense_transition_confirmed", 0.0) >= 0.5
                 or candidate.evidence.get("sparse_dense_transition", 0.0) >= 0.5
-                or (
-                    candidate.evidence.get("audio_seed", 0.0) >= 0.5
-                    and self._audio_seed_visual_support(candidate, contact)
-                )
+
             )
             if not verified:
                 found = self.strike_det.detect_candidates(contact)
@@ -1347,7 +1070,7 @@ class Analyzer:
                 verified = False
             if not verified:
                 if progress:
-                    progress((number + 1) / total, f"Rejected non-strike proposal {number + 1}/{len(visual)}")
+                    progress((number + 1) / total, f"Rejected non-strike proposal {number + 1}/{len(candidates)}")
                 continue
             remember(contact, 3)
             tracking = observe(start, candidate.timestamp + horizon, tracking_fps, candidate, priority=1)
@@ -1378,15 +1101,7 @@ class Analyzer:
                             "refined_stop_review_required": float(refined_stop.manual_review_required),
                         })
             if progress:
-                progress((number + 1) / total, f"Tracked shot {number + 1}/{len(visual)}")
-        for number, candidate in enumerate(audio):
-            observe(
-                candidate.timestamp - float(self.config.get("analysis.audio_seed_pre_seconds", 1.5)),
-                candidate.timestamp + float(self.config.get("analysis.audio_seed_post_seconds", 6.0)),
-                audio_fps,
-            )
-            if progress:
-                progress((len(visual) + number + 1) / total, f"Verified audio peak {number + 1}/{len(audio)}")
+                progress((number + 1) / total, f"Tracked shot {number + 1}/{len(candidates)}")
         return candidates, known
 
     @staticmethod
@@ -1510,6 +1225,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
+            "result_policy_version": 4,  # visual-only selection; reuse observation caches
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")
             },
@@ -1802,12 +1518,10 @@ class Analyzer:
 
     def _score_importance(self, shots, features):
         cfg = self.config.section("importance")
-        w_crowd = float(cfg.get("crowd_reaction_weight", 0.2))
         w_multi = float(cfg.get("multi_ball_weight", 0.15))
         w_long = float(cfg.get("long_travel_weight", 0.1))
         w_replay = float(cfg.get("replay_shown_weight", 0.25))
         w_energy = float(cfg.get("motion_energy_weight", 0.2))
-        w_audio = float(cfg.get("audio_excitement_weight", 0.1))
         times = [feature.t for feature in features]
 
         for s in shots:
@@ -1819,22 +1533,14 @@ class Analyzer:
                 continue
             energy = float(np.mean([f.motion_score for f in window]))
             multi = float(np.mean([f.motion_area_ratio for f in window]))
-            audio = float(np.mean([f.audio_rms for f in window]))
             travel = min(1.0, (s.ball_motion_end - s.ball_motion_start) / 15.0)
             replay = 1.0 if s.possible_replay else 0.0
-            # crowd approx: high rms after ball stop
-            after_lo = bisect_left(times, s.ball_motion_end)
-            after_hi = bisect_right(times, s.ball_motion_end + 3.0)
-            after = features[after_lo:after_hi]
-            crowd = float(np.mean([f.audio_rms for f in after])) if after else 0.0
             s.importance = float(
                 np.clip(
                     w_energy * energy
                     + w_multi * min(1.0, multi / 0.02)
                     + w_long * travel
-                    + w_replay * replay
-                    + w_audio * audio
-                    + w_crowd * crowd,
+                    + w_replay * replay,
                     0,
                     1,
                 )

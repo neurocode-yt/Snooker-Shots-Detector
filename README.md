@@ -6,8 +6,8 @@ Upload a full match or highlights reel → detect genuine cue strikes and ball-s
 points → remove dead time between shots → automatically export a joined video.
 The web timeline remains available for optional inspection.
 
-> **Phase 1 baseline:** rule-based multimodal pipeline (scene cuts, table mask,
-> camera-motion compensation, residual table motion, audio onsets, state machine,
+> **Phase 1 baseline:** rule-based visual pipeline (scene cuts, table mask,
+> camera-motion compensation, residual table motion, cue-ball trajectories, state machine,
 > replay heuristics). Learned detectors/temporal models are scaffolded for Phase 2/3.
 > **No accuracy numbers are claimed without measurement on your broadcasts.**
 
@@ -161,12 +161,12 @@ docs/                # Architecture, API, setup
 ## Pipeline (Phase 1)
 
 1. **Ingest** — FFprobe metadata, validation  
-2. **Proxy** — lower-res analysis video + mono WAV  
+2. **Proxy** — lower-res analysis video with preview audio
 3. **Table mask** — HSV green cloth + contour  
 4. **Camera motion** — affine from LK features; residual flow on table  
 5. **Scenes** — histogram cuts + view heuristics  
 6. **Audio** — onset / band energy (capped weight)  
-7. **Strike fusion** — linear-time cue-ball transition scoring + supporting audio  
+7. **Strike fusion** — cue-ball transition scoring, contact geometry, and visual occlusion recovery
 8. **Dense refinement** — native-FPS windows at strike/stop edges only  
 9. **Ball stop** — settling period on ball-specific and residual motion  
 10. **Segments** — mode rolls, overlap merge, confidence review flags  

@@ -28,6 +28,7 @@ def _setup(config, tmp_path, monkeypatch, gpu=False):
 
 
 def test_proxy_reuses_only_matching_source_and_audio_rate(config, tmp_path, monkeypatch):
+    config._data["proxy"]["extract_audio"] = True  # optional legacy WAV extraction
     source, output, metadata, calls, _ = _setup(config, tmp_path, monkeypatch)
     generate_proxy(source, output, metadata, config)
     assert len(calls) == 2
@@ -43,6 +44,15 @@ def test_proxy_reuses_only_matching_source_and_audio_rate(config, tmp_path, monk
     source.write_bytes(b"a different video with the same dimensions and frame rate")
     generate_proxy(source, output, metadata, config)
     assert len(calls) == 2
+
+
+def test_default_proxy_keeps_preview_sound_without_extracting_wav(config, tmp_path, monkeypatch):
+    source, output, metadata, calls, _ = _setup(config, tmp_path, monkeypatch)
+    result = generate_proxy(source, output, metadata, config)
+    assert len(calls) == 1
+    assert "-an" not in calls[0]
+    assert result.audio_path is None
+    assert not (output / "audio.wav").exists()
 
 
 def test_proxy_records_cpu_fallback_and_reuses_it(config, tmp_path, monkeypatch):

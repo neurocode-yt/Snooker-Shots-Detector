@@ -206,7 +206,7 @@ def test_confirmed_shot_refines_strike_and_stop_edges_not_entire_roll(
     assert candidate.evidence["refined_stop_timestamp"] == native_stop
 
 
-def test_audio_seed_uses_bounded_native_rate_verification_window(
+def test_legacy_audio_seed_has_no_special_verification_bypass(
     config, tmp_path: Path, monkeypatch
 ):
     analyzer = Analyzer(config, tmp_path / "job")
@@ -234,7 +234,7 @@ def test_audio_seed_uses_bounded_native_rate_verification_window(
         resume=False,
     )
 
-    assert calls == [(98.5, 106.0, 10.0)]
+    assert calls == [(98.0, 102.0, 30.0)]
 
 
 def test_rejected_contact_does_not_open_a_long_tracking_window(config, tmp_path, monkeypatch):
@@ -296,7 +296,7 @@ def test_rejected_proposal_cannot_overwrite_a_verified_stop(config, tmp_path, mo
 
 
 @pytest.mark.parametrize("missing_interval", [False, True])
-def test_audio_recovery_reuses_only_complete_native_rate_observations(
+def test_visual_refinement_reuses_only_complete_native_rate_observations(
     config, tmp_path, monkeypatch, missing_interval
 ):
     analyzer = Analyzer(config, tmp_path / "job")
@@ -324,7 +324,7 @@ def test_audio_recovery_reuses_only_complete_native_rate_observations(
     _, dense = analyzer._refine_candidate_windows(
         tmp_path / "video.mp4", None,
         TimeMapper(source_duration=300, proxy_duration=300), 300,
-        [candidate], existing, resume=False, force_native_audio=True, existing_dense=existing,
+        [candidate], existing, resume=False, existing_dense=existing,
     )
     if missing_interval:
         assert len(calls) == 1
