@@ -136,6 +136,53 @@ def test_camera_cut_during_confirmation_cannot_prove_a_stop(config):
     assert stop.physical_stop_timestamp != pytest.approx(1.8)
 
 
+def test_missing_frames_cannot_confirm_stillness(config):
+    features = [f for f in _sequence(end_t=4) if f.t <= 1.6 or f.t >= 3]
+    stop = BallStopDetector(config).detect_stop(
+        StrikeCandidate(timestamp=1, confidence=0.95), features, duration=4,
+    )
+    assert stop.confirmed
+    assert stop.physical_stop_timestamp == pytest.approx(3)
+    assert stop.stop_confirmation_timestamp == pytest.approx(3.5)
+    assert stop.manual_review_required
+
+
+def test_cut_breaks_stale_occlusion_confirmation(config):
+    features = _sequence()
+    for frame in features:
+        if frame.t >= 1.5:
+            frame.occluded_ball_count = 1
+        if frame.t == 1.8:
+            frame.scene_cut_score = 1
+    stop = BallStopDetector(config).detect_stop(
+        StrikeCandidate(timestamp=1, confidence=0.95), features, duration=3,
+    )
+    assert stop.confirmed
+    assert stop.physical_stop_timestamp == pytest.approx(1.9)
+    assert stop.stop_confirmation_timestamp == pytest.approx(2.4)
+
+
+def test_cut_breaks_consecutive_motion_samples(config):
+    features = _sequence(moving_through=0)
+    for i, frame in enumerate(features):
+        if frame.t in (1, 1.2):
+            features[i] = _tracked_frame(frame.t, moving=True)
+        elif frame.t == 1.1:
+            frame.scene_cut_score = 1
+    stop = BallStopDetector(config).detect_stop(
+        StrikeCandidate(timestamp=1, confidence=0.95), features, duration=3,
+    )
+    assert not stop.confirmed
+    assert stop.reason == "no_sustained_ball_motion"
+
+
+def test_stationary_false_candidate_is_rejected_before_duration_cap(config):
+    config._data["ball_stop"]["max_seconds_after_strike"] = 7
+    features = _sequence(moving_through=0, end_t=12)
+    candidate = StrikeCandidate(timestamp=1, confidence=0.95)
+    assert SegmentBuilder(config).build([candidate], features, duration=12) == []
+
+
 def test_occluded_ball_keeps_shot_open_until_it_reappears_stationary(config):
     strike = StrikeCandidate(timestamp=1.0, confidence=0.95)
     features = _sequence()

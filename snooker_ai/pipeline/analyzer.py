@@ -50,7 +50,7 @@ from snooker_ai.utils.video import open_capture, sampled_frames
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 6
+_CACHE_VERSION = 7
 
 
 class Analyzer:
@@ -1203,9 +1203,12 @@ class Analyzer:
             if tracking:
                 stop = stop_detector.detect_stop(candidate, tracking, duration)
                 if stop.confirmed:
+                    # The native tracker can resolve a later stop than the
+                    # cheap travel pass. Continue until its own confirmation
+                    # instead of truncating at the rough boundary's tail.
                     stop_features = observe(
                         max(start, stop.physical_stop_timestamp - stop_warmup),
-                        stop.stop_confirmation_timestamp + tail, native_fps, priority=3,
+                        candidate.timestamp + horizon, native_fps, candidate, priority=3,
                     )
                     refined_stop = stop_detector.detect_stop(candidate, stop_features, duration)
                     if refined_stop.confirmed:

@@ -150,28 +150,31 @@ def test_unresolved_final_candidate_refinement_is_bounded(
     assert max(end for _, end in calls) <= 160.0 + 1e-9
 
 
+@pytest.mark.parametrize("native_stop", [105.0, 107.0])
 def test_confirmed_shot_refines_strike_and_stop_edges_not_entire_roll(
-    config, tmp_path: Path, monkeypatch
+    config, tmp_path: Path, monkeypatch, native_stop
 ):
     analyzer = Analyzer(config, tmp_path / "job")
     candidate = StrikeCandidate(timestamp=100.0, confidence=0.9, evidence={"dense_transition_confirmed": 1.0})
     coarse = [FrameFeatures(t=99.0), FrameFeatures(t=100.0)]
     calls: list[tuple[float, float, float]] = []
+    decoded_ends = []
 
-    monkeypatch.setattr(
-        analyzer.segmenter.ball_stop,
-        "detect_stop",
-        lambda *_args, **_kwargs: StopDetection(
+    def detect_stop(_candidate, features, *_args, **_kwargs):
+        # Native tracking can resolve a later stop than the coarse travel pass.
+        end = native_stop if features and features[0].t == 102 else 105.0
+        return StopDetection(
             motion_start=100.0,
-            last_ball_motion_timestamp=104.9,
-            physical_stop_timestamp=105.0,
-            stop_confirmation_timestamp=105.5,
+            last_ball_motion_timestamp=end - 0.1,
+            physical_stop_timestamp=end,
+            stop_confirmation_timestamp=end + 0.5,
             end_confidence=0.9,
             start_confidence=0.9,
-            confirmed=True,
+            confirmed=bool(features and features[-1].t >= end + 0.5),
             reason="confirmed_all_balls_stationary",
-        ),
-    )
+        )
+
+    monkeypatch.setattr(analyzer.segmenter.ball_stop, "detect_stop", detect_stop)
 
     def fake_extract(*_args, start_time=0.0, end_time=None, sample_fps=0, stop_when=None, **_kwargs):
         calls.append((start_time, float(end_time), sample_fps))
@@ -180,6 +183,7 @@ def test_confirmed_shot_refines_strike_and_stop_edges_not_entire_roll(
             features.append(FrameFeatures(t=start_time + i / sample_fps))
             if stop_when and stop_when(features):
                 break
+        decoded_ends.append(features[-1].t)
         return features, [], []
 
     monkeypatch.setattr(analyzer, "_extract_features", fake_extract)
@@ -197,7 +201,9 @@ def test_confirmed_shot_refines_strike_and_stop_edges_not_entire_roll(
     # intervals run at native cadence.
     assert calls[0] == (98.0, 102.0, 30.0)
     assert calls[1] == (98.0, 160.0, 10.0)
-    assert calls[2] == (102.0, 105.7, 30.0)
+    assert calls[2] == (102.0, 160.0, 30.0)
+    assert decoded_ends[2] == pytest.approx(native_stop + 0.7)
+    assert candidate.evidence["refined_stop_timestamp"] == native_stop
 
 
 def test_audio_seed_uses_bounded_native_rate_verification_window(
@@ -329,5 +335,5 @@ def test_audio_recovery_reuses_only_complete_native_rate_observations(
         assert len(calls) == 1
         assert calls[0]["sample_fps"] == 30
         assert calls[0]["start_time"] == 102
-        assert calls[0]["end_time"] == 105.7
+        assert calls[0]["end_time"] == 160
         assert dense and dense[0].t == pytest.approx(98)
