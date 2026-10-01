@@ -481,7 +481,7 @@ def test_mid_motion_false_peak_absorbed(config):
     # Report the first stationary frame after travel, rather than strike+7.
     assert shots[0].ball_motion_end == pytest.approx(12.1, abs=0.05)
     # A false peak does not alter the observed stop boundary.
-    assert shots[0].clip_end == shots[0].ball_motion_end - 2
+    assert shots[0].clip_end == shots[0].ball_motion_end - 3
 
 
 def test_false_peak_does_not_force_ten_second_cap(config):
@@ -664,10 +664,10 @@ def test_unresolved_long_roll_is_not_cut_by_timeout(config):
     shots = SegmentBuilder(config).build(cands, feats, 40.0, EditMode.STRICT)
     assert len(shots) == 1
     s = shots[0]
-    assert s.clip_end == pytest.approx(28.1)
+    assert s.clip_end == pytest.approx(27.1)
     assert s.physical_stop_timestamp == pytest.approx(30.1)
     assert s.evidence["stop_confirmed"] is True
-    assert s.ball_motion_end == pytest.approx(s.clip_end + 2)
+    assert s.ball_motion_end == pytest.approx(s.clip_end + 3)
     # Still starts ~2s before strike
     assert abs(s.clip_start - 3.0) < 0.05
 
