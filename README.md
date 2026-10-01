@@ -13,8 +13,8 @@ perfect audio sync — with a web timeline for reviewing uncertain detections.
 
 ## Features
 
-- **Three edit modes:** Action Only · Natural Highlights · Full Shot Sequence  
-  (configurable pre/post-roll — not hardcoded)
+- **Strict edit mode:** 2s before cue contact → hold until every ball stops  
+  (pre-roll and review caps configurable — not hardcoded)
 - **Multimodal detection** — residual motion after camera compensation + table mask + audio support
 - **Replay-aware** — replays flagged and excluded by default
 - **Pre-analysis match editor** — split/delete frame breaks with a 1×–64× zoomable timeline; original uploads remain untouched
@@ -46,10 +46,10 @@ See [docs/windows_setup.md](docs/windows_setup.md).
 ## CLI
 
 ```bash
-snooker-ai analyze input.mp4 --mode natural
+snooker-ai analyze input.mp4
 snooker-ai review <job-id>
 snooker-ai export <job-id> --output highlights.mp4
-snooker-ai batch ./matches --mode action-only
+snooker-ai batch ./matches
 snooker-ai evaluate ./test-dataset
 snooker-ai train ./training/dataset_config.example.yaml
 snooker-ai serve --port 8000
@@ -58,10 +58,13 @@ snooker-ai serve --port 8000
 Strict mode starts at the first confirmed cue-ball launch minus 2.000 seconds and
 normally ends at the first physical all-ball stop. The 0.50-second stationary
 confirmation is look-ahead evidence only and is not included in `clip_end`.
-Unresolved motion is capped ten seconds after the strike and flagged for review,
-so a false track cannot produce a 40–50 second clip.
+Unresolved motion is capped seven seconds after the strike and flagged for
+review, so a false track cannot produce a 40–50 second clip.
 
-Modes: `strict` (default — 2s before strike → balls stop) | `action_only` | `natural` | `full_sequence`
+`strict` is the only editing mode (2s before strike → balls stop). When the next
+shot starts before the previous window would end (fast break play), the boundary
+is trimmed between the two shots so neither shot is lost. Legacy mode names are
+accepted and coerce to strict.
 
 ## Web UI
 

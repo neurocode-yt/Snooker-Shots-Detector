@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from bisect import bisect_left, bisect_right
+from bisect import bisect_left, bisect_right, insort
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -38,17 +38,19 @@ from snooker_ai.types import (
     FrameFeatures,
     JobStatus,
     SceneSegment,
+    ShotRecord,
     StrikeCandidate,
     TimelineEvent,
 )
 from snooker_ai.utils.logging import get_logger
 from snooker_ai.utils.acceleration import configure_acceleration
 from snooker_ai.utils.timebase import TimeMapper
+from snooker_ai.utils.video import open_capture, sampled_frames
 
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 2
+_CACHE_VERSION = 3
 
 
 class Analyzer:
@@ -82,6 +84,7 @@ class Analyzer:
         mode: EditMode = EditMode.STRICT,
         progress: Optional[ProgressCb] = None,
         resume: bool = True,
+        force_reanalyze: bool = False,
     ) -> AnalysisResult:
         def report(p: float, stage: str, msg: str = "") -> None:
             if progress:
@@ -90,17 +93,21 @@ class Analyzer:
 
         checkpoint_path = self.job_dir / "checkpoint.json"
         analysis_path = self.job_dir / "analysis.json"
+        source = Path(source)
+        result_signature = self._result_signature(source)
 
         # Resume completed analysis
-        if resume and analysis_path.exists():
+        if resume and not force_reanalyze and analysis_path.exists():
             try:
                 data = json.loads(analysis_path.read_text(encoding="utf-8"))
                 result = AnalysisResult.model_validate(data)
-                if result.mode != mode:
-                    result = self._rebuild_segments(result, mode)
-                    self._save_result(result)
-                report(1.0, JobStatus.READY_FOR_REVIEW.value, "Resumed from saved analysis")
-                return result
+                if result.analysis_signature == result_signature:
+                    if result.mode != mode:
+                        result = self._rebuild_segments(result, mode)
+                        self._save_result(result)
+                    report(1.0, JobStatus.READY_FOR_REVIEW.value, "Resumed from saved analysis")
+                    return result
+                logger.info("Saved analysis is stale; rebuilding with current detection settings")
             except Exception as exc:
                 logger.warning("Could not resume analysis.json: %s", exc)
 
@@ -217,6 +224,7 @@ class Analyzer:
             # become an exported shot unless the native-rate pass confirmed a
             # cue transition (or the explicit impact-occlusion fallback).
             retained: list[StrikeCandidate] = []
+            dense_times = [feature.t for feature in dense_features]
             for candidate in candidates:
                 confirmed = (
                     candidate.evidence.get("dense_transition_confirmed", 0.0) >= 0.5
@@ -229,7 +237,7 @@ class Analyzer:
                 audio_supported = False
                 if candidate.evidence.get("audio_seed", 0.0) >= 0.5:
                     audio_supported = self._audio_seed_visual_support(
-                        candidate, dense_features
+                        candidate, dense_features, times=dense_times
                     )
                     if audio_supported:
                         candidate.evidence["audio_visual_support"] = 1.0
@@ -264,6 +272,7 @@ class Analyzer:
                     signature="",
                     resume=False,
                     force_native_audio=True,
+                    existing_dense=dense_features,
                 )
                 if native_audio_features:
                     self._annotate_scenes(native_audio_features, scenes)
@@ -276,6 +285,15 @@ class Analyzer:
                     refined_audio = self.strike_det.refine_boundaries(
                         audio_recoveries, native_audio_features
                     )
+                    native_times = [feature.t for feature in native_audio_features]
+                    refined_audio = [
+                        candidate for candidate in refined_audio
+                        if candidate.evidence.get("dense_transition_confirmed", 0.0) >= 0.5
+                        or candidate.evidence.get("sparse_dense_transition", 0.0) >= 0.5
+                        or self._audio_seed_visual_support(
+                            candidate, native_audio_features, times=native_times
+                        )
+                    ]
                     candidates = self._deduplicate_candidates(
                         [
                             candidate
@@ -289,6 +307,7 @@ class Analyzer:
 
         report(0.9, JobStatus.SEGMENTING.value, "Building shot segments")
         shots = self.segmenter.build(candidates, features, metadata.duration, mode)
+        shots = self._preserve_user_edits(shots, job_id)
         shots = self._score_importance(shots, features)
 
         edited, removed = self.segmenter.recompute_durations(shots, metadata.duration)
@@ -338,6 +357,7 @@ class Analyzer:
             original_duration=metadata.duration,
             edited_duration=edited,
             pause_removed_seconds=removed,
+            analysis_signature=result_signature,
         )
         self._save_result(result)
         if checkpoint_path.exists():
@@ -350,24 +370,39 @@ class Analyzer:
     def _audio_seed_visual_support(
         candidate: StrikeCandidate,
         dense_features: list[FrameFeatures],
+        *,
+        times: list[float] | None = None,
     ) -> bool:
         """Require post-transient table movement before retaining audio-only seeds."""
 
         if not dense_features:
             return False
-        times = [feature.t for feature in dense_features]
+        if times is None:
+            times = [feature.t for feature in dense_features]
         lo = bisect_left(times, max(0.0, candidate.timestamp - 0.35))
         mid = bisect_left(times, candidate.timestamp)
         hi = bisect_right(times, candidate.timestamp + 1.8)
-        pre = dense_features[lo:mid]
-        post = dense_features[mid:hi]
-        if not post:
+        def observable(feature: FrameFeatures) -> bool:
+            return (
+                feature.table_observable
+                and feature.observation_valid
+                and feature.table_confidence >= 0.25
+                and feature.scene_cut_score < 0.5
+                and feature.view_type in {
+                    CameraViewType.MAIN_TABLE, CameraViewType.WIDE_ARENA,
+                    CameraViewType.BALL_CLOSEUP, CameraViewType.OTHER,
+                }
+            )
+
+        pre = [feature for feature in dense_features[lo:mid] if observable(feature)]
+        post = [feature for feature in dense_features[mid:hi] if observable(feature)]
+        if not pre or not post:
             return False
 
         def activity(feature: FrameFeatures) -> float:
             return max(
-                float(feature.motion_raw),
-                float(feature.motion_score),
+                # Whole-table flow includes cueing, players, and graphics.
+                # An audio peak requires independent ball-specific evidence.
                 float(feature.ball_residual_motion),
                 min(1.0, float(feature.max_ball_normalized_speed) / 3.0),
                 min(1.0, float(feature.moving_ball_count) / 2.0),
@@ -385,6 +420,7 @@ class Analyzer:
         return bool(
             pre_median <= 0.55
             and peak >= 0.20
+            and peak - pre_median >= 0.15
             and sustained >= 2
         )
 
@@ -439,11 +475,16 @@ class Analyzer:
             ),
         )
         ordered = list(candidates)
+        candidate_times = sorted(candidate.timestamp for candidate in candidates)
         added = 0
         for timestamp, score, onset, highband in peaks:
             if timestamp < 0.0 or timestamp > duration + 1e-6:
                 continue
-            if any(abs(timestamp - candidate.timestamp) <= match_radius for candidate in ordered):
+            pos = bisect_left(candidate_times, timestamp)
+            if (
+                (pos > 0 and timestamp - candidate_times[pos - 1] <= match_radius)
+                or (pos < len(candidate_times) and candidate_times[pos] - timestamp <= match_radius)
+            ):
                 continue
             confidence = float(np.clip(0.35 + 0.40 * score, 0.35, 0.78))
             ordered.append(
@@ -467,6 +508,7 @@ class Analyzer:
                     possible_replay=False,
                 )
             )
+            insort(candidate_times, timestamp)
             added += 1
         if added:
             logger.info(
@@ -500,7 +542,10 @@ class Analyzer:
             if audio_key:
                 self._audio_feature_cache[audio_key] = audio_feats
 
-        cap = cv2.VideoCapture(str(proxy_path))
+        cap = open_capture(
+            proxy_path,
+            prefer_hwaccel=bool(self.config.get("analysis.hwaccel_decode", True)),
+        )
         if not cap.isOpened():
             raise RuntimeError(f"Cannot open proxy video: {proxy_path}")
 
@@ -559,7 +604,6 @@ class Analyzer:
             )
         )
         hough_step = max(1, int(round(sample_fps / max(hough_fps, 1e-6))))
-        next_sample_t = start_time
         # Seek close to the requested source interval for dense refinement.  We
         # still discard frames until the mapped presentation time reaches the
         # exact start boundary, so VFR/mapper rounding cannot leak earlier data.
@@ -572,196 +616,186 @@ class Analyzer:
         self.tracker = BallTracker()
         self._last_cue_tip = None
 
-        while True:
-            video_t = idx / proxy_fps if proxy_fps > 0 else kept / sample_fps
-            source_t = mapper.to_source(video_t)
-            # Skip retrieval/conversion for unsampled proxy frames.  ``grab``
-            # still advances the decoder correctly but avoids constructing a
-            # full BGR array for the two out of every three frames discarded by
-            # the normal 30fps-proxy/10fps-analysis path.
-            if source_t < start_time - 1e-6:
-                if not cap.grab():
-                    break
-                idx += 1
-                continue
-            if source_t > end_time + 1e-6:
-                break
-            if source_t + 1e-9 < next_sample_t:
-                if not cap.grab():
-                    break
-                idx += 1
-                continue
-            ok, frame = cap.read()
-            if not ok:
-                break
-            while next_sample_t <= source_t + 1e-9:
-                next_sample_t += sample_period
+        # Decode runs on a background thread (see utils.video) so FFmpeg/NVDEC
+        # frame decode overlaps the OpenCL/CPU feature extraction below.
+        # Unsampled proxy frames are ``grab``-advanced without BGR retrieval.
+        frames = sampled_frames(
+            cap,
+            proxy_fps=proxy_fps,
+            to_source=mapper.to_source,
+            start_time=start_time,
+            end_time=end_time,
+            sample_period=sample_period,
+            start_idx=idx,
+            prefetch=int(self.config.get("analysis.decode_prefetch_frames", 8)),
+        )
+        try:
+            for idx, t, frame in frames:
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-            t = source_t
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                # Detect cuts before optical flow/tracking.  A cut is an unknown
+                # observation, never a stationary frame, and view-local trackers are
+                # reacquired without terminating the logical shot.
+                hist = self.scene_det.histogram(frame)
+                online_cut = 0.0
+                if prev_hist is not None:
+                    online_cut = self.scene_det.cut_score_simple(prev_hist, hist)
+                cut_like = online_cut >= float(
+                    self.config.get("scene_detection.hard_cut_threshold", 0.42)
+                )
+                if cut_like:
+                    self.table.reset()
+                    self.motion.reset()
+                    self.tracker = BallTracker()
+                    self._last_cue_tip = None
+                    prev_gray = None
+                    prev_sample_t = None
+                    table_obs = None
+                    last_table_t = None
 
-            # Detect cuts before optical flow/tracking.  A cut is an unknown
-            # observation, never a stationary frame, and view-local trackers are
-            # reacquired without terminating the logical shot.
-            hist = self.scene_det.histogram(frame)
-            online_cut = 0.0
-            if prev_hist is not None:
-                online_cut = self.scene_det.cut_score_simple(prev_hist, hist)
-            cut_like = online_cut >= float(
-                self.config.get("scene_detection.hard_cut_threshold", 0.42)
-            )
-            if cut_like:
-                self.table.reset()
-                self.motion.reset()
-                self.tracker = BallTracker()
-                self._last_cue_tip = None
-                prev_gray = None
-                prev_sample_t = None
-                table_obs = None
-                last_table_t = None
-
-            if (
-                table_obs is None
-                or last_table_t is None
-                or t - last_table_t + 1e-9 >= table_refresh_period
-            ):
-                table_obs = self.table.detect(frame)
-                last_table_t = t
-            dets = self.objects.detect(
-                frame,
-                table_obs.mask,
-                use_hough=kept % hough_step == 0,
-            )
-            ball_regions = [
-                (d.cx, d.cy, d.diameter_px)
-                for d in dets
-                if d.confidence >= 0.30 and d.diameter_px > 1.0
-            ]
-            residual = None
-            if prev_gray is not None:
-                dt = t - prev_sample_t if prev_sample_t is not None else 1.0 / max(sample_fps, 1.0)
-                residual = self.motion.analyze(
-                    prev_gray,
-                    gray,
+                if (
+                    table_obs is None
+                    or last_table_t is None
+                    or t - last_table_t + 1e-9 >= table_refresh_period
+                ):
+                    table_obs = self.table.detect(frame)
+                    last_table_t = t
+                dets = self.objects.detect(
+                    frame,
                     table_obs.mask,
-                    ball_regions=ball_regions,
-                    frame_dt=dt,
+                    use_hough=kept % hough_step == 0,
                 )
-            prev_gray = gray
-            prev_sample_t = t
-            prev_hist = hist
-            tracks = self.tracker.update(t, dets)
-            cue = self.tracker.cue_ball_track()
+                ball_regions = [
+                    (d.cx, d.cy, d.diameter_px)
+                    for d in dets
+                    if d.confidence >= 0.30 and d.diameter_px > 1.0
+                ]
+                residual = None
+                if prev_gray is not None:
+                    dt = t - prev_sample_t if prev_sample_t is not None else 1.0 / max(sample_fps, 1.0)
+                    residual = self.motion.analyze(
+                        prev_gray,
+                        gray,
+                        table_obs.mask,
+                        ball_regions=ball_regions,
+                        frame_dt=dt,
+                    )
+                prev_gray = gray
+                prev_sample_t = t
+                prev_hist = hist
+                tracks = self.tracker.update(t, dets)
+                cue = self.tracker.cue_ball_track()
 
-            diameter = max(
-                self.tracker.estimated_ball_diameter(),
-                self.objects.estimated_ball_diameter(),
-                0.0,
-            )
-            stop_speed = float(
-                self.config.get("ball_stop.motion_stop_normalized_speed", 0.16)
-            )
-            visible_tracks = [tr for tr in tracks if tr.active and tr.visible]
-            moving_count = sum(
-                1
-                for tr in visible_tracks
-                if diameter > 0.5
-                and self.tracker.stable_track_speed(tr, diameter) >= stop_speed
-            )
-            cue_speed_px = cue.speed() if cue is not None and cue.visible else 0.0
-            cue_speed_norm = cue_speed_px / diameter if cue is not None and diameter > 0.5 else 0.0
-            cue_accel_norm = (
-                float(np.hypot(cue.ax, cue.ay) / diameter)
-                if cue is not None and cue.visible and diameter > 0.5
-                else 0.0
-            )
-            cue_geometry = self._cue_geometry(frame, table_obs.mask, cue, diameter, t)
-            table_observable = bool(
-                table_obs.confidence >= float(
-                    self.config.get("table_detection.min_confidence", 0.25)
+                diameter = max(
+                    self.tracker.estimated_ball_diameter(),
+                    self.objects.estimated_ball_diameter(),
+                    0.0,
                 )
-                and table_obs.area_ratio >= 0.03
-            )
-            observation_valid = bool(
-                table_observable
-                and not cut_like
-                and (residual is None or residual.observation_valid)
-            )
+                stop_speed = float(
+                    self.config.get("ball_stop.motion_stop_normalized_speed", 0.16)
+                )
+                visible_tracks = [tr for tr in tracks if tr.active and tr.visible]
+                moving_count = sum(
+                    1
+                    for tr in visible_tracks
+                    if diameter > 0.5
+                    and self.tracker.stable_track_speed(tr, diameter) >= stop_speed
+                )
+                cue_speed_px = cue.speed() if cue is not None and cue.visible else 0.0
+                cue_speed_norm = cue_speed_px / diameter if cue is not None and diameter > 0.5 else 0.0
+                cue_accel_norm = (
+                    float(np.hypot(cue.ax, cue.ay) / diameter)
+                    if cue is not None and cue.visible and diameter > 0.5
+                    else 0.0
+                )
+                cue_geometry = self._cue_geometry(frame, table_obs.mask, cue, diameter, t)
+                table_observable = bool(
+                    table_obs.confidence >= float(
+                        self.config.get("table_detection.min_confidence", 0.25)
+                    )
+                    and table_obs.area_ratio >= 0.03
+                )
+                observation_valid = bool(
+                    table_observable
+                    and not cut_like
+                    and (residual is None or residual.observation_valid)
+                )
 
-            audio_onset = audio_feats.peak_near(t, 0.12) if audio_feats else 0.0
-            audio_rms = audio_feats.value_at(t, audio_feats.rms) if audio_feats else 0.0
-            audio_hi = audio_feats.value_at(t, audio_feats.highband) if audio_feats else 0.0
+                audio_onset = audio_feats.peak_near(t, 0.12) if audio_feats else 0.0
+                audio_rms = audio_feats.value_at(t, audio_feats.rms) if audio_feats else 0.0
+                audio_hi = audio_feats.value_at(t, audio_feats.highband) if audio_feats else 0.0
 
-            from snooker_ai.types import CameraViewType
+                from snooker_ai.types import CameraViewType
 
-            feat = FrameFeatures(
-                t=t,
-                table_confidence=table_obs.confidence,
-                table_mask_area_ratio=table_obs.area_ratio,
-                residual_motion_mean=residual.residual_mean if residual else 0.0,
-                residual_motion_max=residual.residual_max if residual else 0.0,
-                motion_area_ratio=residual.motion_area_ratio if residual else 0.0,
-                camera_motion_magnitude=residual.camera_magnitude if residual else 0.0,
-                view_type=CameraViewType.OTHER,
-                green_ratio=table_obs.area_ratio,
-                audio_onset=audio_onset,
-                audio_rms=audio_rms,
-                audio_highband=audio_hi,
-                ball_count=len([tr for tr in tracks if tr.active]),
-                cue_ball_detected=cue is not None and cue.visible,
-                max_ball_speed=float(self.tracker.max_speed()),
-                table_observable=table_observable,
-                observation_valid=observation_valid,
-                ball_diameter_px=diameter,
-                cue_ball_x=(cue.positions[-1][1] if cue is not None and cue.visible else None),
-                cue_ball_y=(cue.positions[-1][2] if cue is not None and cue.visible else None),
-                cue_ball_speed=cue_speed_px,
-                cue_ball_normalized_speed=cue_speed_norm,
-                cue_ball_acceleration=cue_accel_norm,
-                cue_ball_track_confidence=(cue.confidence if cue is not None and cue.visible else 0.0),
-                cue_tip_visible=bool(cue_geometry["visible"]),
-                cue_tip_distance_to_ball=float(cue_geometry["distance"]),
-                cue_approach_speed=float(cue_geometry["approach_speed"]),
-                cue_forward_motion=float(cue_geometry["forward_motion"]),
-                cue_contact_score=float(cue_geometry["contact_score"]),
-                max_ball_normalized_speed=self.tracker.max_normalized_speed(diameter),
-                moving_ball_count=moving_count,
-                occluded_ball_count=self.tracker.occluded_moving_count(
-                    min_normalized_speed=stop_speed,
+                feat = FrameFeatures(
+                    t=t,
+                    table_confidence=table_obs.confidence,
+                    table_mask_area_ratio=table_obs.area_ratio,
+                    residual_motion_mean=residual.residual_mean if residual else 0.0,
+                    residual_motion_max=residual.residual_max if residual else 0.0,
+                    motion_area_ratio=residual.motion_area_ratio if residual else 0.0,
+                    camera_motion_magnitude=residual.camera_magnitude if residual else 0.0,
+                    view_type=CameraViewType.OTHER,
+                    green_ratio=table_obs.area_ratio,
+                    audio_onset=audio_onset,
+                    audio_rms=audio_rms,
+                    audio_highband=audio_hi,
+                    ball_count=len([tr for tr in tracks if tr.active]),
+                    cue_ball_detected=cue is not None and cue.visible,
+                    max_ball_speed=float(self.tracker.max_speed()),
+                    table_observable=table_observable,
+                    observation_valid=observation_valid,
                     ball_diameter_px=diameter,
-                ),
-                ball_residual_motion=(residual.ball_residual_motion if residual else 0.0),
-                motion_score=residual.motion_score if residual else 0.0,
-                motion_raw=residual.motion_raw if residual else 0.0,
-                scene_cut_score=online_cut,
-            )
-            features.append(feat)
-
-            if scene_stream is not None and kept % scene_step == 0:
-                scene_stream.observe(frame, t, histogram=hist)
-
-            kept += 1
-            idx += 1
-            if progress and kept % 20 == 0:
-                interval = max(end_time - start_time, 1e-6)
-                fraction = (t - start_time) / interval
-                progress(
-                    min(0.99, max(0.0, fraction)),
-                    f"Frame {idx}/{total_frames}",
+                    cue_ball_x=(cue.positions[-1][1] if cue is not None and cue.visible else None),
+                    cue_ball_y=(cue.positions[-1][2] if cue is not None and cue.visible else None),
+                    cue_ball_speed=cue_speed_px,
+                    cue_ball_normalized_speed=cue_speed_norm,
+                    cue_ball_acceleration=cue_accel_norm,
+                    cue_ball_track_confidence=(cue.confidence if cue is not None and cue.visible else 0.0),
+                    cue_tip_visible=bool(cue_geometry["visible"]),
+                    cue_tip_distance_to_ball=float(cue_geometry["distance"]),
+                    cue_approach_speed=float(cue_geometry["approach_speed"]),
+                    cue_forward_motion=float(cue_geometry["forward_motion"]),
+                    cue_contact_score=float(cue_geometry["contact_score"]),
+                    max_ball_normalized_speed=self.tracker.max_normalized_speed(diameter),
+                    moving_ball_count=moving_count,
+                    occluded_ball_count=self.tracker.occluded_moving_count(
+                        min_normalized_speed=stop_speed,
+                        ball_diameter_px=diameter,
+                    ),
+                    ball_residual_motion=(residual.ball_residual_motion if residual else 0.0),
+                    motion_score=residual.motion_score if residual else 0.0,
+                    motion_raw=residual.motion_raw if residual else 0.0,
+                    scene_cut_score=online_cut,
                 )
+                features.append(feat)
 
-            # Checkpoint periodically for long videos
-            if kept % 500 == 0:
-                self._write_checkpoint(
-                    {
-                        "stage": checkpoint_stage,
-                        "frame_idx": idx,
-                        "source_time": t,
-                        "features": len(features),
-                    }
-                )
+                if scene_stream is not None and kept % scene_step == 0:
+                    scene_stream.observe(frame, t, histogram=hist)
 
-        cap.release()
+                kept += 1
+                if progress and kept % 20 == 0:
+                    interval = max(end_time - start_time, 1e-6)
+                    fraction = (t - start_time) / interval
+                    progress(
+                        min(0.99, max(0.0, fraction)),
+                        f"Frame {idx + 1}/{total_frames}",
+                    )
+
+                # Checkpoint periodically for long videos
+                if kept % 500 == 0:
+                    self._write_checkpoint(
+                        {
+                            "stage": checkpoint_stage,
+                            "frame_idx": idx,
+                            "source_time": t,
+                            "features": len(features),
+                        }
+                    )
+
+        finally:
+            frames.close()
+            cap.release()
         if progress:
             progress(1.0, f"Sampled {len(features)} frames")
         observations = scene_stream.observations if scene_stream is not None else []
@@ -779,6 +813,7 @@ class Analyzer:
         signature: str = "",
         resume: bool = True,
         force_native_audio: bool = False,
+        existing_dense: list[FrameFeatures] | None = None,
     ) -> tuple[list[StrikeCandidate], list[FrameFeatures]]:
         """Extract dense observations around each candidate and its rough stop.
 
@@ -923,14 +958,34 @@ class Analyzer:
             return candidates, []
 
         total_ranges = max(1, len(merged_ranges))
+        existing_times = [feature.t for feature in existing_dense or []]
         for range_idx, (start, end, scan_fps) in enumerate(merged_ranges):
             try:
+                part = None
+                if existing_dense and scan_fps >= dense_fps:
+                    lo = bisect_left(existing_times, start)
+                    hi = bisect_right(existing_times, end)
+                    covered = existing_dense[lo:hi]
+                    max_gap = 1.5 / max(dense_fps, 1.0)
+                    if (
+                        len(covered) >= 2
+                        and covered[0].t - start <= max_gap
+                        and end - covered[-1].t <= max_gap
+                        and all(
+                            right.t - left.t <= max_gap
+                            for left, right in zip(covered, covered[1:])
+                        )
+                    ):
+                        # Audio seeds merged into a visual interval were already
+                        # observed at native cadence. Reuse that evidence rather
+                        # than decoding and tracking the same shot a second time.
+                        part = covered
                 part = (
                     self._load_dense_window(
                         signature, range_idx, start, end
                     )
-                    if resume and signature
-                    else None
+                    if part is None and resume and signature
+                    else part
                 )
                 if part is None:
                     part, _, _ = self._extract_features(
@@ -1096,6 +1151,17 @@ class Analyzer:
         encoded = json.dumps(
             payload, sort_keys=True, separators=(",", ":"), default=str
         ).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+    def _result_signature(self, source: Path) -> str:
+        """Final clips also depend on segmentation settings, unlike features."""
+        payload = {
+            "analysis": self._analysis_signature(source),
+            "segmentation": {
+                key: self.config.get(key) for key in ("modes", "confidence", "importance")
+            },
+        }
+        encoded = json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
 
     def _repair_pathological_replay_labels(
@@ -1506,6 +1572,7 @@ class Analyzer:
             "metadata": result.metadata.model_dump(),
             "strike_candidates": [c.model_dump() for c in result.strike_candidates],
             "analysis_version": result.analysis_version,
+            "analysis_signature": result.analysis_signature,
         }
         (self.job_dir / "timeline.json").write_text(
             json.dumps(slim, indent=2), encoding="utf-8"
@@ -1517,3 +1584,75 @@ class Analyzer:
         (self.job_dir / "checkpoint.json").write_text(
             json.dumps(data), encoding="utf-8"
         )
+
+
+    def _preserve_user_edits(
+        self, new_shots: list[ShotRecord], job_id: str
+    ) -> list[ShotRecord]:
+        previous_shots: list[ShotRecord] = []
+        corrections_path = self.job_dir / "corrections.json"
+        timeline_path = self.job_dir / "timeline.json"
+        analysis_path = self.job_dir / "analysis.json"
+        deleted_strikes: list[float] = []
+
+        if corrections_path.exists():
+            try:
+                data = json.loads(corrections_path.read_text(encoding="utf-8"))
+                previous_shots = [ShotRecord.model_validate(s) for s in data.get("shots", [])]
+                deleted_strikes = [float(t) for t in data.get("deleted_strikes", [])]
+            except Exception as exc:
+                logger.warning("Could not read corrections.json for job %s: %s", job_id, exc)
+        elif timeline_path.exists():
+            try:
+                data = json.loads(timeline_path.read_text(encoding="utf-8"))
+                previous_shots = [ShotRecord.model_validate(s) for s in data.get("shots", [])]
+            except Exception as exc:
+                logger.warning("Could not read timeline.json for job %s: %s", job_id, exc)
+        elif analysis_path.exists():
+            try:
+                data = json.loads(analysis_path.read_text(encoding="utf-8"))
+                res = AnalysisResult.model_validate(data)
+                previous_shots = res.shots
+            except Exception as exc:
+                logger.warning("Could not read analysis.json for job %s: %s", job_id, exc)
+
+        new_shots = [
+            shot for shot in new_shots
+            if not any(abs(shot.cue_strike_timestamp - t) <= 1.5 for t in deleted_strikes)
+        ]
+        if not previous_shots:
+            for i, shot in enumerate(new_shots, start=1):
+                shot.shot_id = i
+            return new_shots
+
+        unmatched = set(range(len(previous_shots)))
+        shots = list(new_shots)
+
+        for shot_index, shot in enumerate(shots):
+            best_idx = min(
+                unmatched,
+                key=lambda idx: abs(
+                    previous_shots[idx].cue_strike_timestamp - shot.cue_strike_timestamp
+                ),
+                default=None,
+            )
+            if best_idx is None:
+                continue
+            previous = previous_shots[best_idx]
+            if abs(previous.cue_strike_timestamp - shot.cue_strike_timestamp) > 1.5:
+                continue
+            unmatched.remove(best_idx)
+            if previous.user_modified:
+                shots[shot_index] = previous.model_copy(
+                    update={"shot_id": shot.shot_id}, deep=True
+                )
+
+        for idx in sorted(unmatched):
+            prev = previous_shots[idx]
+            if prev.user_modified:
+                shots.append(prev)
+
+        shots.sort(key=lambda s: s.clip_start)
+        for i, s in enumerate(shots, start=1):
+            s.shot_id = i
+        return shots

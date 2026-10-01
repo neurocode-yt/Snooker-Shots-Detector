@@ -258,7 +258,6 @@ async function load() {
   const pr = await fetch(`/api/jobs/${jobId}`);
   meta = await pr.json();
   document.getElementById("job-label").textContent = jobId;
-  if (meta.mode) document.getElementById("mode-select").value = meta.mode;
 
   const res = await fetch(`/api/jobs/${jobId}/shots`);
   if (!res.ok) {
@@ -557,7 +556,7 @@ async function runExport({ combined, clips, button }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         output_name: "highlights.mp4",
-        mode: document.getElementById("mode-select").value,
+        mode: "strict",
         accurate: true,
         export_clips: clips,
         export_joined: combined,
@@ -611,6 +610,45 @@ document.getElementById("save-labels-btn").addEventListener("click", () => {
   // also corrections
   window.open(`/api/jobs/${jobId}/download/corrections`, "_blank");
   showToast("Labels download started");
+});
+
+document.getElementById("restart-analysis-btn").addEventListener("click", async () => {
+  if (!confirm(`Restart analysis for job ${jobId}? Saved checkpoints and your manual edits will be preserved.`)) return;
+  const btn = document.getElementById("restart-analysis-btn");
+  btn.disabled = true;
+  showToast("Restarting analysis...");
+  setExportStatus("Restarting analysis from last checkpoint...", "working");
+
+  try {
+    const res = await fetch(`/api/jobs/${jobId}/restart`, { method: "POST" });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || err.message || "Failed to restart analysis");
+    }
+    showToast("Analysis restarted");
+    const poll = setInterval(async () => {
+      const pRes = await fetch(`/api/jobs/${jobId}/progress`);
+      if (!pRes.ok) return;
+      const progressMeta = await pRes.json();
+      setExportStatus(`Analyzing: ${progressMeta.status} (${(progressMeta.progress * 100 || 0).toFixed(0)}%) - ${progressMeta.message || ""}`, "working");
+      if (["ready_for_review", "completed", "failed"].includes(progressMeta.status)) {
+        clearInterval(poll);
+        btn.disabled = false;
+        if (progressMeta.status === "failed") {
+          showToast(`Analysis failed: ${progressMeta.error || progressMeta.message}`);
+          setExportStatus(`Analysis failed: ${progressMeta.error || progressMeta.message}`, "error");
+        } else {
+          showToast("Analysis complete — reloading timeline...");
+          setExportStatus("Analysis complete", "ready");
+          await load();
+        }
+      }
+    }, 1500);
+  } catch (err) {
+    btn.disabled = false;
+    showToast(`Could not restart: ${err.message}`);
+    setExportStatus(`Restart error: ${err.message}`, "error");
+  }
 });
 
 // Keyboard shortcuts

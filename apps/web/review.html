@@ -13,12 +13,7 @@
       <h1>Review <span id="job-label">{{JOB_ID}}</span></h1>
     </div>
     <div class="header-actions">
-      <select id="mode-select">
-        <option value="strict">Strict (strike−1s → stop)</option>
-        <option value="action_only">Action Only</option>
-        <option value="natural">Natural</option>
-        <option value="full_sequence">Full Sequence</option>
-      </select>
+      <button id="restart-analysis-btn" title="Re-run analysis from last valid checkpoint">Restart analysis</button>
       <button id="export-combined-btn" class="primary">Export combined video</button>
       <button id="export-clips-btn">Export individual clips</button>
       <button id="open-export-btn" title="Open the folder containing the combined video and exports">

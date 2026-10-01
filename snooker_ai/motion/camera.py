@@ -81,7 +81,9 @@ class CameraMotionEstimator:
             if pts is None:
                 return None, None, None
             pts_np = pts.get() if isinstance(pts, cv2.UMat) else pts
-            if len(pts_np) < 8:
+            # An empty OpenCL result is a UMat whose get() returns None.
+            # Blank broadcast frames are normal, especially between frames.
+            if pts_np is None or len(pts_np) < 8:
                 return pts_np, None, None
             nxt, status, _ = cv2.calcOpticalFlowPyrLK(
                 prev_input,

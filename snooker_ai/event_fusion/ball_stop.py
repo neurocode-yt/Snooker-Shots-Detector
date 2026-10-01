@@ -215,6 +215,8 @@ class BallStopDetector:
             raw <= self.quiet_raw_threshold
             and residual_max <= self.quiet_residual_max
             and speed <= self.quiet_speed_max
+            and self._get_float(f, "ball_residual_motion") < self.residual_stop
+            and int(getattr(f, "moving_ball_count", 0) or 0) == 0
         )
 
     def _moving_evidence(

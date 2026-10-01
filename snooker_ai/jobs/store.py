@@ -25,7 +25,7 @@ class JobStore:
         uploads.mkdir(parents=True, exist_ok=True)
         self.uploads = uploads
 
-    def create(self, source_path: str | Path, mode: str = "natural") -> str:
+    def create(self, source_path: str | Path, mode: str = "strict") -> str:
         job_id = time.strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8]
         job_dir = self.root / job_id
         job_dir.mkdir(parents=True, exist_ok=True)
@@ -120,9 +120,29 @@ class JobStore:
         path = self.job_dir(job_id) / "analysis.json"
         if not path.exists():
             raise FileNotFoundError(f"Analysis not found for job {job_id}")
-        return AnalysisResult.model_validate_json(path.read_text(encoding="utf-8"))
+        result = AnalysisResult.model_validate_json(path.read_text(encoding="utf-8"))
+        self._sync_review_timestamps(result)
+        return result
+
+    @staticmethod
+    def _sync_review_timestamps(result: AnalysisResult) -> None:
+        for shot in result.shots:
+            if shot.user_modified:
+                # The review API edits legacy names; exports validate both
+                # representations. Keep them aligned after edits/merge/split.
+                shot.clip_start_timestamp = shot.clip_start
+                shot.clip_end_timestamp = shot.clip_end
+                shot.cue_strike_timestamp = shot.cue_strike
+                shot.physical_stop_timestamp = shot.ball_motion_end
+                shot.last_ball_motion_timestamp = min(
+                    shot.last_ball_motion_timestamp, shot.physical_stop_timestamp
+                )
+                shot.stop_confirmation_timestamp = max(
+                    shot.stop_confirmation_timestamp, shot.physical_stop_timestamp
+                )
 
     def save_analysis(self, result: AnalysisResult) -> None:
+        self._sync_review_timestamps(result)
         path = self.job_dir(result.job_id) / "analysis.json"
         path.write_text(result.model_dump_json(indent=2), encoding="utf-8")
         slim = {
@@ -165,6 +185,7 @@ class JobStore:
 
     def delete_shot(self, job_id: str, shot_id: int) -> None:
         result = self.load_analysis(job_id)
+        deleted = [shot.cue_strike_timestamp for shot in result.shots if shot.shot_id == shot_id]
         result.shots = [s for s in result.shots if s.shot_id != shot_id]
         for i, s in enumerate(result.shots, start=1):
             s.shot_id = i
@@ -173,7 +194,7 @@ class JobStore:
             0.0, result.original_duration - result.edited_duration
         )
         self.save_analysis(result)
-        self._export_corrections(job_id, result)
+        self._export_corrections(job_id, result, deleted_strikes=deleted)
 
     def add_shot(self, job_id: str, shot: ShotRecord) -> ShotRecord:
         result = self.load_analysis(job_id)
@@ -241,6 +262,8 @@ class JobStore:
         left = target.model_copy(deep=True)
         right = target.model_copy(deep=True)
         left.clip_end = at_time
+        left.cue_strike = min(left.cue_strike, at_time)
+        left.ball_motion_start = min(left.ball_motion_start, at_time)
         left.ball_motion_end = min(left.ball_motion_end, at_time)
         left.user_modified = True
         left.manual_review_required = False
@@ -268,14 +291,28 @@ class JobStore:
             0.0, result.original_duration - result.edited_duration
         )
 
-    def _export_corrections(self, job_id: str, result: AnalysisResult) -> None:
+    def _export_corrections(
+        self, job_id: str, result: AnalysisResult, *, deleted_strikes: Optional[list[float]] = None
+    ) -> None:
         path = self.job_dir(job_id) / "corrections.json"
+        try:
+            previous = json.loads(path.read_text(encoding="utf-8"))
+            deleted = [float(t) for t in previous.get("deleted_strikes", [])]
+        except (OSError, ValueError, TypeError):
+            deleted = []
+        deleted = sorted(set(deleted + (deleted_strikes or [])))
+        # Explicitly adding a shot back restores it, including on re-analysis.
+        deleted = [
+            t for t in deleted
+            if not any(shot.user_modified and abs(shot.cue_strike - t) <= 1.5 for shot in result.shots)
+        ]
         path.write_text(
             json.dumps(
                 {
                     "job_id": job_id,
                     "source_path": result.source_path,
                     "shots": [s.model_dump() for s in result.shots],
+                    "deleted_strikes": deleted,
                     "exported_at": time.time(),
                 },
                 indent=2,

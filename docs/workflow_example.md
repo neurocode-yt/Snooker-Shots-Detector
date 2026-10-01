@@ -3,7 +3,7 @@
 ## 1. Analyze
 
 ```bash
-snooker-ai analyze match.mp4 --mode natural
+snooker-ai analyze match.mp4
 ```
 
 Note the printed `job_id`.
@@ -46,7 +46,7 @@ Outputs under `data/jobs/<job_id>/export/`:
 ## 4. Batch
 
 ```bash
-snooker-ai batch ./matches --mode action_only
+snooker-ai batch ./matches
 ```
 
 ## 5. Corrections as training data

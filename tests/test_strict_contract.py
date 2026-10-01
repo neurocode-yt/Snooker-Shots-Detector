@@ -118,10 +118,12 @@ def test_strict_config_expresses_exact_boundary_contract():
     config = load_config()
     strict = config.mode_settings("strict")
     assert strict["pre_roll"] == 2.0
-    assert strict["post_roll"] == 0.0
     assert strict["min_seconds_after_strike"] == 4.0
-    assert strict["max_seconds_after_strike"] == 4.0
-    assert strict["max_clip_seconds"] == 12.0
+    # Clips end at the real ball stop; the seven-second horizon is a review
+    # cap for unresolved tracking, not a fixed clip length.
+    assert strict["max_seconds_after_strike"] == 7.0
+    assert strict["max_clip_seconds"] == 9.0
+    assert strict["min_shot_spacing_seconds"] == 4.0
     assert config.get("ball_stop.confirm_seconds") == 0.50
     assert config.get("ball_stop.settle_seconds") == 0.50
     assert config.get("ball_stop.end_pad_seconds") == 0.0

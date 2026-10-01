@@ -71,8 +71,8 @@ def test_ball_stop_keeps_open_when_motion_unresolved(config):
     det = BallStopDetector(config)
     cand = StrikeCandidate(timestamp=1.0, confidence=0.9)
     result = det.detect_stop(cand, feats, duration=30.0)
-    # A runaway unresolved track is capped at ten seconds and flagged for review.
-    assert result.physical_stop_timestamp == 11.0
+    # A runaway unresolved track is capped at seven seconds and flagged for review.
+    assert result.physical_stop_timestamp == 8.0
     assert result.confirmed is False
     assert result.manual_review_required is True
 

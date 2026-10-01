@@ -1,6 +1,7 @@
 import numpy as np
 
 import snooker_ai.table_detection.localizer as localizer_module
+from snooker_ai.motion.camera import CameraMotionEstimator
 from snooker_ai.motion.residual import ResidualMotionAnalyzer
 from snooker_ai.table_detection.localizer import TableLocalizer
 
@@ -57,3 +58,15 @@ def test_residual_motion_detects_change(config, synthetic_green_frame):
     sample = analyzer.analyze(prev, gray, mask)
     assert sample.residual_mean >= 0.0
     assert 0.0 <= sample.motion_score <= 1.0
+
+
+def test_camera_motion_handles_empty_opencl_feature_result(config, monkeypatch):
+    import cv2
+
+    estimator = CameraMotionEstimator(config)
+    monkeypatch.setattr(cv2, "goodFeaturesToTrack", lambda *args, **kwargs: cv2.UMat())
+    blank = np.zeros((120, 160), dtype=np.uint8)
+    result = estimator.estimate(blank, blank)
+    assert result.transform is None
+    assert result.inliers == 0
+    assert result.is_cut_like is True  # unknown motion, never proof of a ball stop

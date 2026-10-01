@@ -1,7 +1,11 @@
 """Review export API behavior for combined and individual outputs."""
 
 from pathlib import Path
+import asyncio
+import threading
 
+import httpx
+import pytest
 from fastapi.testclient import TestClient
 
 from apps.api.main import create_app
@@ -19,7 +23,7 @@ def test_review_can_export_combined_video_or_clips_separately(
     source.write_bytes(b"video")
 
     store = JobStore(config)
-    job_id = store.create(source, mode="action_only")
+    job_id = store.create(source, mode="strict")
     store.save_analysis(
         AnalysisResult(
             job_id=job_id,
@@ -36,7 +40,7 @@ def test_review_can_export_combined_video_or_clips_separately(
                     included=True,
                 )
             ],
-            mode=EditMode.ACTION_ONLY,
+            mode=EditMode.STRICT,
             original_duration=10.0,
         )
     )
@@ -59,7 +63,7 @@ def test_review_can_export_combined_video_or_clips_separately(
         combined = client.post(
             f"/api/jobs/{job_id}/export",
             json={
-                "mode": "action_only",
+                "mode": "strict",
                 "export_clips": False,
                 "export_joined": True,
             },
@@ -67,7 +71,7 @@ def test_review_can_export_combined_video_or_clips_separately(
         clips = client.post(
             f"/api/jobs/{job_id}/export",
             json={
-                "mode": "action_only",
+                "mode": "strict",
                 "export_clips": True,
                 "export_joined": False,
             },
@@ -115,3 +119,58 @@ def test_open_export_folder_reports_combined_video(config, tmp_path, monkeypatch
     assert payload["combined_exists"] is True
     assert payload["clip_count"] == 0
     assert payload["folder"].endswith("export")
+
+
+def test_null_lists_do_not_fail_len(config):
+    """AnalysisResult deserialization with null lists must sanitize to empty lists."""
+    data = {
+        "job_id": "test-job",
+        "source_path": "test.mp4",
+        "metadata": {"path": "test.mp4"},
+        "shots": None,
+        "features": None,
+        "scenes": None,
+        "strike_candidates": None,
+        "events": None,
+    }
+    result = AnalysisResult.model_validate(data)
+    assert result.shots == []
+    assert result.features == []
+    assert result.scenes == []
+    assert result.strike_candidates == []
+    assert result.events == []
+    assert len(result.shots) == 0
+
+
+@pytest.mark.asyncio
+async def test_export_keeps_progress_available_and_rejects_duplicate_export(config, tmp_path, monkeypatch):
+    config._data["paths"]["jobs_dir"] = str(tmp_path / "jobs")
+    config._data["paths"]["uploads_dir"] = str(tmp_path / "uploads")
+    source = tmp_path / "source.mp4"
+    source.write_bytes(b"video")
+    store = JobStore(config)
+    job_id = store.create(source)
+    store.save_analysis(AnalysisResult(job_id=job_id, source_path=str(source), metadata=VideoMetadata(path=str(source))))
+    started, release = threading.Event(), threading.Event()
+
+    def slow_export(*args):
+        started.set()
+        if not release.wait(3):
+            raise RuntimeError("web request loop blocked during export")
+        return ExportResult(clip_paths=[])
+
+    monkeypatch.setattr("apps.api.main.Exporter.export", slow_export)
+    transport = httpx.ASGITransport(app=create_app(config))
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        export_task = asyncio.create_task(client.post(f"/api/jobs/{job_id}/export", json={}))
+        try:
+            assert await asyncio.to_thread(started.wait, 2)
+            assert not export_task.done()
+            progress = await asyncio.wait_for(client.get(f"/api/jobs/{job_id}/progress"), 1)
+            assert progress.status_code == 200
+            duplicate = await client.post(f"/api/jobs/{job_id}/export", json={})
+            assert duplicate.status_code == 409
+        finally:
+            release.set()
+            response = await export_task
+        assert response.status_code == 200

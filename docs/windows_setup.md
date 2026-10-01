@@ -40,7 +40,7 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```powershell
 pytest -q
 snooker-ai version
-snooker-ai analyze path\to\match.mp4 --mode natural
+snooker-ai analyze path\to\match.mp4
 snooker-ai serve --host 127.0.0.1 --port 8000
 ```
 

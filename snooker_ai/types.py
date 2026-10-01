@@ -10,36 +10,22 @@ from pydantic import BaseModel, Field, model_validator
 
 class EditMode(str, Enum):
     """
-    STRICT — 2s before cue strike → hold until all balls stop (default recommended).
-    ACTION_ONLY — short pads around action.
-    NATURAL — highlight-style pre/post rolls.
-    FULL_SEQUENCE — longer approach + reaction.
+    STRICT — 2s before cue strike → hold until all balls stop.
+
+    Strict is the only supported editing mode.  Legacy mode names
+    (action_only, natural, full_sequence) coerce to STRICT so older jobs,
+    saved analyses, and API callers keep loading.
     """
 
     STRICT = "strict"
-    ACTION_ONLY = "action_only"
-    NATURAL = "natural"
-    FULL_SEQUENCE = "full_sequence"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "EditMode":
+        return cls.STRICT
 
     @classmethod
     def from_string(cls, value: str) -> "EditMode":
-        key = value.strip().lower().replace("-", "_").replace(" ", "_")
-        aliases = {
-            "strict_mode": cls.STRICT,
-            "shots_only": cls.STRICT,
-            "shot_only": cls.STRICT,
-            "pure": cls.STRICT,
-            "action": cls.ACTION_ONLY,
-            "actiononly": cls.ACTION_ONLY,
-            "highlights": cls.NATURAL,
-            "natural_highlights": cls.NATURAL,
-            "full": cls.FULL_SEQUENCE,
-            "full_shot_sequence": cls.FULL_SEQUENCE,
-            "sequence": cls.FULL_SEQUENCE,
-        }
-        if key in aliases:
-            return aliases[key]
-        return cls(key)
+        return cls.STRICT
 
 
 class CameraViewType(str, Enum):
@@ -317,6 +303,16 @@ class AnalysisResult(BaseModel):
     edited_duration: float = 0.0
     pause_removed_seconds: float = 0.0
     analysis_version: str = "0.1.1-phase1-strict"
+    analysis_signature: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _sanitize_lists(cls, value: Any) -> Any:
+        if isinstance(value, dict):
+            for field_name in ("scenes", "features", "strike_candidates", "shots", "events"):
+                if value.get(field_name) is None:
+                    value[field_name] = []
+        return value
 
 
 class JobProgress(BaseModel):
