@@ -141,7 +141,7 @@ class BallStopDetector:
 
     def _normalised_speed(self, f: FrameFeatures) -> float:
         speed = self._get_float(f, "max_ball_normalized_speed")
-        if speed > 0.0:
+        if speed > 0.0 or f.ball_kinematics_valid:
             return speed
         diameter = self._get_float(f, "ball_diameter_px")
         px_speed = self._get_float(f, "max_ball_speed")
@@ -171,7 +171,10 @@ class BallStopDetector:
 
         if self._has_track_evidence(f):
             speed_score = float(np.clip(speed / max(self.speed_start * 2.5, 1e-6), 0, 1))
-            residual_score = float(np.clip(local_residual, 0, 1))
+            residual_score = (
+                0.0 if f.ball_kinematics_valid
+                else float(np.clip(local_residual, 0, 1))
+            )
             count_score = min(1.0, moving_count / 2.0)
             return float(max(speed_score, residual_score, count_score * 0.8))
 
@@ -254,6 +257,12 @@ class BallStopDetector:
             threshold = self.speed_stop if already_moving else self.speed_start
             if speed >= threshold:
                 return True
+            if f.ball_kinematics_valid:
+                # Coherent centre trajectories already measure motion. Codec
+                # shimmer and cue/player edges in a flow patch cannot overrule
+                # a measured stationary ball. Lost moving tracks are handled
+                # conservatively by the occlusion gate above.
+                return False
             residual_threshold = self.residual_stop if already_moving else self.residual_start
             return local_residual >= residual_threshold
 

@@ -483,11 +483,10 @@ def test_mid_motion_false_peak_absorbed(config):
     shots = SegmentBuilder(config).build(cands, feats, 20.0, EditMode.STRICT)
     assert len(shots) == 1
     assert shots[0].clip_end >= shots[0].ball_motion_end - 1e-6
-    # Travel runs past the seven-second horizon, so the boundary is the review
-    # cap at strike+7.
-    assert shots[0].ball_motion_end == pytest.approx(12.0, abs=0.05)
-    # False peak must not create a second shot or stretch the capped clip.
-    assert shots[0].clip_end <= shots[0].cue_strike + 7.0 + 1e-6
+    # Report the first stationary frame after travel, rather than strike+7.
+    assert shots[0].ball_motion_end == pytest.approx(12.1, abs=0.05)
+    # A false peak does not alter the observed stop boundary.
+    assert shots[0].clip_end == shots[0].ball_motion_end
 
 
 def test_false_peak_does_not_force_ten_second_cap(config):
@@ -657,11 +656,11 @@ def test_unconfirmed_stop_cap_does_not_hide_next_verified_strike(config):
 
 
 def test_unresolved_long_roll_is_not_cut_by_timeout(config):
-    """An unresolved rolling track is capped at seven seconds and reviewed."""
+    """A genuine long roll is followed through its observed stationary frame."""
     cands = [
         StrikeCandidate(timestamp=5.0, confidence=0.9, camera_view=CameraViewType.MAIN_TABLE),
     ]
-    # Motion stays high for 25s — must still cap at strike+7
+    # Motion stays high for 25s, followed by valid stationary observations.
     feats = []
     for i in range(400):
         t = i * 0.1
@@ -670,15 +669,48 @@ def test_unresolved_long_roll_is_not_cut_by_timeout(config):
     shots = SegmentBuilder(config).build(cands, feats, 40.0, EditMode.STRICT)
     assert len(shots) == 1
     s = shots[0]
-    assert s.clip_end == pytest.approx(12.0)
-    assert s.evidence["stop_reason"] == "max_duration_review_cap"
+    assert s.clip_end == pytest.approx(30.1)
+    assert s.evidence["stop_confirmed"] is True
     assert s.ball_motion_end == s.clip_end
-    assert s.manual_review_required is True
     # Still starts ~2s before strike
     assert abs(s.clip_start - 3.0) < 0.05
 
 
 # ---- NEW TESTS for improved detection ----
+
+
+def test_cue_approach_does_not_move_strike_before_actual_ball_launch(config):
+    features = []
+    for i in range(91):
+        t = i / 30
+        moving = 1.0 <= t <= 1.5
+        features.append(FrameFeatures(
+            t=t, table_confidence=0.9, view_type=CameraViewType.MAIN_TABLE,
+            ball_diameter_px=10, ball_count=5, cue_ball_track_confidence=0.9,
+            cue_ball_x=100 + min(max(t - 1.0, 0), 0.5) * 80,
+            cue_ball_y=100, cue_ball_normalized_speed=8 if moving else 0,
+            cue_ball_acceleration=30 if t == 1 else 0,
+            max_ball_normalized_speed=8 if moving else 0,
+            cue_contact_score=0.95 if 0.5 <= t <= 1.2 else 0,
+            cue_approach_speed=5 if 0.5 <= t <= 1.2 else 0,
+            motion_raw=0.6 if moving else 0.01,
+        ))
+    detector = StrikeDetector(config)
+    candidates = detector.detect_candidates(detector.score_frames(features))
+    assert candidates
+    assert all(candidate.timestamp >= 1.0 for candidate in candidates)
+
+
+def test_sparse_confirmation_rejects_rebound_of_an_already_rolling_ball(config):
+    detector = StrikeDetector(config)
+    metrics = {
+        "pre_sample_count": 14, "stationary_ratio": 0.0,
+        "pre_ball_quiet_ratio": 0.4, "pre_motion_raw_median": 0.1,
+        "post_peak_cue_speed": 8, "cue_speed": 6, "cue_track_visible": 1,
+        "sustained_run": 8, "cue_displacement_diameters": 1.2,
+        "cue_direction_consistency": 0.99, "track_confidence": 0.9,
+    }
+    assert not detector._sparse_dense_transition_confirmed(metrics)
 
 
 def test_rapid_consecutive_shots_both_detected(config):
@@ -1000,4 +1032,3 @@ def test_impact_cue_ball_blur_recovery(config):
     candidates = detector.detect_candidates(feats)
     assert len(candidates) >= 1
     assert any(c.timestamp == pytest.approx(1.0, abs=0.15) for c in candidates)
-

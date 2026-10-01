@@ -31,6 +31,8 @@ class Track:
     cloth_surround_confidence: float = 0.0
     predicted_position: Optional[tuple[float, float]] = None
     last_update_t: float = 0.0
+    _stable_speed_key: tuple | None = field(default=None, repr=False)
+    _stable_speed_value: float = field(default=0.0, repr=False)
 
     @property
     def radius(self) -> float:
@@ -86,6 +88,13 @@ class Track:
 
         if not self.active or not self.visible or len(self.positions) < 2:
             return 0.0
+        key = (self.positions[-1], len(self.positions), window_seconds, diameter_px)
+        if self._stable_speed_key != key:
+            self._stable_speed_value = self._estimate_stable_speed(window_seconds, diameter_px)
+            self._stable_speed_key = key
+        return self._stable_speed_value
+
+    def _estimate_stable_speed(self, window_seconds: float, diameter_px: float | None) -> float:
         end_t = float(self.positions[-1][0])
         start_t = end_t - max(float(window_seconds), 0.05)
         recent = [p for p in self.positions if p[0] >= start_t - 1e-9]
@@ -139,9 +148,17 @@ class BallTracker:
         self.tracks: list[Track] = []
         self._diameter_history: list[float] = []
 
-    def update(self, t: float, detections: list[Detection]) -> list[Track]:
+    def update(
+        self, t: float, detections: list[Detection],
+        camera_transform: np.ndarray | None = None,
+    ) -> list[Track]:
         t = float(t)
         detections = list(detections)
+        # Expired identities are no longer used. Retaining every old contour
+        # made each frame scan an ever-growing match history.
+        self.tracks = [track for track in self.tracks if track.active]
+        if camera_transform is not None:
+            self._compensate_camera(camera_transform)
         active_indices = [i for i, tr in enumerate(self.tracks) if tr.active]
 
         if not active_indices:
@@ -152,34 +169,32 @@ class BallTracker:
         matched_tracks: set[int] = set()
         matched_detections: set[int] = set()
         if detections:
-            costs = np.full((len(active_indices), len(detections)), 1e6, dtype=np.float64)
-            gates = np.zeros_like(costs)
             diameter_estimate = self.estimated_ball_diameter()
-            for row, track_index in enumerate(active_indices):
-                track = self.tracks[track_index]
-                px, py = track.predict(t)
-                dt = max(0.0, t - track.last_t)
-                track_scale = track.diameter or diameter_estimate
-                for column, detection in enumerate(detections):
-                    detection_scale = detection.diameter_px
-                    scale = max(track_scale, detection_scale, diameter_estimate, 1.0)
-                    # Permit rapid balls while keeping the gate scale-aware.  The
-                    # predicted point carries most of the displacement already.
-                    gate = max(self.max_distance, 3.5 * scale) + min(
-                        self.max_distance * 1.5, track.predicted_speed() * dt * 0.35
-                    )
-                    distance = float(np.hypot(detection.cx - px, detection.cy - py))
-                    label_penalty = self._label_penalty(track, detection, gate)
-                    size_penalty = 0.0
-                    if track_scale > 0.0 and detection_scale > 0.0:
-                        size_penalty = min(
-                            gate * 0.45,
-                            abs(np.log((detection_scale + 1e-6) / (track_scale + 1e-6)))
-                            * gate
-                            * 0.28,
-                        )
-                    costs[row, column] = distance + label_penalty + size_penalty
-                    gates[row, column] = gate
+            active = [self.tracks[index] for index in active_indices]
+            predicted = np.asarray([track.predict(t) for track in active])
+            observed = np.asarray([(d.cx, d.cy) for d in detections])
+            track_scales = np.asarray([track.diameter or diameter_estimate for track in active])[:, None]
+            detection_scales = np.asarray([d.diameter_px for d in detections])[None, :]
+            scales = np.maximum(np.maximum(track_scales, detection_scales), max(diameter_estimate, 1.0))
+            allowance = np.asarray([
+                min(self.max_distance * 1.5, track.predicted_speed() * max(0.0, t - track.last_t) * 0.35)
+                for track in active
+            ])[:, None]
+            gates = np.maximum(self.max_distance, 3.5 * scales) + allowance
+            delta = predicted[:, None, :] - observed[None, :, :]
+            costs = np.hypot(delta[:, :, 0], delta[:, :, 1])
+            track_labels = np.asarray([track.label for track in active])[:, None]
+            detection_labels = np.asarray([d.label for d in detections])[None, :]
+            colors = np.asarray([d.color_confidence for d in detections])[None, :]
+            mismatch = track_labels != detection_labels
+            label_factors = np.where(
+                track_labels == "cue_ball", np.where(colors < 0.55, 0.30, 0.60),
+                np.where(detection_labels == "cue_ball", np.where(colors >= 0.65, 0.62, 0.38), 0.20),
+            )
+            costs += gates * label_factors * mismatch
+            ratios = (detection_scales + 1e-6) / (track_scales + 1e-6)
+            sizes = np.minimum(gates * 0.45, np.abs(np.log(ratios)) * gates * 0.28)
+            costs += np.where((track_scales > 0) & (detection_scales > 0), sizes, 0.0)
 
             rows, columns = linear_sum_assignment(costs)
             for row, column in zip(rows.tolist(), columns.tolist()):
@@ -201,18 +216,23 @@ class BallTracker:
 
         return [tr for tr in self.tracks if tr.active]
 
-    @staticmethod
-    def _label_penalty(track: Track, detection: Detection, gate: float) -> float:
-        if track.label == detection.label:
-            return 0.0
-        # Cue-ball identity is valuable, but a single low-colour frame must not
-        # terminate its track.  Strong cue observations are expensive to assign to
-        # an object-ball track; weak observations may bridge lighting changes.
-        if track.label == "cue_ball" and detection.label != "cue_ball":
-            return gate * (0.30 if detection.color_confidence < 0.55 else 0.60)
-        if track.label != "cue_ball" and detection.label == "cue_ball":
-            return gate * (0.62 if detection.color_confidence >= 0.65 else 0.38)
-        return gate * 0.20
+    def _compensate_camera(self, transform: np.ndarray) -> None:
+        """Move position histories into the current camera coordinate system."""
+        transform = np.asarray(transform, dtype=np.float64)
+        if transform.shape != (2, 3) or not np.isfinite(transform).all():
+            return
+        identity = np.array([[1, 0, 0], [0, 1, 0]], dtype=np.float64)
+        if np.max(np.abs(transform - identity)) < 1e-3:
+            return
+        linear, offset = transform[:, :2], transform[:, 2]
+        for track in self.tracks:
+            positions = np.asarray(track.positions, dtype=np.float64)
+            if not len(positions):
+                continue
+            positions[:, 1:] = positions[:, 1:] @ linear.T + offset
+            track.positions = [tuple(position) for position in positions.tolist()]
+            track.velocity = tuple((linear @ np.asarray(track.velocity)).tolist())
+            track._stable_speed_key = None
 
     def _apply_detection(self, track: Track, t: float, detection: Detection) -> None:
         previous_velocity = track.velocity
@@ -373,14 +393,14 @@ class BallTracker:
             if track.active
             and track.visible
             and track.hits >= 2
-            and self._is_ball_quality_track(track)
+            and self.is_ball_quality_track(track)
         ]
         return float(max(speeds) / diameter) if speeds else 0.0
 
     def stable_track_speed(self, track: Track, ball_diameter_px: float = 0.0) -> float:
         """Return one track's jitter-resistant speed in ball diameters/second."""
 
-        if not self._is_ball_quality_track(track):
+        if not self.is_ball_quality_track(track):
             return 0.0
         diameter = float(ball_diameter_px or track.diameter or self.estimated_ball_diameter())
         if diameter <= 1e-6:
@@ -388,7 +408,7 @@ class BallTracker:
         return float(track.stable_speed(diameter_px=diameter) / diameter)
 
     @staticmethod
-    def _is_ball_quality_track(track: Track) -> bool:
+    def is_ball_quality_track(track: Track) -> bool:
         """Reject ball-sized highlights embedded in players, rails or graphics."""
 
         shape_ok = track.shape_confidence <= 0.0 or track.shape_confidence >= 0.48
@@ -408,7 +428,7 @@ class BallTracker:
         for track in self.tracks:
             if not track.active or not track.occluded:
                 continue
-            if not self._is_ball_quality_track(track):
+            if not self.is_ball_quality_track(track):
                 continue
             diameter = track.diameter or fallback_diameter
             if diameter <= 1e-6:

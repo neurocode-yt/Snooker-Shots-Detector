@@ -165,6 +165,7 @@ class FrameFeatures(BaseModel):
     cue_forward_motion: float = 0.0
     cue_contact_score: float = 0.0
     max_ball_normalized_speed: float = 0.0
+    ball_kinematics_valid: bool = False  # zero is measured stillness, not a missing value
     moving_ball_count: int = 0
     occluded_ball_count: int = 0
     ball_residual_motion: float = 0.0

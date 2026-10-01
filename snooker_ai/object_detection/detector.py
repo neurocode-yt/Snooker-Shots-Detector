@@ -125,6 +125,10 @@ class ObjectDetector:
 
         return float(self._diameter_ema)
 
+    def reset(self) -> None:
+        """Discard view-local scale when seeking or switching cameras."""
+        self._diameter_ema = 0.0
+
     def _detect_model(
         self, frame_bgr: np.ndarray, table_mask: Optional[np.ndarray]
     ) -> list[Detection]:
@@ -133,12 +137,11 @@ class ObjectDetector:
 
     @staticmethod
     def _table_bbox(mask: np.ndarray) -> tuple[int, int, int, int]:
-        ys, xs = np.where(mask > 0)
-        if xs.size == 0:
+        points = cv2.findNonZero(mask)
+        if points is None:
             return 0, 0, mask.shape[1], mask.shape[0]
-        x0, x1 = int(xs.min()), int(xs.max()) + 1
-        y0, y1 = int(ys.min()), int(ys.max()) + 1
-        return x0, y0, x1, y1
+        x, y, w, h = cv2.boundingRect(points)
+        return x, y, x + w, y + h
 
     def _diameter_prior(self, table_w: int, table_h: int) -> float:
         # A snooker ball is about 1.47% of the table's playing length.  Perspective

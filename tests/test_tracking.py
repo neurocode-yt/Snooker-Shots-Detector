@@ -128,6 +128,23 @@ def test_detection_derives_scale_for_legacy_constructor() -> None:
     assert detection.diameter_px == pytest.approx(10.0)
 
 
+def test_camera_pan_does_not_turn_stationary_balls_into_motion():
+    tracker = BallTracker()
+    tracker.update(0.0, [_d(20, 20), _d(100, 20)])
+    transform = np.array([[1, 0, 5], [0, 1, 0]], dtype=np.float64)
+    tracks = tracker.update(0.1, [_d(25, 20), _d(108, 20)], camera_transform=transform)
+    assert tracker.stable_track_speed(tracks[0], 10) == pytest.approx(0)
+    assert tracker.stable_track_speed(tracks[1], 10) == pytest.approx(3)
+
+
+def test_expired_tracks_do_not_accumulate_during_a_long_match():
+    tracker = BallTracker(max_missed=0.1)
+    for i in range(200):
+        tracker.update(i, [_d(i * 100, 20)])
+    # The current track and a newly expired predecessor are the only residents.
+    assert len(tracker.tracks) <= 2
+
+
 def test_cpu_detector_finds_scale_and_white_cue_ball(config) -> None:
     frame = np.full((240, 400, 3), (35, 105, 35), dtype=np.uint8)
     mask = np.full(frame.shape[:2], 255, dtype=np.uint8)

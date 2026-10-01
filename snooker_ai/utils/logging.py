@@ -14,6 +14,13 @@ def setup_logging(level: str = "INFO", name: str = "snooker_ai") -> logging.Logg
     global _CONFIGURED
     logger = logging.getLogger(name)
     if not _CONFIGURED:
+        # PowerShell/redirection can expose a cp1252 console. Unicode arrows
+        # and international filenames must never generate logging tracebacks.
+        if hasattr(sys.stdout, "reconfigure"):
+            try:
+                sys.stdout.reconfigure(errors="backslashreplace")
+            except (ValueError, OSError):
+                pass
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(
             logging.Formatter(

@@ -80,6 +80,47 @@ def test_low_global_flow_cannot_end_a_visibly_rolling_ball(config):
     assert stop.physical_stop_timestamp == pytest.approx(4.0)
 
 
+def test_measured_stationary_tracks_override_codec_shimmer(config):
+    features = [
+        _tracked_frame(
+            i / 10, moving=1 <= i / 10 < 4,
+            ball_kinematics_valid=True, max_ball_speed=100,
+            ball_residual_motion=1.0, motion_raw=0.6,
+        )
+        for i in range(56)
+    ]
+    stop = BallStopDetector(config).detect_stop(
+        StrikeCandidate(timestamp=1, confidence=0.95), features, duration=5.5,
+    )
+    assert stop.confirmed
+    assert stop.physical_stop_timestamp == pytest.approx(4.0)
+
+
+def test_verified_native_stop_survives_later_proposal_track_noise(config):
+    strike = StrikeCandidate(timestamp=2, confidence=0.95, evidence={
+        "refined_ball_motion_start": 2.03, "refined_last_motion_timestamp": 6.97,
+        "refined_stop_timestamp": 7, "refined_stop_confirmation_timestamp": 7.5,
+        "refined_stop_confidence": 0.95,
+    })
+    # Another seek/tracker may add noisy movement to the diagnostic timeline.
+    features = [_tracked_frame(i / 10, moving=i >= 20) for i in range(101)]
+    shots = SegmentBuilder(config).build([strike], features, duration=10)
+    assert len(shots) == 1
+    assert shots[0].clip_end == 7
+    assert shots[0].evidence["stop_reason"] == "confirmed_native_stop"
+
+
+def test_incomplete_native_stillness_cannot_override_live_motion(config):
+    strike = StrikeCandidate(timestamp=2, confidence=0.95, evidence={
+        "refined_stop_timestamp": 7, "refined_stop_confirmation_timestamp": 7.1,
+        "refined_stop_confidence": 0.95,
+    })
+    features = [_tracked_frame(i / 10, moving=i >= 20) for i in range(101)]
+    shots = SegmentBuilder(config).build([strike], features, duration=10)
+    assert shots[0].clip_end == 10
+    assert shots[0].evidence["stop_confirmed"] is False
+
+
 def test_camera_cut_during_confirmation_cannot_prove_a_stop(config):
     strike = StrikeCandidate(timestamp=1.0, confidence=0.95)
     features = _sequence()
@@ -172,6 +213,9 @@ def test_sustained_renewed_ball_motion_reopens_stop_confirmation(config):
 
 
 def test_unresolved_long_roll_is_capped_and_requires_review(config):
+    config._data["ball_stop"]["max_seconds_after_strike"] = 7.0
+    config._data["modes"]["strict"]["max_seconds_after_strike"] = 7.0
+    config._data["modes"]["strict"]["max_clip_seconds"] = 9.0
     strike = StrikeCandidate(timestamp=1.0, confidence=0.95)
     features = [
         _tracked_frame(round(i / 10, 10), moving=i / 10 >= 1.0)

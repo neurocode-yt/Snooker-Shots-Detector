@@ -46,9 +46,13 @@ analysis:
   sample_fps: 2.0
   refine_window_seconds: 2.0  # second-pass temporal resolution around candidates
   refine_fps: 30.0
+  adaptive_stop_tracking: true
+  stop_tracking_fps: 10.0  # follow long rolls cheaply; native cadence at strike and stop
+  native_flow_fps: 10.0  # supporting table flow; ball centres/camera still update at native fps
+  stop_tracking_tail_seconds: 0.2
   refine_merge_gap_seconds: 0.25  # avoid repeated decode/flow for nearby shots
-  strike_refine_post_seconds: 1.0  # native-fps evidence immediately after impact
-  stop_refine_window_seconds: 1.5  # tracker warm-up before the coarse stop estimate
+  strike_refine_post_seconds: 2.0  # native-fps evidence immediately after impact
+  stop_refine_window_seconds: 3.0  # recover earlier stillness when sparse tracks had a noisy tail
   refine_backward_seconds: 2.0  # native-rate context before the proposed strike
   reacquisition_tail_seconds: 2.0  # native-rate context after a coarse stop
   coarse_table_refresh_fps: 2.0  # reuse stable masks; camera cuts refresh immediately
@@ -210,12 +214,9 @@ ball_stop:
   settle_seconds: 0.50          # continuous valid stillness required
   min_motion_seconds: 0.45      # don't end sooner than this after strike
   end_pad_seconds: 0.0          # confirmation is look-ahead, never exported padding
-  # Unresolved tracking is capped so false player/rail tracks cannot run away.
-  # Practical broadcast bound: a strict shot may not run away indefinitely
-  # because a false track/occlusion survives after the table has settled.
-  # Matches modes.strict.max_seconds_after_strike and also bounds how much
-  # native-rate video each candidate window decodes during refinement.
-  max_seconds_after_strike: 7.0
+  # Safety horizon, not a fixed clip length. Adaptive tracking exits on a
+  # confirmed stop and keeps genuine cushion-to-cushion rolls beyond 7s.
+  max_seconds_after_strike: 60.0
   motion_start_normalized_speed: 0.80
   motion_stop_normalized_speed: 0.60
   motion_start_activity: 0.18
@@ -254,17 +255,17 @@ ball_stop:
 # Editing mode (strict is the only mode)
 modes:
   # STRICT: clip runs from 2s before cue contact until every ball from the
-  # shot has physically stopped.  min_seconds_after_strike keeps direct pots
-  # whole; max_seconds_after_strike / max_clip_seconds are review caps for
-  # unresolved tracking, not fixed clip lengths.  When the next shot starts
+  # shot has physically stopped. min_seconds_after_strike keeps direct pots
+  # whole; max_seconds_after_strike / max_clip_seconds bound unresolved
+  # tracking. When the next shot starts
   # before the previous window would end (fast break play), the boundary is
   # trimmed between the two shots instead of dropping either shot.
   strict:
     pre_roll: 2.0
     end_at_ball_stop: true
     min_seconds_after_strike: 4.0
-    max_seconds_after_strike: 7.0
-    max_clip_seconds: 9.0  # defensive total clip cap (pre_roll + max after strike)
+    max_seconds_after_strike: 60.0
+    max_clip_seconds: 62.0  # safety horizon; normal ends use observed stillness
     # Two genuine cue strikes can never be closer than this (balls must stop
     # and the player must re-address); tighter pairs are artefacts and are
     # resolved by evidence instead of kept as two shots.
