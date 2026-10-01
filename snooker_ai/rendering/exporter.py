@@ -245,6 +245,14 @@ class Exporter:
             # User-corrected boundaries are authoritative; only the basic
             # interval sanity checks below still apply to them.
             contract_shot = not shot.user_modified
+            minimum_clip = max(0.0, float(shot.evidence.get("minimum_clip_seconds", 0)))
+            available = max(0.0, source_duration - shot.clip_start) if source_duration > 0 else minimum_clip
+            if contract_shot and shot.duration() + end_tolerance < min(minimum_clip, available):
+                raise ValueError(f"Shot {shot.shot_id} is shorter than its minimum viewing time")
+            minimum_after = max(0.0, float(shot.evidence.get("minimum_strike_visibility_seconds", 0)))
+            available_after = max(0.0, source_duration - shot.cue_strike) if source_duration > 0 else minimum_after
+            if contract_shot and shot.clip_end - shot.cue_strike + end_tolerance < min(minimum_after, available_after):
+                raise ValueError(f"Shot {shot.shot_id} cuts away before its minimum post-impact time")
 
             expected_start = max(
                 0.0, shot.cue_strike_timestamp - pre_roll

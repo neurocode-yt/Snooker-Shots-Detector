@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from fractions import Fraction
+from math import ceil
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -31,12 +32,18 @@ def plan_mix(shots: list[ShotRecord], fps: float, seconds: float) -> MixPlan:
     frames = [max(1, int(s.duration() * fps + 1e-6)) for s in shots]
     durations = [n / fps for n in frames]
     overlaps = []
+    clear_frames = [min(n, max(0, ceil(float(s.evidence.get("minimum_clip_seconds", 0)) * fps - 1e-6)))
+                    for s, n in zip(shots, frames)]
     for i, (left, right) in enumerate(zip(shots, shots[1:])):
         # Avoid covering cue impact on unusually short clips.
-        after_impact = max(0, int((left.clip_start + durations[i] - left.cue_strike - 1 / fps) * fps + 1e-6))
+        protected_after = max(1 / fps, float(left.evidence.get("minimum_strike_visibility_seconds", 0)))
+        after_impact = max(0, int((left.clip_start + durations[i] - left.cue_strike - protected_after) * fps + 1e-6))
         before_impact = max(0, int((right.cue_strike - right.clip_start - 1 / fps) * fps + 1e-6))
+        incoming = round(overlaps[-1] * fps) if overlaps else 0
         n = min(max(0, round(seconds * fps)), frames[i] // 3, frames[i + 1] // 3,
-                after_impact, before_impact)
+                after_impact, before_impact,
+                max(0, frames[i] - clear_frames[i] - incoming),
+                max(0, frames[i + 1] - clear_frames[i + 1]))
         overlaps.append(n / fps)
     starts = [0.0] if shots else []
     for i in range(1, len(shots)):

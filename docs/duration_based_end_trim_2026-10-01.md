@@ -10,8 +10,10 @@ confirmation look-ahead, and the exported clip's duration do not affect the rule
 | 7 seconds or longer | 3 seconds |
 
 The user specified the under-five and at-least-seven cases. The intervening
-range retains the existing two-second trim. Very short clips still preserve
-0.1 seconds after impact. Unconfirmed EOF/duration caps are not treated as
+range retains the existing two-second trim. The subsequent
+[minimum-duration repair](minimum_shot_duration_2026-10-01.md) supersedes the
+original 0.1-second impact clamp: four seconds of clear footage and two seconds
+after impact now take precedence over end trimming. Unconfirmed EOF/duration caps are not treated as
 physical stops, and physical-stop metadata is kept independently of edit timing.
 
 The selected offset is persisted per shot, so serialization, overlap handling,

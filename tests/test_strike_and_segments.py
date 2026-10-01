@@ -423,7 +423,7 @@ def test_segment_builder_modes(config):
         for s in shots:
             assert s.clip_end > s.clip_start
             assert s.cue_strike >= s.clip_start - 0.01
-            assert s.clip_end == pytest.approx(s.ball_motion_end - 2)
+            assert s.clip_end == pytest.approx(max(s.ball_motion_end - 2, s.clip_start + 4.48))
 
 
 def test_strict_mode_two_second_pre_roll(config):
@@ -452,7 +452,7 @@ def test_strict_mode_two_second_pre_roll(config):
     assert len(shots) == 1
     s = shots[0]
     assert abs(s.clip_start - 8.0) < 0.05  # 2s before strike
-    assert s.clip_end == pytest.approx(12.1, abs=0.05)
+    assert s.clip_end == pytest.approx(12.48, abs=0.05)
     assert s.ball_motion_end == pytest.approx(14.1, abs=0.05)
     assert s.evidence["stop_reason"] == "confirmed_stationary"
 

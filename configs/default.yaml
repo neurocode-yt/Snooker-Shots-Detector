@@ -258,7 +258,8 @@ ball_stop:
 modes:
   # STRICT: clip starts 2s before cue contact and ends 2s before confirmed stop,
   # or 3s before stop when strike-to-stop duration is at least 7s.
-  # Very short shots retain 0.1s after contact. Unconfirmed ends
+  # Minimum viewing time takes precedence: 4s clear footage, at least 2s after
+  # contact. Mix transitions get extra context outside that minimum. Unconfirmed ends
   # keep the existing minimum hold; duration caps bound unresolved
   # tracking. When the next shot starts
   # before the previous window would end (fast break play), the boundary is
@@ -269,7 +270,8 @@ modes:
     end_before_ball_stop_seconds: 2.0
     long_shot_threshold_seconds: 7.0  # cue strike to confirmed stop, excluding pre-roll
     long_shot_end_before_ball_stop_seconds: 3.0
-    minimum_strike_visibility_seconds: 0.1
+    minimum_clip_seconds: 4.0
+    minimum_strike_visibility_seconds: 2.0
     min_seconds_after_strike: 4.0
     max_seconds_after_strike: 60.0
     max_clip_seconds: 62.0  # safety horizon; normal ends use observed stillness
