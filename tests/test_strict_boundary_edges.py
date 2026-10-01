@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from snooker_ai.event_fusion.ball_stop import BallStopDetector
+from snooker_ai.rendering.exporter import Exporter
 from snooker_ai.segmentation.builder import SegmentBuilder
 from snooker_ai.types import CameraViewType, EditMode, FrameFeatures, StrikeCandidate
 
@@ -43,7 +44,7 @@ def _sequence(
     ]
 
 
-def test_stationary_confirmation_is_metadata_inside_minimum_hold(config):
+def test_short_shot_keeps_strike_visible_when_stop_minus_two_precedes_it(config):
     strike = StrikeCandidate(timestamp=1.0, confidence=0.95)
     features = _sequence()
 
@@ -57,9 +58,9 @@ def test_stationary_confirmation_is_metadata_inside_minimum_hold(config):
     assert len(shots) == 1
     shot = shots[0]
     assert shot.physical_stop_timestamp == pytest.approx(1.5)
-    assert shot.clip_end == pytest.approx(3.0)  # source ends before strike+4
-    assert shot.clip_end_timestamp == pytest.approx(3.0)
-    assert shot.clip_end > shot.stop_confirmation_timestamp
+    assert shot.clip_end == pytest.approx(1.1)
+    assert shot.clip_end_timestamp == pytest.approx(1.1)
+    assert shot.stop_confirmation_timestamp == pytest.approx(2.0)
 
 
 def test_low_global_flow_cannot_end_a_visibly_rolling_ball(config):
@@ -106,7 +107,8 @@ def test_verified_native_stop_survives_later_proposal_track_noise(config):
     features = [_tracked_frame(i / 10, moving=i >= 20) for i in range(101)]
     shots = SegmentBuilder(config).build([strike], features, duration=10)
     assert len(shots) == 1
-    assert shots[0].clip_end == 7
+    assert shots[0].clip_end == 5
+    assert shots[0].physical_stop_timestamp == 7
     assert shots[0].evidence["stop_reason"] == "confirmed_native_stop"
 
 
@@ -119,6 +121,30 @@ def test_incomplete_native_stillness_cannot_override_live_motion(config):
     shots = SegmentBuilder(config).build([strike], features, duration=10)
     assert shots[0].clip_end == 10
     assert shots[0].evidence["stop_confirmed"] is False
+
+
+@pytest.mark.parametrize("moving_through,expected_end", [(1.4, 1.1), (4.9, 3.0)])
+def test_stop_minus_two_survives_serialization_and_export_validation(config, moving_through, expected_end):
+    from snooker_ai.types import ShotRecord
+
+    shots = SegmentBuilder(config).build(
+        [StrikeCandidate(timestamp=1, confidence=0.95)],
+        _sequence(moving_through=moving_through, end_t=7), duration=7,
+    )
+    restored = ShotRecord.model_validate_json(shots[0].model_dump_json())
+    assert restored.clip_end == pytest.approx(expected_end)
+    assert restored.physical_stop_timestamp == pytest.approx(moving_through + 0.1)
+    Exporter(config)._validate_strict_boundaries([restored], source_duration=7, source_fps=30)
+
+
+def test_unconfirmed_source_end_is_not_shortened(config):
+    shots = SegmentBuilder(config).build(
+        [StrikeCandidate(timestamp=1, confidence=0.95)],
+        _sequence(moving_through=7, end_t=7), duration=7,
+    )
+    assert shots[0].clip_end == 7
+    assert shots[0].evidence["end_before_ball_stop_seconds"] == 0
+    Exporter(config)._validate_strict_boundaries(shots, source_duration=7, source_fps=30)
 
 
 def test_camera_cut_during_confirmation_cannot_prove_a_stop(config):

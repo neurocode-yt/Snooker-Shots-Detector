@@ -266,16 +266,22 @@ class Exporter:
                     f"Shot {shot.shot_id} has an invalid trimmed pre-roll: "
                     f"{shot.clip_start_timestamp:.9f}"
                 )
+            # Persist the editing policy per shot, keeping old saved analyses
+            # exportable without silently changing their boundaries.
+            end_trim = float(shot.evidence.get("end_before_ball_stop_seconds", 0.0))
+            minimum_end = float(shot.evidence.get(
+                "minimum_clip_end_timestamp", shot.cue_strike_timestamp + min_after,
+            ))
             expected_end = min(
                 source_duration if source_duration > 0 else float("inf"),
                 max(
-                    shot.physical_stop_timestamp,
-                    shot.cue_strike_timestamp + min_after,
+                    shot.physical_stop_timestamp - end_trim,
+                    minimum_end,
                 ),
             )
             # The minimum post-strike hold yields to the next shot's window;
             # a trimmed end may sit below strike+min_after but never below the
-            # (possibly trimmed) physical stop.
+            # strike or the physical stop minus its configured edit offset.
             end_trimmed = shot.evidence.get("trimmed_for_next_shot") is not None
             if contract_shot and not end_trimmed and (
                 abs(shot.clip_end_timestamp - expected_end) > tolerance
@@ -286,7 +292,7 @@ class Exporter:
                     f"expected={expected_end:.9f}"
                 )
             if contract_shot and end_trimmed and not (
-                shot.physical_stop_timestamp - tolerance
+                max(shot.cue_strike_timestamp, shot.physical_stop_timestamp - end_trim) - tolerance
                 <= shot.clip_end_timestamp
                 <= expected_end + tolerance
             ):
