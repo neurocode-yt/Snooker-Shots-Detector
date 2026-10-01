@@ -423,8 +423,7 @@ def test_segment_builder_modes(config):
         for s in shots:
             assert s.clip_end > s.clip_start
             assert s.cue_strike >= s.clip_start - 0.01
-            # HARD RULE: never cut before balls stop
-            assert s.clip_end + 1e-6 >= s.ball_motion_end
+            assert s.clip_end == pytest.approx(s.ball_motion_end - 2)
 
 
 def test_strict_mode_two_second_pre_roll(config):
@@ -453,10 +452,7 @@ def test_strict_mode_two_second_pre_roll(config):
     assert len(shots) == 1
     s = shots[0]
     assert abs(s.clip_start - 8.0) < 0.05  # 2s before strike
-    assert s.clip_end >= s.ball_motion_end - 1e-6
-    # The clip now ends at the confirmed physical stop (~14.1), no longer at
-    # a fixed strike+4 cap.
-    assert s.clip_end == pytest.approx(14.1, abs=0.05)
+    assert s.clip_end == pytest.approx(12.1, abs=0.05)
     assert s.ball_motion_end == pytest.approx(14.1, abs=0.05)
     assert s.evidence["stop_reason"] == "confirmed_stationary"
 
@@ -465,7 +461,7 @@ def test_mid_motion_false_peak_absorbed(config):
     """Collision peaks during ball travel must not create a second clip mid-shot."""
     cands = [
         StrikeCandidate(timestamp=5.0, confidence=0.9),
-        StrikeCandidate(timestamp=7.0, confidence=0.55),  # mid-roll false peak
+        StrikeCandidate(timestamp=11.0, confidence=0.55),  # after edit end, still mid-roll
     ]
     feats = []
     for i in range(150):
@@ -482,11 +478,10 @@ def test_mid_motion_false_peak_absorbed(config):
         feats.append(f)
     shots = SegmentBuilder(config).build(cands, feats, 20.0, EditMode.STRICT)
     assert len(shots) == 1
-    assert shots[0].clip_end >= shots[0].ball_motion_end - 1e-6
     # Report the first stationary frame after travel, rather than strike+7.
     assert shots[0].ball_motion_end == pytest.approx(12.1, abs=0.05)
     # A false peak does not alter the observed stop boundary.
-    assert shots[0].clip_end == shots[0].ball_motion_end
+    assert shots[0].clip_end == shots[0].ball_motion_end - 2
 
 
 def test_false_peak_does_not_force_ten_second_cap(config):
@@ -669,9 +664,10 @@ def test_unresolved_long_roll_is_not_cut_by_timeout(config):
     shots = SegmentBuilder(config).build(cands, feats, 40.0, EditMode.STRICT)
     assert len(shots) == 1
     s = shots[0]
-    assert s.clip_end == pytest.approx(30.1)
+    assert s.clip_end == pytest.approx(28.1)
+    assert s.physical_stop_timestamp == pytest.approx(30.1)
     assert s.evidence["stop_confirmed"] is True
-    assert s.ball_motion_end == s.clip_end
+    assert s.ball_motion_end == pytest.approx(s.clip_end + 2)
     # Still starts ~2s before strike
     assert abs(s.clip_start - 3.0) < 0.05
 
@@ -825,6 +821,7 @@ def _supported_candidate(t: float) -> StrikeCandidate:
 def test_fast_next_shot_keeps_both_and_trims_minimum_hold(config):
     """A real shot 5s after the previous one must not be dropped; the previous
     shot's minimum-hold padding yields to the next shot's pre-roll."""
+    config._data["modes"]["strict"]["end_before_ball_stop_seconds"] = 0
     cands = [_supported_candidate(5.0), _supported_candidate(10.0)]
     feats = _two_shot_features(first_motion=(5.0, 6.5), second_motion=(10.0, 11.5))
 
@@ -844,6 +841,7 @@ def test_fast_next_shot_keeps_both_and_trims_minimum_hold(config):
 def test_fast_next_shot_never_cuts_confirmed_ball_motion(config):
     """When the previous shot's balls stop inside the next pre-roll window, the
     motion is kept whole and the next shot's pre-roll shrinks instead."""
+    config._data["modes"]["strict"]["end_before_ball_stop_seconds"] = 0
     cands = [_supported_candidate(5.0), _supported_candidate(10.0)]
     feats = _two_shot_features(first_motion=(5.0, 8.6), second_motion=(10.0, 11.5))
 

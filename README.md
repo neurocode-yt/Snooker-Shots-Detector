@@ -13,7 +13,7 @@ The web timeline remains available for optional inspection.
 
 ## Features
 
-- **Strict edit mode:** 2s before cue contact → hold until every ball stops  
+- **Strict edit mode:** 2s before cue contact → 2s before the confirmed ball stop
   (pre-roll and safety horizon configurable)
 - **Multimodal detection** — residual motion after camera compensation + table mask + audio support
 - **Replay-aware** — replays flagged and excluded by default
@@ -58,13 +58,16 @@ snooker-ai serve --port 8000
 ```
 
 Strict mode starts at the first confirmed cue-ball launch minus 2.000 seconds and
-normally ends at the first physical all-ball stop. The 0.50-second stationary
+normally ends 2.000 seconds before the first confirmed physical all-ball stop.
+For very short shots, the end is clamped to 0.1 seconds after cue contact so the
+strike stays visible. This takes precedence over the older four-second hold.
+The detected physical stop remains unchanged in the metadata. The 0.50-second stationary
 confirmation is look-ahead evidence only and is not included in `clip_end`.
 Automatic tracking follows longer rolls beyond seven seconds, with a configurable
 60-second safety horizon. Uncertainty remains in the diagnostics and does not
 block automatic export. A video that ends during a shot keeps its remaining footage.
 
-`strict` is the only editing mode (2s before strike → balls stop). When the next
+`strict` is the only editing mode (2s before strike → 2s before balls stop). When the next
 shot starts before the previous window would end (fast break play), the boundary
 is trimmed between the two shots so neither shot is lost. Legacy mode names are
 accepted and coerce to strict.

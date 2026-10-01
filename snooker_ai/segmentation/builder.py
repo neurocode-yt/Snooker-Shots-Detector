@@ -147,13 +147,21 @@ class SegmentBuilder:
                 0.0,
                 float(mode_cfg.get("min_seconds_after_strike", 0.0)),
             )
+            end_trim = (
+                max(0.0, float(mode_cfg.get("end_before_ball_stop_seconds", 0.0)))
+                if stop_confirmed else 0.0
+            )
+            if end_trim > 0:
+                # The requested early end takes precedence over the old
+                # four-second hold, but must keep the cue strike visible.
+                min_after = max(0.0, float(mode_cfg.get("minimum_strike_visibility_seconds", 0.1)))
             minimum_clip_end = clamp(
                 cand.timestamp + min_after,
                 clip_start,
                 duration,
             )
             clip_end = clamp(
-                max(physical_stop, minimum_clip_end),
+                max(physical_stop - end_trim, minimum_clip_end),
                 clip_start,
                 min(duration, clip_cap),
             )
@@ -187,6 +195,7 @@ class SegmentBuilder:
                     # the exported strict boundary may be capped separately.
                     "uncapped_physical_stop_timestamp": uncapped_physical_stop,
                     "minimum_clip_end_timestamp": minimum_clip_end,
+                    "end_before_ball_stop_seconds": end_trim,
                     "last_ball_motion_timestamp": last_motion,
                     "physical_stop_timestamp": physical_stop,
                     "stop_confirmation_timestamp": confirmation,
@@ -373,7 +382,8 @@ class SegmentBuilder:
                 minimum_end = float(
                     shot.evidence.get("minimum_clip_end_timestamp") or physical
                 )
-                shot.clip_end = max(physical, minimum_end)
+                end_trim = float(shot.evidence.get("end_before_ball_stop_seconds", 0.0))
+                shot.clip_end = max(physical - end_trim, minimum_end)
                 shot.ball_motion_end = physical
                 shot.cue_strike_timestamp = shot.cue_strike
                 shot.clip_start_timestamp = shot.clip_start
@@ -387,7 +397,7 @@ class SegmentBuilder:
 
         The previous shot gives up its minimum-hold padding (and any
         unresolved review tail) down to the next shot's pre-roll start, but a
-        confirmed physical stop is never cut.  Any residual overlap is then
+        confirmed stop-minus-offset boundary is retained. Any residual overlap is then
         removed by shortening the next shot's pre-roll: in fast play the
         source simply does not contain two seconds of dead time before the
         next strike, and duplicating footage in a joined export would read as
@@ -400,13 +410,14 @@ class SegmentBuilder:
             physical = float(
                 getattr(prev, "physical_stop_timestamp", 0.0) or prev.ball_motion_end
             )
-            floor = physical if reliable_stop else nxt.clip_start
+            end_trim = float(prev.evidence.get("end_before_ball_stop_seconds", 0.0))
+            floor = physical - end_trim if reliable_stop else nxt.clip_start
             new_end = min(prev.clip_end, max(nxt.clip_start, floor))
             new_end = max(new_end, prev.cue_strike)
             if new_end < prev.clip_end - 1e-9:
                 prev.clip_end = new_end
                 prev.clip_end_timestamp = new_end
-                if prev.physical_stop_timestamp > new_end + 1e-9:
+                if not reliable_stop and prev.physical_stop_timestamp > new_end + 1e-9:
                     # Only an unconfirmed review cap can be trimmed here; the
                     # boundary stays reviewable, never silently authoritative.
                     prev.physical_stop_timestamp = new_end

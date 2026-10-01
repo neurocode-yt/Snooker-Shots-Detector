@@ -118,6 +118,7 @@ def test_strict_config_expresses_exact_boundary_contract():
     config = load_config()
     strict = config.mode_settings("strict")
     assert strict["pre_roll"] == 2.0
+    assert strict["end_before_ball_stop_seconds"] == 2.0
     assert strict["min_seconds_after_strike"] == 4.0
     # The longer safety horizon preserves real rolls beyond seven seconds.
     assert strict["max_seconds_after_strike"] == 60.0
