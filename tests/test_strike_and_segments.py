@@ -413,8 +413,8 @@ def test_segment_builder_modes(config):
         StrikeCandidate(timestamp=30.0, confidence=0.55, camera_view=CameraViewType.MAIN_TABLE),
     ]
     feats = [
-        _feat(t * 0.5, motion=0.6 if 10 <= t * 0.5 <= 14 or 30 <= t * 0.5 <= 34 else 0.05)
-        for t in range(100)
+        _feat(t * 0.1, motion=0.6 if 10 <= t * 0.1 <= 14 or 30 <= t * 0.1 <= 34 else 0.05)
+        for t in range(500)
     ]
     builder = SegmentBuilder(config)
     for mode in EditMode:
@@ -994,6 +994,21 @@ def test_player_body_movement_rejected_when_no_ball_moves(config):
     detector.score_frames(feats)
     candidates = detector.detect_candidates(feats)
     assert candidates == []
+
+
+def test_failed_refinement_clears_previous_sparse_confirmation(config, monkeypatch):
+    detector = StrikeDetector(config)
+    monkeypatch.setattr(detector, "_has_cue_kinematics", lambda _: True)
+    monkeypatch.setattr(detector, "_transition_metrics", lambda *args: {})
+    monkeypatch.setattr(detector, "_transition_confirmed", lambda _: False)
+    monkeypatch.setattr(detector, "_sparse_dense_transition_confirmed", lambda _: False)
+    candidate = StrikeCandidate(
+        timestamp=1, confidence=0.9, uncertainty_start=0.9, uncertainty_end=1.1,
+        evidence={"sparse_dense_transition": 1, "dense_transition_confirmed": 1},
+    )
+    detector.refine_boundaries([candidate], [FrameFeatures(t=0.9), FrameFeatures(t=1)])
+    assert candidate.evidence.get("dense_transition_confirmed", 0) == 0
+    assert candidate.evidence.get("sparse_dense_transition", 0) == 0
 
 
 def test_impact_cue_ball_blur_recovery(config):

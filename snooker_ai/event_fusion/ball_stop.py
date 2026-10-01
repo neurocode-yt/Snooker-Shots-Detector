@@ -91,6 +91,7 @@ class BallStopDetector:
             bcfg.get("stationary_tolerance_ball_diameters", 0.08)
         )
         self.unknown_review_s = float(bcfg.get("unknown_review_seconds", 0.35))
+        self.max_observation_gap_s = float(bcfg.get("max_observation_gap_seconds", 0.25))
         self.min_motion_samples = int(bcfg.get("min_motion_samples", 2))
         self.stop_motion_reconfirm_samples = max(
             1, int(bcfg.get("stop_motion_reconfirm_samples", 2))
@@ -326,19 +327,28 @@ class BallStopDetector:
         stale_occlusion_cleared = False
         saw_ball_tracks = False
         valid_after_strike = 0
+        previous_t: float | None = None
 
         for f in window:
             if f.t < strike_t:
                 continue
 
+            # Sparse proposals and separately decoded windows can leave holes
+            # in the timeline. Elapsed unobserved time is not stillness.
+            gap = previous_t is not None and f.t - previous_t > self.max_observation_gap_s + 1e-9
             valid = self._is_valid_observation(f)
-            if not valid:
+            if gap or not valid:
                 if unknown_since is None:
-                    unknown_since = f.t
+                    unknown_since = previous_t if gap else f.t
                 # Unknown evidence breaks stillness confirmation.  It does not
                 # end motion and does not fabricate a potted/stationary ball.
                 still_since = None
                 resumed_motion_run = 0
+                motion_run = 0
+                quiet_occlusion_since = None
+                stale_occlusion_cleared = False
+            previous_t = f.t
+            if not valid:
                 continue
 
             if unknown_since is not None:
@@ -463,7 +473,7 @@ class BallStopDetector:
 
         # No confirmed stop. Keep the shot through the practical bound and mark
         # the boundary for review; a false track must not consume the source.
-        if cap_t < duration - 1e-6:
+        if moving and cap_t < duration - 1e-6:
             return StopDetection(
                 motion_start=motion_start if moving else strike_t,
                 last_ball_motion_timestamp=clamp(last_motion, strike_t, cap_t),

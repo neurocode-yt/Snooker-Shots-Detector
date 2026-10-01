@@ -223,6 +223,7 @@ ball_stop:
   motion_stop_activity: 0.10
   stationary_tolerance_ball_diameters: 0.08
   unknown_review_seconds: 0.35
+  max_observation_gap_seconds: 0.25  # missing frames break consecutive evidence
   # While confirming a stop, ignore a single-frame pseudo-ball jitter. Real
   # renewed ball movement persists across adjacent observations.
   stop_motion_reconfirm_samples: 2

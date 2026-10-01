@@ -1,5 +1,8 @@
 # Automatic detection and performance update
 
+For the subsequent logic fixes and latest validation results, see
+[the final logic check](final_logic_check_2026-10-01.md).
+
 The web workflow now runs detection, cutting, and combined-video export after one
 start request. Uncertainty flags remain diagnostic and never require review
 approval. Source trimming and the shot editor are optional.

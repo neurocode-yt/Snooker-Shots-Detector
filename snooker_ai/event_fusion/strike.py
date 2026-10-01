@@ -856,6 +856,9 @@ class StrikeDetector:
 
         refined: list[StrikeCandidate] = []
         for cand in candidates:
+            # This pass must stand on its own evidence. Otherwise a rejected
+            # sparse match can survive through the downstream acceptance OR.
+            cand.evidence["sparse_dense_transition"] = 0.0
             lo = bisect_left(times, cand.uncertainty_start)
             hi = bisect_right(times, cand.uncertainty_end)
             indices = range(lo, hi)
