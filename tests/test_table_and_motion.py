@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import snooker_ai.table_detection.localizer as localizer_module
 from snooker_ai.motion.camera import CameraMotionEstimator
@@ -84,3 +85,25 @@ def test_camera_cut_is_observed_between_supporting_flow_refreshes(config, monkey
     assert sample.observation_valid is False
     assert sample.is_camera_unstable is True
     assert sample.camera_transform is None
+
+
+@pytest.mark.parametrize("pan", [0.0, 1.5])
+def test_referee_foreground_does_not_bias_background_camera_motion(config, monkeypatch, pan):
+    import cv2
+
+    estimator = CameraMotionEstimator(config)
+    estimator.use_opencl = False
+    rng = np.random.default_rng(42)
+    points = rng.uniform([10, 10], [250, 180], (80, 1, 2)).astype(np.float32)
+    next_points = points + np.array([pan, 0], dtype=np.float32)
+    # Moving foreground is close enough to contaminate a loose affine fit.
+    next_points[-25:] += np.array([1.3, 0.8], dtype=np.float32)
+    monkeypatch.setattr(cv2, "goodFeaturesToTrack", lambda *a, **k: points)
+    monkeypatch.setattr(cv2, "calcOpticalFlowPyrLK", lambda *a, **k: (
+        next_points, np.ones((80, 1), dtype=np.uint8), None,
+    ))
+    blank = np.zeros((400, 600), dtype=np.uint8)
+    result = estimator.estimate(blank, blank)
+    assert not result.is_cut_like
+    assert result.transform[0, 2] == pytest.approx(pan / estimator.estimation_scale, abs=0.05)
+    assert result.transform[1, 2] == pytest.approx(0, abs=0.05)

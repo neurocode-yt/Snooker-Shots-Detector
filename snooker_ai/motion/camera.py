@@ -134,7 +134,11 @@ class CameraMotionEstimator:
             good_prev,
             good_next,
             method=cv2.RANSAC,
-            ransacReprojThreshold=self.ransac,
+            # The configured tolerance is in full proxy pixels. A loose fit
+            # includes moving people among static background inliers and then
+            # invents motion for every resting ball. Use a subpixel consensus
+            # at the working resolution before compensating ball histories.
+            ransacReprojThreshold=min(self.ransac * self.estimation_scale, 0.5),
         )
         if transform is None:
             disp = good_next.reshape(-1, 2) - good_prev.reshape(-1, 2)

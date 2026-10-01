@@ -81,6 +81,22 @@ def test_low_global_flow_cannot_end_a_visibly_rolling_ball(config):
     assert stop.physical_stop_timestamp == pytest.approx(4.0)
 
 
+def test_intermittent_slow_roll_cannot_accumulate_false_stillness(config):
+    features = [
+        _tracked_frame(
+            i / 10, moving=10 <= i <= 14 or (15 <= i < 40 and i % 2 == 1),
+            ball_kinematics_valid=True,
+        )
+        for i in range(56)
+    ]
+    stop = BallStopDetector(config).detect_stop(
+        StrikeCandidate(timestamp=1, confidence=0.95), features, duration=5.5,
+    )
+    assert stop.confirmed
+    assert stop.physical_stop_timestamp == pytest.approx(4.0)
+    assert stop.stop_confirmation_timestamp == pytest.approx(4.5)
+
+
 def test_measured_stationary_tracks_override_codec_shimmer(config):
     features = [
         _tracked_frame(

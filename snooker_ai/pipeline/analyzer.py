@@ -51,7 +51,7 @@ from snooker_ai.utils.video import open_capture, sampled_frames
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 10
+_CACHE_VERSION = 11
 
 
 class Analyzer:
