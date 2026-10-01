@@ -35,7 +35,6 @@ class SegmentBuilder:
         self.conflict_confidence_margin = float(
             config.get("strike_fusion.conflict_confidence_margin", 0.05)
         )
-        self.audio_support_threshold = float(config.get("audio.onset_delta", 0.15))
         self.support_quiet_ratio = float(
             config.get("strike_fusion.fallback_pre_strike_ball_quiet_min_ratio", 0.50)
         )
@@ -102,6 +101,14 @@ class SegmentBuilder:
             # retained conservatively and flagged by StopDetection.
             if stop.reason == "no_sustained_ball_motion":
                 logger.debug("Rejected strike %.3f: no sustained ball motion", cand.timestamp)
+                continue
+            # A proposal cannot borrow movement from a later actual shot. This
+            # also prevents a false preparation event from suppressing that
+            # later shot as an apparent mid-roll duplicate during overlap repair.
+            onset_timeout = float(self.config.get("strike_fusion.strike_candidate_timeout_seconds", 0.75))
+            if stop.motion_start > cand.timestamp + onset_timeout:
+                logger.debug("Rejected strike %.3f: ball motion starts too late (%.3f)",
+                             cand.timestamp, stop.motion_start)
                 continue
 
             physical_stop = stop.physical_stop_timestamp
@@ -494,10 +501,8 @@ class SegmentBuilder:
     ) -> bool:
         """Return whether a later incompatible candidate has stronger support.
 
-        Audio remains supporting evidence only: both records have already passed
-        visual strike confirmation.  It is used here only to break a confidence
-        tie, which distinguishes a real cue impact from visually similar player
-        preparation without allowing sound to create a shot by itself.
+        Compare launch trajectories, confidence, and pre-strike stillness.
+        Commentary and collision sounds cannot change which event survives.
         """
 
         def launch_evidence(shot: ShotRecord) -> float:
@@ -524,13 +529,6 @@ class SegmentBuilder:
         confidence_delta = current.shot_confidence - previous.shot_confidence
         if abs(confidence_delta) > self.conflict_confidence_margin:
             return confidence_delta > 0.0
-
-        previous_audio = float(previous.evidence.get("audio_onset", 0.0) or 0.0)
-        current_audio = float(current.evidence.get("audio_onset", 0.0) or 0.0)
-        previous_has_audio = previous_audio >= self.audio_support_threshold
-        current_has_audio = current_audio >= self.audio_support_threshold
-        if current_has_audio != previous_has_audio:
-            return current_has_audio
 
         previous_quiet = float(
             previous.evidence.get("pre_ball_quiet_ratio", 0.0) or 0.0

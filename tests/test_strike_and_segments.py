@@ -3,7 +3,6 @@ import numpy as np
 
 from snooker_ai.event_fusion.strike import StrikeDetector
 from snooker_ai.audio.features import AudioFeatures
-from snooker_ai.pipeline.analyzer import Analyzer
 from snooker_ai.segmentation.builder import SegmentBuilder
 from snooker_ai.types import (
     CameraViewType,
@@ -46,30 +45,6 @@ def test_audio_peaks_are_isolated_for_recovery_windows():
 
     assert [round(item[0], 1) for item in peaks] == [1.1, 3.0, 4.2]
     assert peaks[0][1] == pytest.approx(0.70)
-
-
-def test_audio_seed_adds_only_unmatched_transients(config, tmp_path, monkeypatch):
-    analyzer = Analyzer(config, tmp_path / "job")
-    times = np.arange(0.0, 8.0, 0.1, dtype=np.float32)
-    onset = np.zeros_like(times)
-    onset[[10, 30, 50]] = [0.8, 0.7, 0.9]
-    audio = AudioFeatures(
-        times=times,
-        onset_env=onset,
-        rms=np.zeros_like(times),
-        highband=np.zeros_like(times),
-        midband=np.zeros_like(times),
-        sample_rate=16000,
-    )
-    monkeypatch.setattr(analyzer.audio_ext, "extract", lambda _path: audio)
-    existing = [StrikeCandidate(timestamp=1.0, confidence=0.9)]
-
-    seeded = analyzer._seed_audio_candidates(
-        existing, tmp_path / "audio.wav", duration=8.0
-    )
-
-    assert [round(item.timestamp, 1) for item in seeded] == [1.0, 3.0, 5.0]
-    assert seeded[-1].evidence["audio_seed"] == 1.0
 
 
 def test_strike_detector_finds_peaks(config):
@@ -524,7 +499,7 @@ def test_overlap_resolution(config):
         assert s.clip_end <= s.cue_strike + 7.0 + 1e-6
 
 
-def test_strict_overlap_prefers_real_audio_supported_strike(config):
+def test_strict_overlap_prefers_quieter_visual_strike(config):
     """Preparation motion must lose to the real strike in the same shot window."""
     cands = [
         StrikeCandidate(

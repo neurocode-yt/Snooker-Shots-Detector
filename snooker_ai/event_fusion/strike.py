@@ -1,9 +1,8 @@
 """Cue-strike detection from a stationary-to-moving cue-ball transition.
 
-Generic table motion and audio are useful proposal signals, but neither may
-confirm a strike when cue-ball kinematics are available.  A confirmed event
-requires a previously stationary white ball followed immediately by sustained
-white-ball motion.  Cue/contact audio is deliberately supporting evidence only.
+A confirmed event requires a previously stationary white ball followed by
+sustained white-ball motion, or explicit visual impact-occlusion evidence.
+Commentary, applause, and cue audio do not affect selection or confidence.
 """
 
 from __future__ import annotations
@@ -30,7 +29,6 @@ class StrikeDetector:
     def __init__(self, config: Config):
         cfg = config.section("strike_fusion")
         self.w_motion = float(cfg.get("residual_motion_onset", 0.24))
-        self.w_audio = float(cfg.get("audio_transient", 0.10))
         self.w_view = float(cfg.get("table_view_confidence", 0.10))
         self.w_accel = float(cfg.get("cue_ball_acceleration_weight", 0.34))
         self.w_sustained = float(cfg.get("cue_ball_sustained_weight", 0.22))
@@ -83,8 +81,6 @@ class StrikeDetector:
         )
         self.sparse_min_active = int(cfg.get("sparse_candidate_min_active_samples", 2))
         self.sparse_gap_s = float(cfg.get("sparse_candidate_gap_seconds", self.min_dist))
-        audio_cfg = config.section("audio")
-        self.max_audio_weight = float(audio_cfg.get("max_audio_weight", 0.25))
 
     # ------------------------------------------------------------------ utilities
 
@@ -129,6 +125,22 @@ class StrikeDetector:
             and self._value(f, "ball_diameter_px") > 0.5
         )
         return reliable >= min(3, max(1, len(features) // 20))
+
+    def _stationary_ratio(self, frames: list[FrameFeatures]) -> float:
+        if not frames:
+            return 0.0
+        ratio = sum(self._cue_speed(f) <= self.stationary_speed for f in frames) / len(frames)
+        points = [f for f in frames if f.cue_ball_x is not None and f.cue_ball_y is not None]
+        if len(points) >= 3 and points[-1].t - points[0].t >= 0.15:
+            xy = np.array([(f.cue_ball_x, f.cue_ball_y) for f in points])
+            diameter = max(1.0, float(np.median([f.ball_diameter_px for f in points])))
+            # Alternating subpixel circle centres can look fast at 30 fps.
+            # A tight spatial cluster is stillness; sustained drift is not.
+            distances = np.linalg.norm(xy - np.median(xy, axis=0), axis=1)
+            clustered = float(np.mean(distances <= 0.12 * diameter))
+            if clustered >= 0.80:
+                ratio = max(ratio, clustered)
+        return ratio
 
     @staticmethod
     def _local_normalize(arr: np.ndarray, window: int) -> np.ndarray:
@@ -175,7 +187,6 @@ class StrikeDetector:
             and self._track_conf(x) >= self.min_track_conf * 0.7
         ]
 
-        pre_speeds = [self._cue_speed(x) for x in pre]
         post_speeds = [self._cue_speed(x) for x in post]
         pre_raw = [
             self._value(x, "motion_raw", self._value(x, "motion_score"))
@@ -199,11 +210,7 @@ class StrikeDetector:
         pre_ball_speed_median = (
             float(np.median(pre_ball_speeds)) if pre_ball_speeds else 1.0
         )
-        stationary_ratio = (
-            sum(s <= self.stationary_speed for s in pre_speeds) / len(pre_speeds)
-            if pre_speeds
-            else 0.0
-        )
+        stationary_ratio = self._stationary_ratio(pre)
         sustained_count = sum(s >= self.continue_speed for s in post_speeds)
         sustained_run = 0
         for speed in post_speeds:
@@ -256,14 +263,23 @@ class StrikeDetector:
         # observations.  One-frame Hough identity jumps caused by a walking
         # player often have a large apparent speed but immediately reverse or
         # disappear; they fail this direction/displacement check.
-        points = [
-            (self._value(x, "cue_ball_x", 0.0), self._value(x, "cue_ball_y", 0.0))
-            for x in post
-            if getattr(x, "cue_ball_x", None) is not None
-            and getattr(x, "cue_ball_y", None) is not None
-        ]
+        point_frames = [x for x in post if x.cue_ball_x is not None and x.cue_ball_y is not None]
+        points = [(x.cue_ball_x, x.cue_ball_y) for x in point_frames]
         direction_consistency = 0.0
         displacement = 0.0
+        # One-frame identity swaps to a white logo must not destroy an
+        # otherwise continuous launch. Remove only an isolated out-and-back
+        # jump; repeated swaps, a missing trajectory, or a real reversal stay.
+        if len(points) >= 4:
+            diameter = max(self._value(f, "ball_diameter_px"), 1.0)
+            xy = np.asarray(points, dtype=np.float64)
+            spikes = [i for i in range(1, len(xy) - 1)
+                      if point_frames[i + 1].t - point_frames[i - 1].t <= 0.10 + 1e-6
+                      and np.linalg.norm(xy[i] - xy[i - 1]) > 4 * diameter
+                      and np.linalg.norm(xy[i] - xy[i + 1]) > 4 * diameter
+                      and np.linalg.norm(xy[i + 1] - xy[i - 1]) < 2 * diameter]
+            if len(spikes) == 1:
+                points = [point for i, point in enumerate(points) if i != spikes[0]]
         if len(points) >= 2:
             vectors = np.diff(np.asarray(points, dtype=np.float64), axis=0)
             lengths = np.linalg.norm(vectors, axis=1)
@@ -466,12 +482,7 @@ class StrikeDetector:
             and getattr(x, "cue_ball_x", None) is not None
             and getattr(x, "cue_ball_y", None) is not None
         ]
-        pre_cue_stationary_ratio = (
-            sum(self._cue_speed(x) <= self.stationary_speed for x in reliable_pre)
-            / len(reliable_pre)
-            if reliable_pre
-            else 0.0
-        )
+        pre_cue_stationary_ratio = self._stationary_ratio(reliable_pre)
         post_after_onset = [x for x in post if x.t > t + 1e-6]
         missing_after_onset = any(
             not bool(getattr(x, "cue_ball_detected", False))
@@ -553,7 +564,6 @@ class StrikeDetector:
 
         for i, f in enumerate(features):
             view = float(np.clip(f.table_confidence + 0.15, 0, 1))
-            audio = float(np.clip(max(f.audio_onset, f.audio_highband), 0, 1))
             generic = self.w_motion * float(onset[i]) + self.w_view * view
 
             if cue_available:
@@ -577,8 +587,6 @@ class StrikeDetector:
                 area = float(np.clip(f.motion_area_ratio / 0.02, 0, 1))
                 score = generic + 0.18 * area
 
-            # Audio never contributes enough to create a candidate by itself.
-            score += min(self.w_audio, self.max_audio_weight, 0.12) * audio
             if not self._valid(f):
                 score *= 0.10
             if f.view_type in (CameraViewType.REPLAY, CameraViewType.SLOW_MOTION_REPLAY):
@@ -646,8 +654,7 @@ class StrikeDetector:
             f = features[idx]
             score = float(f.strike_score)
             if cue_available:
-                # Visual confirmation supplies a confidence floor; audio can
-                # improve confidence but never supplies confirmation.
+                # Visual confirmation supplies the confidence floor.
                 if metrics.get("occlusion_inferred", 0.0) >= 0.5:
                     score = max(
                         score,
@@ -670,7 +677,6 @@ class StrikeDetector:
                 "strike_score": score,
                 "motion_score": f.motion_score,
                 "motion_raw": self._value(f, "motion_raw", f.motion_score),
-                "audio_onset": f.audio_onset,
                 "table_confidence": f.table_confidence,
                 "cue_ball_motion_confirmed": 1.0 if cue_available else 0.0,
                 **metrics,
@@ -768,10 +774,33 @@ class StrikeDetector:
             has_launch_onset = cue_rising or ball_rising or (rising and cue_speed_curr >= self.start_speed * 0.50)
             quiet = pre_median <= (0.45 if has_launch_onset else self.pre_quiet_max_motion)
 
-            # A sparse cadence can land in the middle of a noisy rolling-ball
-            # interval.  In that case a clear cue-speed/residual onset is still
-            # a useful proposal even though the long quiet median is imperfect.
-            if (
+            cue_pre = [x for x in features[pre_lo:pre_hi]
+                       if self._valid(x) and x.cue_ball_x is not None
+                       and x.cue_ball_y is not None and self._track_conf(x) >= self.min_track_conf]
+            cue_quiet = (len(cue_pre) >= 2 and
+                         sum(self._cue_speed(x) <= self.stationary_speed for x in cue_pre)
+                         / len(cue_pre) >= 0.7)
+            # At 2 fps a fast white ball can exceed the tracker's association
+            # distance and report zero speed despite clear centre displacement.
+            # Consecutive visible positions still warrant native verification.
+            spatial_steps = []
+            for j in range(i, post_hi):
+                left = features[j - 1] if j else None
+                right = features[j]
+                spatial_steps.append(bool(
+                    left is not None and 0 < right.t - left.t <= 0.75
+                    and self._valid(left) and self._valid(right)
+                    and all(x.cue_ball_x is not None and x.cue_ball_y is not None
+                            and self._track_conf(x) >= self.min_track_conf for x in (left, right))
+                    and np.hypot(right.cue_ball_x - left.cue_ball_x,
+                                 right.cue_ball_y - left.cue_ball_y)
+                    >= 0.5 * max(1.0, right.ball_diameter_px)
+                ))
+            cue_launch_proposal = (cue_quiet and (cue_rising or spatial_steps[0])
+                                   and max(ball_active, sum(spatial_steps)) >= self.sparse_min_active)
+            # Foreground movement must not hide a stationary-white launch.
+            # This only opens a native verification window, never confirms it.
+            if not cue_launch_proposal and (
                 not quiet
                 or not (rising or cue_rising or ball_rising or onset_from_quiet)
                 or len(active) < self.sparse_min_active
@@ -783,8 +812,7 @@ class StrikeDetector:
                     0.40
                     + 0.20 * min(1.0, peak)
                     + 0.15 * min(1.0, ball_active / 3.0)
-                    + 0.10 * float(np.clip(f.table_confidence, 0.0, 1.0))
-                    + 0.08 * float(np.clip(max(f.audio_onset, f.audio_highband), 0.0, 1.0)),
+                    + 0.10 * float(np.clip(f.table_confidence, 0.0, 1.0)),
                     0.0,
                     0.78,
                 )

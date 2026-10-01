@@ -27,7 +27,7 @@ proxy:
   seek_keyframe_seconds: 2.0  # quick random access when selecting review shots
   review_audio_bitrate: 96k  # keep lightweight commentary/cue audio in the proxy
   audio_sample_rate: 16000
-  extract_audio: true
+  extract_audio: false  # no separate WAV needed; preview/export retain source sound
 
 # Non-destructive home-page editor used to remove frame breaks before analysis.
 preprocess:
@@ -61,16 +61,7 @@ analysis:
   coarse_flow_scale: 0.25  # broad proposals need less spatial flow detail than boundary refinement
   coarse_hough_fps: 5.0  # contours run at 10fps; costly circle proposals run at 5fps
   refine_hough_fps: 15.0  # contours still run at 30fps for exact tracking
-  # Independent audio recovery for impacts missed by the 2fps visual pass.
-  # These peaks only open bounded visual windows; they cannot create a shot
-  # without native-rate table movement.
-  audio_seed_min_score: 0.30
-  audio_seed_min_distance_seconds: 1.2
-  audio_seed_existing_match_seconds: 1.5
-  audio_seed_pre_seconds: 1.5
-  audio_seed_post_seconds: 6.0
-  audio_seed_scan_fps: 10.0  # promote only visually supported peaks to native fps
-  audio_seed_max_count: 0  # 0 = no artificial cap
+  # Shot proposals and confirmation use visual evidence only.
   min_shot_gap_seconds: 1.5
   max_video_hours: 12.0
   # Decode acceleration.  The proxy is decoded with the FFmpeg backend's
@@ -139,7 +130,7 @@ motion:
   state_motion_start_threshold: 0.35
   state_motion_stop_threshold: 0.20
 
-# Audio (supporting evidence only)
+# Legacy audio utility settings (not used by shot detection)
 audio:
   sample_rate: 16000
   hop_length: 512
@@ -158,7 +149,6 @@ audio:
 strike_fusion:
   residual_motion_onset: 0.40
   multi_ball_motion: 0.15
-  audio_transient: 0.12
   table_view_confidence: 0.15
   motion_acceleration: 0.10
   not_replay: 0.08
@@ -167,8 +157,8 @@ strike_fusion:
   medium_confidence: 0.50
   candidate_peak_min_distance_seconds: 1.2
   # When strict shot windows collide, confidence must differ by more than this
-  # before confidence alone selects the winner; otherwise supporting cue audio
-  # and pre-strike ball stillness break the tie.
+  # before confidence alone selects the winner; otherwise pre-strike ball
+  # stillness breaks the tie.
   conflict_confidence_margin: 0.05
   refine_search_radius_seconds: 0.5
   pre_strike_quiet_seconds: 0.50

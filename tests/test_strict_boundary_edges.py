@@ -378,3 +378,19 @@ def test_strict_start_is_exactly_two_seconds_before_strike_or_source_zero(
     assert shot.clip_start_timestamp == pytest.approx(expected_start, abs=1e-12)
     if strike_t >= 2.0:
         assert shot.cue_strike - shot.clip_start == pytest.approx(2.0, abs=1e-12)
+
+
+@pytest.mark.parametrize('native_boundary', [False, True])
+def test_preparation_cannot_borrow_next_shots_motion(config, native_boundary):
+    features = _sequence(strike_t=4, moving_through=5, end_t=10)
+    evidence = {}
+    if native_boundary:
+        evidence = {'refined_stop_timestamp': 5.1,
+                    'refined_stop_confirmation_timestamp': 5.6,
+                    'refined_last_motion_timestamp': 5,
+                    'refined_stop_confidence': .95,
+                    'refined_ball_motion_start': 4}
+    candidates = [StrikeCandidate(timestamp=1, confidence=1, evidence=evidence),
+                  StrikeCandidate(timestamp=4, confidence=.9)]
+    shots = SegmentBuilder(config).build(candidates, features, 10)
+    assert [shot.cue_strike for shot in shots] == [4]
