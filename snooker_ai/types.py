@@ -125,6 +125,11 @@ class SceneSegment(BaseModel):
 
 
 class FrameFeatures(BaseModel):
+    rack_idle: bool = False
+    rack_restart: bool = False
+    red_rack_intact: bool = False
+    red_area_ratio: float = 0.0
+    rack_observation_valid: bool = False
     """Per-sample multimodal features at a single analysis timestamp."""
 
     t: float

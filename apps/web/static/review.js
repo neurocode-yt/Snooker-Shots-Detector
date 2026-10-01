@@ -6,6 +6,9 @@ const previewSeek = document.getElementById("preview-seek");
 const previewClock = document.getElementById("preview-clock");
 const previewCount = document.getElementById("preview-count");
 const sourceEditor = document.getElementById("source-editor");
+if (new URLSearchParams(window.location.search).get("editor") === "classic") {
+  sourceEditor.open = true;
+}
 const shotList = document.getElementById("shot-list");
 const timeline = document.getElementById("timeline");
 const stats = document.getElementById("stats");

@@ -41,6 +41,7 @@ preprocess:
 
 # Frame sampling during analysis
 analysis:
+  skip_racked_waits: true  # wake immediately on cloth movement; back-scan for break-off
   # Sparse proposal pass.  Candidate windows are then decoded at refine_fps
   # from just before the proposed strike through ball-stop/reacquisition.
   sample_fps: 2.0
@@ -303,6 +304,8 @@ confidence:
 
 # Export
 export:
+  transition: mix  # short cross-dissolve; use cut to disable
+  transition_seconds: 0.24
   mode: accurate  # accurate | fast
   video_codec: auto  # auto selects NVIDIA h264_nvenc when available
   nvenc_preset: p4

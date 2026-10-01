@@ -87,8 +87,31 @@ as a download when processing completes; reviewing shots and exporting again are
 optional. Source trimming is also optional: split/delete sections before starting
 if needed. Keeping the entire source skips that extra re-encoding step.
 
+Upload the entire match in automatic mode; no manual frame-break trimming is
+required. The coarse pass skips expensive tracking on stationary racked tables,
+wakes on cloth movement, and checks the preceding seconds for the break-off.
+When a nearly cleared table is replenished with reds and then racked, the
+preparation interval is excluded retrospectively. Hand placement of the white
+with an intact rack needs cue-contact evidence to count as a shot. These are
+conservative visual heuristics, not an official frame-score detector; ambiguous
+views fall back to normal shot detection.
+
+Combined exports use a short **mix (cross-dissolve)** with an audio crossfade.
+The default overlap is 0.24 seconds, shortened for very short clips to keep cue
+impact visible. Export seeks directly to retained footage and renders bounded
+batches, avoiding decoding every long break or loading a whole-match filter
+graph. Set `export.transition: cut` to disable mixing or adjust
+`export.transition_seconds`. Individual clips retain their selected boundaries.
+The interactive shot preview shows cuts; the finished combined MP4 contains the
+transitions. Export metadata and chapter times account for overlap; the CSV/EDL
+remain source cut lists.
+
+Choose **Classic editor (previous interface)** to analyze first and open the
+preview, timeline, individual-shot controls, and export buttons. Existing jobs
+also have an **Open classic editor** link. Automatic mode remains the default.
+
 API clients can set `auto_export: false` on `POST /api/jobs` to request analysis
-only. New web jobs export a combined video automatically and avoid encoding
+only. Automatic web jobs export a combined video and avoid encoding
 separate numbered clips unless explicitly requested later.
 
 The timeline stays inside its own horizontally scrollable viewport at every

@@ -21,6 +21,7 @@ import numpy as np
 from snooker_ai.audio.features import AudioFeatureExtractor
 from snooker_ai.config import Config
 from snooker_ai.event_fusion.strike import StrikeDetector
+from snooker_ai.event_fusion.rack_idle import RackIdleGate
 from snooker_ai.ingestion.probe import validate_video
 from snooker_ai.ingestion.proxy import generate_proxy
 from snooker_ai.object_detection.detector import ObjectDetector
@@ -50,7 +51,7 @@ from snooker_ai.utils.video import open_capture, sampled_frames
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 7
+_CACHE_VERSION = 10
 
 
 class Analyzer:
@@ -191,6 +192,26 @@ class Analyzer:
                 analysis_signature, features, scenes, candidates
             )
 
+        rack_waits = self._rack_wait_intervals(features)
+        preparation_intervals = self._preparation_intervals(features)
+        rack_reference = features
+        # Only the interior of continuously observed waiting intervals is
+        # suppressed. Keep their edges available for break-off recovery.
+        candidates = [candidate for candidate in candidates if not any(
+            start + 2 < candidate.timestamp < end - 2 for start, end in rack_waits
+        ) and not any(
+            start <= candidate.timestamp <= end for start, end in preparation_intervals
+        )]
+        for feature in features:
+            if feature.rack_restart:
+                candidates.append(StrikeCandidate(
+                    timestamp=max(0.0, feature.t - 1), confidence=0.55,
+                    uncertainty_start=max(0.0, feature.t - 4),
+                    uncertainty_end=min(metadata.duration, feature.t + 1),
+                    evidence={"rack_restart": 1.0},
+                ))
+        candidates = self._deduplicate_candidates(candidates)
+
         report(0.85, JobStatus.REFINING.value, "Refining strike boundaries")
         # Decode candidate windows at the configured refinement rate.  The same
         # dense observations are retained for stop detection, so strict ends are
@@ -242,7 +263,8 @@ class Analyzer:
                     if audio_supported:
                         candidate.evidence["audio_visual_support"] = 1.0
                         candidate.evidence["audio_seed_review"] = 1.0
-                if confirmed or audio_supported:
+                in_preparation = any(start <= candidate.timestamp <= end for start, end in preparation_intervals)
+                if (confirmed or audio_supported) and not in_preparation and self._rack_candidate_supported(candidate, rack_reference):
                     retained.append(candidate)
             candidates = retained
 
@@ -313,7 +335,14 @@ class Analyzer:
 
         edited, removed = self.segmenter.recompute_durations(shots, metadata.duration)
 
-        events: list[TimelineEvent] = []
+        events: list[TimelineEvent] = [
+            TimelineEvent(event_type="rack_wait", timestamp=start, end=end,
+                          metadata={"reason": "stationary_racked_table"})
+            for start, end in rack_waits if end - start >= 5
+        ]
+        events.extend(TimelineEvent(event_type="table_preparation", timestamp=start, end=end,
+                                   metadata={"reason": "reds_returned_then_racked"})
+                      for start, end in preparation_intervals)
         for s in shots:
             events.append(
                 TimelineEvent(
@@ -434,6 +463,91 @@ class Analyzer:
         if key not in self._audio_feature_cache:
             self._audio_feature_cache[key] = self.audio_ext.extract(audio_path)
         return self._audio_feature_cache[key]
+
+    @staticmethod
+    def _preparation_intervals(features: list[FrameFeatures]) -> list[tuple[float, float]]:
+        """Confirm preparation retrospectively when returned reds form a rack.
+
+        Require an observed nearly cleared table followed by replenished reds.
+        A camera cut or missing observation cannot establish the change.
+        """
+        intervals = []
+        times = [f.t for f in features]
+        for i, frame in enumerate(features):
+            if not frame.red_rack_intact or frame.red_area_ratio <= 0:
+                continue
+            if i and features[i - 1].red_rack_intact:
+                continue
+            history = features[bisect_left(times, frame.t - 180):i]
+            quiet_since = None
+            last_low = None
+            previous_t = None
+            rise_run = 0
+            preparation_start = None
+            for item in history:
+                if previous_t is not None and item.t - previous_t > 0.76:
+                    quiet_since = None
+                    last_low = None
+                    preparation_start = None
+                previous_t = item.t
+                if not item.rack_observation_valid or item.scene_cut_score >= 0.5:
+                    quiet_since = None
+                    last_low = None
+                    preparation_start = None
+                    continue
+                if preparation_start is not None:
+                    continue
+                if item.red_area_ratio <= frame.red_area_ratio * 0.12:
+                    rise_run = 0
+                    if quiet_since is None:
+                        quiet_since = item.t
+                    if item.t - quiet_since >= 3:
+                        last_low = item.t
+                else:
+                    quiet_since = None
+                    if last_low is not None and item.red_area_ratio >= frame.red_area_ratio * 0.25:
+                        rise_run += 1
+                        if rise_run >= 2:
+                            # Later referee occlusion can hide the growing pack;
+                            # do not mistake that for a newly cleared table.
+                            preparation_start = max(history[0].t, last_low - 4)
+                    else:
+                        rise_run = 0
+            if preparation_start is not None and frame.t - preparation_start >= 4:
+                start = preparation_start
+                if intervals and start <= intervals[-1][1]:
+                    intervals[-1] = (intervals[-1][0], frame.t)
+                else:
+                    intervals.append((start, frame.t))
+        return intervals
+
+    @staticmethod
+    def _rack_candidate_supported(candidate: StrikeCandidate, coarse: list[FrameFeatures]) -> bool:
+        if candidate.evidence.get("cue_geometry_confirmed", 0) >= 0.5:
+            return True
+        times = [f.t for f in coarse]
+        pre = coarse[bisect_left(times, candidate.timestamp - 1):bisect_right(times, candidate.timestamp)]
+        post = coarse[bisect_left(times, candidate.timestamp + 0.5):bisect_right(times, candidate.timestamp + 2.5)]
+        # A placed/picked-up white ball can have launch-like speed. Reject it
+        # only with sustained intact-rack evidence on both sides and no cue
+        # contact; missing or obscured observations do not prove preparation.
+        return not (len(pre) >= 2 and len(post) >= 3
+                    and all(f.red_rack_intact for f in pre + post))
+
+    @staticmethod
+    def _rack_wait_intervals(features: list[FrameFeatures]) -> list[tuple[float, float]]:
+        intervals: list[tuple[float, float]] = []
+        active = False
+        for feature in features:
+            if not feature.rack_idle:
+                active = False
+                continue
+            if active and intervals and feature.t - intervals[-1][1] <= 0.76:
+                intervals[-1] = (intervals[-1][0], feature.t)
+            else:
+                intervals.append((feature.t, feature.t))
+            active = True
+        return intervals
 
     def _seed_audio_candidates(
         self,
@@ -570,6 +684,10 @@ class Analyzer:
         scene_step = max(1, int(round(sample_fps / 2)))  # ~2 fps for scene detect
         refine_fps = float(self.config.get("analysis.refine_fps", 30.0))
         dense_pass = sample_fps >= refine_fps * 0.90
+        rack_gate = (
+            RackIdleGate() if sample_fps <= 3
+            and bool(self.config.get("analysis.skip_racked_waits", True)) else None
+        )
         flow_refresh_fps = min(
             sample_fps,
             float(self.config.get("analysis.native_flow_fps", 10.0)) if dense_pass else sample_fps,
@@ -664,6 +782,32 @@ class Analyzer:
                     table_obs = None
                     last_table_t = None
 
+                if rack_gate is not None and rack_gate.observe(frame, t):
+                    features.append(FrameFeatures(
+                        t=t, rack_idle=True, red_rack_intact=True, observation_valid=False,
+                        red_area_ratio=rack_gate.red_area_ratio, rack_observation_valid=True,
+                        table_observable=True, table_confidence=0.9,
+                        green_ratio=rack_gate.table_ratio,
+                        table_mask_area_ratio=rack_gate.table_ratio,
+                        scene_cut_score=online_cut,
+                    ))
+                    if scene_stream is not None and kept % scene_step == 0:
+                        scene_stream.observe(frame, t, histogram=hist)
+                    prev_gray = None
+                    prev_hist = hist
+                    kept += 1
+                    if progress and kept % 20 == 0:
+                        progress(min(0.99, (t - start_time) / max(end_time - start_time, 1e-6)),
+                                 "Skipping stationary racked-table wait")
+                    continue
+                if rack_gate is not None and rack_gate.just_released:
+                    self.motion.reset()
+                    self.objects.reset()
+                    self.tracker = BallTracker()
+                    self._last_cue_tip = None
+                    prev_sample_t = None
+                    last_flow_t = None
+
                 if (
                     table_obs is None
                     or last_table_t is None
@@ -748,6 +892,10 @@ class Analyzer:
 
                 feat = FrameFeatures(
                     t=t,
+                    rack_restart=bool(rack_gate and rack_gate.just_released),
+                    red_rack_intact=bool(rack_gate and rack_gate.racked),
+                    red_area_ratio=rack_gate.red_area_ratio if rack_gate else 0.0,
+                    rack_observation_valid=bool(rack_gate and rack_gate.table_ratio >= 0.12),
                     table_confidence=table_obs.confidence,
                     table_mask_area_ratio=table_obs.area_ratio,
                     residual_motion_mean=residual.residual_mean if residual else 0.0,
@@ -859,6 +1007,7 @@ class Analyzer:
                 proxy_path, audio_path, mapper, duration, candidates,
                 progress=progress, signature=signature, resume=resume,
                 force_native_audio=force_native_audio, existing_dense=existing_dense,
+                rack_features=coarse_features,
             )
         dense_fps = float(
             self.config.get(
@@ -1077,6 +1226,7 @@ class Analyzer:
         progress: Optional[Callable[[float, str], None]] = None,
         signature: str = "", resume: bool = True, force_native_audio: bool = False,
         existing_dense: list[FrameFeatures] | None = None,
+        rack_features: list[FrameFeatures] | None = None,
     ) -> tuple[list[StrikeCandidate], list[FrameFeatures]]:
         """Track through the roll cheaply; spend native cadence on the boundaries.
 
@@ -1166,6 +1316,8 @@ class Analyzer:
         total = max(1, len(visual) + len(audio))
         for number, candidate in enumerate(visual):
             start = candidate.timestamp - backward
+            if candidate.evidence.get("rack_restart", 0) >= 0.5:
+                start = min(start, candidate.uncertainty_start)
             contact = observe(start, candidate.timestamp + strike_post, native_fps)
             contact = self.strike_det.score_frames(contact)
             self.strike_det.refine_boundaries([candidate], contact)
@@ -1191,6 +1343,8 @@ class Analyzer:
                     candidate.confidence = launch.confidence
                     candidate.evidence.update(launch.evidence)
                     verified = True
+            if verified and not self._rack_candidate_supported(candidate, rack_features or []):
+                verified = False
             if not verified:
                 if progress:
                     progress((number + 1) / total, f"Rejected non-strike proposal {number + 1}/{len(visual)}")
