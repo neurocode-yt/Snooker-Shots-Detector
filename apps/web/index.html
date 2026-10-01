@@ -14,7 +14,7 @@
 
   <main class="panel">
     <section class="card">
-      <h2>Upload &amp; analyze</h2>
+      <h2>Create snooker highlights</h2>
       <form id="upload-form">
         <label class="file-label">
           <input type="file" id="file" accept="video/*,.mp4,.mov,.mkv,.avi,.webm" required />
@@ -24,8 +24,8 @@
         <section id="pre-editor" class="pre-editor hidden" aria-labelledby="pre-editor-heading">
           <div class="pre-editor-heading">
             <div>
-              <h3 id="pre-editor-heading">Prepare match before analysis</h3>
-              <p class="muted">Split around frame breaks and delete those sections. Your original video is never changed.</p>
+              <h3 id="pre-editor-heading">Optional source trimming</h3>
+              <p class="muted">Keep the whole video and start. Shot detection, cutting, and export run automatically.</p>
             </div>
             <span id="edit-summary" class="preview-count">Loading…</span>
           </div>
@@ -69,7 +69,7 @@
         </section>
         <div class="row">
           <span class="muted">Strict mode: 2s before strike → balls stop</span>
-          <button type="submit" id="start-btn" disabled>Prepare &amp; start analysis</button>
+          <button type="submit" id="start-btn" disabled>Create video automatically</button>
         </div>
       </form>
       <div id="progress-wrap" class="hidden">
@@ -84,6 +84,6 @@
     </section>
   </main>
 
-  <script src="/static/app.js?v=20260719c"></script>
+  <script src="/static/app.js?v=20261001auto"></script>
 </body>
 </html>

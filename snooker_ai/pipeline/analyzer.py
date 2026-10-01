@@ -50,7 +50,7 @@ from snooker_ai.utils.video import open_capture, sampled_frames
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 3
+_CACHE_VERSION = 6
 
 
 class Analyzer:
@@ -255,6 +255,7 @@ class Analyzer:
                 candidate
                 for candidate in candidates
                 if candidate.evidence.get("audio_seed", 0.0) >= 0.5
+                and candidate.evidence.get("refined_stop_confidence", 0.0) < 0.70
             ]
             if audio_recoveries:
                 _, native_audio_features = self._refine_candidate_windows(
@@ -298,7 +299,7 @@ class Analyzer:
                         [
                             candidate
                             for candidate in candidates
-                            if candidate.evidence.get("audio_seed", 0.0) < 0.5
+                            if candidate not in audio_recoveries
                         ]
                         + refined_audio
                     )
@@ -530,6 +531,7 @@ class Analyzer:
         end_time: Optional[float] = None,
         collect_scene_observations: bool = False,
         checkpoint_stage: str = "features",
+        stop_when: Optional[Callable[[list[FrameFeatures]], bool]] = None,
     ) -> tuple[list[FrameFeatures], list[SceneObservation], list[float]]:
         sample_fps = float(sample_fps or self.config.get("analysis.sample_fps", 10.0))
         start_time = max(0.0, float(start_time))
@@ -568,6 +570,12 @@ class Analyzer:
         scene_step = max(1, int(round(sample_fps / 2)))  # ~2 fps for scene detect
         refine_fps = float(self.config.get("analysis.refine_fps", 30.0))
         dense_pass = sample_fps >= refine_fps * 0.90
+        flow_refresh_fps = min(
+            sample_fps,
+            float(self.config.get("analysis.native_flow_fps", 10.0)) if dense_pass else sample_fps,
+        )
+        flow_refresh_period = 1.0 / max(flow_refresh_fps, 1e-6)
+        last_flow_t: float | None = None
         table_key = (
             "analysis.refine_table_refresh_fps"
             if dense_pass
@@ -613,6 +621,7 @@ class Analyzer:
 
         self.table.reset()
         self.motion.reset()
+        self.objects.reset()
         self.tracker = BallTracker()
         self._last_cue_tip = None
 
@@ -646,10 +655,12 @@ class Analyzer:
                 if cut_like:
                     self.table.reset()
                     self.motion.reset()
+                    self.objects.reset()
                     self.tracker = BallTracker()
                     self._last_cue_tip = None
                     prev_gray = None
                     prev_sample_t = None
+                    last_flow_t = None
                     table_obs = None
                     last_table_t = None
 
@@ -669,21 +680,29 @@ class Analyzer:
                     (d.cx, d.cy, d.diameter_px)
                     for d in dets
                     if d.confidence >= 0.30 and d.diameter_px > 1.0
+                    and d.shape_confidence >= 0.48
+                    and d.cloth_surround_confidence >= 0.45
                 ]
                 residual = None
                 if prev_gray is not None:
                     dt = t - prev_sample_t if prev_sample_t is not None else 1.0 / max(sample_fps, 1.0)
+                    refresh_flow = last_flow_t is None or t - last_flow_t + 1e-9 >= flow_refresh_period
                     residual = self.motion.analyze(
                         prev_gray,
                         gray,
                         table_obs.mask,
                         ball_regions=ball_regions,
                         frame_dt=dt,
+                        refresh_flow=refresh_flow,
                     )
+                    if refresh_flow:
+                        last_flow_t = t
                 prev_gray = gray
                 prev_sample_t = t
                 prev_hist = hist
-                tracks = self.tracker.update(t, dets)
+                tracks = self.tracker.update(
+                    t, dets, camera_transform=residual.camera_transform if residual else None,
+                )
                 cue = self.tracker.cue_ball_track()
 
                 diameter = max(
@@ -758,6 +777,10 @@ class Analyzer:
                     cue_forward_motion=float(cue_geometry["forward_motion"]),
                     cue_contact_score=float(cue_geometry["contact_score"]),
                     max_ball_normalized_speed=self.tracker.max_normalized_speed(diameter),
+                    ball_kinematics_valid=any(
+                        tr.hits >= 2 and self.tracker.is_ball_quality_track(tr)
+                        for tr in visible_tracks
+                    ),
                     moving_ball_count=moving_count,
                     occluded_ball_count=self.tracker.occluded_moving_count(
                         min_normalized_speed=stop_speed,
@@ -774,6 +797,12 @@ class Analyzer:
                     scene_stream.observe(frame, t, histogram=hist)
 
                 kept += 1
+                if (
+                    stop_when is not None
+                    and kept % max(1, int(round(sample_fps * 0.5))) == 0
+                    and stop_when(features)
+                ):
+                    break
                 if progress and kept % 20 == 0:
                     interval = max(end_time - start_time, 1e-6)
                     fraction = (t - start_time) / interval
@@ -825,6 +854,12 @@ class Analyzer:
             if progress:
                 progress(1.0, "No candidate windows to refine")
             return candidates, []
+        if self.config.get("analysis.adaptive_stop_tracking", True):
+            return self._refine_adaptive_windows(
+                proxy_path, audio_path, mapper, duration, candidates,
+                progress=progress, signature=signature, resume=resume,
+                force_native_audio=force_native_audio, existing_dense=existing_dense,
+            )
         dense_fps = float(
             self.config.get(
                 "analysis.refine_fps",
@@ -1035,6 +1070,167 @@ class Analyzer:
         # Keep the denser layer wherever it overlaps a coarse sample.  Rounded
         # presentation times de-duplicate VFR/proxy seek jitter deterministically.
         return candidates, dense
+
+    def _refine_adaptive_windows(
+        self, proxy_path: Path, audio_path: Optional[Path], mapper: TimeMapper,
+        duration: float, candidates: list[StrikeCandidate], *,
+        progress: Optional[Callable[[float, str], None]] = None,
+        signature: str = "", resume: bool = True, force_native_audio: bool = False,
+        existing_dense: list[FrameFeatures] | None = None,
+    ) -> tuple[list[StrikeCandidate], list[FrameFeatures]]:
+        """Track through the roll cheaply; spend native cadence on the boundaries.
+
+        Stop tracking exits as soon as stationary evidence is confirmed. The
+        long safety horizon therefore preserves genuine long rolls without
+        decoding a minute at native rate for every proposed strike.
+        """
+        native_fps = float(self.config.get("analysis.refine_fps", 30.0))
+        tracking_fps = min(native_fps, float(self.config.get("analysis.stop_tracking_fps", 10.0)))
+        audio_fps = min(native_fps, float(self.config.get("analysis.audio_seed_scan_fps", 10.0)))
+        backward = float(self.config.get("analysis.refine_backward_seconds", 2.0))
+        strike_post = float(self.config.get("analysis.strike_refine_post_seconds", 2.0))
+        stop_warmup = float(self.config.get("analysis.stop_refine_window_seconds", 1.5))
+        tail = float(self.config.get("analysis.stop_tracking_tail_seconds", 0.2))
+        stop_detector = self.segmenter.ball_stop
+        horizon = stop_detector.max_after_strike or float(self.config.get("motion.max_ball_travel_seconds", 60.0))
+        known = sorted(existing_dense or [], key=lambda feature: feature.t)
+        known_times = [feature.t for feature in known]
+        priorities = {int(round(feature.t * 10000)): 1 for feature in known}
+        window_index = 0
+
+        def remember(part: list[FrameFeatures], priority: int = 0) -> None:
+            if not part:
+                return
+            lo = bisect_left(known_times, part[0].t - 1e-6)
+            hi = bisect_right(known_times, part[-1].t + 1e-6)
+            accepted = []
+            for feature in part:
+                key = int(round(feature.t * 10000))
+                if priority >= priorities.get(key, -1):
+                    accepted.append(feature)
+                    priorities[key] = priority
+            merged = self._merge_feature_layers(known[lo:hi], accepted)
+            known[lo:hi] = merged
+            known_times[lo:hi] = [feature.t for feature in merged]
+
+        def settled(part: list[FrameFeatures], candidate: StrikeCandidate) -> bool:
+            if not part or part[-1].t < candidate.timestamp + stop_detector.min_travel_s + stop_detector.confirm_s:
+                return False
+            stop = stop_detector.detect_stop(candidate, part, duration)
+            return stop.confirmed and part[-1].t + 1e-6 >= stop.stop_confirmation_timestamp + tail
+
+        def observe(start: float, end: float, fps: float, candidate: StrikeCandidate | None = None, priority: int = 0) -> list[FrameFeatures]:
+            nonlocal window_index
+            start, end = max(0.0, start), min(duration, end)
+            index = window_index
+            window_index += 1
+            if end <= start:
+                return []
+            lo, hi = bisect_left(known_times, start - 1e-6), bisect_right(known_times, end + 1e-6)
+            covered = known[lo:hi]
+            # A previously observed stop may cover less than the planned safety
+            # horizon. Reuse it only when the entire required interval is dense.
+            required_end = end
+            if candidate is not None and settled(covered, candidate):
+                stop = stop_detector.detect_stop(candidate, covered, duration)
+                required_end = min(end, stop.stop_confirmation_timestamp + tail)
+                covered = covered[:bisect_right([feature.t for feature in covered], required_end + 1.5 / fps)]
+            max_gap = 1.5 / max(fps, 1.0)
+            complete = bool(
+                len(covered) >= 2 and covered[0].t - start <= max_gap
+                and required_end - covered[-1].t <= max_gap
+                and all(right.t - left.t <= max_gap for left, right in zip(covered, covered[1:]))
+            )
+            if complete and (
+                priority < 3
+                or all(priorities.get(int(round(feature.t * 10000)), -1) >= priority for feature in covered)
+            ):
+                return covered
+            part = self._load_dense_window(signature, index, start, end) if resume and signature else None
+            if part is None:
+                part, _, _ = self._extract_features(
+                    proxy_path, audio_path, mapper, duration,
+                    sample_fps=fps, start_time=start, end_time=end,
+                    collect_scene_observations=False, checkpoint_stage="adaptive_refinement",
+                    stop_when=(lambda features: settled(features, candidate)) if candidate is not None else None,
+                )
+                if signature:
+                    self._save_dense_window(signature, index, start, end, part)
+            remember(part, priority)
+            return part
+
+        # Verify visual proposals first. Their observations can also corroborate
+        # nearby audio peaks without a second decode of the same ball travel.
+        visual = [candidate for candidate in candidates if force_native_audio or candidate.evidence.get("audio_seed", 0.0) < 0.5]
+        audio = [candidate for candidate in candidates if not force_native_audio and candidate.evidence.get("audio_seed", 0.0) >= 0.5]
+        total = max(1, len(visual) + len(audio))
+        for number, candidate in enumerate(visual):
+            start = candidate.timestamp - backward
+            contact = observe(start, candidate.timestamp + strike_post, native_fps)
+            contact = self.strike_det.score_frames(contact)
+            self.strike_det.refine_boundaries([candidate], contact)
+            verified = bool(
+                candidate.evidence.get("dense_transition_confirmed", 0.0) >= 0.5
+                or candidate.evidence.get("sparse_dense_transition", 0.0) >= 0.5
+                or (
+                    candidate.evidence.get("audio_seed", 0.0) >= 0.5
+                    and self._audio_seed_visual_support(candidate, contact)
+                )
+            )
+            if not verified:
+                found = self.strike_det.detect_candidates(contact)
+                fallback = [
+                    item for item in found
+                    if candidate.uncertainty_start <= item.timestamp <= candidate.uncertainty_end
+                    and item.evidence.get("occlusion_inferred", 0.0) >= 0.5
+                    and item.evidence.get("ball_onset_run", 0.0) >= 2.0
+                ]
+                if fallback:
+                    launch = max(fallback, key=lambda item: item.confidence)
+                    candidate.timestamp = launch.timestamp
+                    candidate.confidence = launch.confidence
+                    candidate.evidence.update(launch.evidence)
+                    verified = True
+            if not verified:
+                if progress:
+                    progress((number + 1) / total, f"Rejected non-strike proposal {number + 1}/{len(visual)}")
+                continue
+            remember(contact, 3)
+            tracking = observe(start, candidate.timestamp + horizon, tracking_fps, candidate, priority=1)
+            # Restore native observations where the cheaper tracking layer used
+            # the same timestamps, keeping exact contact evidence authoritative.
+            remember(contact, 3)
+            if tracking:
+                stop = stop_detector.detect_stop(candidate, tracking, duration)
+                if stop.confirmed:
+                    stop_features = observe(
+                        max(start, stop.physical_stop_timestamp - stop_warmup),
+                        stop.stop_confirmation_timestamp + tail, native_fps, priority=3,
+                    )
+                    refined_stop = stop_detector.detect_stop(candidate, stop_features, duration)
+                    if refined_stop.confirmed:
+                        # Preserve the dedicated boundary observation. A later
+                        # rejected proposal starts a different tracker and must
+                        # not revise the already verified physical stop.
+                        candidate.evidence.update({
+                            "refined_stop_timestamp": refined_stop.physical_stop_timestamp,
+                            "refined_stop_confirmation_timestamp": refined_stop.stop_confirmation_timestamp,
+                            "refined_last_motion_timestamp": refined_stop.last_ball_motion_timestamp,
+                            "refined_stop_confidence": refined_stop.end_confidence,
+                            "refined_ball_motion_start": stop.motion_start,
+                            "refined_stop_review_required": float(refined_stop.manual_review_required),
+                        })
+            if progress:
+                progress((number + 1) / total, f"Tracked shot {number + 1}/{len(visual)}")
+        for number, candidate in enumerate(audio):
+            observe(
+                candidate.timestamp - float(self.config.get("analysis.audio_seed_pre_seconds", 1.5)),
+                candidate.timestamp + float(self.config.get("analysis.audio_seed_post_seconds", 6.0)),
+                audio_fps,
+            )
+            if progress:
+                progress((len(visual) + number + 1) / total, f"Verified audio peak {number + 1}/{len(audio)}")
+        return candidates, known
 
     @staticmethod
     def _merge_feature_layers(

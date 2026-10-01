@@ -124,7 +124,7 @@ def test_restart_analysis_api_endpoint(config, tmp_path, monkeypatch):
 
     runs = []
 
-    def fake_run_analysis(job_id, source_path, mode, resume, force_reanalyze=False, config=None):
+    def fake_run_analysis(job_id, source_path, mode, resume, force_reanalyze=False, config=None, auto_export=True):
         runs.append((job_id, source_path, mode, resume, force_reanalyze))
 
     monkeypatch.setattr("apps.api.main._run_analysis", fake_run_analysis)
@@ -220,4 +220,3 @@ def test_analyzer_coarse_and_dense_cache_roundtrip(config, tmp_path):
     dense_loaded = analyzer._load_dense_window(sig, 0, 1.0, 5.0)
     assert dense_loaded is not None
     assert len(dense_loaded) == 1
-

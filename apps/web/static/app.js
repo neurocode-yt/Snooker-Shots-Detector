@@ -364,7 +364,8 @@ async function refreshJobs() {
         </div>
         <div class="job-actions">
           <button type="button" class="btn-restart" data-job-id="${job.job_id}">Restart</button>
-          <a href="/review/${job.job_id}">Review</a>
+          ${job.download_url ? `<a href="${job.download_url}">Download video</a>` : ""}
+          <a href="/review/${job.job_id}">View shots</a>
         </div>
       </div>`,
       )
@@ -486,7 +487,7 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
     const start = await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source_path: path, mode, resume: true }),
+      body: JSON.stringify({ source_path: path, mode, resume: true, auto_export: true }),
     });
     if (!start.ok) throw new Error(await start.text());
     const { job_id: jobId } = await start.json();
@@ -504,8 +505,15 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
         refreshJobs();
         if (metadata.status === "failed") {
           text.textContent = `Failed: ${metadata.error || metadata.message}`;
+        } else if (metadata.status === "completed") {
+          text.textContent = metadata.message || "Finished video ready.";
+          if (metadata.download_url) {
+            const download = document.createElement("a");
+            download.href = metadata.download_url;
+            download.textContent = " Download finished video";
+            text.appendChild(download);
+          }
         } else {
-          text.textContent = "Done — opening review…";
           window.location.href = `/review/${jobId}`;
         }
       }

@@ -3,8 +3,8 @@
 **Production-oriented automatic snooker shot detection and video editing.**
 
 Upload a full match or highlights reel → detect genuine cue strikes and ball-stop
-points → remove dead time between shots → export a smooth joined video with
-perfect audio sync — with a web timeline for reviewing uncertain detections.
+points → remove dead time between shots → automatically export a joined video.
+The web timeline remains available for optional inspection.
 
 > **Phase 1 baseline:** rule-based multimodal pipeline (scene cuts, table mask,
 > camera-motion compensation, residual table motion, audio onsets, state machine,
@@ -14,7 +14,7 @@ perfect audio sync — with a web timeline for reviewing uncertain detections.
 ## Features
 
 - **Strict edit mode:** 2s before cue contact → hold until every ball stops  
-  (pre-roll and review caps configurable — not hardcoded)
+  (pre-roll and safety horizon configurable)
 - **Multimodal detection** — residual motion after camera compensation + table mask + audio support
 - **Replay-aware** — replays flagged and excluded by default
 - **Pre-analysis match editor** — split/delete frame breaks with a 1×–64× zoomable timeline; original uploads remain untouched
@@ -22,6 +22,8 @@ perfect audio sync — with a web timeline for reviewing uncertain detections.
 - **Selected-shots preview** — immediately play included shots as one continuous virtual timeline
 - **Export** — individual clips, one combined MP4, CSV, EDL, training labels
 - **Jobs** — progress, resume, batch CLI
+- **Automatic workflow** — upload and start once; detection, cutting, and combined export finish without review approval
+- **Adaptive analysis** — native cadence at cue contact and stop boundaries; cheaper tracking follows the roll and exits on confirmed stillness
 - **Windows-first** + **Docker** for servers
 - **GPU optional** (Phase 2 torch); CPU fallback always works
 
@@ -58,8 +60,9 @@ snooker-ai serve --port 8000
 Strict mode starts at the first confirmed cue-ball launch minus 2.000 seconds and
 normally ends at the first physical all-ball stop. The 0.50-second stationary
 confirmation is look-ahead evidence only and is not included in `clip_end`.
-Unresolved motion is capped seven seconds after the strike and flagged for
-review, so a false track cannot produce a 40–50 second clip.
+Automatic tracking follows longer rolls beyond seven seconds, with a configurable
+60-second safety horizon. Uncertainty remains in the diagnostics and does not
+block automatic export. A video that ends during a shot keeps its remaining footage.
 
 `strict` is the only editing mode (2s before strike → balls stop). When the next
 shot starts before the previous window would end (fast break play), the boundary
@@ -76,10 +79,14 @@ snooker-ai serve --host 127.0.0.1 --port 8000
 - Review: http://127.0.0.1:8000/review/`<job-id>`
 - API docs: http://127.0.0.1:8000/docs
 
-Selecting a video opens the pre-analysis editor. Split at both edges of any
-between-frame break, delete the middle section, zoom the timeline as needed,
-then start analysis. A cleaned MP4 is created from kept sections without
-modifying the original upload.
+Select a video and click **Create video automatically**. The finished MP4 appears
+as a download when processing completes; reviewing shots and exporting again are
+optional. Source trimming is also optional: split/delete sections before starting
+if needed. Keeping the entire source skips that extra re-encoding step.
+
+API clients can set `auto_export: false` on `POST /api/jobs` to request analysis
+only. New web jobs export a combined video automatically and avoid encoding
+separate numbered clips unless explicitly requested later.
 
 The timeline stays inside its own horizontally scrollable viewport at every
 zoom level. Drag the yellow playhead to seek. Use `Z` to split, `Ctrl+Z` to

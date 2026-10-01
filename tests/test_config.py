@@ -15,7 +15,7 @@ def test_mode_settings():
     m = cfg.mode_settings(EditMode.STRICT)
     assert m["pre_roll"] == 2.0
     assert m["min_seconds_after_strike"] == 4.0
-    assert m["max_seconds_after_strike"] == 7.0
+    assert m["max_seconds_after_strike"] == 60.0
 
 
 def test_deep_merge():

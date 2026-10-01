@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Optional
 
 import cv2
@@ -27,6 +27,7 @@ class MotionSample:
     # must not be used as the primary all-ball stop signal.
     ball_residual_motion: float = 0.0
     observation_valid: bool = True
+    camera_transform: Optional[np.ndarray] = None
 
 
 class ResidualMotionAnalyzer:
@@ -41,6 +42,7 @@ class ResidualMotionAnalyzer:
         self.ema_alpha = float(mcfg.get("ema_alpha", 0.60))
         self.flow_scale = float(np.clip(mcfg.get("flow_scale", 0.5), 0.25, 1.0))
         self._ema_score = 0.0
+        self._last_sample: MotionSample | None = None
         self.use_opencl = acceleration_enabled(config)
 
     def analyze(
@@ -50,8 +52,21 @@ class ResidualMotionAnalyzer:
         table_mask: Optional[np.ndarray],
         ball_regions: Optional[list[tuple[float, float, float]]] = None,
         frame_dt: float = 1.0,
+        refresh_flow: bool = True,
     ) -> MotionSample:
         cam = self.cam.estimate(prev_gray, gray, mask=table_mask)
+        if not refresh_flow and self._last_sample is not None:
+            # Native-rate ball centres and camera compensation still update on
+            # every frame. Aggregate flow is supporting evidence and can reuse
+            # the previous observation between its lower-rate refreshes.
+            return replace(
+                self._last_sample, camera_magnitude=cam.magnitude,
+                is_camera_unstable=cam.is_cut_like, observation_valid=not cam.is_cut_like,
+                camera_transform=cam.transform if not cam.is_cut_like else None,
+                motion_score=0.0 if cam.is_cut_like else self._last_sample.motion_score,
+                motion_raw=0.0 if cam.is_cut_like else self._last_sample.motion_raw,
+                ball_residual_motion=0.0 if cam.is_cut_like else self._last_sample.ball_residual_motion,
+            )
         aligned = prev_gray
         if cam.transform is not None and not cam.is_cut_like:
             aligned = self.cam.warp_prev(prev_gray, cam.transform)
@@ -181,7 +196,7 @@ class ResidualMotionAnalyzer:
 
         self._ema_score = self.ema_alpha * raw_score + (1.0 - self.ema_alpha) * self._ema_score
 
-        return MotionSample(
+        sample = MotionSample(
             residual_mean=residual_mean,
             residual_max=residual_max,
             motion_area_ratio=motion_area_ratio,
@@ -191,7 +206,11 @@ class ResidualMotionAnalyzer:
             motion_raw=float(raw_score),
             ball_residual_motion=float(ball_residual),
             observation_valid=not cam.is_cut_like,
+            camera_transform=cam.transform if not cam.is_cut_like else None,
         )
+        self._last_sample = sample
+        return sample
 
     def reset(self) -> None:
         self._ema_score = 0.0
+        self._last_sample = None

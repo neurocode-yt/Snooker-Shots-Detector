@@ -123,11 +123,13 @@ class AnalyzeBody(BaseModel):
     job_id: Optional[str] = None
     mode: str = "strict"
     resume: bool = True
+    auto_export: bool = True
 
 
 class RestartBody(BaseModel):
     mode: Optional[str] = None
     force: bool = True
+    auto_export: Optional[bool] = None
 
 
 class ExportBody(BaseModel):
@@ -175,6 +177,7 @@ def _run_analysis(
     resume: bool,
     force_reanalyze: bool = False,
     config: Optional[Config] = None,
+    auto_export: bool = True,
 ) -> None:
     cfg = config or load_config()
     store = JobStore(cfg)
@@ -186,6 +189,11 @@ def _run_analysis(
         analyzer = Analyzer(cfg, store.job_dir(job_id))
 
         def prog(p: float, stage: str, msg: str) -> None:
+            if auto_export:
+                p *= 0.90
+                if stage == JobStatus.READY_FOR_REVIEW.value:
+                    stage = JobStatus.SEGMENTING.value
+                    msg = "Detection complete; preparing automatic export"
             store.update_progress(job_id, p, stage, msg)
 
         result = analyzer.analyze(
@@ -197,6 +205,25 @@ def _run_analysis(
             force_reanalyze=force_reanalyze,
         )
         n_shots = len(result.shots) if result and result.shots is not None else 0
+        if auto_export:
+            request = ExportRequest(mode=mode, output_path="highlights.mp4", export_clips=False)
+            exporter = Exporter(cfg)
+            if exporter._filter_shots(result.shots, request):
+                store.update_progress(
+                    job_id, 0.92, JobStatus.EXPORTING,
+                    "Creating finished video automatically", shots_detected=n_shots,
+                )
+                rendered = exporter.export(result, store.job_dir(job_id) / "export", request)
+                meta = store.get_meta(job_id)
+                meta["auto_export_ready"] = bool(rendered.joined_path and rendered.joined_path.is_file())
+                store._write_meta(job_id, meta)
+                message = f"Finished video ready: {n_shots} detected shots"
+            else:
+                message = "Analysis complete; no playable shots detected"
+            store.update_progress(
+                job_id, 1.0, JobStatus.COMPLETED, message, shots_detected=n_shots,
+            )
+            return
         store.update_progress(
             job_id,
             1.0,
@@ -300,7 +327,12 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                 )
         else:
             job_id = store.create(source, mode=mode.value)
-        background.add_task(_run_analysis, job_id, source, mode, body.resume, False, cfg)
+        meta = store.get_meta(job_id)
+        meta["auto_export"] = body.auto_export
+        if body.auto_export:
+            meta["auto_export_ready"] = False
+        store._write_meta(job_id, meta)
+        background.add_task(_run_analysis, job_id, source, mode, body.resume, False, cfg, body.auto_export)
         return {"job_id": job_id, "status": "started", "mode": mode.value}
 
     @app.post("/api/jobs/{job_id}/restart")
@@ -325,6 +357,14 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         mode_str = (body.mode if body and body.mode else None) or meta.get("mode", "strict")
         mode = EditMode.from_string(mode_str)
         force = body.force if body is not None else True
+        auto_export = (
+            body.auto_export if body and body.auto_export is not None
+            else bool(meta.get("auto_export", True))
+        )
+        meta["auto_export"] = auto_export
+        if auto_export:
+            meta["auto_export_ready"] = False
+        store._write_meta(job_id, meta)
 
         store.update_progress(
             job_id,
@@ -334,7 +374,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             error=None,
         )
         background.add_task(
-            _run_analysis, job_id, source, mode, True, force, cfg
+            _run_analysis, job_id, source, mode, True, force, cfg, auto_export
         )
         return {
             "job_id": job_id,
@@ -377,7 +417,16 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
 
     @app.get("/api/jobs")
     async def list_jobs() -> list[dict[str, Any]]:
-        return store.list_jobs()
+        return [with_download(meta) for meta in store.list_jobs()]
+
+    def with_download(meta: dict[str, Any]) -> dict[str, Any]:
+        job_id = meta["job_id"]
+        available = (
+            meta.get("status") == JobStatus.COMPLETED.value
+            and meta.get("auto_export_ready") is not False
+            and (store.job_dir(job_id) / "export" / "highlights.mp4").is_file()
+        )
+        return {**meta, "download_url": f"/api/jobs/{job_id}/download/highlights" if available else None}
 
     @app.get("/api/jobs/{job_id}")
     async def get_job(job_id: str) -> dict[str, Any]:
@@ -389,7 +438,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     @app.get("/api/jobs/{job_id}/progress")
     async def get_progress(job_id: str) -> dict[str, Any]:
         try:
-            return store.get_meta(job_id)
+            return with_download(store.get_meta(job_id))
         except FileNotFoundError as exc:
             raise HTTPException(404, str(exc)) from exc
 
@@ -539,6 +588,9 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                 store.update_progress(job_id, 0.0, JobStatus.FAILED, str(exc), error=str(exc))
                 raise HTTPException(500, str(exc)) from exc
             clip_paths = er.clip_paths if er and er.clip_paths is not None else []
+            meta = store.get_meta(job_id)
+            meta["auto_export_ready"] = bool(er.joined_path)
+            store._write_meta(job_id, meta)
             store.update_progress(
                 job_id,
                 1.0,
@@ -625,6 +677,12 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             "training": base / "export" / "training_labels.json",
         }
         path = mapping.get(kind)
+        if kind == "highlights":
+            try:
+                if store.get_meta(job_id).get("auto_export_ready") is False:
+                    raise HTTPException(404, "No finished video for the current analysis")
+            except FileNotFoundError:
+                pass
         if not path or not path.exists():
             raise HTTPException(404, f"Artifact '{kind}' not found")
         return FileResponse(path, filename=path.name)

@@ -70,3 +70,17 @@ def test_camera_motion_handles_empty_opencl_feature_result(config, monkeypatch):
     assert result.transform is None
     assert result.inliers == 0
     assert result.is_cut_like is True  # unknown motion, never proof of a ball stop
+
+
+def test_camera_cut_is_observed_between_supporting_flow_refreshes(config, monkeypatch):
+    from snooker_ai.motion.camera import CameraMotion
+    from snooker_ai.motion.residual import MotionSample
+
+    analyzer = ResidualMotionAnalyzer(config)
+    analyzer._last_sample = MotionSample(0, 0, 0, 0, False, 0, 0, 0, True)
+    monkeypatch.setattr(analyzer.cam, "estimate", lambda *args, **kwargs: CameraMotion(15, 1, 0, None, True))
+    blank = np.zeros((60, 80), dtype=np.uint8)
+    sample = analyzer.analyze(blank, blank, None, refresh_flow=False)
+    assert sample.observation_valid is False
+    assert sample.is_camera_unstable is True
+    assert sample.camera_transform is None

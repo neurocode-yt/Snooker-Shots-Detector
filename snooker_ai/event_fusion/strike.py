@@ -280,6 +280,10 @@ class StrikeDetector:
             "bridged_sustained_count": float(bridged_sustained_count),
             "post_peak_cue_speed": float(max(post_speeds or [0.0])),
             "cue_speed": float(current_speed),
+            "cue_track_visible": float(
+                f.cue_ball_x is not None and f.cue_ball_y is not None
+                and self._track_conf(f) >= self.min_track_conf * 0.7
+            ),
             "previous_cue_speed": float(previous_speed),
             "cue_acceleration": float(max(0.0, accel)),
             "speed_crossing": crossing,
@@ -341,6 +345,7 @@ class StrikeDetector:
             or (
                 contact_overrides_object_noise
                 and metrics["post_peak_cue_speed"] >= self.start_speed
+                and metrics.get("cue_track_visible", 1.0) < 0.5
             )
         )
         return bool(
@@ -371,6 +376,12 @@ class StrikeDetector:
         """
         return bool(
             metrics.get("pre_sample_count", 0.0) >= 3
+            and metrics.get("stationary_ratio", 0.0) >= 0.50
+            and metrics.get("pre_ball_quiet_ratio", 0.0) >= self.fallback_pre_ball_quiet_min_ratio
+            and (
+                metrics.get("cue_speed", 0.0) >= self.start_speed
+                or metrics.get("cue_track_visible", 1.0) < 0.5
+            )
             and metrics.get("pre_motion_raw_median", 1.0)
             <= self.pre_quiet_max_motion
             and metrics.get("post_peak_cue_speed", 0.0)

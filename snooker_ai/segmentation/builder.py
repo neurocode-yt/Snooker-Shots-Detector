@@ -5,7 +5,7 @@ from __future__ import annotations
 from bisect import bisect_left, bisect_right
 
 from snooker_ai.config import Config
-from snooker_ai.event_fusion.ball_stop import BallStopDetector
+from snooker_ai.event_fusion.ball_stop import BallStopDetector, StopDetection
 from snooker_ai.types import (
     CameraViewType,
     ConfidenceLevel,
@@ -71,6 +71,24 @@ class SegmentBuilder:
             stop = self.ball_stop.detect_stop(
                 cand, features, duration, times=feature_times
             )
+            refined_end = float(cand.evidence.get("refined_stop_timestamp", 0.0))
+            refined_confirmation = float(cand.evidence.get("refined_stop_confirmation_timestamp", 0.0))
+            refined_confidence = float(cand.evidence.get("refined_stop_confidence", 0.0))
+            if (
+                cand.timestamp <= refined_end <= refined_confirmation <= duration
+                and refined_confirmation - refined_end + 1e-6 >= self.ball_stop.confirm_s
+                and refined_confidence >= 0.70
+            ):
+                stop = StopDetection(
+                    motion_start=float(cand.evidence.get("refined_ball_motion_start", cand.timestamp)),
+                    last_ball_motion_timestamp=float(cand.evidence.get("refined_last_motion_timestamp", refined_end)),
+                    physical_stop_timestamp=refined_end,
+                    stop_confirmation_timestamp=refined_confirmation,
+                    end_confidence=refined_confidence, start_confidence=stop.start_confidence,
+                    confirmed=True,
+                    manual_review_required=bool(cand.evidence.get("refined_stop_review_required", 0)),
+                    reason="confirmed_native_stop",
+                )
 
             # A practice stroke/feathering candidate with no sustained ball
             # motion is not a shot.  Ambiguous cases that did show movement are

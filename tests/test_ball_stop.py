@@ -63,6 +63,7 @@ def test_ball_stop_after_decay_not_noise_tail(config):
 
 
 def test_ball_stop_keeps_open_when_motion_unresolved(config):
+    config._data["ball_stop"]["max_seconds_after_strike"] = 7.0
     feats = []
     for i in range(200):
         t = i * 0.1

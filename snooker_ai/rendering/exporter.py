@@ -6,7 +6,6 @@ import csv
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Optional
 
 from snooker_ai.config import Config
