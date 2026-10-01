@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, model_validator
 
 class EditMode(str, Enum):
     """
-    STRICT — 2s before cue strike → hold until all balls stop.
+    STRICT — 2s before cue strike → 2–3s before the confirmed ball stop.
 
     Strict is the only supported editing mode.  Legacy mode names
     (action_only, natural, full_sequence) coerce to STRICT so older jobs,

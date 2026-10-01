@@ -163,6 +163,31 @@ def test_unconfirmed_source_end_is_not_shortened(config):
     Exporter(config)._validate_strict_boundaries(shots, source_duration=7, source_fps=30)
 
 
+@pytest.mark.parametrize("shot_duration,trim", [
+    (1.0, 2.0), (4.999, 2.0), (5.0, 2.0), (6.0, 2.0),
+    (6.999, 2.0), (7.0, 3.0), (7.001, 3.0), (12.0, 3.0),
+])
+def test_duration_based_trim_survives_build_serialization_and_export(config, shot_duration, trim):
+    from snooker_ai.types import ShotRecord
+
+    strike_t = 3.2
+    physical_stop = strike_t + shot_duration
+    candidate = StrikeCandidate(timestamp=strike_t, confidence=0.95, evidence={
+        "refined_stop_timestamp": physical_stop,
+        "refined_stop_confirmation_timestamp": physical_stop + 0.5,
+        "refined_stop_confidence": 0.95,
+    })
+    shot = SegmentBuilder(config).build([candidate], [], duration=30)[0]
+    restored = ShotRecord.model_validate_json(shot.model_dump_json())
+    assert restored.evidence["end_before_ball_stop_seconds"] == trim
+    assert restored.evidence["shot_duration_for_end_trim_seconds"] == pytest.approx(shot_duration)
+    assert restored.clip_start == pytest.approx(strike_t - 2)
+    assert restored.clip_end == pytest.approx(max(strike_t + 0.1, physical_stop - trim))
+    assert restored.physical_stop_timestamp == pytest.approx(physical_stop)
+    assert restored.stop_confirmation_timestamp == pytest.approx(physical_stop + 0.5)
+    Exporter(config)._validate_strict_boundaries([restored], source_duration=30, source_fps=30)
+
+
 def test_camera_cut_during_confirmation_cannot_prove_a_stop(config):
     strike = StrikeCandidate(timestamp=1.0, confidence=0.95)
     features = _sequence()

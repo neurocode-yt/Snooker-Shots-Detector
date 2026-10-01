@@ -152,6 +152,14 @@ class SegmentBuilder:
                 if stop_confirmed else 0.0
             )
             if end_trim > 0:
+                # Duration is cue contact to physical stop, excluding pre-roll
+                # and confirmation look-ahead. Unresolved caps are not stops.
+                shot_duration = max(0.0, physical_stop - cand.timestamp)
+                long_threshold = float(mode_cfg.get("long_shot_threshold_seconds", 7.0))
+                if shot_duration + 1e-9 >= long_threshold:
+                    end_trim = max(0.0, float(mode_cfg.get(
+                        "long_shot_end_before_ball_stop_seconds", end_trim,
+                    )))
                 # The requested early end takes precedence over the old
                 # four-second hold, but must keep the cue strike visible.
                 min_after = max(0.0, float(mode_cfg.get("minimum_strike_visibility_seconds", 0.1)))
@@ -196,6 +204,9 @@ class SegmentBuilder:
                     "uncapped_physical_stop_timestamp": uncapped_physical_stop,
                     "minimum_clip_end_timestamp": minimum_clip_end,
                     "end_before_ball_stop_seconds": end_trim,
+                    "shot_duration_for_end_trim_seconds": (
+                        max(0.0, physical_stop - cand.timestamp) if stop_confirmed else None
+                    ),
                     "last_ball_motion_timestamp": last_motion,
                     "physical_stop_timestamp": physical_stop,
                     "stop_confirmation_timestamp": confirmation,

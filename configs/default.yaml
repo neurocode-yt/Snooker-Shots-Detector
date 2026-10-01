@@ -256,8 +256,9 @@ ball_stop:
 
 # Editing mode (strict is the only mode)
 modes:
-  # STRICT: clip runs from 2s before cue contact to 2s before the confirmed
-  # ball stop. Very short shots retain 0.1s after contact. Unconfirmed ends
+  # STRICT: clip starts 2s before cue contact and ends 2s before confirmed stop,
+  # or 3s before stop when strike-to-stop duration is at least 7s.
+  # Very short shots retain 0.1s after contact. Unconfirmed ends
   # keep the existing minimum hold; duration caps bound unresolved
   # tracking. When the next shot starts
   # before the previous window would end (fast break play), the boundary is
@@ -266,6 +267,8 @@ modes:
     pre_roll: 2.0
     end_at_ball_stop: true
     end_before_ball_stop_seconds: 2.0
+    long_shot_threshold_seconds: 7.0  # cue strike to confirmed stop, excluding pre-roll
+    long_shot_end_before_ball_stop_seconds: 3.0
     minimum_strike_visibility_seconds: 0.1
     min_seconds_after_strike: 4.0
     max_seconds_after_strike: 60.0
