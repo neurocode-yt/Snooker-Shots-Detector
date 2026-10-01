@@ -54,7 +54,7 @@ def analyze(
         "strict",
         "--mode",
         "-m",
-        help="strict | action_only | natural | full_sequence",
+        help="strict (only supported mode; legacy names coerce to strict)",
     ),
     config: Optional[Path] = typer.Option(None, "--config", "-c", help="YAML config path"),
     job_id: Optional[str] = typer.Option(None, "--job-id", help="Reuse / set job id"),

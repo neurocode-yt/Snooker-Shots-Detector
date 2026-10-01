@@ -62,6 +62,24 @@ def test_stationary_confirmation_is_metadata_inside_minimum_hold(config):
     assert shot.clip_end > shot.stop_confirmation_timestamp
 
 
+def test_low_global_flow_cannot_end_a_visibly_rolling_ball(config):
+    # Small balls occupy too little cloth area to raise aggregate flow, and
+    # duplicate broadcast frames produce intermittent zero residual flow.
+    features = [
+        _tracked_frame(
+            i / 10, moving=1 <= i / 10 < 4,
+            motion_raw=0.01, residual_motion_max=0.01,
+            ball_residual_motion=0.4 if 1 <= i / 10 < 4 and i % 2 else 0.0,
+        )
+        for i in range(56)
+    ]
+    stop = BallStopDetector(config).detect_stop(
+        StrikeCandidate(timestamp=1, confidence=0.95), features, duration=5.5
+    )
+    assert stop.confirmed
+    assert stop.physical_stop_timestamp == pytest.approx(4.0)
+
+
 def test_camera_cut_during_confirmation_cannot_prove_a_stop(config):
     strike = StrikeCandidate(timestamp=1.0, confidence=0.95)
     features = _sequence()
@@ -162,14 +180,16 @@ def test_unresolved_long_roll_is_capped_and_requires_review(config):
 
     stop = BallStopDetector(config).detect_stop(strike, features, duration=20.0)
     assert stop.confirmed is False
-    assert stop.physical_stop_timestamp == pytest.approx(11.0)
-    assert stop.stop_confirmation_timestamp == pytest.approx(11.0)
+    assert stop.physical_stop_timestamp == pytest.approx(8.0)
+    assert stop.stop_confirmation_timestamp == pytest.approx(8.0)
     assert stop.manual_review_required is True
 
     shots = SegmentBuilder(config).build([strike], features, 20.0, EditMode.STRICT)
     assert len(shots) == 1
-    assert shots[0].clip_end == pytest.approx(5.0)
-    assert shots[0].evidence["stop_reason"] == "max_seconds_after_strike_review_cap"
+    # The unresolved roll runs to the seven-second review horizon instead of
+    # being truncated at strike+4.
+    assert shots[0].clip_end == pytest.approx(8.0)
+    assert shots[0].evidence["stop_reason"] == "max_duration_review_cap"
     assert shots[0].manual_review_required is True
 
 

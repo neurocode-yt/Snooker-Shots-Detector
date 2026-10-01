@@ -21,7 +21,7 @@ def test_analyze_synthetic(synthetic_video, tmp_path):
     cfg._data["proxy"]["max_height"] = 270
 
     analyzer = Analyzer(cfg, tmp_path / "job")
-    result = analyzer.analyze(synthetic_video, "test-synthetic", mode=EditMode.ACTION_ONLY, resume=False)
+    result = analyzer.analyze(synthetic_video, "test-synthetic", mode=EditMode.STRICT, resume=False)
     assert result.metadata.duration > 0
     assert isinstance(result.shots, list)
     # Synthetic has motion bursts; may detect 1+ candidates depending on thresholds

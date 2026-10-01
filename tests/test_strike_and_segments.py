@@ -454,10 +454,11 @@ def test_strict_mode_two_second_pre_roll(config):
     s = shots[0]
     assert abs(s.clip_start - 8.0) < 0.05  # 2s before strike
     assert s.clip_end >= s.ball_motion_end - 1e-6
-    # Strict mode keeps at least four seconds after cue contact.
-    assert s.clip_end == pytest.approx(14.0)
-    assert s.ball_motion_end == pytest.approx(14.0)
-    assert s.evidence["stop_reason"] == "max_seconds_after_strike_review_cap"
+    # The clip now ends at the confirmed physical stop (~14.1), no longer at
+    # a fixed strike+4 cap.
+    assert s.clip_end == pytest.approx(14.1, abs=0.05)
+    assert s.ball_motion_end == pytest.approx(14.1, abs=0.05)
+    assert s.evidence["stop_reason"] == "confirmed_stationary"
 
 
 def test_mid_motion_false_peak_absorbed(config):
@@ -482,9 +483,11 @@ def test_mid_motion_false_peak_absorbed(config):
     shots = SegmentBuilder(config).build(cands, feats, 20.0, EditMode.STRICT)
     assert len(shots) == 1
     assert shots[0].clip_end >= shots[0].ball_motion_end - 1e-6
-    assert shots[0].ball_motion_end == pytest.approx(9.0)
+    # Travel runs past the seven-second horizon, so the boundary is the review
+    # cap at strike+7.
+    assert shots[0].ball_motion_end == pytest.approx(12.0, abs=0.05)
     # False peak must not create a second shot or stretch the capped clip.
-    assert shots[0].clip_end <= shots[0].cue_strike + 4.0 + 1e-6
+    assert shots[0].clip_end <= shots[0].cue_strike + 7.0 + 1e-6
 
 
 def test_false_peak_does_not_force_ten_second_cap(config):
@@ -524,7 +527,7 @@ def test_overlap_resolution(config):
     for s in shots:
         assert s.duration() < 15.0
         assert s.clip_end >= s.ball_motion_end - 1e-6
-        assert s.clip_end <= s.cue_strike + 10.0 + 1e-6
+        assert s.clip_end <= s.cue_strike + 7.0 + 1e-6
 
 
 def test_strict_overlap_prefers_real_audio_supported_strike(config):
@@ -654,11 +657,11 @@ def test_unconfirmed_stop_cap_does_not_hide_next_verified_strike(config):
 
 
 def test_unresolved_long_roll_is_not_cut_by_timeout(config):
-    """An unresolved rolling track is capped at ten seconds and reviewed."""
+    """An unresolved rolling track is capped at seven seconds and reviewed."""
     cands = [
         StrikeCandidate(timestamp=5.0, confidence=0.9, camera_view=CameraViewType.MAIN_TABLE),
     ]
-    # Motion stays high for 25s — must still cap at strike+10
+    # Motion stays high for 25s — must still cap at strike+7
     feats = []
     for i in range(400):
         t = i * 0.1
@@ -667,8 +670,8 @@ def test_unresolved_long_roll_is_not_cut_by_timeout(config):
     shots = SegmentBuilder(config).build(cands, feats, 40.0, EditMode.STRICT)
     assert len(shots) == 1
     s = shots[0]
-    assert s.clip_end == pytest.approx(9.0)
-    assert s.evidence["stop_reason"] == "max_seconds_after_strike_review_cap"
+    assert s.clip_end == pytest.approx(12.0)
+    assert s.evidence["stop_reason"] == "max_duration_review_cap"
     assert s.ball_motion_end == s.clip_end
     assert s.manual_review_required is True
     # Still starts ~2s before strike
@@ -757,6 +760,97 @@ def test_cushion_bounce_not_separate_shot(config):
     assert len(shots) == 1, f"Expected 1 shot, got {len(shots)}"
 
 
+def _two_shot_features(
+    *,
+    first_motion: tuple[float, float],
+    second_motion: tuple[float, float],
+    end_t: float = 20.0,
+):
+    feats = []
+    for i in range(int(end_t * 10)):
+        t = i * 0.1
+        moving = (
+            first_motion[0] <= t <= first_motion[1]
+            or second_motion[0] <= t <= second_motion[1]
+        )
+        f = _feat(t, motion=0.7 if moving else 0.05)
+        f.motion_raw = 0.75 if moving else 0.05
+        f.residual_motion_mean = 1.5 if moving else 0.02
+        f.residual_motion_max = 8.0 if moving else 0.05
+        f.motion_area_ratio = 0.10 if moving else 0.004
+        feats.append(f)
+    return feats
+
+
+def _supported_candidate(t: float) -> StrikeCandidate:
+    return StrikeCandidate(
+        timestamp=t,
+        confidence=1.0,
+        evidence={"pre_ball_quiet_ratio": 1.0, "dense_transition_confirmed": 1.0},
+    )
+
+
+def test_fast_next_shot_keeps_both_and_trims_minimum_hold(config):
+    """A real shot 5s after the previous one must not be dropped; the previous
+    shot's minimum-hold padding yields to the next shot's pre-roll."""
+    cands = [_supported_candidate(5.0), _supported_candidate(10.0)]
+    feats = _two_shot_features(first_motion=(5.0, 6.5), second_motion=(10.0, 11.5))
+
+    shots = SegmentBuilder(config).build(cands, feats, 20.0, EditMode.STRICT)
+
+    assert [s.cue_strike for s in shots] == pytest.approx([5.0, 10.0])
+    first, second = shots
+    # Balls stopped ~6.6; the strike+4 minimum hold (9.0) is trimmed back to
+    # the next shot's pre-roll start (8.0) so no footage is duplicated.
+    assert first.ball_motion_end == pytest.approx(6.6, abs=0.05)
+    assert first.clip_end == pytest.approx(8.0, abs=0.05)
+    assert first.evidence["trimmed_for_next_shot"] == pytest.approx(10.0)
+    assert second.clip_start == pytest.approx(8.0, abs=0.05)
+    assert second.clip_start >= first.clip_end - 1e-6
+
+
+def test_fast_next_shot_never_cuts_confirmed_ball_motion(config):
+    """When the previous shot's balls stop inside the next pre-roll window, the
+    motion is kept whole and the next shot's pre-roll shrinks instead."""
+    cands = [_supported_candidate(5.0), _supported_candidate(10.0)]
+    feats = _two_shot_features(first_motion=(5.0, 8.6), second_motion=(10.0, 11.5))
+
+    shots = SegmentBuilder(config).build(cands, feats, 20.0, EditMode.STRICT)
+
+    assert [s.cue_strike for s in shots] == pytest.approx([5.0, 10.0])
+    first, second = shots
+    # Physical stop ~8.7 lies inside the next shot's nominal pre-roll (8.0);
+    # the confirmed motion is never cut and the boundary is shared at the stop.
+    assert first.clip_end == pytest.approx(8.7, abs=0.05)
+    assert first.clip_end >= first.ball_motion_end - 1e-6
+    assert second.clip_start == pytest.approx(first.clip_end, abs=1e-6)
+    assert float(second.evidence["pre_roll_trimmed_seconds"]) > 0.0
+    assert second.clip_start <= second.cue_strike
+
+
+def test_too_close_strikes_resolve_to_single_shot(config):
+    """Two strikes closer than the physical minimum spacing cannot both be
+    real; the better-supported one wins."""
+    cands = [
+        StrikeCandidate(
+            timestamp=5.0,
+            confidence=1.0,
+            evidence={"pre_ball_quiet_ratio": 1.0, "audio_onset": 0.6},
+        ),
+        StrikeCandidate(
+            timestamp=7.5,
+            confidence=1.0,
+            evidence={"pre_ball_quiet_ratio": 0.2, "audio_onset": 0.0},
+        ),
+    ]
+    feats = _two_shot_features(first_motion=(5.0, 6.5), second_motion=(7.5, 8.5))
+
+    shots = SegmentBuilder(config).build(cands, feats, 20.0, EditMode.STRICT)
+
+    assert len(shots) == 1
+    assert shots[0].cue_strike == pytest.approx(5.0)
+
+
 def test_long_slow_roll_not_cut_early(config):
     """A long slow roll (e.g., snooker behind color) must not end mid-roll."""
     feats = []
@@ -794,3 +888,116 @@ def test_long_slow_roll_not_cut_early(config):
     assert m1 >= 8.0, f"Ball stop too early at {m1} — ball was still rolling"
     # But must end before hard cap
     assert m1 <= 13.0 + 1e-6
+
+
+def test_feathering_artefact_does_not_override_actual_cue_impact(config):
+    """Cue feathering/address prior to strike must lose to actual ball launch."""
+    feathering = ShotRecord(
+        shot_id=1,
+        cue_strike=10.0,
+        cue_strike_timestamp=10.0,
+        clip_start=8.0,
+        clip_end=14.0,
+        physical_stop_timestamp=14.0,
+        ball_motion_end=14.0,
+        shot_confidence=0.85,
+        evidence={
+            "audio_onset": 0.02,
+            "pre_ball_quiet_ratio": 0.95,
+            "post_peak_cue_speed": 0.4,
+            "cue_displacement_diameters": 0.1,
+            "ball_onset_run": 0.0,
+            "sustained_run": 0.0,
+            "cue_contact_score": 0.0,
+        },
+    )
+    actual_strike = ShotRecord(
+        shot_id=2,
+        cue_strike=11.5,
+        cue_strike_timestamp=11.5,
+        clip_start=9.5,
+        clip_end=16.0,
+        physical_stop_timestamp=16.0,
+        ball_motion_end=16.0,
+        shot_confidence=0.90,
+        evidence={
+            "audio_onset": 0.65,
+            "pre_ball_quiet_ratio": 0.70,
+            "post_peak_cue_speed": 4.5,
+            "cue_displacement_diameters": 1.2,
+            "ball_onset_run": 3.0,
+            "sustained_run": 3.0,
+            "cue_contact_score": 0.80,
+        },
+    )
+    builder = SegmentBuilder(config)
+    resolved = builder._resolve_overlaps([feathering, actual_strike], strict=True)
+    assert len(resolved) == 1
+    assert resolved[0].cue_strike == pytest.approx(11.5)
+
+
+def test_player_body_movement_rejected_when_no_ball_moves(config):
+    """Player walking/leaning over table without cue-ball motion must produce no candidates."""
+    feats = []
+    for i in range(30):
+        t = round(i * 0.1, 1)
+        walking = 1.0 <= t <= 2.0
+        feats.append(
+            FrameFeatures(
+                t=t,
+                table_confidence=0.9,
+                view_type=CameraViewType.MAIN_TABLE,
+                ball_diameter_px=10.0,
+                ball_count=8,
+                cue_ball_detected=False,  # No cue ball track
+                cue_ball_normalized_speed=0.0,
+                motion_raw=0.55 if walking else 0.02,
+                motion_score=0.55 if walking else 0.02,
+                max_ball_normalized_speed=0.0,
+                moving_ball_count=0,
+                ball_residual_motion=0.0,
+            )
+        )
+    detector = StrikeDetector(config)
+    detector.score_frames(feats)
+    candidates = detector.detect_candidates(feats)
+    assert candidates == []
+
+
+def test_impact_cue_ball_blur_recovery(config):
+    """A rapid strike with 1-frame cue ball tracking blur at contact is still confirmed."""
+    feats = []
+    cue_x = 100.0
+    for i in range(25):
+        t = round(i * 0.1, 1)
+        impact = t == 1.0
+        post = t > 1.0
+        if post:
+            cue_x += 12.0
+        feats.append(
+            FrameFeatures(
+                t=t,
+                table_confidence=0.9,
+                view_type=CameraViewType.MAIN_TABLE,
+                ball_diameter_px=10.0,
+                ball_count=8,
+                cue_ball_detected=not impact,
+                cue_ball_x=cue_x if not impact else None,
+                cue_ball_y=100.0 if not impact else None,
+                cue_ball_normalized_speed=0.0 if t < 1.0 else (0.2 if impact else 4.0),
+                cue_ball_acceleration=12.0 if impact else 0.0,
+                cue_ball_track_confidence=0.0 if impact else 0.9,
+                cue_contact_score=0.85 if impact else 0.0,
+                motion_raw=0.45 if post or impact else 0.02,
+                motion_score=0.45 if post or impact else 0.02,
+                max_ball_normalized_speed=4.0 if post else 0.0,
+                moving_ball_count=1 if post else 0,
+                ball_residual_motion=0.6 if post else 0.0,
+            )
+        )
+    detector = StrikeDetector(config)
+    detector.score_frames(feats)
+    candidates = detector.detect_candidates(feats)
+    assert len(candidates) >= 1
+    assert any(c.timestamp == pytest.approx(1.0, abs=0.15) for c in candidates)
+

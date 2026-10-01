@@ -5,14 +5,17 @@ from snooker_ai.types import EditMode
 def test_default_config_loads():
     cfg = load_config()
     assert cfg.get("proxy.max_width") == 960
-    assert "action_only" in cfg.get("modes")
+    modes = cfg.get("modes")
+    assert "strict" in modes
+    assert set(modes) == {"strict"}
 
 
 def test_mode_settings():
     cfg = load_config()
-    m = cfg.mode_settings(EditMode.NATURAL)
-    assert m["pre_roll"] >= 1.0
-    assert "post_roll" in m
+    m = cfg.mode_settings(EditMode.STRICT)
+    assert m["pre_roll"] == 2.0
+    assert m["min_seconds_after_strike"] == 4.0
+    assert m["max_seconds_after_strike"] == 7.0
 
 
 def test_deep_merge():
@@ -25,9 +28,12 @@ def test_deep_merge():
     assert m["nested"]["c"] == 4
 
 
-def test_edit_mode_aliases():
-    assert EditMode.from_string("action-only") == EditMode.ACTION_ONLY
-    assert EditMode.from_string("highlights") == EditMode.NATURAL
-    assert EditMode.from_string("full") == EditMode.FULL_SEQUENCE
+def test_edit_mode_coerces_legacy_names_to_strict():
+    # Strict is the only mode; every legacy name and stored value must load.
     assert EditMode.from_string("strict") == EditMode.STRICT
     assert EditMode.from_string("shots_only") == EditMode.STRICT
+    assert EditMode.from_string("action-only") == EditMode.STRICT
+    assert EditMode.from_string("highlights") == EditMode.STRICT
+    assert EditMode.from_string("full") == EditMode.STRICT
+    assert EditMode("natural") == EditMode.STRICT
+    assert EditMode("full_sequence") == EditMode.STRICT

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from bisect import bisect_left, insort
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -26,16 +27,25 @@ class AudioFeatures:
     def value_at(self, t: float, series: np.ndarray) -> float:
         if self.times.size == 0:
             return 0.0
-        idx = int(np.argmin(np.abs(self.times - t)))
+        idx = int(np.searchsorted(self.times, t))
+        if idx >= self.times.size:
+            idx = self.times.size - 1
+        elif idx > 0 and t - self.times[idx - 1] <= self.times[idx] - t:
+            idx -= 1
         return float(series[idx])
 
     def peak_near(self, t: float, radius: float = 0.15) -> float:
         if self.times.size == 0:
             return 0.0
-        mask = np.abs(self.times - t) <= radius
+        # Audio has hundreds of thousands of hops in a long match. Search the
+        # small local interval instead of allocating/scanning that entire array
+        # four times for every coarse and refinement observation.
+        lo = max(0, int(np.searchsorted(self.times, t - radius)) - 1)
+        hi = min(self.times.size, int(np.searchsorted(self.times, t + radius, side="right")) + 1)
+        mask = np.abs(self.times[lo:hi] - t) <= radius
         if not np.any(mask):
             return self.value_at(t, self.onset_env)
-        return float(np.max(self.onset_env[mask]))
+        return float(np.max(self.onset_env[lo:hi][mask]))
 
     def cue_peaks(
         self,
@@ -73,10 +83,17 @@ class AudioFeatures:
         # noisy burst, while the final chronological sort keeps callers simple.
         ranked = sorted(indices.tolist(), key=lambda idx: float(score[idx]), reverse=True)
         selected: list[int] = []
+        selected_times: list[float] = []
         separation = max(0.0, float(min_distance))
         for idx in ranked:
-            if all(abs(float(self.times[idx] - self.times[other])) >= separation for other in selected):
+            timestamp = float(self.times[idx])
+            pos = bisect_left(selected_times, timestamp)
+            if (
+                (pos == 0 or timestamp - selected_times[pos - 1] >= separation)
+                and (pos == len(selected_times) or selected_times[pos] - timestamp >= separation)
+            ):
                 selected.append(idx)
+                insort(selected_times, timestamp)
                 if max_peaks > 0 and len(selected) >= max_peaks:
                     break
         selected.sort()

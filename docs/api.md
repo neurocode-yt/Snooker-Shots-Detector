@@ -18,12 +18,12 @@ Start analysis.
 ```json
 {
   "source_path": "C:/data/match.mp4",
-  "mode": "natural",
+  "mode": "strict",
   "resume": true
 }
 ```
 
-Modes: `action_only`, `natural`, `full_sequence`.
+`strict` is the only mode; legacy names (`action_only`, `natural`, `full_sequence`) coerce to strict.
 
 ### `GET /api/jobs`
 List jobs.
@@ -60,7 +60,7 @@ Export clips + joined video.
 ```json
 {
   "output_name": "highlights.mp4",
-  "mode": "action_only",
+  "mode": "strict",
   "accurate": true,
   "include_replays": false
 }

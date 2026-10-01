@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from pathlib import Path
 from typing import Optional
 
@@ -70,16 +71,30 @@ def generate_proxy(
     proxy_path = output_dir / "proxy.mp4"
     backend_marker = output_dir / "proxy.backend"
     audio_path = output_dir / "audio.wav"
-
-    reuse_proxy = proxy_path.exists() and not force
-    # Upgrade an older CPU proxy once when NVIDIA acceleration is now available.
-    # New jobs have no marker and therefore take the GPU path on first decode.
-    if reuse_proxy and acceleration_enabled(config):
-        try:
-            if backend_marker.read_text(encoding="utf-8").strip() != "nvidia_nvenc":
-                reuse_proxy = False
-        except OSError:
-            reuse_proxy = False
+    signature_path = output_dir / "proxy.signature.json"
+    stat = source.stat()
+    source_signature = [str(source.resolve()), stat.st_size, stat.st_mtime_ns]
+    signatures = {
+        "video": {
+            "source": source_signature,
+            "size": [pw, ph],
+            "fps": target_fps,
+            "crf": crf,
+            "keyframe_seconds": keyframe_s,
+            "audio_bitrate": review_audio_bitrate,
+        },
+        "audio": {"source": source_signature, "sample_rate": audio_sr},
+    }
+    try:
+        previous_signatures = json.loads(signature_path.read_text(encoding="utf-8"))
+        if not isinstance(previous_signatures, dict):
+            previous_signatures = {}
+    except (OSError, ValueError):
+        previous_signatures = {}
+    reuse_proxy = (
+        proxy_path.exists() and not force
+        and previous_signatures.get("video") == signatures["video"]
+    )
     if reuse_proxy:
         # A stale low-FPS proxy silently quantises cue contact even when the
         # caller has raised ``proxy.target_fps``.  Regenerate when cadence or
@@ -199,6 +214,7 @@ def generate_proxy(
             if not use_nvenc:
                 raise
             logger.warning("NVIDIA proxy path failed; retrying with CPU FFmpeg")
+            use_nvenc = False
             cpu_args = [
                 ffmpeg,
                 "-y",
@@ -236,7 +252,10 @@ def generate_proxy(
 
     audio_out: Optional[Path] = None
     if extract_audio and metadata.has_audio:
-        if audio_path.exists() and not force:
+        if (
+            audio_path.exists() and not force
+            and previous_signatures.get("audio") == signatures["audio"]
+        ):
             audio_out = audio_path
             logger.info("Reusing existing audio extract: %s", audio_path)
         else:
@@ -263,6 +282,10 @@ def generate_proxy(
             audio_out = audio_path
     elif not metadata.has_audio:
         logger.info("Source has no audio; skipping audio extract")
+
+    temporary_signature = signature_path.with_suffix(".json.tmp")
+    temporary_signature.write_text(json.dumps(signatures), encoding="utf-8")
+    temporary_signature.replace(signature_path)
 
     # Probe proxy duration for mapper (may differ by a few frames)
     from snooker_ai.ingestion.probe import probe_video

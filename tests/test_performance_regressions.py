@@ -224,3 +224,41 @@ def test_audio_seed_uses_bounded_native_rate_verification_window(
     )
 
     assert calls == [(98.5, 106.0, 10.0)]
+
+
+@pytest.mark.parametrize("missing_interval", [False, True])
+def test_audio_recovery_reuses_only_complete_native_rate_observations(
+    config, tmp_path, monkeypatch, missing_interval
+):
+    analyzer = Analyzer(config, tmp_path / "job")
+    candidate = StrikeCandidate(timestamp=100, confidence=0.8, evidence={"audio_seed": 1.0})
+    existing = [
+        FrameFeatures(t=98 + i / 30)
+        for i in range(301)
+        if not missing_interval or not 102 < 98 + i / 30 < 103
+    ]
+    monkeypatch.setattr(
+        analyzer.segmenter.ball_stop, "detect_stop",
+        lambda *args, **kwargs: StopDetection(
+            motion_start=100, last_ball_motion_timestamp=104.9,
+            physical_stop_timestamp=105, stop_confirmation_timestamp=105.5,
+            end_confidence=0.9, start_confidence=0.9, confirmed=True,
+        ),
+    )
+    calls = []
+
+    def extract(*args, **kwargs):
+        calls.append(kwargs)
+        return [], [], []
+
+    monkeypatch.setattr(analyzer, "_extract_features", extract)
+    _, dense = analyzer._refine_candidate_windows(
+        tmp_path / "video.mp4", None,
+        TimeMapper(source_duration=300, proxy_duration=300), 300,
+        [candidate], existing, resume=False, force_native_audio=True, existing_dense=existing,
+    )
+    if missing_interval:
+        assert len(calls) == 1
+    else:
+        assert calls == []
+        assert dense and dense[0].t == pytest.approx(98)

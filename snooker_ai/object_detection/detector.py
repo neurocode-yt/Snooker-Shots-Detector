@@ -316,9 +316,18 @@ class ObjectDetector:
             # grades.  Permit that lower neutral-colour score only when a strong
             # majority of the surrounding annulus is genuine cloth; bright rail
             # and scoreboard details fail the surround gate.
-            cue_ball = color_conf >= 0.50 and surround_conf >= 0.65
-            label = "cue_ball" if cue_ball else "object_ball"
+            ref_diameter = self._diameter_ema if self._diameter_ema > 0.0 else diameter_prior
+            radius = float(proposal.radius)
+            diameter = radius * 2.0
+            size_ok = True
+            if ref_diameter > 0.0:
+                size_ratio = diameter / ref_diameter
+                size_ok = 0.40 <= size_ratio <= 2.2
             shape = proposal.shape_confidence
+            shape_ok = shape >= 0.38 or self._diameter_ema <= 0.0
+
+            cue_ball = color_conf >= 0.50 and surround_conf >= 0.65 and size_ok and shape_ok
+            label = "cue_ball" if cue_ball else "object_ball"
             observation_conf = float(
                 np.clip(0.24 + 0.42 * shape + 0.24 * deviation_conf, 0.0, 0.92)
             )
@@ -326,8 +335,6 @@ class ObjectDetector:
                 observation_conf = max(
                     observation_conf, float(np.clip(0.42 + 0.48 * color_conf, 0, 0.96))
                 )
-            radius = float(proposal.radius)
-            diameter = radius * 2.0
             gx, gy = float(x0 + proposal.cx), float(y0 + proposal.cy)
             bx = int(round(gx - radius))
             by = int(round(gy - radius))

@@ -19,6 +19,7 @@ data/outputs/*
 !data/outputs/.gitkeep
 data/test_tmp/
 data/debug_user_cases/
+data/editor_audit/
 data/*.log
 models/*.pt
 models/*.onnx

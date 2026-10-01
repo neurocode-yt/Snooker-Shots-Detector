@@ -159,6 +159,41 @@ def test_strict_export_rejects_shifted_contract_boundaries(config, updates, mess
         )
 
 
+def test_strict_export_accepts_boundaries_trimmed_for_fast_next_shot(config):
+    """Fast-succession trims are part of the strict contract, not violations."""
+    # End trimmed below strike+min_after down to the physical stop.
+    end_trimmed = _strict_shot(
+        physical_stop=5.0,
+        confirmation=5.5,
+        clip_end=5.0,
+        clip_end_timestamp=5.0,
+        last_ball_motion_timestamp=4.9,
+        evidence={"trimmed_for_next_shot": 9.0},
+    )
+    # Pre-roll shortened to the previous shot's end.
+    start_trimmed = _strict_shot(
+        clip_start=1.0,
+        clip_start_timestamp=1.0,
+        evidence={"pre_roll_trimmed_seconds": 0.875},
+    )
+    Exporter(config)._validate_strict_boundaries(
+        [end_trimmed, start_trimmed], source_duration=10.0, source_fps=30.0
+    )
+
+
+def test_strict_export_accepts_user_modified_boundaries(config):
+    shot = _strict_shot(
+        clip_start=0.5,
+        clip_start_timestamp=0.5,
+        clip_end=5.9,
+        clip_end_timestamp=5.9,
+        user_modified=True,
+    )
+    Exporter(config)._validate_strict_boundaries(
+        [shot], source_duration=10.0, source_fps=30.0
+    )
+
+
 def test_replay_filter_is_conservative(config):
     live = _strict_shot(shot_id=1)
     flagged = _strict_shot(shot_id=2, possible_replay=True, included=True)

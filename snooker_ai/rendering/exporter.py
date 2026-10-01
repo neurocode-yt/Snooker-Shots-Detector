@@ -161,14 +161,14 @@ class Exporter:
 
         logger.info(
             "Export complete: %d clips, joined=%s",
-            len(out.clip_paths),
+            len(out.clip_paths or []),
             out.joined_path,
         )
         return out
 
     def _filter_shots(self, shots: list[ShotRecord], request: ExportRequest) -> list[ShotRecord]:
         selected = []
-        for s in shots:
+        for s in (shots or []):
             # Replays are excluded conservatively by default.  Explicit replay
             # views and links to an earlier live shot count even if an upstream
             # producer omitted ``possible_replay``.  --include-replays re-admits
@@ -238,13 +238,34 @@ class Exporter:
                         f"{legacy:.9f} != {canonical:.9f}"
                     )
 
+            # User-corrected boundaries are authoritative; only the basic
+            # interval sanity checks below still apply to them.
+            contract_shot = not shot.user_modified
+
             expected_start = max(
                 0.0, shot.cue_strike_timestamp - pre_roll
             )
-            if abs(shot.clip_start_timestamp - expected_start) > tolerance:
+            # A fast next shot may have shortened this pre-roll to the
+            # previous shot's end; the start may then sit anywhere between
+            # the contract start and the strike itself.
+            pre_roll_trimmed = (
+                float(shot.evidence.get("pre_roll_trimmed_seconds", 0.0) or 0.0) > 0.0
+            )
+            if contract_shot and not pre_roll_trimmed and (
+                abs(shot.clip_start_timestamp - expected_start) > tolerance
+            ):
                 raise ValueError(
                     f"Shot {shot.shot_id} violates strict start boundary: "
                     f"expected {expected_start:.9f}, got {shot.clip_start_timestamp:.9f}"
+                )
+            if contract_shot and pre_roll_trimmed and not (
+                expected_start - tolerance
+                <= shot.clip_start_timestamp
+                <= shot.cue_strike_timestamp + tolerance
+            ):
+                raise ValueError(
+                    f"Shot {shot.shot_id} has an invalid trimmed pre-roll: "
+                    f"{shot.clip_start_timestamp:.9f}"
                 )
             expected_end = min(
                 source_duration if source_duration > 0 else float("inf"),
@@ -253,11 +274,26 @@ class Exporter:
                     shot.cue_strike_timestamp + min_after,
                 ),
             )
-            if abs(shot.clip_end_timestamp - expected_end) > tolerance:
+            # The minimum post-strike hold yields to the next shot's window;
+            # a trimmed end may sit below strike+min_after but never below the
+            # (possibly trimmed) physical stop.
+            end_trimmed = shot.evidence.get("trimmed_for_next_shot") is not None
+            if contract_shot and not end_trimmed and (
+                abs(shot.clip_end_timestamp - expected_end) > tolerance
+            ):
                 raise ValueError(
                     f"Shot {shot.shot_id} violates strict end boundary: "
                     f"clip_end={shot.clip_end_timestamp:.9f}, "
                     f"expected={expected_end:.9f}"
+                )
+            if contract_shot and end_trimmed and not (
+                shot.physical_stop_timestamp - tolerance
+                <= shot.clip_end_timestamp
+                <= expected_end + tolerance
+            ):
+                raise ValueError(
+                    f"Shot {shot.shot_id} has an invalid trimmed end boundary: "
+                    f"clip_end={shot.clip_end_timestamp:.9f}"
                 )
             if shot.stop_confirmation_timestamp + tolerance < shot.physical_stop_timestamp:
                 raise ValueError(
@@ -632,7 +668,7 @@ class Exporter:
         if expected_duration is None:
             expected_duration = sum(probe_video(path).duration for path in clip_paths)
         try:
-            run_command(args, timeout=max(600.0, 60.0 * len(clip_paths)))
+            run_command(args, timeout=max(600.0, 60.0 * len(clip_paths or [])))
             self._verify_media(
                 output,
                 expected_duration=expected_duration,

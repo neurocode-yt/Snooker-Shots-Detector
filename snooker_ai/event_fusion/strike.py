@@ -332,9 +332,20 @@ class StrikeDetector:
             and metrics["bridged_sustained_count"] >= self.min_sustained_frames
             and metrics["post_peak_cue_speed"] >= self.contact_bridge_min_peak_speed
         )
+        speed_crossed = bool(
+            metrics["speed_crossing"] > 0
+            or (
+                metrics["previous_cue_speed"] <= self.stationary_speed * 2.5
+                and metrics["cue_speed"] >= self.start_speed
+            )
+            or (
+                contact_overrides_object_noise
+                and metrics["post_peak_cue_speed"] >= self.start_speed
+            )
+        )
         return bool(
-            metrics["stationary_ratio"] >= 0.70
-            and metrics["pre_sample_count"] >= 3
+            metrics["stationary_ratio"] >= 0.65
+            and metrics["pre_sample_count"] >= 2
             and pre_motion_quiet
             and metrics["pre_motion_raw_median"] <= self.pre_quiet_max_motion
             # Object-ball Hough tracks can produce an isolated speed spike while
@@ -342,11 +353,11 @@ class StrikeDetector:
             # such identity jump suppress an otherwise complete cue-contact +
             # white-ball-launch sequence.
             and (object_tracks_quiet or contact_overrides_object_noise)
-            and metrics["speed_crossing"] > 0
+            and speed_crossed
             and (uninterrupted_launch or contact_bridged_launch)
             and metrics["cue_displacement_diameters"] >= 0.25
-            and metrics["cue_direction_consistency"] >= 0.45
-            and metrics["track_confidence"] >= self.min_track_conf
+            and metrics["cue_direction_consistency"] >= 0.40
+            and metrics["track_confidence"] >= self.min_track_conf * 0.90
         )
 
     def _sparse_dense_transition_confirmed(self, metrics: dict[str, float]) -> bool:
@@ -716,12 +727,18 @@ class StrikeDetector:
             # Hough tracks often report a large identity jump while the table
             # is still.  A median quiet gate tolerates that isolated jitter.
             pre_median = float(np.median(pre))
-            # The proposal pass used to accept a 0.55 "quiet" median, which is
-            # already active table motion under the configured state-machine
-            # threshold.  That produced hundreds of rolling-ball/referee
-            # windows on a full match.  Reuse the detector's real pre-strike
-            # quiet gate so dense refinement is reserved for plausible onsets.
-            quiet = pre_median <= self.pre_quiet_max_motion
+            previous_activity = values[i - 1] if i > 0 else 0.0
+            rising = values[i] - previous_activity >= 0.20
+            cue_speed_curr = self._value(f, "cue_ball_normalized_speed")
+            cue_speed_prev = self._value(features[i - 1], "cue_ball_normalized_speed") if i > 0 else 0.0
+            cue_rising = (
+                cue_speed_curr >= self.start_speed * 0.75
+                and cue_speed_prev < self.start_speed * 0.50
+            )
+            ball_residual_curr = self._value(f, "ball_residual_motion")
+            ball_residual_prev = self._value(features[i - 1], "ball_residual_motion") if i > 0 else 0.0
+            ball_rising = ball_residual_curr >= 0.25 and ball_residual_curr - ball_residual_prev >= 0.12
+
             active = [v for v in post if v >= self.sparse_activity_threshold]
             ball_active = sum(
                 self._value(x, "max_ball_normalized_speed") >= 1.5
@@ -731,27 +748,21 @@ class StrikeDetector:
                 for x in features[i:post_hi]
             )
             peak = max(post or [0.0])
-            previous_activity = values[i - 1] if i > 0 else 0.0
-            rising = values[i] - previous_activity >= 0.20
-            cue_rising = (
-                self._value(f, "cue_ball_normalized_speed")
-                >= self.start_speed * 0.75
-                and self._value(features[i - 1], "cue_ball_normalized_speed")
-                < self.start_speed * 0.50
-                if i > 0
-                else False
-            )
+
             onset_from_quiet = bool(
                 pre_median <= self.sparse_activity_threshold
                 and values[i] >= self.sparse_activity_threshold
                 and values[i] - pre_median >= 0.15
             )
+            has_launch_onset = cue_rising or ball_rising or (rising and cue_speed_curr >= self.start_speed * 0.50)
+            quiet = pre_median <= (0.45 if has_launch_onset else self.pre_quiet_max_motion)
+
             # A sparse cadence can land in the middle of a noisy rolling-ball
             # interval.  In that case a clear cue-speed/residual onset is still
             # a useful proposal even though the long quiet median is imperfect.
             if (
                 not quiet
-                or not (rising or cue_rising or onset_from_quiet)
+                or not (rising or cue_rising or ball_rising or onset_from_quiet)
                 or len(active) < self.sparse_min_active
                 or ball_active < self.sparse_min_active
             ):

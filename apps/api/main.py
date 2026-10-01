@@ -125,6 +125,11 @@ class AnalyzeBody(BaseModel):
     resume: bool = True
 
 
+class RestartBody(BaseModel):
+    mode: Optional[str] = None
+    force: bool = True
+
+
 class ExportBody(BaseModel):
     output_name: str = "highlights.mp4"
     mode: Optional[str] = None
@@ -163,6 +168,49 @@ class PreprocessBody(BaseModel):
     ranges: list[SourceRangeBody] = Field(..., min_length=1, max_length=200)
 
 
+def _run_analysis(
+    job_id: str,
+    source: str,
+    mode: EditMode,
+    resume: bool,
+    force_reanalyze: bool = False,
+    config: Optional[Config] = None,
+) -> None:
+    cfg = config or load_config()
+    store = JobStore(cfg)
+    lock = _locks.setdefault(job_id, threading.Lock())
+    if not lock.acquire(blocking=False):
+        logger.warning("Job %s already running", job_id)
+        return
+    try:
+        analyzer = Analyzer(cfg, store.job_dir(job_id))
+
+        def prog(p: float, stage: str, msg: str) -> None:
+            store.update_progress(job_id, p, stage, msg)
+
+        result = analyzer.analyze(
+            source,
+            job_id,
+            mode=mode,
+            progress=prog,
+            resume=resume,
+            force_reanalyze=force_reanalyze,
+        )
+        n_shots = len(result.shots) if result and result.shots is not None else 0
+        store.update_progress(
+            job_id,
+            1.0,
+            JobStatus.READY_FOR_REVIEW,
+            f"Detected {n_shots} shots",
+            shots_detected=n_shots,
+        )
+    except Exception as exc:
+        logger.exception("Job %s failed", job_id)
+        store.update_progress(job_id, 0.0, JobStatus.FAILED, str(exc), error=str(exc))
+    finally:
+        lock.release()
+
+
 def create_app(config: Optional[Config] = None) -> FastAPI:
     cfg = config or load_config()
     setup_logging(str(cfg.get("log_level", "INFO")))
@@ -186,31 +234,6 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     web_dir = Path(__file__).resolve().parent.parent / "web"
     if web_dir.is_dir():
         app.mount("/static", StaticFiles(directory=str(web_dir / "static")), name="static")
-
-    def _run_analysis(job_id: str, source: str, mode: EditMode, resume: bool) -> None:
-        lock = _locks.setdefault(job_id, threading.Lock())
-        if not lock.acquire(blocking=False):
-            logger.warning("Job %s already running", job_id)
-            return
-        try:
-            analyzer = Analyzer(cfg, store.job_dir(job_id))
-
-            def prog(p: float, stage: str, msg: str) -> None:
-                store.update_progress(job_id, p, stage, msg)
-
-            result = analyzer.analyze(source, job_id, mode=mode, progress=prog, resume=resume)
-            store.update_progress(
-                job_id,
-                1.0,
-                JobStatus.READY_FOR_REVIEW,
-                f"Detected {len(result.shots)} shots",
-                shots_detected=len(result.shots),
-            )
-        except Exception as exc:
-            logger.exception("Job %s failed", job_id)
-            store.update_progress(job_id, 0.0, JobStatus.FAILED, str(exc), error=str(exc))
-        finally:
-            lock.release()
 
     @app.get("/", response_class=HTMLResponse)
     async def index() -> HTMLResponse:
@@ -277,8 +300,48 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                 )
         else:
             job_id = store.create(source, mode=mode.value)
-        background.add_task(_run_analysis, job_id, source, mode, body.resume)
+        background.add_task(_run_analysis, job_id, source, mode, body.resume, False, cfg)
         return {"job_id": job_id, "status": "started", "mode": mode.value}
+
+    @app.post("/api/jobs/{job_id}/restart")
+    async def restart_job(
+        job_id: str,
+        background: BackgroundTasks,
+        body: Optional[RestartBody] = None,
+    ) -> dict[str, Any]:
+        try:
+            meta = store.get_meta(job_id)
+        except FileNotFoundError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+        source = meta.get("source_path")
+        if not source or not Path(source).is_file():
+            raise HTTPException(400, f"Source video not found: {source}")
+
+        lock = _locks.setdefault(job_id, threading.Lock())
+        if lock.locked():
+            raise HTTPException(409, f"Job {job_id} is already running")
+
+        mode_str = (body.mode if body and body.mode else None) or meta.get("mode", "strict")
+        mode = EditMode.from_string(mode_str)
+        force = body.force if body is not None else True
+
+        store.update_progress(
+            job_id,
+            0.01,
+            JobStatus.ANALYZING,
+            "Restarting analysis from last valid checkpoint...",
+            error=None,
+        )
+        background.add_task(
+            _run_analysis, job_id, source, mode, True, force, cfg
+        )
+        return {
+            "job_id": job_id,
+            "status": "restarted",
+            "mode": mode.value,
+            "message": "Restarting analysis from last checkpoint",
+        }
 
     @app.post("/api/preprocess")
     async def preprocess_video(body: PreprocessBody) -> dict[str, Any]:
@@ -436,60 +499,68 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     async def export_job(job_id: str, body: ExportBody) -> dict[str, Any]:
         if not body.export_clips and not body.export_joined:
             raise HTTPException(400, "Select combined video, individual clips, or both")
+        lock = _locks.setdefault(job_id, threading.Lock())
+        if not lock.acquire(blocking=False):
+            raise HTTPException(409, f"Job {job_id} is already processing")
         try:
-            result = store.load_analysis(job_id)
-        except FileNotFoundError as exc:
-            raise HTTPException(404, str(exc)) from exc
-        if body.mode:
-            requested_mode = EditMode.from_string(body.mode)
-            # The editor sends its current mode with every export. Rebuilding
-            # in that case used to discard persisted include/exclude edits.
-            if requested_mode != result.mode:
-                analyzer = Analyzer(cfg, store.job_dir(job_id))
-                result = analyzer.resegment(result, requested_mode)
-        out_dir = store.job_dir(job_id) / "export"
-        req = ExportRequest(
-            mode=result.mode,
-            output_path=body.output_name,
-            export_clips=body.export_clips,
-            export_joined=body.export_joined,
-            include_replays=body.include_replays,
-            accurate=body.accurate,
-            min_confidence=body.min_confidence,
-            min_importance=body.min_importance,
-        )
-        store.update_progress(
-            job_id,
-            0.1,
-            JobStatus.EXPORTING,
-            "Exporting",
-            shots_detected=len(result.shots),
-        )
-        try:
-            er = Exporter(cfg).export(result, out_dir, req)
-        except Exception as exc:
-            store.update_progress(job_id, 0.0, JobStatus.FAILED, str(exc), error=str(exc))
-            raise HTTPException(500, str(exc)) from exc
-        store.update_progress(
-            job_id,
-            1.0,
-            JobStatus.COMPLETED,
-            "Export complete",
-            shots_detected=len(result.shots),
-        )
-        return {
-            "joined": str(er.joined_path) if er.joined_path else None,
-            "download_url": (
-                f"/api/jobs/{job_id}/download/highlights" if er.joined_path else None
-            ),
-            "clips": [str(p) for p in er.clip_paths],
-            "clips_dir": str(out_dir / "clips"),
-            "clip_count": len(er.clip_paths),
-            "csv": str(er.csv_path) if er.csv_path else None,
-            "edl": str(er.edl_path) if er.edl_path else None,
-            "metadata": str(er.metadata_path) if er.metadata_path else None,
-            "training_labels": str(er.training_labels_path) if er.training_labels_path else None,
-        }
+            try:
+                result = store.load_analysis(job_id)
+            except FileNotFoundError as exc:
+                raise HTTPException(404, str(exc)) from exc
+            if body.mode:
+                requested_mode = EditMode.from_string(body.mode)
+                # The editor sends its current mode with every export. Rebuilding
+                # in that case used to discard persisted include/exclude edits.
+                if requested_mode != result.mode:
+                    analyzer = Analyzer(cfg, store.job_dir(job_id))
+                    result = analyzer.resegment(result, requested_mode)
+            out_dir = store.job_dir(job_id) / "export"
+            req = ExportRequest(
+                mode=result.mode,
+                output_path=body.output_name,
+                export_clips=body.export_clips,
+                export_joined=body.export_joined,
+                include_replays=body.include_replays,
+                accurate=body.accurate,
+                min_confidence=body.min_confidence,
+                min_importance=body.min_importance,
+            )
+            n_shots = len(result.shots) if result and result.shots is not None else 0
+            store.update_progress(
+                job_id,
+                0.1,
+                JobStatus.EXPORTING,
+                "Exporting",
+                shots_detected=n_shots,
+            )
+            try:
+                er = await asyncio.to_thread(Exporter(cfg).export, result, out_dir, req)
+            except Exception as exc:
+                store.update_progress(job_id, 0.0, JobStatus.FAILED, str(exc), error=str(exc))
+                raise HTTPException(500, str(exc)) from exc
+            clip_paths = er.clip_paths if er and er.clip_paths is not None else []
+            store.update_progress(
+                job_id,
+                1.0,
+                JobStatus.COMPLETED,
+                "Export complete",
+                shots_detected=n_shots,
+            )
+            return {
+                "joined": str(er.joined_path) if er.joined_path else None,
+                "download_url": (
+                    f"/api/jobs/{job_id}/download/highlights" if er.joined_path else None
+                ),
+                "clips": [str(p) for p in clip_paths],
+                "clips_dir": str(out_dir / "clips"),
+                "clip_count": len(clip_paths),
+                "csv": str(er.csv_path) if er.csv_path else None,
+                "edl": str(er.edl_path) if er.edl_path else None,
+                "metadata": str(er.metadata_path) if er.metadata_path else None,
+                "training_labels": str(er.training_labels_path) if er.training_labels_path else None,
+            }
+        finally:
+            lock.release()
 
     @app.post("/api/jobs/{job_id}/open-clips-folder")
     async def open_clips_folder(job_id: str) -> dict[str, Any]:

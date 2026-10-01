@@ -130,6 +130,22 @@ button.danger { border-color: var(--danger); color: var(--danger); }
   align-items: center;
 }
 .job-item .meta { color: var(--muted); font-size: 0.85rem; }
+.job-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.btn-restart {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--warn);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8rem;
+  border-radius: 6px;
+}
+.btn-restart:hover {
+  border-color: var(--warn);
+}
 
 /* Pre-analysis source editor */
 .pre-editor {

@@ -68,6 +68,12 @@ analysis:
   audio_seed_max_count: 0  # 0 = no artificial cap
   min_shot_gap_seconds: 1.5
   max_video_hours: 12.0
+  # Decode acceleration.  The proxy is decoded with the FFmpeg backend's
+  # hardware path (NVDEC/D3D11) when the driver supports it, with a silent
+  # software fallback, and a small decode-ahead queue overlaps FFmpeg frame
+  # decode with OpenCL/CPU feature extraction.
+  hwaccel_decode: true
+  decode_prefetch_frames: 8
 
 # Scene / camera cut detection
 scene_detection:
@@ -207,7 +213,9 @@ ball_stop:
   # Unresolved tracking is capped so false player/rail tracks cannot run away.
   # Practical broadcast bound: a strict shot may not run away indefinitely
   # because a false track/occlusion survives after the table has settled.
-  max_seconds_after_strike: 10.0
+  # Matches modes.strict.max_seconds_after_strike and also bounds how much
+  # native-rate video each candidate window decodes during refinement.
+  max_seconds_after_strike: 7.0
   motion_start_normalized_speed: 0.80
   motion_stop_normalized_speed: 0.60
   motion_start_activity: 0.18
@@ -243,55 +251,24 @@ ball_stop:
   max_extend_after_cut_seconds: 3.0
   confidence_penalty_on_cut: 0.2
 
-# Editing modes (pre/post roll seconds relative to strike / ball-stop)
+# Editing mode (strict is the only mode)
 modes:
-  # STRICT (recommended): 2s before cue hits white, then retain at least 4s
-  # after contact so direct pots and immediately-stopping cue balls are whole.
+  # STRICT: clip runs from 2s before cue contact until every ball from the
+  # shot has physically stopped.  min_seconds_after_strike keeps direct pots
+  # whole; max_seconds_after_strike / max_clip_seconds are review caps for
+  # unresolved tracking, not fixed clip lengths.  When the next shot starts
+  # before the previous window would end (fast break play), the boundary is
+  # trimmed between the two shots instead of dropping either shot.
   strict:
     pre_roll: 2.0
-    post_roll: 0.0
-    include_preparation: false
-    include_reaction: false
     end_at_ball_stop: true
-    drop_mid_motion_peaks: true
-    max_gap_between_shots: 0.0
     min_seconds_after_strike: 4.0
-    max_seconds_after_strike: 4.0
-    max_clip_seconds: 12.0  # defensive total clip cap
-    retain_replays: false
-  action_only:
-    pre_roll: 1.5
-    post_roll: 1.0
-    include_preparation: false
-    include_reaction: false
-    end_at_ball_stop: true
-    drop_mid_motion_peaks: true
-    max_gap_between_shots: 0.5
-    max_seconds_after_strike: 10.0
-    retain_replays: false
-  natural:
-    pre_roll: 4.0
-    post_roll: 3.0
-    include_preparation: true
-    preparation_max: 6.0
-    include_reaction: true
-    reaction_max: 4.0
-    end_at_ball_stop: false
-    drop_mid_motion_peaks: true
-    max_gap_between_shots: 2.0
-    max_seconds_after_strike: 10.0
-    retain_replays: false
-  full_sequence:
-    pre_roll: 8.0
-    post_roll: 4.0
-    include_preparation: true
-    preparation_max: 15.0
-    include_reaction: true
-    reaction_max: 6.0
-    end_at_ball_stop: false
-    drop_mid_motion_peaks: true
-    max_gap_between_shots: 3.0
-    max_seconds_after_strike: 10.0
+    max_seconds_after_strike: 7.0
+    max_clip_seconds: 9.0  # defensive total clip cap (pre_roll + max after strike)
+    # Two genuine cue strikes can never be closer than this (balls must stop
+    # and the player must re-address); tighter pairs are artefacts and are
+    # resolved by evidence instead of kept as two shots.
+    min_shot_spacing_seconds: 4.0
     retain_replays: false
 
 # Replay detection (Phase 1 heuristics)

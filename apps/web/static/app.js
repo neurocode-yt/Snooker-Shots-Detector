@@ -330,6 +330,20 @@ function mergedKeepRanges() {
   return merged;
 }
 
+async function restartJob(jobId) {
+  if (!confirm(`Restart analysis for job ${jobId}? Saved checkpoints and manual edits will be preserved.`)) return;
+  try {
+    const res = await fetch(`/api/jobs/${jobId}/restart`, { method: "POST" });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || err.message || "Failed to restart job");
+    }
+    refreshJobs();
+  } catch (error) {
+    alert(`Could not restart job: ${error.message || error}`);
+  }
+}
+
 async function refreshJobs() {
   const el = document.getElementById("jobs");
   try {
@@ -348,7 +362,10 @@ async function refreshJobs() {
           <strong>${job.job_id}</strong>
           <div class="meta">${job.status || ""} · ${(job.progress * 100 || 0).toFixed(0)}% · ${job.message || ""}</div>
         </div>
-        <a href="/review/${job.job_id}">Review</a>
+        <div class="job-actions">
+          <button type="button" class="btn-restart" data-job-id="${job.job_id}">Restart</button>
+          <a href="/review/${job.job_id}">Review</a>
+        </div>
       </div>`,
       )
       .join("");
@@ -428,7 +445,7 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
   const wrap = document.getElementById("progress-wrap");
   const fill = document.getElementById("progress-fill");
   const text = document.getElementById("progress-text");
-  const mode = document.getElementById("mode").value;
+  const mode = "strict";
   if (!keepRanges.length) {
     text.textContent = "Keep at least one section before starting analysis.";
     wrap.classList.remove("hidden");
@@ -496,6 +513,13 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
   } catch (error) {
     text.textContent = `Error: ${error.message || error}`;
     startBtn.disabled = false;
+  }
+});
+
+document.getElementById("jobs").addEventListener("click", (event) => {
+  const btn = event.target.closest(".btn-restart");
+  if (btn && btn.dataset.jobId) {
+    restartJob(btn.dataset.jobId);
   }
 });
 

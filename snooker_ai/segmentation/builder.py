@@ -29,13 +29,16 @@ class SegmentBuilder:
         self.medium = float(conf.get("medium", 0.50))
         self.low = float(conf.get("low", 0.35))
         self.fail_safe = float(conf.get("fail_safe_keep_extra_seconds", 1.0))
-        self.strict_pre_roll = float(
-            config.mode_settings(EditMode.STRICT).get("pre_roll", 2.0)
-        )
+        mode_cfg = config.mode_settings(EditMode.STRICT)
+        self.strict_pre_roll = float(mode_cfg.get("pre_roll", 2.0))
+        self.min_shot_spacing = float(mode_cfg.get("min_shot_spacing_seconds", 4.0))
         self.conflict_confidence_margin = float(
             config.get("strike_fusion.conflict_confidence_margin", 0.05)
         )
         self.audio_support_threshold = float(config.get("audio.onset_delta", 0.15))
+        self.support_quiet_ratio = float(
+            config.get("strike_fusion.fallback_pre_strike_ball_quiet_min_ratio", 0.50)
+        )
 
     def _level(self, score: float) -> ConfidenceLevel:
         if score >= self.high:
@@ -53,17 +56,10 @@ class SegmentBuilder:
         candidates: list[StrikeCandidate],
         features: list[FrameFeatures],
         duration: float,
-        mode: EditMode,
+        mode: EditMode = EditMode.STRICT,
     ) -> list[ShotRecord]:
-        mode_cfg = self.config.mode_settings(mode)
-        pre_roll = float(mode_cfg.get("pre_roll", 2.0))
-        post_roll = float(mode_cfg.get("post_roll", 2.0))
-        include_prep = bool(mode_cfg.get("include_preparation", False))
-        prep_max = float(mode_cfg.get("preparation_max", pre_roll))
-        include_reaction = bool(mode_cfg.get("include_reaction", False))
-        reaction_max = float(mode_cfg.get("reaction_max", post_roll))
+        mode_cfg = self.config.mode_settings(EditMode.STRICT)
         retain_replays = bool(mode_cfg.get("retain_replays", False))
-        strict = mode == EditMode.STRICT
 
         # Remove sub-frame/nearby duplicates before stop searches.  This never
         # changes the winning candidate's timestamp.
@@ -93,75 +89,56 @@ class SegmentBuilder:
             stop_review = stop.manual_review_required
             minimum_clip_end = physical_stop
 
-            if strict:
-                clip_start = self._strict_start(cand.timestamp, duration)
-                prep_start = clip_start
-                # The strict contract uses an actual physical stop whenever it
-                # is observed early.  If tracking remains unresolved, cap the
-                # exported shot at the configured post-strike horizon and mark
-                # the boundary for review instead of allowing a long false
-                # track to run away.
-                max_after = mode_cfg.get("max_seconds_after_strike")
-                if max_after is not None:
-                    shot_cap = clamp(
-                        cand.timestamp + max(0.0, float(max_after)),
-                        clip_start,
-                        duration,
-                    )
-                    if physical_stop > shot_cap + 1e-9:
-                        physical_stop = shot_cap
-                        confirmation = shot_cap
-                        last_motion = min(last_motion, shot_cap)
-                        end_confidence = min(end_confidence, 0.20)
-                        stop_confirmed = False
-                        stop_reason = "max_seconds_after_strike_review_cap"
-                        stop_review = True
-                # Confirmation is look-ahead only.  No pad, confidence tail, or
-                # confidence tail is allowed to alter this boundary. A separate
-                # practical clip limit prevents one unresolved track from
-                # producing a 40–50 second segment.
-                max_clip = float(mode_cfg.get("max_clip_seconds", 12.0))
-                clip_cap = clamp(clip_start + max_clip, clip_start, duration)
-                if physical_stop > clip_cap + 1e-9:
-                    physical_stop = clip_cap
-                    confirmation = clip_cap
-                    last_motion = min(last_motion, clip_cap)
-                    end_confidence = min(end_confidence, 0.20)
-                    stop_confirmed = False
-                    stop_reason = "max_clip_duration_review_cap"
-                    stop_review = True
-                min_after = max(
-                    0.0,
-                    float(mode_cfg.get("min_seconds_after_strike", 0.0)),
-                )
-                minimum_clip_end = clamp(
-                    cand.timestamp + min_after,
+            clip_start = self._strict_start(cand.timestamp, duration)
+            prep_start = clip_start
+            # The strict contract uses an actual physical stop whenever it
+            # is observed early.  If tracking remains unresolved, cap the
+            # exported shot at the configured post-strike horizon and mark
+            # the boundary for review instead of allowing a long false
+            # track to run away.
+            max_after = mode_cfg.get("max_seconds_after_strike")
+            if max_after is not None:
+                shot_cap = clamp(
+                    cand.timestamp + max(0.0, float(max_after)),
                     clip_start,
                     duration,
                 )
-                clip_end = clamp(
-                    max(physical_stop, minimum_clip_end),
-                    clip_start,
-                    min(duration, clip_cap),
-                )
-            else:
-                if include_prep:
-                    prep_start = self._preparation_start(
-                        cand.timestamp,
-                        features,
-                        prep_max,
-                        duration,
-                        times=feature_times,
-                    )
-                    clip_start = prep_start
-                else:
-                    clip_start = clamp(cand.timestamp - pre_roll, 0.0, duration)
-                    prep_start = clip_start
-
-                reaction = post_roll
-                if include_reaction:
-                    reaction = max(post_roll, min(reaction_max, post_roll + 1.0))
-                clip_end = clamp(physical_stop + reaction, clip_start, duration)
+                if physical_stop > shot_cap + 1e-9:
+                    physical_stop = shot_cap
+                    confirmation = shot_cap
+                    last_motion = min(last_motion, shot_cap)
+                    end_confidence = min(end_confidence, 0.20)
+                    stop_confirmed = False
+                    stop_reason = "max_seconds_after_strike_review_cap"
+                    stop_review = True
+            # Confirmation is look-ahead only.  No pad or confidence tail is
+            # allowed to alter this boundary. A separate practical clip limit
+            # prevents one unresolved track from producing a 40–50 second
+            # segment.
+            max_clip = float(mode_cfg.get("max_clip_seconds", 9.0))
+            clip_cap = clamp(clip_start + max_clip, clip_start, duration)
+            if physical_stop > clip_cap + 1e-9:
+                physical_stop = clip_cap
+                confirmation = clip_cap
+                last_motion = min(last_motion, clip_cap)
+                end_confidence = min(end_confidence, 0.20)
+                stop_confirmed = False
+                stop_reason = "max_clip_duration_review_cap"
+                stop_review = True
+            min_after = max(
+                0.0,
+                float(mode_cfg.get("min_seconds_after_strike", 0.0)),
+            )
+            minimum_clip_end = clamp(
+                cand.timestamp + min_after,
+                clip_start,
+                duration,
+            )
+            clip_end = clamp(
+                max(physical_stop, minimum_clip_end),
+                clip_start,
+                min(duration, clip_cap),
+            )
 
             shot_conf = float(cand.confidence)
             level = self._level(shot_conf)
@@ -171,10 +148,6 @@ class SegmentBuilder:
                 or not stop_confirmed
                 or float(cand.evidence.get("cue_geometry_confirmed", 1.0)) < 0.5
             )
-
-            if not strict and level == ConfidenceLevel.LOW:
-                clip_start = clamp(clip_start - self.fail_safe, 0.0, duration)
-                clip_end = clamp(clip_end + self.fail_safe, clip_start, duration)
 
             possible_replay = bool(cand.possible_replay)
             included = True
@@ -236,8 +209,8 @@ class SegmentBuilder:
                 )
             )
 
-        shots = self._resolve_overlaps(shots, strict=strict)
-        logger.info("Built %d shot segments (mode=%s)", len(shots), mode.value)
+        shots = self._resolve_overlaps(shots, strict=True)
+        logger.info("Built %d shot segments (strict)", len(shots))
         return shots
 
     @staticmethod
@@ -255,27 +228,6 @@ class SegmentBuilder:
         return result
 
     @staticmethod
-    def _preparation_start(
-        strike_t: float,
-        features: list[FrameFeatures],
-        prep_max: float,
-        duration: float,
-        times: list[float] | None = None,
-    ) -> float:
-        start = clamp(strike_t - prep_max, 0.0, duration)
-        if times is None:
-            times = [feature.t for feature in features]
-        lo = bisect_left(times, start)
-        hi = bisect_left(times, strike_t)
-        for f in reversed(features[lo:hi]):
-            if strike_t - f.t > prep_max:
-                break
-            if f.motion_score > 0.4:
-                start = f.t
-                break
-        return start
-
-    @staticmethod
     def _views_between(
         features: list[FrameFeatures],
         start: float,
@@ -291,23 +243,40 @@ class SegmentBuilder:
         values.update(f.view_type.value for f in features[lo:hi])
         return sorted(values)
 
+    def _independently_supported(self, shot: ShotRecord) -> bool:
+        """Whether a record carries decisive, self-contained strike evidence.
+
+        Two such records that merely collide in source time are treated as
+        genuine fast-succession shots and reconciled by trimming.  A record
+        that fails this bar while colliding with another shot's window is a
+        preparation/collision artefact and enters conflict resolution instead.
+        """
+        if shot.shot_confidence < self.high:
+            return False
+        quiet = shot.evidence.get("pre_ball_quiet_ratio")
+        if quiet is None:
+            return True
+        return float(quiet) >= self.support_quiet_ratio
+
     def _resolve_overlaps(
         self,
         shots: list[ShotRecord],
         *,
-        strict: bool = False,
+        strict: bool = True,
         **_legacy_kwargs,
     ) -> list[ShotRecord]:
         """Resolve mutually impossible strikes without cutting shot footage.
 
         A genuine next cue strike cannot occur before every ball from the prior
-        shot has stopped.  Such a candidate is therefore a collision, cushion
-        impact, feathering artefact, or uncertain prior boundary.  In strict
-        mode, two records also cannot occupy the same source time: the configured
-        pre-roll and four-second minimum are part of the shot contract.  When
-        two confirmed-looking events conflict, retain the better-supported one
-        instead of blindly keeping the first; this removes opening preparation
-        movements followed shortly by the real, audio-supported strike.
+        shot has stopped, and two genuine strikes cannot be closer than the
+        configured minimum spacing (balls must stop and the player must
+        re-address).  Such candidates are collisions, cushion impacts,
+        feathering artefacts, or uncertain prior boundaries; when two
+        confirmed-looking events conflict, the better-supported one is kept.
+
+        Two independently supported strikes whose strict windows merely overlap
+        (fast break play) are BOTH kept: the boundary between them is trimmed
+        by ``_trim_adjacent_windows`` instead of deleting a real shot.
         """
         if not shots:
             return []
@@ -328,16 +297,27 @@ class SegmentBuilder:
                 # stop; it is not proof that balls were still moving at the
                 # next independently verified strike.  Treat only a confirmed
                 # stop boundary (or legacy records without this field) as
-                # authoritative for mid-motion suppression.  Strict clip
-                # overlap still rejects genuinely incompatible close events.
+                # authoritative for mid-motion suppression.
                 stop_confirmed = prev.evidence.get("stop_confirmed")
                 reliable_stop = stop_confirmed is not False
                 mid_motion = (
                     reliable_stop and shot.cue_strike <= prev_stop + 1e-6
                 )
+                too_close = (
+                    shot.cue_strike - prev.cue_strike < self.min_shot_spacing
+                )
+                # Overlapping strict windows alone are no longer fatal: when
+                # both records carry decisive strike evidence they are two real
+                # shots in fast succession and the shared boundary is trimmed
+                # later.  A colliding record without that support is an
+                # artefact and must lose to its neighbour here.
                 source_overlap = strict and shot.clip_start < prev.clip_end - 1e-6
+                contested_overlap = source_overlap and not (
+                    self._independently_supported(prev)
+                    and self._independently_supported(shot)
+                )
 
-                if not (near_duplicate or mid_motion or source_overlap):
+                if not (near_duplicate or mid_motion or too_close or contested_overlap):
                     break
 
                 if self._prefer_later_conflicting_shot(prev, shot):
@@ -367,6 +347,7 @@ class SegmentBuilder:
             if strict:
                 expected_start = self._strict_start(shot.cue_strike, float("inf"))
                 shot.clip_start = expected_start
+                shot.preparation_start = expected_start
                 physical = float(
                     getattr(shot, "physical_stop_timestamp", 0.0)
                     or shot.ball_motion_end
@@ -379,7 +360,54 @@ class SegmentBuilder:
                 shot.cue_strike_timestamp = shot.cue_strike
                 shot.clip_start_timestamp = shot.clip_start
                 shot.clip_end_timestamp = shot.clip_end
+        if strict:
+            self._trim_adjacent_windows(resolved)
         return resolved
+
+    def _trim_adjacent_windows(self, shots: list[ShotRecord]) -> None:
+        """Share the boundary between fast consecutive shots without overlap.
+
+        The previous shot gives up its minimum-hold padding (and any
+        unresolved review tail) down to the next shot's pre-roll start, but a
+        confirmed physical stop is never cut.  Any residual overlap is then
+        removed by shortening the next shot's pre-roll: in fast play the
+        source simply does not contain two seconds of dead time before the
+        next strike, and duplicating footage in a joined export would read as
+        a glitch.
+        """
+        for prev, nxt in zip(shots, shots[1:]):
+            if nxt.clip_start >= prev.clip_end - 1e-9:
+                continue
+            reliable_stop = prev.evidence.get("stop_confirmed") is not False
+            physical = float(
+                getattr(prev, "physical_stop_timestamp", 0.0) or prev.ball_motion_end
+            )
+            floor = physical if reliable_stop else nxt.clip_start
+            new_end = min(prev.clip_end, max(nxt.clip_start, floor))
+            new_end = max(new_end, prev.cue_strike)
+            if new_end < prev.clip_end - 1e-9:
+                prev.clip_end = new_end
+                prev.clip_end_timestamp = new_end
+                if prev.physical_stop_timestamp > new_end + 1e-9:
+                    # Only an unconfirmed review cap can be trimmed here; the
+                    # boundary stays reviewable, never silently authoritative.
+                    prev.physical_stop_timestamp = new_end
+                    prev.ball_motion_end = new_end
+                    prev.stop_confirmation_timestamp = new_end
+                    prev.last_ball_motion_timestamp = min(
+                        prev.last_ball_motion_timestamp, new_end
+                    )
+                    prev.evidence["stop_reason"] = "trimmed_at_next_shot_start"
+                    prev.manual_review_required = True
+                prev.evidence["trimmed_for_next_shot"] = nxt.cue_strike
+            if nxt.clip_start < prev.clip_end - 1e-9:
+                new_start = min(prev.clip_end, nxt.cue_strike)
+                nxt.evidence["pre_roll_trimmed_seconds"] = round(
+                    new_start - nxt.clip_start, 6
+                )
+                nxt.clip_start = new_start
+                nxt.clip_start_timestamp = new_start
+                nxt.preparation_start = new_start
 
     def _prefer_later_conflicting_shot(
         self,
@@ -393,6 +421,27 @@ class SegmentBuilder:
         tie, which distinguishes a real cue impact from visually similar player
         preparation without allowing sound to create a shot by itself.
         """
+
+        def launch_evidence(shot: ShotRecord) -> float:
+            ev = shot.evidence
+            speed = float(ev.get("post_peak_cue_speed", 0.0) or 0.0)
+            disp = float(ev.get("cue_displacement_diameters", 0.0) or 0.0)
+            onset_run = float(ev.get("ball_onset_run", 0.0) or 0.0)
+            sustained = float(ev.get("sustained_run", 0.0) or 0.0)
+            contact = float(ev.get("cue_contact_score", 0.0) or 0.0)
+            return (
+                1.0 * min(1.0, speed / 3.0)
+                + 0.8 * min(1.0, disp / 1.0)
+                + 0.5 * min(1.0, (onset_run + sustained) / 4.0)
+                + 0.4 * min(1.0, contact / 0.50)
+            )
+
+        prev_launch = launch_evidence(previous)
+        curr_launch = launch_evidence(current)
+        if curr_launch - prev_launch >= 0.25:
+            return True
+        if prev_launch - curr_launch >= 0.25:
+            return False
 
         confidence_delta = current.shot_confidence - previous.shot_confidence
         if abs(confidence_delta) > self.conflict_confidence_margin:
