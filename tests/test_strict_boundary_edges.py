@@ -44,7 +44,7 @@ def _sequence(
     ]
 
 
-def test_short_shot_keeps_strike_visible_when_stop_minus_two_precedes_it(config):
+def test_short_source_keeps_all_available_footage_when_minimum_cannot_fit(config):
     strike = StrikeCandidate(timestamp=1.0, confidence=0.95)
     features = _sequence()
 
@@ -58,8 +58,8 @@ def test_short_shot_keeps_strike_visible_when_stop_minus_two_precedes_it(config)
     assert len(shots) == 1
     shot = shots[0]
     assert shot.physical_stop_timestamp == pytest.approx(1.5)
-    assert shot.clip_end == pytest.approx(1.1)
-    assert shot.clip_end_timestamp == pytest.approx(1.1)
+    assert shot.clip_end == pytest.approx(3.0)
+    assert shot.clip_end_timestamp == pytest.approx(3.0)
     assert shot.stop_confirmation_timestamp == pytest.approx(2.0)
 
 
@@ -139,7 +139,7 @@ def test_incomplete_native_stillness_cannot_override_live_motion(config):
     assert shots[0].evidence["stop_confirmed"] is False
 
 
-@pytest.mark.parametrize("moving_through,expected_end", [(1.4, 1.1), (4.9, 3.0)])
+@pytest.mark.parametrize("moving_through,expected_end", [(1.4, 4.48), (4.9, 4.48)])
 def test_stop_minus_two_survives_serialization_and_export_validation(config, moving_through, expected_end):
     from snooker_ai.types import ShotRecord
 
@@ -182,7 +182,7 @@ def test_duration_based_trim_survives_build_serialization_and_export(config, sho
     assert restored.evidence["end_before_ball_stop_seconds"] == trim
     assert restored.evidence["shot_duration_for_end_trim_seconds"] == pytest.approx(shot_duration)
     assert restored.clip_start == pytest.approx(strike_t - 2)
-    assert restored.clip_end == pytest.approx(max(strike_t + 0.1, physical_stop - trim))
+    assert restored.clip_end == pytest.approx(max(strike_t + 2.48, physical_stop - trim))
     assert restored.physical_stop_timestamp == pytest.approx(physical_stop)
     assert restored.stop_confirmation_timestamp == pytest.approx(physical_stop + 0.5)
     Exporter(config)._validate_strict_boundaries([restored], source_duration=30, source_fps=30)

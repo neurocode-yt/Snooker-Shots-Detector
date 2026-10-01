@@ -121,6 +121,8 @@ def test_strict_config_expresses_exact_boundary_contract():
     assert strict["end_before_ball_stop_seconds"] == 2.0
     assert strict["long_shot_threshold_seconds"] == 7.0
     assert strict["long_shot_end_before_ball_stop_seconds"] == 3.0
+    assert strict["minimum_clip_seconds"] == 4.0
+    assert strict["minimum_strike_visibility_seconds"] == 2.0
     assert strict["min_seconds_after_strike"] == 4.0
     # The longer safety horizon preserves real rolls beyond seven seconds.
     assert strict["max_seconds_after_strike"] == 60.0

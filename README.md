@@ -13,7 +13,7 @@ The web timeline remains available for optional inspection.
 
 ## Features
 
-- **Strict edit mode:** 2s before cue contact → 2s before the confirmed ball stop, or 3s for shots lasting at least 7s
+- **Strict edit mode:** 2s lead-in, at least 4s clear footage and 2s after impact; trim 2–3s from the end when those minimums allow
   (pre-roll and safety horizon configurable)
 - **Multimodal detection** — residual motion after camera compensation + table mask + audio support
 - **Replay-aware** — replays flagged and excluded by default
@@ -58,21 +58,24 @@ snooker-ai serve --port 8000
 ```
 
 Strict mode starts at the first confirmed cue-ball launch minus 2.000 seconds and
-ends before the first confirmed physical all-ball stop using the shot's duration
+chooses an end trim using the shot's duration
 from cue strike to that stop (excluding pre-roll and confirmation look-ahead):
 
 - Under 7 seconds, including shots under 5 seconds and the 5–7-second range: remove 2 seconds.
 - At least 7 seconds: remove 3 seconds.
 
-For very short shots, the end is clamped to 0.1 seconds after cue contact so the
-strike stays visible. This takes precedence over the older four-second hold.
-The detected physical stop remains unchanged in the metadata. The 0.50-second stationary
-confirmation is look-ahead evidence only and is not included in `clip_end`.
+Minimum viewing time takes precedence over that end trim: each shot keeps at
+least **4 seconds of clear footage**, including **2 seconds after cue contact**.
+Mix transitions use extra context outside the four-second minimum. Short shots
+therefore receive less end trimming, rather than cutting away at impact. A source
+that ends too soon keeps all available footage; the editor does not invent frames.
+The detected physical stop remains unchanged in the metadata. The 0.50-second
+stationary confirmation supplies evidence and does not itself add edit padding.
 Automatic tracking follows longer rolls beyond seven seconds, with a configurable
 60-second safety horizon. Uncertainty remains in the diagnostics and does not
 block automatic export. A video that ends during a shot keeps its remaining footage.
 
-`strict` is the only editing mode (2s before strike → 2–3s before balls stop). When the next
+`strict` is the only editing mode, with the viewing-time minimum taking priority. When the next
 shot starts before the previous window would end (fast break play), the boundary
 is trimmed between the two shots so neither shot is lost. Legacy mode names are
 accepted and coerce to strict.

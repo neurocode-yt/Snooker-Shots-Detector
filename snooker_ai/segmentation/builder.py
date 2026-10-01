@@ -60,6 +60,13 @@ class SegmentBuilder:
     ) -> list[ShotRecord]:
         mode_cfg = self.config.mode_settings(EditMode.STRICT)
         retain_replays = bool(mode_cfg.get("retain_replays", False))
+        minimum_clip = max(0.0, float(mode_cfg.get("minimum_clip_seconds", 0.0)))
+        minimum_visibility = max(0.0, float(mode_cfg.get("minimum_strike_visibility_seconds", 0.1)))
+        transition = (
+            max(0.0, float(self.config.get("export.transition_seconds", 0.24)))
+            if self.config.get("export.transition", "cut") == "mix" and minimum_clip > 0
+            else 0.0
+        )
 
         # Remove sub-frame/nearby duplicates before stop searches.  This never
         # changes the winning candidate's timestamp.
@@ -160,13 +167,12 @@ class SegmentBuilder:
                     end_trim = max(0.0, float(mode_cfg.get(
                         "long_shot_end_before_ball_stop_seconds", end_trim,
                     )))
-                # The requested early end takes precedence over the old
-                # four-second hold, but must keep the cue strike visible.
-                min_after = max(0.0, float(mode_cfg.get("minimum_strike_visibility_seconds", 0.1)))
+                # Early trimming yields to viewing time on short shots.
+                min_after = minimum_visibility
             minimum_clip_end = clamp(
-                cand.timestamp + min_after,
+                max(cand.timestamp + min_after, clip_start + minimum_clip + 2 * transition),
                 clip_start,
-                duration,
+                min(duration, clip_cap),
             )
             clip_end = clamp(
                 max(physical_stop - end_trim, minimum_clip_end),
@@ -203,6 +209,9 @@ class SegmentBuilder:
                     # the exported strict boundary may be capped separately.
                     "uncapped_physical_stop_timestamp": uncapped_physical_stop,
                     "minimum_clip_end_timestamp": minimum_clip_end,
+                    "minimum_clip_seconds": minimum_clip,
+                    "minimum_strike_visibility_seconds": minimum_visibility,
+                    "minimum_clip_transition_padding_seconds": 2 * transition,
                     "end_before_ball_stop_seconds": end_trim,
                     "shot_duration_for_end_trim_seconds": (
                         max(0.0, physical_stop - cand.timestamp) if stop_confirmed else None
@@ -247,7 +256,7 @@ class SegmentBuilder:
                 )
             )
 
-        shots = self._resolve_overlaps(shots, strict=True)
+        shots = self._resolve_overlaps(shots, strict=True, source_duration=duration)
         logger.info("Built %d shot segments (strict)", len(shots))
         return shots
 
@@ -301,6 +310,7 @@ class SegmentBuilder:
         shots: list[ShotRecord],
         *,
         strict: bool = True,
+        source_duration: float = float("inf"),
         **_legacy_kwargs,
     ) -> list[ShotRecord]:
         """Resolve mutually impossible strikes without cutting shot footage.
@@ -349,7 +359,16 @@ class SegmentBuilder:
                 # shots in fast succession and the shared boundary is trimmed
                 # later.  A colliding record without that support is an
                 # artefact and must lose to its neighbour here.
-                source_overlap = strict and shot.clip_start < prev.clip_end - 1e-6
+                conflict_end = prev.clip_end
+                if float(prev.evidence.get("minimum_clip_seconds", 0)) > 0:
+                    # Optional mix handles must not create a new candidate
+                    # conflict and discard a genuine fast-succession shot.
+                    conflict_end = min(conflict_end, max(
+                        prev.physical_stop_timestamp - float(prev.evidence.get("end_before_ball_stop_seconds", 0)),
+                        prev.clip_start + float(prev.evidence["minimum_clip_seconds"]),
+                        prev.cue_strike + float(prev.evidence.get("minimum_strike_visibility_seconds", 0)),
+                    ))
+                source_overlap = strict and shot.clip_start < conflict_end - 1e-6
                 contested_overlap = source_overlap and not (
                     self._independently_supported(prev)
                     and self._independently_supported(shot)
@@ -400,10 +419,10 @@ class SegmentBuilder:
                 shot.clip_start_timestamp = shot.clip_start
                 shot.clip_end_timestamp = shot.clip_end
         if strict:
-            self._trim_adjacent_windows(resolved)
+            self._trim_adjacent_windows(resolved, source_duration=source_duration)
         return resolved
 
-    def _trim_adjacent_windows(self, shots: list[ShotRecord]) -> None:
+    def _trim_adjacent_windows(self, shots: list[ShotRecord], *, source_duration: float = float("inf")) -> None:
         """Share the boundary between fast consecutive shots without overlap.
 
         The previous shot gives up its minimum-hold padding (and any
@@ -423,6 +442,13 @@ class SegmentBuilder:
             )
             end_trim = float(prev.evidence.get("end_before_ball_stop_seconds", 0.0))
             floor = physical - end_trim if reliable_stop else nxt.clip_start
+            if float(prev.evidence.get("minimum_clip_seconds", 0)) > 0:
+                # Give up transition padding before clear viewing time.
+                floor = max(
+                    floor,
+                    prev.clip_start + float(prev.evidence["minimum_clip_seconds"]),
+                    prev.cue_strike + float(prev.evidence.get("minimum_strike_visibility_seconds", 0)),
+                )
             new_end = min(prev.clip_end, max(nxt.clip_start, floor))
             new_end = max(new_end, prev.cue_strike)
             if new_end < prev.clip_end - 1e-9:
@@ -448,6 +474,18 @@ class SegmentBuilder:
                 nxt.clip_start = new_start
                 nxt.clip_start_timestamp = new_start
                 nxt.preparation_start = new_start
+                minimum_clip = float(nxt.evidence.get("minimum_clip_seconds", 0))
+                if minimum_clip > 0:
+                    # A shortened pre-roll must not shorten the next shot's
+                    # minimum viewing time. The following pair reconciles any
+                    # new overlap; EOF remains an absolute limit.
+                    minimum_end = min(source_duration, max(
+                        new_start + minimum_clip + float(nxt.evidence.get("minimum_clip_transition_padding_seconds", 0)),
+                        nxt.cue_strike + float(nxt.evidence.get("minimum_strike_visibility_seconds", 0)),
+                    ))
+                    nxt.evidence["minimum_clip_end_timestamp"] = minimum_end
+                    nxt.clip_end = max(nxt.clip_end, minimum_end)
+                    nxt.clip_end_timestamp = nxt.clip_end
 
     def _prefer_later_conflicting_shot(
         self,

@@ -1513,6 +1513,10 @@ class Analyzer:
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")
             },
+            "transition_context": {
+                "transition": self.config.get("export.transition", "cut"),
+                "seconds": self.config.get("export.transition_seconds", 0.24),
+            },
         }
         encoded = json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
