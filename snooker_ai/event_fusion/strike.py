@@ -382,6 +382,16 @@ class StrikeDetector:
     @staticmethod
     def _anchored_launch_confirmed(metrics: dict[str, float]) -> bool:
         """Independent white-ball evidence can outvote cue/player cloth flow."""
+        straight_launch = (metrics.get("cue_direction_consistency", 0) >= .90
+                           and metrics.get("anchor_direction_consistency", 0) >= .90)
+        # A nearby red can deflect the white within the first 0.3 seconds. Its
+        # initial straight leg, actual cue contact and continued stabilized
+        # travel establish the launch even though the complete path bends.
+        early_collision = (metrics.get("cue_contact_score", 0) >= .70
+                           and metrics.get("initial_launch_direction", 0) >= .95
+                           and metrics.get("initial_launch_displacement", 0) >= .50
+                           and metrics.get("cue_direction_consistency", 0) >= .55
+                           and metrics.get("anchor_direction_consistency", 0) >= .65)
         return bool(metrics.get("stationary_ratio", 0) >= .80
                     and (metrics.get("pre_ball_quiet_ratio", 0) >= .80
                          or (metrics.get("pre_ball_quiet_ratio", 0) >= .50
@@ -392,9 +402,8 @@ class StrikeDetector:
                     and metrics.get("stable_cue_peak_speed", 0) >= 4
                     and metrics.get("track_confidence", 0) >= .70
                     and metrics.get("cue_displacement_diameters", 0) >= 1.0
-                    and metrics.get("cue_direction_consistency", 0) >= .90
+                    and (straight_launch or early_collision)
                     and metrics.get("anchor_excursion_diameters", 0) >= 1.5
-                    and metrics.get("anchor_direction_consistency", 0) >= .90
                     and metrics.get("initial_launch_displacement", 0) >= .50
                     and metrics.get("initial_launch_direction", 0) >= .90)
 
@@ -824,11 +833,90 @@ class StrikeDetector:
                 )
             )
         logger.info("Found %d cue-strike candidates", len(candidates))
-        for inferred in self._camera_contact_candidates(features):
+        for inferred in (self._camera_contact_candidates(features)
+                         + self._occluded_launch_candidates(features)):
             if not any(abs(c.timestamp-inferred.timestamp) < self.min_dist for c in candidates):
                 candidates.append(inferred)
         candidates.sort(key=lambda c: c.timestamp)
         return candidates
+
+    def _occluded_launch_candidates(self, features: list[FrameFeatures]) -> list[StrikeCandidate]:
+        """Reconnect a quiet addressed white to a coherent roll after occlusion.
+
+        The normal half-second transition window can contain no white at all
+        when the bridge/cue covers it before contact. Keep the last measured
+        quiet anchor for a bounded interval. A continuous native-rate roll,
+        rather than a moving hand or one displaced detection, must follow it.
+        Its first visible movement is an upper bound on the hidden contact.
+        """
+        times = [f.t for f in features]
+        recovered: list[StrikeCandidate] = []
+
+        def positioned(f: FrameFeatures, confidence: float = .40) -> bool:
+            return (f.cue_ball_detected and f.cue_ball_x is not None
+                    and f.cue_ball_y is not None and self._track_conf(f) >= confidence)
+
+        for i, current in enumerate(features):
+            if (current.observation_fps < 10 or not self._valid(current)
+                    or not positioned(current) or self._cue_speed(current) < self.start_speed
+                    or (recovered and current.t-recovered[-1].timestamp < self.min_dist)):
+                continue
+            history = features[bisect_left(times, current.t-1.5):i]
+            quiet = [f for f in history if self._valid(f) and self._same_view(f, current)
+                     and positioned(f, .65) and self._cue_speed(f) <= self.stationary_speed
+                     and (f.cue_ball_stable_normalized_speed is None
+                          or f.cue_ball_stable_normalized_speed <= self.stationary_speed)]
+            if not quiet:
+                continue
+            anchor = quiet[-1]
+            if not .15 <= current.t-anchor.t <= 1.2:
+                continue
+            cluster = [f for f in history if anchor.t-.5 <= f.t <= anchor.t
+                       and self._valid(f) and self._same_view(f, current) and positioned(f, .65)]
+            if (len(cluster) < 4 or cluster[-1].t-cluster[0].t < .20
+                    or self._stationary_ratio(cluster) < .80
+                    or max((f.cue_contact_score for f in cluster if f.cue_tip_visible), default=0) < .65):
+                continue
+            hidden = [f for f in history if f.t > anchor.t]
+            if (not hidden or any(not self._valid(f) or not self._same_view(f, current) for f in hidden)
+                    or sum(not positioned(f) for f in hidden)/len(hidden) < .60):
+                continue
+            post = features[i:bisect_right(times, current.t+.30)]
+            if (len(post) < 4 or any(not self._valid(f) or not self._same_view(f, current) for f in post)
+                    or any(b.t-a.t > 2/current.observation_fps+.005 for a, b in zip(post, post[1:]))):
+                continue
+            visible = [f for f in post if positioned(f)]
+            if len(visible) < 4 or len(visible)/len(post) < .75:
+                continue
+            stable = [f.cue_ball_stable_normalized_speed for f in visible
+                      if f.cue_ball_stable_normalized_speed is not None]
+            if sum(speed >= self.continue_speed for speed in stable) < 3 or max(stable, default=0) < 1.5:
+                continue
+            xy = np.asarray([(f.cue_ball_x, f.cue_ball_y) for f in visible])
+            diameter = max(1., float(np.median([f.ball_diameter_px for f in cluster+visible])))
+            displacement = float(np.linalg.norm(xy[-1]-xy[0]))/diameter
+            path = float(np.sum(np.linalg.norm(np.diff(xy, axis=0), axis=1)))
+            direction = float(np.linalg.norm(xy[-1]-xy[0]))/max(path, 1e-6)
+            anchor_xy = np.asarray([anchor.cue_ball_x, anchor.cue_ball_y])
+            excursion = float(np.linalg.norm(xy[-1]-anchor_xy))/diameter
+            if displacement < .65 or excursion < .80 or direction < .90:
+                continue
+            # Reacquisition must start near the measured ball and then depart.
+            # A remote white logo or glove cannot replace the missing identity.
+            if np.linalg.norm(xy[0]-anchor_xy) > .75*diameter:
+                continue
+            recovered.append(StrikeCandidate(
+                timestamp=current.t, confidence=.78,
+                uncertainty_start=anchor.t, uncertainty_end=current.t,
+                camera_view=current.view_type,
+                evidence={"occlusion_inferred": 1., "ball_onset_run": float(len(visible)),
+                          "occluded_anchor_launch": 1., "contact_time_upper_bound": 1.,
+                          "cue_ball_motion_confirmed": 1., "cue_geometry_confirmed": 1.,
+                          "anchor_gap_seconds": current.t-anchor.t,
+                          "cue_displacement_diameters": displacement,
+                          "cue_direction_consistency": direction},
+            ))
+        return recovered
 
     def _occluded_contact_time(self, features: list[FrameFeatures], index: int,
                                times: list[float], confirmed_contact: float = 0.0,
