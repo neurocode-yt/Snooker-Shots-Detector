@@ -71,6 +71,14 @@ through partial views may lack enough geometry for automatic verification.
 The current implementation is conservative about excluding these cases and
 does not constitute a general trained replay-recognition model.
 
+The supplied broadcast also uses paired pink/yellow concentric ring wipes.
+The classifier records their central appearance only when both rings are
+substantially complete against a dark background. An opening and matching
+closing wipe, recent live play and a strike inside the bracket establish a
+replay interval. Each wipe participates in at most one confirmed pair; live
+shots between separate replay packages remain available. Confirmed intervals
+also limit clip padding. Other broadcasters' graphics remain unverified.
+
 ## Editing and processing
 
 The strict editing policy keeps a two-second lead-in and trims two seconds from
@@ -124,3 +132,12 @@ must be regenerated after those checks. Native stop discovery is distinct from
 an inferred return-to-table upper bound. Known unusable spans also constrain
 preparation footage, so the two-second lead-in cannot restore referee handling
 or a foreign table.
+
+The second code iteration passed 377 automated tests and Ruff. Source-derived
+numeric regressions recover the terminal black contact near 1058.2 seconds and
+the shaded brown contact near 2139.8 seconds. Compact convex-envelope evidence
+recovers a compressed shaded sphere without admitting the glove, skin and
+colour-ball negative examples. Native source inspection also identified three
+replay passages near 1760, 1809 and 2791 seconds. Their source audit and export
+are being consolidated; a subsequent live contact under the final closing wipe
+is invisible and cannot receive an exact observed contact time.

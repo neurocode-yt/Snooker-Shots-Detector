@@ -383,8 +383,11 @@ class StrikeDetector:
         return bool(metrics.get("stationary_ratio", 0) >= .80
                     and metrics.get("pre_ball_quiet_ratio", 0) >= .80
                     and metrics.get("stable_cue_motion_count", 0) >= 3
-                    and metrics.get("stable_cue_peak_speed", 0) >= 4
-                    and metrics.get("cue_displacement_diameters", 0) >= .75
+                    and ((metrics.get("stable_cue_peak_speed", 0) >= 4
+                          and metrics.get("cue_displacement_diameters", 0) >= .75)
+                         or (metrics.get("pre_cue_address_score", 0) >= .70
+                             and metrics.get("stable_cue_peak_speed", 0) >= 1.5
+                             and metrics.get("cue_displacement_diameters", 0) >= .50))
                     and metrics.get("cue_direction_consistency", 0) >= .80
                     and metrics.get("track_confidence", 0) >= .70
                     and metrics.get("pre_cue_address_score", 0) >= .20)

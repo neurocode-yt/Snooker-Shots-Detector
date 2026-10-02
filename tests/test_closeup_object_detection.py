@@ -71,3 +71,24 @@ def test_ivory_outline_keeps_its_center_when_hough_edge_is_displaced(config, mon
     assert len(cue) == 1
     assert cue[0].cue_sphere_supported
     assert cue[0].cy == pytest.approx(130, abs=1)
+
+
+@pytest.mark.parametrize("notch_depth,expected_support", [(4, True), (6, False)])
+def test_shaded_outline_accepts_compact_codec_jaggedness_but_rejects_deep_gaps(
+    config, notch_depth, expected_support,
+):
+    frame = np.full((240, 400, 3), colour(60, 180, 180), np.uint8)
+    angles = np.linspace(0, 2*np.pi, 20, endpoint=False)
+    radii = np.where(np.arange(20) % 2, 20-notch_depth, 20)
+    points = np.stack((180+radii*np.cos(angles), 130+radii*np.sin(angles)), axis=1)
+    cv2.fillPoly(frame, [points.round().astype(np.int32)], colour(30, 85, 220))
+    cv2.circle(frame, (176, 125), 7, colour(25, 20, 255), -1)
+    found = ObjectDetector(config).detect(
+        frame, np.full(frame.shape[:2], 255, np.uint8),
+        use_hough=False, partial_view=True,
+    )
+    supported = [d for d in found if d.cue_sphere_supported]
+    assert bool(supported) == expected_support
+    if supported:
+        assert supported[0].cx == pytest.approx(180, abs=1)
+        assert supported[0].cy == pytest.approx(130, abs=1)
