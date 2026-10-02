@@ -192,6 +192,21 @@ def test_unobserved_sampling_hole_cannot_confirm_non_table_cutaway(config):
     assert shots[0].clip_end > 4.5
 
 
+def test_native_sampling_from_30fps_proxy_keeps_non_table_confirmation(config):
+    frames = [FrameFeatures(
+        t=i/30, observation_fps=25, view_classified=True,
+        table_observable=False, table_full_view=False,
+        observation_valid=False, view_type=CameraViewType.PLAYER_CLOSEUP,
+    ) for i in range(111) if i % 6 != 5]
+    spans = SegmentBuilder(config)._non_table_cutaway_spans(frames)
+    assert len(spans) == 1
+    assert spans[0][0] == 0
+    assert spans[0][1] > 3.5
+    # A genuine hole still resets proof; timestamp jitter is not blank time.
+    frames = [f for f in frames if not 1 <= f.t <= 2]
+    assert SegmentBuilder(config)._non_table_cutaway_spans(frames) == []
+
+
 def test_long_partial_table_view_is_not_a_non_table_cutaway(config):
     frames = _features(moving_intervals=((1, 9),))
     for frame in frames:

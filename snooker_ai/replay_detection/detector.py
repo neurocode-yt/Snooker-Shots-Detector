@@ -162,6 +162,162 @@ class ReplayDetector:
             index += 1
         return intervals
 
+    def returning_live_candidates(
+        self,
+        candidates: list[StrikeCandidate],
+        features: list[FrameFeatures],
+        completed_live_stops: dict[float, float],
+    ) -> list[StrikeCandidate]:
+        """Recover newly visible live rolls whose contact was hidden by a wipe.
+
+        These are additional shot-in-progress proposals, not exact cue strikes.
+        A verified stop before the replay opening prevents the same ongoing live
+        shot from being counted again when the broadcast returns to it. Inputs
+        remain untouched; the caller can merge these proposals into its timeline.
+        """
+        if not self.enabled or not completed_live_stops:
+            return []
+        ordered_features = sorted(features, key=lambda f: f.t)
+        ordered_candidates = sorted(candidates, key=lambda c: c.timestamp)
+        intervals = self._stinger_intervals(ordered_features, ordered_candidates)
+        times = [f.t for f in ordered_features]
+        recovered: list[StrikeCandidate] = []
+
+        def reliable_cue(f: FrameFeatures) -> bool:
+            return bool(
+                f.observation_fps >= 10 and f.table_full_view and f.table_observable
+                and f.match_context_valid and not f.table_handling and not f.broadcast_replay
+                and f.view_type not in _REPLAY_VIEWS and not f.appearance_signature
+                and f.cue_ball_detected and f.cue_ball_track_confidence >= .70
+                and f.ball_diameter_px > .5
+                and f.cue_ball_x is not None and f.cue_ball_y is not None
+                and np.isfinite(f.cue_ball_x) and np.isfinite(f.cue_ball_y)
+            )
+
+        def speed(f: FrameFeatures) -> float:
+            value = f.cue_ball_stable_normalized_speed
+            return float(value) if value is not None and np.isfinite(value) else 0.0
+
+        for opening_start, closing_end in intervals:
+            prior = next((c for c in reversed(ordered_candidates)
+                          if c.timestamp < opening_start and c.confidence >= .40
+                          and not c.possible_replay
+                          and not any(lo <= c.timestamp <= hi for lo, hi in intervals)), None)
+            if prior is None:
+                continue
+            prior_stop = completed_live_stops.get(prior.timestamp)
+            if (prior_stop is None or not np.isfinite(prior_stop)
+                    or not prior.timestamp <= prior_stop < opening_start):
+                continue
+            # The opening/closing association has already been confirmed. Find
+            # the first retained image of its closing graphic for the uncertainty
+            # interval, without treating a graphic as an observed contact.
+            graphics = [f for f in ordered_features[bisect_left(times, opening_start):bisect_right(times, closing_end)]
+                        if len(f.appearance_signature) == 192]
+            closing_start = closing_end
+            for graphic in reversed(graphics):
+                if closing_start-graphic.t > .8:
+                    break
+                closing_start = graphic.t
+            window = ordered_features[bisect_right(times, closing_end):bisect_right(times, closing_end+.60)]
+            first = next((f for f in window if reliable_cue(f)), None)
+            if first is None:
+                continue
+            if first.observation_valid and speed(first) < .75:
+                # Only an explicit reset image has an unmeasured warmup speed.
+                # A trustworthy quiet white shows preparation after the return.
+                continue
+            if any(f.table_handling or not f.match_context_valid or f.broadcast_replay
+                   or f.view_type in _REPLAY_VIEWS for f in window if f.t <= first.t):
+                continue
+            existing = ordered_candidates + recovered
+            if any(not c.possible_replay and abs(c.timestamp-first.t) <= 1.0
+                   and not any(lo <= c.timestamp <= hi for lo, hi in intervals)
+                   and (c.evidence.get("cue_ball_motion_confirmed", 0) >= .5
+                        or c.evidence.get("dense_transition_confirmed", 0) >= .5)
+                   for c in existing):
+                continue
+
+            # Returning wipes can produce consecutive tracker resets while the
+            # transparent graphic clears. Only this short initial warmup may
+            # contain cuts. All movement proof belongs to the final returned view.
+            anchor = first
+            warmup = [first]
+            proof = [anchor]
+            valid_count = 0
+            previous = first
+            failed = False
+            proof_window = ordered_features[bisect_left(times, first.t):bisect_right(times, first.t+.35)]
+            for f in proof_window:
+                if f.t <= first.t:
+                    continue
+                if f.t-first.t > .35:
+                    break
+                gap_limit = 1.75 / min(previous.observation_fps, f.observation_fps) if f.observation_fps >= 10 else 0.0
+                if not reliable_cue(f) or f.t-previous.t > gap_limit+1e-9:
+                    failed = True
+                    break
+                changed = f.camera_scene_id != anchor.camera_scene_id
+                if not f.observation_valid or f.scene_cut_score >= .42 or changed:
+                    if valid_count or f.t-first.t > .10:
+                        failed = True
+                        break
+                    warmup.append(f)
+                    anchor = f
+                    proof = [f]
+                else:
+                    # A quiet native image followed by a later launch is ordinary
+                    # preparation, not movement already underway behind the wipe.
+                    if valid_count == 0 and speed(f) < .75:
+                        failed = True
+                        break
+                    proof.append(f)
+                    valid_count += 1
+                    if valid_count == 3:
+                        break
+                previous = f
+            if failed or valid_count < 3:
+                continue
+            diameter = float(np.median([f.ball_diameter_px for f in proof]))
+            xy = np.array([(f.cue_ball_x, f.cue_ball_y) for f in proof], dtype=float)
+            legs = np.diff(xy, axis=0)
+            lengths = np.linalg.norm(legs, axis=1)
+            net = xy[-1]-xy[0]
+            distance = float(np.linalg.norm(net))
+            consistency = distance / max(float(np.sum(lengths)), 1e-9)
+            peak = max(speed(f) for f in proof[1:])
+            if distance/diameter < .50 or consistency < .80 or peak < .75:
+                continue
+            if len(warmup) > 1:
+                # Do not backdate onset across a camera-induced identity jump.
+                # Reset images must remain close and move in the proven direction.
+                warm_xy = np.array([(f.cue_ball_x, f.cue_ball_y) for f in warmup], dtype=float)
+                warm_legs = np.diff(warm_xy, axis=0)
+                if any(np.linalg.norm(leg) > 2*diameter
+                       or np.dot(leg, net) < .80*np.linalg.norm(leg)*distance
+                       for leg in warm_legs):
+                    continue
+            recovered.append(StrikeCandidate(
+                timestamp=first.t, confidence=.70,
+                uncertainty_start=closing_start, uncertainty_end=first.t,
+                camera_view=proof[-1].view_type,
+                evidence={
+                    "return_from_replay_visible_roll": 1.0,
+                    "contact_time_upper_bound": 1.0,
+                    "cue_ball_motion_confirmed": 1.0,
+                    "replay_return_closing_start": closing_start,
+                    "replay_return_closing_end": closing_end,
+                    "replay_return_proof_timestamp": proof[-1].t,
+                    "replay_return_previous_live_contact": prior.timestamp,
+                    "replay_return_previous_live_stop": float(prior_stop),
+                    "cue_displacement_diameters": distance/diameter,
+                    "cue_direction_consistency": consistency,
+                    "post_peak_cue_speed": peak,
+                    "track_confidence": min(f.cue_ball_track_confidence for f in proof),
+                },
+            ))
+        return recovered
+
     @staticmethod
     def _cosine(first: np.ndarray, second: np.ndarray) -> float:
         denom = float(np.linalg.norm(first)*np.linalg.norm(second))

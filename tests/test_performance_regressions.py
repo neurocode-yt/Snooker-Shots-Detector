@@ -339,3 +339,27 @@ def test_visual_refinement_reuses_only_complete_native_rate_observations(
         assert calls[0]["start_time"] == 102
         assert calls[0]["end_time"] == 160
         assert dense and dense[0].t == pytest.approx(98)
+
+
+@pytest.mark.parametrize("missing_interval", [False, True])
+@pytest.mark.parametrize("recorded_fps", [15, 25])
+def test_native_25fps_cache_from_30fps_proxy_handles_timestamp_jitter(
+    config, tmp_path, monkeypatch, missing_interval, recorded_fps,
+):
+    analyzer = Analyzer(config, tmp_path/'job')
+    existing = [FrameFeatures(t=98+i/30, observation_fps=recorded_fps, view_classified=True)
+                for i in range(121) if (i % 6 != 5 if recorded_fps == 25 else i % 2 == 0)
+                and (not missing_interval or not 99 < 98+i/30 < 100)]
+    calls = []
+    def extract(*args, **kwargs):
+        calls.append(kwargs)
+        return [], [], []
+    monkeypatch.setattr(analyzer, "_extract_features", extract)
+    analyzer._refine_candidate_windows(
+        tmp_path/'video.mp4', None, TimeMapper(source_fps=25, source_duration=300), 300,
+        [StrikeCandidate(timestamp=100, confidence=.8)], existing,
+        existing_dense=existing, resume=False,
+    )
+    assert len(calls) == int(missing_interval or recorded_fps < 25)
+    if calls:
+        assert calls[0]["sample_fps"] == 25

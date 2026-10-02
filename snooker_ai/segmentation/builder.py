@@ -232,6 +232,7 @@ class SegmentBuilder:
                 or stop_review
                 or not stop_confirmed
                 or float(cand.evidence.get("cue_geometry_confirmed", 1.0)) < 0.5
+                or float(cand.evidence.get("contact_time_upper_bound", 0.0)) >= 0.5
                 or clip_end-clip_start < minimum_clip
             )
 
@@ -392,7 +393,10 @@ class SegmentBuilder:
                                  CameraViewType.REPLAY, CameraViewType.SLOW_MOTION_REPLAY,
                              })
             cadence = min(f.observation_fps, previous.observation_fps) if previous is not None else 0
-            max_gap = min(.76, 1.5 / cadence) if cadence > 0 else self.ball_stop.max_observation_gap_s
+            # A 25fps analysis sampled from a 30fps proxy alternates one- and
+            # two-frame gaps. Both belong to the measured cadence; treating the
+            # 66.7ms step as a hole would prevent any sustained confirmation.
+            max_gap = min(.76, 2.0 / cadence) if cadence > 0 else self.ball_stop.max_observation_gap_s
             continuous = previous is not None and 0 < f.t-previous.t <= max_gap + 1e-9
             if start is not None and (not non_table or not continuous):
                 if confirmed:

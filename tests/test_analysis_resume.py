@@ -4,7 +4,7 @@ import pytest
 from types import SimpleNamespace
 
 from snooker_ai.pipeline.analyzer import Analyzer
-from snooker_ai.types import AnalysisResult, FrameFeatures, StrikeCandidate, VideoMetadata
+from snooker_ai.types import AnalysisResult, EditMode, FrameFeatures, ShotRecord, StrikeCandidate, VideoMetadata
 from snooker_ai.utils.timebase import TimeMapper
 
 
@@ -57,6 +57,22 @@ def test_feature_caches_invalidate_detection_but_preserve_export_changes(config,
     assert analyzer._analysis_signature(source) == signature
     config._data["analysis"]["refine_fps"] = 20.0
     assert analyzer._analysis_signature(source) != signature
+
+
+@pytest.mark.parametrize("user_modified", [False, True])
+def test_rebuilt_replay_keeps_only_explicit_user_inclusion(config, tmp_path, monkeypatch, user_modified):
+    _, analyzer, result = _saved_analysis(config, tmp_path)
+    result.original_duration = 30
+    previous = ShotRecord(shot_id=1, cue_strike=10, clip_start=8, clip_end=15,
+                          included=True, user_modified=user_modified)
+    result.shots = [previous]
+    detected_replay = previous.model_copy(update={
+        "included": False, "possible_replay": True, "user_modified": False,
+    })
+    monkeypatch.setattr(analyzer.segmenter, "build", lambda *a, **k: [detected_replay])
+    analyzer._rebuild_segments(result, EditMode.STRICT)
+    assert result.shots[0].included == user_modified
+    assert result.shots[0].possible_replay
 
 
 @pytest.mark.parametrize("change", ["none", "source", "detection", "legacy"])

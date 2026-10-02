@@ -54,7 +54,7 @@ from snooker_ai.utils.video import open_capture, sampled_frames
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 20
+_CACHE_VERSION = 21
 
 
 class Analyzer:
@@ -289,6 +289,7 @@ class Analyzer:
                                   and self._rack_candidate_supported(c, rack_reference)]
 
             candidates = self.replay_det.mark_candidates(candidates, features)
+            candidates = self._recover_replay_returns(candidates, features, metadata.duration)
             features = self.state_machine.label(features)
 
         report(0.92, JobStatus.SEGMENTING.value, "Building shot segments")
@@ -368,6 +369,34 @@ class Analyzer:
         else:
             candidates = self.strike_det.detect_candidates(features)
         return self.replay_det.mark_candidates(candidates, features)
+
+    def _recover_replay_returns(
+        self, candidates: list[StrikeCandidate], features: list[FrameFeatures], duration: float,
+    ) -> list[StrikeCandidate]:
+        """Retain visible live rolls whose contact was hidden by a replay wipe."""
+        intervals = self.replay_det._stinger_intervals(features, candidates)
+        completed = {}
+        ordered = sorted(candidates, key=lambda c: c.timestamp)
+        times = [f.t for f in features]
+        for opening, _ in intervals:
+            prior = next((c for c in reversed(ordered) if c.timestamp < opening
+                          and c.confidence >= .40 and not c.possible_replay
+                          and not any(lo <= c.timestamp <= hi for lo, hi in intervals)), None)
+            if prior is None or prior.timestamp in completed:
+                continue
+            evidence = prior.evidence
+            end = float(evidence.get("refined_stop_timestamp", 0))
+            if (prior.timestamp <= end < opening
+                    and (evidence.get("refined_stop_confidence", 0) >= .70
+                         or evidence.get("refined_stop_upper_bound", 0) >= .5)):
+                completed[prior.timestamp] = end
+                continue
+            stop = self.segmenter.ball_stop.detect_stop(prior, features, duration, times=times)
+            if (stop.confirmed and prior.timestamp <= stop.physical_stop_timestamp < opening
+                    and (stop.end_confidence >= .70 or "upper_bound" in stop.reason)):
+                completed[prior.timestamp] = stop.physical_stop_timestamp
+        returning = self.replay_det.returning_live_candidates(candidates, features, completed)
+        return self._deduplicate_candidates(candidates+returning) if returning else candidates
 
     @staticmethod
     def _preparation_intervals(features: list[FrameFeatures]) -> list[tuple[float, float]]:
@@ -1194,8 +1223,9 @@ class Analyzer:
         known = sorted(existing_dense or [], key=lambda feature: feature.t)
         known_times = [feature.t for feature in known]
         priorities = {int(round(feature.t * 10000)): (
-            4 if feature.contact_window else 3 if feature.view_classified and 0 < i < len(known)-1
-            and max(feature.t-known[i-1].t,known[i+1].t-feature.t) <= 1.5/native_fps else 1
+            4 if feature.contact_window else 3 if feature.view_classified
+            and feature.observation_fps+1e-3 >= native_fps and 0 < i < len(known)-1
+            and max(feature.t-known[i-1].t,known[i+1].t-feature.t) <= 2.0/native_fps else 1
         ) for i,feature in enumerate(known)}
         window_index = 0
 
@@ -1236,12 +1266,16 @@ class Analyzer:
             if candidate is not None and settled(covered, candidate):
                 stop = stop_detector.detect_stop(candidate, covered, duration)
                 required_end = min(end, stop.stop_confirmation_timestamp + tail)
-                covered = covered[:bisect_right([feature.t for feature in covered], required_end + 1.5 / fps)]
-            max_gap = 1.5 / max(fps, 1.0)
+                covered = covered[:bisect_right([feature.t for feature in covered], required_end + 2.0 / fps)]
+            # Timestamp sampling from a faster proxy alternates adjacent and
+            # skipped proxy images. Reuse this measured cadence rather than
+            # decoding an already complete native window again.
+            max_gap = 2.0 / max(fps, 1.0)
             complete = bool(
                 len(covered) >= 2 and covered[0].t - start <= max_gap
                 and required_end - covered[-1].t <= max_gap
                 and all(right.t - left.t <= max_gap for left, right in zip(covered, covered[1:]))
+                and all(f.observation_fps <= 0 or f.observation_fps+1e-3 >= fps for f in covered)
             )
             if complete and (
                 priority < 3
@@ -1506,7 +1540,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 14,
+            "result_policy_version": 15,
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")
             },
@@ -1863,9 +1897,10 @@ class Analyzer:
             if abs(previous.cue_strike_timestamp - shot.cue_strike_timestamp) > 1.5:
                 continue
             unmatched.remove(best_idx)
-            shot.included = previous.included
-            shot.user_modified = previous.user_modified
-            shot.linked_live_shot_id = previous.linked_live_shot_id
+            if previous.user_modified:
+                shot.included = previous.included
+                shot.user_modified = True
+                shot.linked_live_shot_id = previous.linked_live_shot_id
         shots = self._score_importance(shots, result.features)
         edited, removed = self.segmenter.recompute_durations(shots, result.original_duration)
         result.shots = shots
