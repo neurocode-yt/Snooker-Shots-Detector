@@ -88,6 +88,17 @@ camera_view:
   replay_graphics_score: 0.55
   slowmo_flow_threshold: 0.35
 
+# Stable player-name appearance in supported lower score overlays. The learned
+# target is retained across native-rate seeks; unknown layouts remain unknown.
+broadcast_context:
+  learning_samples: 8
+  learning_seconds: 3.0
+  same_identity_similarity: 0.78
+  foreign_identity_similarity: 0.52
+  foreign_samples: 3
+  foreign_seconds: 1.0
+  identity_max_gap_seconds: 2.0
+
 # Table localisation (HSV green cloth + geometry)
 table_detection:
   hsv_lower: [35, 40, 40]
@@ -201,6 +212,9 @@ strike_fusion:
 
 # Ball-stop detection — baseline-relative decay (see event_fusion/ball_stop.py)
 ball_stop:
+  # End usable edit footage at sustained non-table cutaways; this does not
+  # declare an unseen physical all-ball stop.
+  non_table_cutaway_boundary_confirmation_seconds: 3.0
   stationary_confirmation_seconds: 0.50
   settle_seconds: 0.50          # continuous valid stillness required
   min_motion_seconds: 0.45      # don't end sooner than this after strike
@@ -209,7 +223,7 @@ ball_stop:
   # confirmed stop and keeps genuine cushion-to-cushion rolls beyond 7s.
   max_seconds_after_strike: 60.0
   motion_start_normalized_speed: 0.80
-  motion_stop_normalized_speed: 0.60
+  motion_stop_normalized_speed: 0.60  # slow-roll pixel evidence also keeps motion open
   motion_start_activity: 0.18
   motion_stop_activity: 0.10
   stationary_tolerance_ball_diameters: 0.08

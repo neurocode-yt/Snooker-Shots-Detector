@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 
 from snooker_ai.pipeline.analyzer import Analyzer
 from snooker_ai.scene_detection.view_classifier import ViewClassifier
@@ -49,3 +50,26 @@ def test_pathological_all_replay_checkpoint_is_repaired(config, tmp_job_dir):
     assert all(feature.view_type == CameraViewType.MAIN_TABLE for feature in features)
     assert scenes[0].view_type == CameraViewType.MAIN_TABLE
     assert scenes[0].is_replay_candidate is False
+
+
+def test_clipped_cloth_is_local_ball_view_not_complete_table(config):
+    frame = np.zeros((360, 640, 3), dtype=np.uint8)
+    frame[180:, :] = (40, 140, 40)
+    classifier = ViewClassifier(config)
+    view, _, extra = classifier.classify(frame)
+    assert view == CameraViewType.BALL_CLOSEUP
+    assert extra["cloth_clipped"] and not extra["full_table_candidate"]
+
+
+def test_partial_table_with_saturated_banner_is_not_labelled_replay(config):
+    frame = np.zeros((360, 640, 3), dtype=np.uint8)
+    frame[270:325, 30:610] = (40, 140, 40)
+    for x in range(0, frame.shape[1], 8):
+        colour = (0, 0, 255) if (x // 8) % 2 else (255, 0, 0)
+        cv2.rectangle(frame, (x, 0), (min(x + 7, frame.shape[1] - 1), 44), colour, -1)
+    classifier = ViewClassifier(config)
+    view, ratio, extra = classifier.classify(frame)
+    assert classifier.partial_table_ratio <= ratio < classifier.main_table_ratio
+    assert extra["replay_graphic_score"] >= classifier.replay_score_thr
+    assert not extra["is_replay_candidate"]
+    assert view == CameraViewType.BALL_CLOSEUP

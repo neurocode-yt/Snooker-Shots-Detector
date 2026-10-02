@@ -107,6 +107,9 @@ class BallStopDetector:
         self.stale_occlusion_quiet_s = float(
             bcfg.get("stale_occlusion_quiet_seconds", self.confirm_s)
         )
+        self.handling_confirmation_s = max(
+            0.0, float(bcfg.get("handling_boundary_confirmation_seconds", 0.20))
+        )
 
     # ------------------------------------------------------------------ evidence
 
@@ -119,7 +122,18 @@ class BallStopDetector:
             return float(default)
 
     def _is_valid_observation(self, f: FrameFeatures) -> bool:
-        """Whether this frame is allowed to contribute stationary evidence."""
+        """Whether this frame can supply physical ball-motion evidence.
+
+        A close-up can prove that a visible ball is moving, but cannot prove
+        that every ball on the table is stationary. Stationary evidence has a
+        separate full-table gate below.
+        """
+        if not bool(getattr(f, "match_context_valid", True)):
+            return False
+        if bool(getattr(f, "broadcast_replay", False)):
+            return False
+        if bool(getattr(f, "table_handling", False)):
+            return False
         if not bool(getattr(f, "observation_valid", True)):
             return False
         if not bool(getattr(f, "table_observable", True)):
@@ -139,6 +153,13 @@ class BallStopDetector:
         if f.camera_motion_magnitude > 12.0 and f.table_confidence < 0.45:
             return False
         return True
+
+    def _is_full_table_observation(self, f: FrameFeatures) -> bool:
+        """Whether all-table stillness may be inferred from this view."""
+        return bool(
+            self._is_valid_observation(f)
+            and getattr(f, "table_full_view", True)
+        )
 
     def _normalised_speed(self, f: FrameFeatures) -> float:
         speed = self._get_float(f, "max_ball_normalized_speed")
@@ -216,7 +237,9 @@ class BallStopDetector:
         raw = self._get_float(f, "motion_raw", self._get_float(f, "motion_score"))
         residual_max = self._get_float(f, "residual_motion_max")
         return bool(
-            raw <= self.quiet_raw_threshold
+            not getattr(f, "ambiguous_ball_motion", False)
+            and getattr(f, "table_full_view", True)
+            and raw <= self.quiet_raw_threshold
             and residual_max <= self.quiet_residual_max
             and speed <= self.quiet_speed_max
             and self._get_float(f, "ball_residual_motion") < self.residual_stop
@@ -230,6 +253,8 @@ class BallStopDetector:
         already_moving: bool,
         baseline: float,
     ) -> bool:
+        if getattr(f, "ambiguous_ball_motion", False):
+            return True
         speed = self._normalised_speed(f)
         activity = self._activity(f)
         local_residual = self._get_float(f, "ball_residual_motion")
@@ -247,7 +272,11 @@ class BallStopDetector:
         ):
             return False
 
-        if already_moving and occluded_count > 0:
+        if (
+            already_moving
+            and occluded_count > 0
+            and getattr(f, "table_full_view", True)
+        ):
             # A previously tracked moving ball hidden by a player/graphic cannot
             # be declared stationary while it remains unresolved.
             return True
@@ -281,12 +310,15 @@ class BallStopDetector:
         features: list[FrameFeatures],
         duration: float,
         times: list[float] | None = None,
+        next_strike_timestamp: float | None = None,
     ) -> StopDetection:
         """Return physical stop and its later confirmation timestamp.
 
-        If stillness cannot be confirmed, the practical duration cap is returned
-        and the result is marked for manual review. This prevents a false track
-        from creating a match-length clip while preserving the uncertainty.
+        If stillness cannot be confirmed, return an explicitly unconfirmed
+        bound. A subsequent confirmed strike or sustained non-cue ball handling
+        can shorten the practical horizon without being presented as an observed
+        physical stop. The caller can retain or trim footage according to its
+        editing policy while preserving this uncertainty.
         """
         duration = max(0.0, float(duration))
         strike_t = clamp(float(strike.timestamp), 0.0, duration)
@@ -295,10 +327,21 @@ class BallStopDetector:
             if self.max_after_strike is not None
             else duration
         )
+        bounded_by_next_strike = False
+        if next_strike_timestamp is not None:
+            next_t = float(next_strike_timestamp)
+            if strike_t < next_t <= cap_t:
+                # Evidence from the next strike belongs to another shot.
+                cap_t = max(strike_t, next_t - 1e-6)
+                bounded_by_next_strike = True
         if times is None:
             times = [f.t for f in features]
         lo = bisect_left(times, strike_t - 0.25)
-        hi = bisect_right(times, cap_t + 1e-6)
+        hi = (
+            bisect_left(times, float(next_strike_timestamp))
+            if bounded_by_next_strike
+            else bisect_right(times, cap_t + 1e-6)
+        )
         window = features[lo:hi]
         if not window:
             return StopDetection(
@@ -328,6 +371,11 @@ class BallStopDetector:
         saw_ball_tracks = False
         valid_after_strike = 0
         previous_t: float | None = None
+        previous_scene_id: int | None = None
+        handling_since: float | None = None
+        unseen_all_table_interval = False
+        full_motion_after_gap = 0
+        stop_follows_unseen_interval = False
 
         for f in window:
             if f.t < strike_t:
@@ -336,22 +384,59 @@ class BallStopDetector:
             # Sparse proposals and separately decoded windows can leave holes
             # in the timeline. Elapsed unobserved time is not stillness.
             gap = previous_t is not None and f.t - previous_t > self.max_observation_gap_s + 1e-9
-            valid = self._is_valid_observation(f)
-            if gap or not valid:
+            scene_id = int(getattr(f, "camera_scene_id", 0) or 0)
+            scene_changed = previous_scene_id is not None and scene_id != previous_scene_id
+            previous_scene_id = scene_id
+            valid = self._is_valid_observation(f) and not scene_changed
+            full_table = self._is_full_table_observation(f) and not scene_changed
+
+            handling = bool(
+                getattr(f, "table_handling", False)
+                and getattr(f, "match_context_valid", True)
+                and not getattr(f, "broadcast_replay", False)
+                and f.view_type not in {
+                    CameraViewType.REPLAY,
+                    CameraViewType.SLOW_MOTION_REPLAY,
+                }
+            )
+            if moving and handling:
+                if handling_since is None or gap or scene_changed:
+                    handling_since = f.t
+                if f.t - handling_since + 1e-9 >= self.handling_confirmation_s:
+                    bound = clamp(handling_since, strike_t, cap_t)
+                    return StopDetection(
+                        motion_start=motion_start,
+                        last_ball_motion_timestamp=clamp(last_motion, strike_t, bound),
+                        physical_stop_timestamp=bound,
+                        stop_confirmation_timestamp=f.t,
+                        end_confidence=0.30,
+                        start_confidence=start_conf,
+                        confirmed=False,
+                        manual_review_required=True,
+                        reason="unconfirmed_ball_handling_boundary",
+                    )
+            else:
+                handling_since = None
+
+            if gap or not full_table:
                 if unknown_since is None:
                     unknown_since = previous_t if gap else f.t
                 # Unknown evidence breaks stillness confirmation.  It does not
                 # end motion and does not fabricate a potted/stationary ball.
                 still_since = None
                 resumed_motion_run = 0
-                motion_run = 0
+                if gap or not valid:
+                    motion_run = 0
                 quiet_occlusion_since = None
                 stale_occlusion_cleared = False
+                if moving:
+                    unseen_all_table_interval = True
+                    full_motion_after_gap = 0
             previous_t = f.t
             if not valid:
                 continue
 
-            if unknown_since is not None:
+            if full_table and unknown_since is not None:
                 unknown_total += max(0.0, f.t - unknown_since)
                 unknown_since = None
 
@@ -368,7 +453,8 @@ class BallStopDetector:
             # following interval is confirmation look-ahead only.
             occluded_count = int(getattr(f, "occluded_ball_count", 0) or 0)
             quiet_small_occlusion = bool(
-                moving
+                full_table
+                and moving
                 and 0 < occluded_count <= self.stale_occlusion_max_count
                 and int(getattr(f, "moving_ball_count", 0) or 0) == 0
                 and self._quiet_frame_override(f, self._normalised_speed(f))
@@ -392,6 +478,8 @@ class BallStopDetector:
                         motion_start = max(strike_t, f.t)
                     if motion_run >= self.min_motion_samples:
                         moving = True
+                        if not full_table:
+                            unseen_all_table_interval = True
                         start_conf = 0.92 if self._has_track_evidence(f) else 0.72
                         last_motion = f.t
                         still_since = None
@@ -402,6 +490,14 @@ class BallStopDetector:
             if is_moving:
                 if still_since is None:
                     last_motion = f.t
+                    if full_table:
+                        # Motion is observed again after the camera returns, so
+                        # any eventual stop can be timed within this new view.
+                        # A single tracker reacquisition jump cannot establish
+                        # that motion actually continued through the hidden gap.
+                        full_motion_after_gap += 1
+                        if full_motion_after_gap >= self.min_motion_samples:
+                            unseen_all_table_interval = False
                     resumed_motion_run = 0
                     continue
 
@@ -410,12 +506,24 @@ class BallStopDetector:
                 # Hough and component detections can alternate on a slow roll;
                 # requiring adjacent moving samples would trim that ball early.
                 resumed_motion_run += 1
-                if resumed_motion_run >= self.stop_motion_reconfirm_samples:
+                if (resumed_motion_run >= self.stop_motion_reconfirm_samples
+                        or f.ambiguous_ball_motion):
                     last_motion = f.t
+                    if full_table:
+                        full_motion_after_gap += 1
+                        if (full_motion_after_gap >= self.min_motion_samples
+                                or resumed_motion_run >= self.min_motion_samples):
+                            unseen_all_table_interval = False
                     still_since = None
                     resumed_motion_run = 0
                 continue
 
+            if not full_table:
+                # A stationary white in a close-up says nothing about balls
+                # outside that view. It contributes neither last-motion time
+                # nor confirmation of an all-ball stop.
+                continue
+            full_motion_after_gap = 0
             if f.t < strike_t + self.min_travel_s:
                 continue
             if still_since is None:
@@ -425,6 +533,7 @@ class BallStopDetector:
                     if stale_occlusion_cleared and quiet_occlusion_since is not None
                     else f.t
                 )
+                stop_follows_unseen_interval = unseen_all_table_interval
             if f.t - still_since + 1e-9 < self.confirm_s:
                 continue
 
@@ -435,9 +544,18 @@ class BallStopDetector:
                 confidence = min(confidence, 0.68)
             if unknown_total > 0:
                 confidence -= min(0.25, unknown_total * 0.08)
+            if stop_follows_unseen_interval:
+                # The table is now confirmed quiet, but cessation may have
+                # happened off camera. This timestamp is its observed upper
+                # bound, not a claimed exact physical stopping instant.
+                confidence = min(confidence, 0.68)
             if valid_after_strike < 4:
                 confidence = min(confidence, 0.55)
-            review = confidence < 0.70 or unknown_total >= self.unknown_review_s
+            review = (
+                confidence < 0.70
+                or unknown_total >= self.unknown_review_s
+                or stop_follows_unseen_interval
+            )
             result = StopDetection(
                 motion_start=motion_start,
                 last_ball_motion_timestamp=clamp(last_motion, strike_t, physical_stop),
@@ -448,12 +566,16 @@ class BallStopDetector:
                 confirmed=True,
                 manual_review_required=review,
                 reason=(
-                    "confirmed_stale_occlusion_override"
-                    if stale_occlusion_cleared
+                    "confirmed_stationary_after_unseen_interval_upper_bound"
+                    if stop_follows_unseen_interval
                     else (
-                        "confirmed_after_unknown_gap"
-                        if unknown_total
-                        else "confirmed_stationary"
+                        "confirmed_stale_occlusion_override"
+                        if stale_occlusion_cleared
+                        else (
+                            "confirmed_after_unknown_gap"
+                            if unknown_total
+                            else "confirmed_stationary"
+                        )
                     )
                 ),
             )
@@ -469,6 +591,18 @@ class BallStopDetector:
 
         # No confirmed stop. Keep the shot through the practical bound and mark
         # the boundary for review; a false track must not consume the source.
+        if moving and bounded_by_next_strike:
+            return StopDetection(
+                motion_start=motion_start,
+                last_ball_motion_timestamp=clamp(last_motion, strike_t, cap_t),
+                physical_stop_timestamp=cap_t,
+                stop_confirmation_timestamp=cap_t,
+                end_confidence=0.20,
+                start_confidence=start_conf,
+                confirmed=False,
+                manual_review_required=True,
+                reason="unobserved_stop_before_next_strike",
+            )
         if moving and cap_t < duration - 1e-6:
             return StopDetection(
                 motion_start=motion_start if moving else strike_t,
@@ -479,10 +613,18 @@ class BallStopDetector:
                 start_confidence=start_conf,
                 confirmed=False,
                 manual_review_required=True,
-                reason="max_duration_review_cap",
+                reason=(
+                    "unobserved_all_ball_stop_review_cap"
+                    if unseen_all_table_interval
+                    else "max_duration_review_cap"
+                ),
             )
 
-        reason = "motion_not_confirmed" if moving else "no_sustained_ball_motion"
+        reason = (
+            "unobserved_all_ball_stop"
+            if moving and unseen_all_table_interval
+            else ("motion_not_confirmed" if moving else "no_sustained_ball_motion")
+        )
         return StopDetection(
             motion_start=motion_start if moving else strike_t,
             last_ball_motion_timestamp=clamp(last_motion, strike_t, cap_t),

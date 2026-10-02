@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+from math import isfinite
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -246,16 +247,19 @@ class Exporter:
             # interval sanity checks below still apply to them.
             contract_shot = not shot.user_modified
             minimum_clip = max(0.0, float(shot.evidence.get("minimum_clip_seconds", 0)))
-            available = max(0.0, source_duration - shot.clip_start) if source_duration > 0 else minimum_clip
+            available_end = min(source_duration if source_duration > 0 else float("inf"),
+                                float(shot.evidence.get("usable_source_end_timestamp", float("inf"))))
+            available = max(0.0, available_end - shot.clip_start) if isfinite(available_end) else minimum_clip
             if contract_shot and shot.duration() + end_tolerance < min(minimum_clip, available):
                 raise ValueError(f"Shot {shot.shot_id} is shorter than its minimum viewing time")
             minimum_after = max(0.0, float(shot.evidence.get("minimum_strike_visibility_seconds", 0)))
-            available_after = max(0.0, source_duration - shot.cue_strike) if source_duration > 0 else minimum_after
+            available_after = max(0.0, available_end - shot.cue_strike) if isfinite(available_end) else minimum_after
             if contract_shot and shot.clip_end - shot.cue_strike + end_tolerance < min(minimum_after, available_after):
                 raise ValueError(f"Shot {shot.shot_id} cuts away before its minimum post-impact time")
 
             expected_start = max(
-                0.0, shot.cue_strike_timestamp - pre_roll
+                0.0, shot.cue_strike_timestamp - pre_roll,
+                float(shot.evidence.get("usable_source_start_timestamp", 0)),
             )
             # A fast next shot may have shortened this pre-roll to the
             # previous shot's end; the start may then sit anywhere between
@@ -287,6 +291,7 @@ class Exporter:
             ))
             expected_end = min(
                 source_duration if source_duration > 0 else float("inf"),
+                available_end,
                 max(
                     shot.physical_stop_timestamp - end_trim,
                     minimum_end,

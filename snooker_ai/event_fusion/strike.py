@@ -107,6 +107,8 @@ class StrikeDetector:
 
     @staticmethod
     def _valid(f: FrameFeatures) -> bool:
+        if not f.match_context_valid or f.broadcast_replay or f.table_handling:
+            return False
         if not bool(getattr(f, "observation_valid", True)):
             return False
         if not bool(getattr(f, "table_observable", True)):
@@ -116,6 +118,10 @@ class StrikeDetector:
         if f.view_type in (CameraViewType.REPLAY, CameraViewType.SLOW_MOTION_REPLAY):
             return False
         return f.table_confidence >= 0.18 or f.view_type in TABLE_VIEWS
+
+    @staticmethod
+    def _same_view(first: FrameFeatures, second: FrameFeatures) -> bool:
+        return first.camera_scene_id == second.camera_scene_id
 
     def _has_cue_kinematics(self, features: list[FrameFeatures]) -> bool:
         reliable = sum(
@@ -129,7 +135,10 @@ class StrikeDetector:
     def _stationary_ratio(self, frames: list[FrameFeatures]) -> float:
         if not frames:
             return 0.0
-        ratio = sum(self._cue_speed(f) <= self.stationary_speed for f in frames) / len(frames)
+        ratio = sum((f.cue_ball_stable_normalized_speed
+                     if f.cue_ball_stable_normalized_speed is not None
+                     else self._cue_speed(f)) <= self.stationary_speed
+                    for f in frames) / len(frames)
         points = [f for f in frames if f.cue_ball_x is not None and f.cue_ball_y is not None]
         if len(points) >= 3 and points[-1].t - points[0].t >= 0.15:
             xy = np.array([(f.cue_ball_x, f.cue_ball_y) for f in points])
@@ -178,12 +187,14 @@ class StrikeDetector:
             x
             for x in features[pre_lo:pre_hi]
             if self._valid(x)
+            and self._same_view(x, f)
             and self._track_conf(x) >= self.min_track_conf * 0.7
         ]
         post = [
             x
             for x in features[post_lo:post_hi]
             if self._valid(x)
+            and self._same_view(x, f)
             and self._track_conf(x) >= self.min_track_conf * 0.7
         ]
 
@@ -237,7 +248,7 @@ class StrikeDetector:
             else 0.0
         )
         current_speed = self._cue_speed(f)
-        previous_speed = self._cue_speed(features[idx - 1]) if idx > 0 else 0.0
+        previous_speed = self._cue_speed(features[idx - 1]) if idx > 0 and self._same_view(features[idx - 1], f) else current_speed
         accel = max(
             self._cue_accel(f),
             (current_speed - previous_speed)
@@ -259,6 +270,8 @@ class StrikeDetector:
         cue_approach = max(
             [self._value(x, "cue_approach_speed") for x in post] or [0.0]
         )
+        pre_address = max([self._value(x, "cue_contact_score") for x in pre
+                           if x.cue_tip_visible and x.cue_tip_distance_to_ball <= 3*max(x.ball_diameter_px, 1)] or [0.0])
         # A real cue-ball launch has a coherent displacement over consecutive
         # observations.  One-frame Hough identity jumps caused by a walking
         # player often have a large apparent speed but immediately reverse or
@@ -288,6 +301,31 @@ class StrikeDetector:
             if total > 1e-6:
                 direction_consistency = float(np.clip(displacement / total, 0, 1))
         diameter = max(self._value(f, "ball_diameter_px"), 1.0)
+        anchor_direction = 1.0
+        anchor_excursion = 0.0
+        reliable_pre = [x for x in pre if x.cue_ball_detected and self._track_conf(x) >= .55
+                        and x.cue_ball_x is not None and x.cue_ball_y is not None]
+        if reliable_pre and points:
+            anchor = np.array([reliable_pre[-1].cue_ball_x, reliable_pre[-1].cue_ball_y])
+            anchored = np.vstack((anchor, np.asarray(points)))
+            path = float(np.sum(np.linalg.norm(np.diff(anchored, axis=0), axis=1)))
+            anchor_direction = float(np.linalg.norm(anchored[-1]-anchor)) / max(path, 1e-6)
+            anchor_excursion = float(np.max(np.linalg.norm(anchored[1:]-anchor, axis=1))) / diameter
+        stable_post = [x.cue_ball_stable_normalized_speed for x in post
+                       if x.cue_ball_stable_normalized_speed is not None]
+        # The first collision can bend the white's path inside the post window.
+        # Verify the initial three reliable points separately, before asking a
+        # longer trajectory to remain straight through that physical collision.
+        initial = point_frames[:3]
+        initial_direction = initial_displacement = 0.0
+        if (len(initial) == 3 and initial[0].t-t <= .10
+                and initial[-1].t-initial[0].t <= .20
+                and all(self._cue_speed(x) >= self.continue_speed for x in initial)):
+            xy = np.asarray([(x.cue_ball_x, x.cue_ball_y) for x in initial])
+            net = float(np.linalg.norm(xy[-1]-xy[0]))
+            path = float(np.sum(np.linalg.norm(np.diff(xy, axis=0), axis=1)))
+            initial_direction = net / max(path, 1e-6)
+            initial_displacement = net / diameter
         return {
             "stationary_ratio": float(stationary_ratio),
             "sustained_ratio": float(sustained_ratio),
@@ -306,6 +344,13 @@ class StrikeDetector:
             "track_confidence": float(track_conf),
             "cue_displacement_diameters": float(displacement / diameter),
             "cue_direction_consistency": float(direction_consistency),
+            "anchor_direction_consistency": anchor_direction,
+            "anchor_excursion_diameters": anchor_excursion,
+            "stable_cue_observed": float(bool(stable_post)),
+            "stable_cue_motion_count": float(sum(v >= self.continue_speed for v in stable_post)),
+            "stable_cue_peak_speed": float(max(stable_post or [0])),
+            "initial_launch_direction": initial_direction,
+            "initial_launch_displacement": initial_displacement,
             "pre_sample_count": float(len(pre)),
             "pre_motion_quiet_ratio": float(pre_quiet_ratio),
             "pre_motion_raw_median": pre_raw_median,
@@ -314,10 +359,35 @@ class StrikeDetector:
             "cue_tip_visible_count": float(tip_visible),
             "cue_contact_score": float(cue_contact),
             "cue_approach_speed": float(cue_approach),
+            "pre_cue_address_score": float(pre_address),
             "cue_geometry_confirmed": float(
                 cue_contact >= 0.20 or cue_approach >= 0.15
             ),
         }
+
+    @staticmethod
+    def _identity_return(metrics: dict[str, float]) -> bool:
+        # A mistaken bridge identity can travel away from a stationary white
+        # and return to its exact original centre. A trajectory beginning at
+        # that wrong identity alone can look straight. Include the real quiet
+        # anchor; strong contact or coherent initial launch can justify a true
+        # early collision and return instead.
+        return bool(metrics.get("anchor_excursion_diameters", 0) >= 1.5
+                    and metrics.get("anchor_direction_consistency", 1) < .20
+                    and metrics.get("pre_cue_address_score", 0) < .65
+                    and not (metrics.get("initial_launch_displacement", 0) >= .50
+                             and metrics.get("initial_launch_direction", 0) >= .80))
+
+    @staticmethod
+    def _stabilized_launch_confirmed(metrics: dict[str, float]) -> bool:
+        return bool(metrics.get("stationary_ratio", 0) >= .80
+                    and metrics.get("pre_ball_quiet_ratio", 0) >= .80
+                    and metrics.get("stable_cue_motion_count", 0) >= 3
+                    and metrics.get("stable_cue_peak_speed", 0) >= 4
+                    and metrics.get("cue_displacement_diameters", 0) >= .75
+                    and metrics.get("cue_direction_consistency", 0) >= .80
+                    and metrics.get("track_confidence", 0) >= .70
+                    and metrics.get("pre_cue_address_score", 0) >= .20)
 
     def _transition_confirmed(self, metrics: dict[str, float]) -> bool:
         object_tracks_quiet = bool(
@@ -331,6 +401,19 @@ class StrikeDetector:
             metrics["cue_geometry_confirmed"] >= 0.5
             and metrics["cue_contact_score"] >= self.cue_contact_noise_override
         )
+        stabilized_launch = self._stabilized_launch_confirmed(metrics)
+        coherent_ball_launch = stabilized_launch or bool(
+            metrics["stationary_ratio"] >= 0.80
+            and metrics["pre_ball_quiet_ratio"] >= 0.80
+            and metrics["post_peak_cue_speed"] >= 4.0
+            and ((metrics["cue_displacement_diameters"] >= 1.25
+                 and metrics["cue_direction_consistency"] >= 0.80)
+                 or (metrics.get("initial_launch_displacement", 0) >= 1.25
+                     and metrics.get("initial_launch_direction", 0) >= .80
+                     and metrics.get("pre_cue_address_score", 0) >= .70
+                     and metrics["cue_contact_score"] >= .40))
+            and metrics["track_confidence"] >= 0.70
+        )
         # A player starting the cue action can contaminate one coarse residual
         # sample immediately before impact.  Strong cue-at-ball geometry plus a
         # verified white-ball launch may tolerate that isolated foreground
@@ -343,6 +426,11 @@ class StrikeDetector:
                 and metrics["pre_motion_quiet_ratio"]
                 >= self.contact_pre_quiet_min_ratio
             )
+            or (coherent_ball_launch and metrics["pre_motion_quiet_ratio"] >= 0.35
+                and metrics["pre_motion_raw_median"] <= 0.50)
+            or (coherent_ball_launch and metrics.get("pre_cue_address_score", 0) >= 0.70
+                and metrics["pre_motion_raw_median"] <= 0.50)
+            or (stabilized_launch and metrics["pre_motion_raw_median"] <= .50)
         )
         uninterrupted_launch = bool(
             metrics["sustained_run"] >= self.min_sustained_frames
@@ -365,10 +453,12 @@ class StrikeDetector:
             )
         )
         return bool(
-            metrics["stationary_ratio"] >= 0.65
+            not self._identity_return(metrics)
+            and metrics["stationary_ratio"] >= 0.65
             and metrics["pre_sample_count"] >= 2
             and pre_motion_quiet
-            and metrics["pre_motion_raw_median"] <= self.pre_quiet_max_motion
+            and (metrics["pre_motion_raw_median"] <= self.pre_quiet_max_motion
+                 or (coherent_ball_launch and metrics["pre_motion_raw_median"] <= 0.50))
             # Object-ball Hough tracks can produce an isolated speed spike while
             # the cloth and the real cue ball are visibly still.  Do not let one
             # such identity jump suppress an otherwise complete cue-contact +
@@ -376,9 +466,12 @@ class StrikeDetector:
             and (object_tracks_quiet or contact_overrides_object_noise)
             and speed_crossed
             and (uninterrupted_launch or contact_bridged_launch)
-            and metrics["cue_displacement_diameters"] >= 0.25
+            and metrics["cue_displacement_diameters"] >= 0.50
             and metrics["cue_direction_consistency"] >= 0.40
             and metrics["track_confidence"] >= self.min_track_conf * 0.90
+            and (metrics.get("stable_cue_observed", 0) < .5
+                 or (metrics.get("stable_cue_motion_count", 0) >= 2
+                     and metrics.get("stable_cue_peak_speed", 0) >= .75*self.start_speed))
         )
 
     def _sparse_dense_transition_confirmed(self, metrics: dict[str, float]) -> bool:
@@ -391,7 +484,8 @@ class StrikeDetector:
         fallback cannot turn a generic residual spike into a shot.
         """
         return bool(
-            metrics.get("pre_sample_count", 0.0) >= 3
+            not self._identity_return(metrics)
+            and metrics.get("pre_sample_count", 0.0) >= 3
             and metrics.get("stationary_ratio", 0.0) >= 0.50
             and metrics.get("pre_ball_quiet_ratio", 0.0) >= self.fallback_pre_ball_quiet_min_ratio
             and (
@@ -406,6 +500,8 @@ class StrikeDetector:
             and metrics.get("cue_displacement_diameters", 0.0) >= 0.75
             and metrics.get("cue_direction_consistency", 0.0) >= 0.35
             and metrics.get("track_confidence", 0.0) >= self.min_track_conf * 0.80
+            and (metrics.get("stable_cue_observed", 0) < .5
+                 or metrics.get("stable_cue_motion_count", 0) >= 2)
         )
 
     def _ball_onset_metrics(
@@ -434,11 +530,13 @@ class StrikeDetector:
             x
             for x in features[pre_lo:pre_hi]
             if self._valid(x)
+            and self._same_view(x, f)
         ]
         post = [
             x
             for x in features[post_lo:post_hi]
             if self._valid(x)
+            and self._same_view(x, f)
         ]
         raw = [self._value(x, "motion_raw", self._value(x, "motion_score")) for x in pre]
         pre_quiet = (
@@ -605,6 +703,8 @@ class StrikeDetector:
 
         if cue_available:
             for i in range(1, len(features)):
+                if not self._valid(features[i]):
+                    continue
                 metrics = self._transition_metrics(features, i, times)
                 if self._transition_confirmed(metrics):
                     proposals.append((i, metrics))
@@ -681,19 +781,127 @@ class StrikeDetector:
                 "cue_ball_motion_confirmed": 1.0 if cue_available else 0.0,
                 **metrics,
             }
+            contact_t, contact_start = self._occluded_contact_time(
+                features, idx, times, max(metrics.get("cue_contact_score", 0.0),
+                                         metrics.get("pre_cue_address_score", 0.0)),
+                stabilized_launch=self._stabilized_launch_confirmed(metrics))
+            if contact_t < f.t:
+                evidence["impact_occlusion_contact"] = 1.0
             candidates.append(
                 StrikeCandidate(
-                    timestamp=f.t,
+                    timestamp=contact_t,
                     confidence=float(np.clip(score, 0, 1)),
                     evidence=evidence,
-                    uncertainty_start=max(0.0, f.t - self.refine_r),
-                    uncertainty_end=f.t + self.refine_r,
+                    uncertainty_start=contact_start if contact_t < f.t else max(0.0, f.t-self.refine_r),
+                    uncertainty_end=f.t if contact_t < f.t else f.t+self.refine_r,
                     camera_view=f.view_type,
                     possible_replay=False,
                 )
             )
         logger.info("Found %d cue-strike candidates", len(candidates))
+        for inferred in self._camera_contact_candidates(features):
+            if not any(abs(c.timestamp-inferred.timestamp) < self.min_dist for c in candidates):
+                candidates.append(inferred)
+        candidates.sort(key=lambda c: c.timestamp)
         return candidates
+
+    def _occluded_contact_time(self, features: list[FrameFeatures], index: int,
+                               times: list[float], confirmed_contact: float = 0.0,
+                               stabilized_launch: bool = False) -> tuple[float, float]:
+        """Bound short impact occlusion by the final still and first rolling white."""
+        current = features[index]
+        lo = bisect_left(times, current.t-(.35 if stabilized_launch else .20))
+        recent = features[lo:index+1]
+        if not recent or any(not self._same_view(f, current) or not self._valid(f) for f in recent):
+            return current.t, current.t
+        if max(current.cue_contact_score, confirmed_contact,
+               max(f.cue_contact_score for f in recent)) < (.20 if stabilized_launch else .40):
+            return current.t, current.t
+        for anchor_index in range(len(recent)-2, -1, -1):
+            anchor = recent[anchor_index]
+            anchor_speed = (anchor.cue_ball_stable_normalized_speed
+                            if stabilized_launch and anchor.cue_ball_stable_normalized_speed is not None
+                            else self._cue_speed(anchor))
+            if (anchor.cue_ball_detected and anchor_speed <= self.stationary_speed
+                and self._track_conf(anchor) >= 0.65):
+                onset = recent[anchor_index+1]
+                if not onset.cue_ball_detected or self._cue_speed(onset) >= self.start_speed:
+                    return onset.t, anchor.t
+                break
+        return current.t, current.t
+
+    def _camera_contact_candidates(self, features: list[FrameFeatures], sparse: bool = False) -> list[StrikeCandidate]:
+        """Associate an impact hidden in a low view with rolling in the next view.
+
+        Never subtract coordinates between cameras. Require cue-address evidence,
+        a stationary white before its disappearance, a new local motion burst,
+        and a coherent moving white reacquired after a cut. This is inferred
+        contact with an explicit uncertainty interval, not an exact visible tap.
+        """
+        times = [f.t for f in features]
+        result = []
+        for index, cut in enumerate(features):
+            if index == 0 or cut.scene_cut_score < 0.5:
+                continue
+            old_scene = features[index-1].camera_scene_id
+            prior = features[bisect_left(times, cut.t-2.5):index]
+            visible = [f for f in prior if self._valid(f) and f.camera_scene_id == old_scene
+                       and f.cue_ball_detected and self._track_conf(f) >= 0.65]
+            if not visible:
+                continue
+            anchor = visible[-1]
+            if not 0.05 <= cut.t-anchor.t <= (1.8 if sparse else 1.2):
+                continue
+            quiet = [f for f in visible if anchor.t-0.55 <= f.t <= anchor.t]
+            if len(quiet) < 2 or self._stationary_ratio(quiet) < 0.80:
+                continue
+            if sum(f.max_ball_normalized_speed <= self.pre_quiet_max_ball_speed for f in quiet)/len(quiet) < 0.80:
+                continue
+            if not any(f.cue_tip_visible and f.cue_tip_distance_to_ball <= 3.0*max(f.ball_diameter_px, 1)
+                       for f in quiet):
+                continue
+            hidden = [f for f in prior if f.t > anchor.t and f.camera_scene_id == old_scene
+                      and self._valid(f) and not f.cue_ball_detected]
+            if len(hidden) < (1 if sparse else 2):
+                continue
+            baseline = float(np.median([f.motion_raw for f in quiet]))
+            bursts = [f for f in hidden if f.motion_raw >= max(0.60, baseline+0.30)
+                      and f.max_ball_normalized_speed >= 1.0]
+            if not bursts and not sparse:
+                continue
+            post = [f for f in features[index:bisect_right(times, cut.t+(1.5 if sparse else 0.8))]
+                    if self._valid(f) and f.camera_scene_id == cut.camera_scene_id
+                    and f.cue_ball_detected and self._track_conf(f) >= 0.65
+                    and f.cue_ball_x is not None and f.cue_ball_y is not None]
+            if len(post) < 3:
+                continue
+            # A hidden impact must already be rolling when it is reacquired.
+            # Quiet reacquisition followed by a later launch is another shot.
+            initial = post[:3]
+            initial_xy = np.array([(f.cue_ball_x, f.cue_ball_y) for f in initial])
+            sparse_steps = np.linalg.norm(np.diff(initial_xy, axis=0), axis=1)
+            if not sparse and sum(f.cue_ball_normalized_speed >= self.start_speed for f in initial[1:]) < 2:
+                continue
+            if sparse and max(sparse_steps) < .5*max(1, initial[-1].ball_diameter_px):
+                continue
+            xy = np.array([(f.cue_ball_x, f.cue_ball_y) for f in post])
+            displacement = float(np.linalg.norm(xy[-1]-xy[0]))
+            path = float(np.sum(np.linalg.norm(np.diff(xy, axis=0), axis=1)))
+            diameter = max(1.0, float(np.median([f.ball_diameter_px for f in post])))
+            if displacement < diameter or displacement/max(path, 1e-6) < 0.65:
+                continue
+            if not sparse and max(f.cue_ball_normalized_speed for f in post) < self.start_speed:
+                continue
+            event = bursts[0] if bursts else hidden[0]
+            evidence = {"camera_contact_inferred": 1.0, "occlusion_inferred": 1.0,
+                        "ball_onset_run": float(len(bursts)), "cue_geometry_confirmed": 1.0,
+                        "cross_view_launch_displacement": displacement/diameter,
+                        "dense_transition_confirmed": 0.0 if sparse else 1.0,
+                        "sparse_proposal": float(sparse)}
+            result.append(StrikeCandidate(timestamp=event.t, confidence=0.65, evidence=evidence,
+                                          uncertainty_start=anchor.t, uncertainty_end=post[0].t,
+                                          camera_view=event.view_type))
+        return result
 
     def detect_sparse_candidates(self, features: list[FrameFeatures]) -> list[StrikeCandidate]:
         """Propose strike windows from a deliberately sparse (usually 2 fps) pass.
@@ -736,8 +944,10 @@ class StrikeDetector:
             pre_lo = bisect_left(times, f.t - self.sparse_pre_quiet_s)
             pre_hi = bisect_left(times, f.t - 0.01)
             post_hi = bisect_right(times, f.t + self.sparse_post_s)
-            pre = values[pre_lo:pre_hi]
-            post = values[i:post_hi]
+            pre = [values[j] for j in range(pre_lo, pre_hi)
+                   if self._valid(features[j]) and self._same_view(features[j], f)]
+            post = [values[j] for j in range(i, post_hi)
+                    if self._valid(features[j]) and self._same_view(features[j], f)]
             if len(pre) < 1 or len(post) < self.sparse_min_active:
                 continue
             # Max-ball-speed is intentionally down-weighted above: sparse
@@ -775,7 +985,7 @@ class StrikeDetector:
             quiet = pre_median <= (0.45 if has_launch_onset else self.pre_quiet_max_motion)
 
             cue_pre = [x for x in features[pre_lo:pre_hi]
-                       if self._valid(x) and x.cue_ball_x is not None
+                       if self._valid(x) and self._same_view(x, f) and x.cue_ball_x is not None
                        and x.cue_ball_y is not None and self._track_conf(x) >= self.min_track_conf]
             cue_quiet = (len(cue_pre) >= 2 and
                          sum(self._cue_speed(x) <= self.stationary_speed for x in cue_pre)
@@ -790,6 +1000,7 @@ class StrikeDetector:
                 spatial_steps.append(bool(
                     left is not None and 0 < right.t - left.t <= 0.75
                     and self._valid(left) and self._valid(right)
+                    and self._same_view(left, right)
                     and all(x.cue_ball_x is not None and x.cue_ball_y is not None
                             and self._track_conf(x) >= self.min_track_conf for x in (left, right))
                     and np.hypot(right.cue_ball_x - left.cue_ball_x,
@@ -840,14 +1051,90 @@ class StrikeDetector:
 
         # Temporal NMS keeps the earliest proposal in a burst.  Dense refinement
         # will snap it to the exact frame-level transition.
+        proposals.extend(self._cue_address_proposals(features, times))
+        proposals.sort(key=lambda c: c.timestamp)
         kept: list[StrikeCandidate] = []
         for candidate in proposals:
             if not kept or candidate.timestamp - kept[-1].timestamp >= self.sparse_gap_s:
                 kept.append(candidate)
             elif candidate.confidence > kept[-1].confidence:
-                kept[-1] = candidate
+                kept[-1].confidence = candidate.confidence
+                kept[-1].uncertainty_start = min(kept[-1].uncertainty_start, candidate.uncertainty_start)
+                kept[-1].uncertainty_end = max(kept[-1].uncertainty_end, candidate.uncertainty_end)
         logger.info("Found %d sparse strike proposals", len(kept))
+        for inferred in self._camera_contact_candidates(features, sparse=True):
+            if not any(abs(c.timestamp-inferred.timestamp) < self.sparse_gap_s for c in kept):
+                kept.append(inferred)
+        kept.sort(key=lambda c: c.timestamp)
         return kept
+
+    def _cue_address_proposals(self, features: list[FrameFeatures], times: list[float]) -> list[StrikeCandidate]:
+        """Recover sparse close-up launches when table flow is unobservable.
+
+        These are deliberately unconfirmed proposals: reliable localized white
+        and cue-address observations can trigger native decoding even when a
+        sparse optical-flow model failed. Foreign/handling evidence still vetoes.
+        """
+        def usable(f):
+            return (f.match_context_valid and not f.table_handling and not f.broadcast_replay
+                    and f.table_observable and f.table_confidence >= .5
+                    and f.view_type not in {CameraViewType.REPLAY, CameraViewType.SLOW_MOTION_REPLAY,
+                                           CameraViewType.ADVERTISEMENT, CameraViewType.SCOREBOARD})
+        proposed = []
+        for i, f in enumerate(features):
+            if not usable(f):
+                continue
+            pre = [p for p in features[bisect_left(times, f.t-1.6):i]
+                   if usable(p) and self._same_view(p, f) and p.cue_ball_detected
+                   and p.cue_ball_x is not None and p.cue_ball_y is not None and self._track_conf(p) >= .65]
+            if not pre or not any(p.cue_tip_visible and p.cue_tip_distance_to_ball <= 3*max(p.ball_diameter_px,1)
+                                  for p in pre):
+                continue
+            diameter = max(1, float(np.median([p.ball_diameter_px for p in pre])))
+            xy = np.array([(p.cue_ball_x,p.cue_ball_y) for p in pre])
+            quiet = (len(pre) >= 2 and np.max(np.linalg.norm(xy-xy[-1],axis=1)) <= .35*diameter)
+            quiet = quiet or (len(pre) == 1 and self._cue_speed(pre[0]) <= self.stationary_speed)
+            # Sparse flow can fail during a slow zoom while a clearly addressed
+            # white remains in view. This is still only permission to decode
+            # the native window, never evidence that an impact happened.
+            quiet = quiet or (np.median([self._cue_speed(p) for p in pre]) <= 1.25
+                              and any(p.cue_tip_visible and p.cue_tip_distance_to_ball <= 1.25*max(p.ball_diameter_px,1)
+                                      for p in pre))
+            if not quiet:
+                continue
+            departed = (f.cue_ball_x is not None and f.cue_ball_y is not None
+                        and np.hypot(f.cue_ball_x-pre[-1].cue_ball_x,f.cue_ball_y-pre[-1].cue_ball_y) >= .5*diameter)
+            if f.cue_ball_detected and not departed and self._cue_speed(f) < 1.5:
+                continue
+            proposed.append(StrikeCandidate(timestamp=f.t, confidence=.6,
+                evidence={"sparse_proposal":1.,"cue_address_proposal":1.},
+                uncertainty_start=max(0,pre[-1].t-.5), uncertainty_end=f.t+1.5,
+                camera_view=f.view_type))
+        # A director often cuts from quiet overhead aiming to a bridge-level
+        # view where the white is temporarily hidden. A coordinate-based onset
+        # cannot propose that shot. Decode the short addressing interval, while
+        # leaving actual strike confirmation entirely to native observations.
+        for i, cut in enumerate(features):
+            if i == 0 or cut.scene_cut_score < .5 or not usable(cut):
+                continue
+            old_scene = features[i-1].camera_scene_id
+            pre = [p for p in features[bisect_left(times, cut.t-1.6):i]
+                   if usable(p) and p.camera_scene_id == old_scene
+                   and p.cue_ball_detected and self._track_conf(p) >= .65]
+            if len(pre) < 2 or self._stationary_ratio(pre) < .8:
+                continue
+            if sum(p.max_ball_normalized_speed <= self.pre_quiet_max_ball_speed for p in pre)/len(pre) < .8:
+                continue
+            if not any(p.cue_tip_visible and p.cue_tip_distance_to_ball <= 3*max(p.ball_diameter_px, 1)
+                       for p in pre):
+                continue
+            proposed.append(StrikeCandidate(
+                timestamp=cut.t+1, confidence=.55,
+                evidence={"sparse_proposal": 1., "camera_address_proposal": 1.},
+                uncertainty_start=max(0, pre[-1].t-.5), uncertainty_end=cut.t+3,
+                camera_view=cut.view_type,
+            ))
+        return proposed
 
     def _legacy_pre_quiet_ok(
         self,
@@ -864,6 +1151,7 @@ class StrikeDetector:
             self._value(f, "motion_raw", f.motion_score)
             for f in features[lo:hi]
             if self._valid(f)
+            and self._same_view(f, features[idx])
         ]
         if not pre:
             return True
@@ -877,22 +1165,36 @@ class StrikeDetector:
         """Snap candidates to the first dense confirmed cue-ball transition."""
         if not candidates or not dense_features:
             return candidates
+        if any(f.view_classified for f in dense_features):
+            for candidate in candidates:
+                for key in ("dense_transition_confirmed", "sparse_dense_transition",
+                            "occlusion_inferred", "camera_contact_inferred",
+                            "ball_onset_run", "cue_ball_motion_confirmed"):
+                    candidate.evidence[key] = 0.0
         cue_available = self._has_cue_kinematics(dense_features)
         if not cue_available:
             return candidates
         times = [f.t for f in dense_features]
+        camera_contacts = self._camera_contact_candidates(dense_features)
+        native_occlusions: list[StrikeCandidate] | None = None
 
         refined: list[StrikeCandidate] = []
         for cand in candidates:
             # This pass must stand on its own evidence. Otherwise a rejected
             # sparse match can survive through the downstream acceptance OR.
             cand.evidence["sparse_dense_transition"] = 0.0
+            for key in ("dense_transition_confirmed", "occlusion_inferred",
+                        "camera_contact_inferred", "ball_onset_run",
+                        "cue_ball_motion_confirmed"):
+                cand.evidence[key] = 0.0
             lo = bisect_left(times, cand.uncertainty_start)
             hi = bisect_right(times, cand.uncertainty_end)
             indices = range(lo, hi)
             match: tuple[int, dict[str, float]] | None = None
             for i in indices:
                 if i <= 0:
+                    continue
+                if not self._valid(dense_features[i]):
                     continue
                 metrics = self._transition_metrics(dense_features, i, times)
                 strict_match = self._transition_confirmed(metrics)
@@ -903,6 +1205,25 @@ class StrikeDetector:
                     match = (i, metrics)
                     break
             if match is None:
+                inferred = next((c for c in camera_contacts
+                                 if cand.uncertainty_start <= c.timestamp <= cand.uncertainty_end), None)
+                if inferred is None:
+                    if native_occlusions is None:
+                        native_occlusions = [c for c in self.detect_candidates(dense_features)
+                                             if c.evidence.get("occlusion_inferred", 0) >= .5
+                                             and c.evidence.get("ball_onset_run", 0) >= 2]
+                    inferred = next((c for c in native_occlusions
+                                     if cand.uncertainty_start <= c.timestamp <= cand.uncertainty_end), None)
+                if inferred is not None:
+                    cand.timestamp = inferred.timestamp
+                    cand.confidence = inferred.confidence
+                    cand.camera_view = inferred.camera_view
+                    cand.evidence.update(inferred.evidence)
+                    cand.evidence["native_occlusion_confirmed"] = 1.0
+                    cand.uncertainty_start = inferred.uncertainty_start
+                    cand.uncertainty_end = inferred.uncertainty_end
+                    refined.append(cand)
+                    continue
                 cand.confidence *= 0.75
                 cand.evidence["dense_transition_confirmed"] = 0.0
                 refined.append(cand)
@@ -910,9 +1231,13 @@ class StrikeDetector:
 
             i, metrics = match
             f = dense_features[i]
-            cand.timestamp = f.t
+            contact_t, contact_start = self._occluded_contact_time(
+                dense_features, i, times, max(metrics.get("cue_contact_score", 0.0),
+                                             metrics.get("pre_cue_address_score", 0.0)),
+                stabilized_launch=self._stabilized_launch_confirmed(metrics))
+            cand.timestamp = contact_t
             cand.confidence = max(cand.confidence, float(f.strike_score), 0.75)
-            cand.uncertainty_start = dense_features[max(0, i - 1)].t
+            cand.uncertainty_start = contact_start if contact_t < f.t else dense_features[max(0, i - 1)].t
             cand.uncertainty_end = f.t
             cand.camera_view = f.view_type
             cand.evidence = {
@@ -920,6 +1245,7 @@ class StrikeDetector:
                 **metrics,
                 "dense_transition_confirmed": 1.0,
                 "refined_strike": f.strike_score,
+                "impact_occlusion_contact": float(contact_t < f.t),
             }
             refined.append(cand)
         return refined

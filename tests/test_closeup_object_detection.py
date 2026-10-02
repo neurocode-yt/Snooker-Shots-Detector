@@ -1,0 +1,73 @@
+"""Low-camera cue-ball recovery must retain independent foreground guards."""
+
+import cv2
+import numpy as np
+import pytest
+
+from snooker_ai.object_detection.detector import ObjectDetector
+
+
+def colour(hue, sat, value):
+    return tuple(int(v) for v in cv2.cvtColor(
+        np.uint8([[[hue, sat, value]]]), cv2.COLOR_HSV2BGR
+    )[0, 0])
+
+
+def test_shaded_ivory_ball_beside_bridge_and_black_seeds_closeup_scale(config):
+    frame = np.full((240, 400, 3), colour(60, 180, 180), np.uint8)
+    # The bridge and black ball occupy much of the white's outer annulus.
+    cv2.ellipse(frame, (206, 108), (39, 13), 0, 0, 360, colour(3, 65, 230), -1)
+    cv2.circle(frame, (180, 165), 20, (20, 20, 20), -1)
+    cv2.circle(frame, (180, 130), 20, colour(30, 85, 220), -1)
+    yy, xx = np.ogrid[:240, :400]
+    frame[((xx-180)**2 + (yy-130)**2 <= 20**2) & (yy >= 137)] = colour(42, 155, 115)
+    cv2.ellipse(frame, (180, 123), (13, 8), 0, 180, 360, colour(25, 20, 255), -1)
+    found = ObjectDetector(config).detect(
+        frame, np.full(frame.shape[:2], 255, np.uint8),
+        use_hough=False, partial_view=True,
+    )
+    cue = [d for d in found if d.label == "cue_ball"]
+    assert len(cue) == 1
+    assert cue[0].cue_sphere_supported
+    assert cue[0].cx == pytest.approx(180, abs=3)
+    assert cue[0].cy == pytest.approx(130, abs=7)
+    assert cue[0].diameter_px == pytest.approx(40, abs=5)
+    assert cue[0].cloth_surround_confidence < 0.65
+
+
+def test_partial_view_does_not_accept_white_glove_attached_to_forearm(config):
+    frame = np.full((240, 400, 3), colour(60, 180, 180), np.uint8)
+    cv2.rectangle(frame, (160, 0), (184, 125), (20, 20, 20), -1)
+    cv2.circle(frame, (180, 140), 20, (245, 245, 245), -1)
+    found = ObjectDetector(config).detect(
+        frame, np.full(frame.shape[:2], 255, np.uint8),
+        use_hough=False, partial_view=True,
+    )
+    assert not any(d.label == "cue_ball" for d in found)
+
+
+@pytest.mark.parametrize("hue,sat,value", [(3, 65, 230), (30, 220, 245), (165, 90, 225)])
+def test_skin_yellow_and_pink_cannot_use_ivory_sphere_recovery(config, hue, sat, value):
+    frame = np.full((240, 400, 3), colour(60, 180, 180), np.uint8)
+    cv2.circle(frame, (180, 140), 20, colour(hue, sat, value), -1)
+    cv2.circle(frame, (174, 132), 4, (255, 255, 255), -1)
+    found = ObjectDetector(config).detect(
+        frame, np.full(frame.shape[:2], 255, np.uint8),
+        use_hough=False, partial_view=True,
+    )
+    assert not any(d.cue_sphere_supported for d in found)
+
+
+def test_ivory_outline_keeps_its_center_when_hough_edge_is_displaced(config, monkeypatch):
+    frame = np.full((240, 400, 3), colour(60, 180, 180), np.uint8)
+    cv2.circle(frame, (180, 130), 20, colour(30, 85, 220), -1)
+    cv2.circle(frame, (175, 123), 8, colour(25, 20, 255), -1)
+    monkeypatch.setattr(cv2, "HoughCircles", lambda *a, **k: np.array([
+        [[181, 138, 23]],
+    ], dtype=np.float32))
+    cue = [d for d in ObjectDetector(config).detect(
+        frame, np.full(frame.shape[:2], 255, np.uint8), partial_view=True,
+    ) if d.label == "cue_ball"]
+    assert len(cue) == 1
+    assert cue[0].cue_sphere_supported
+    assert cue[0].cy == pytest.approx(130, abs=1)
