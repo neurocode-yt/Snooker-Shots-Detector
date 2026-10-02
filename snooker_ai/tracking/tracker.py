@@ -33,6 +33,7 @@ class Track:
     shape_confidence: float = 0.0
     cloth_surround_confidence: float = 0.0
     cue_sphere_supported: bool = False
+    cue_sphere_red_occlusion: bool = False
     predicted_position: Optional[tuple[float, float]] = None
     last_update_t: float = 0.0
     _stable_speed_key: tuple | None = field(default=None, repr=False)
@@ -317,6 +318,7 @@ class BallTracker:
             + 0.30 * float(detection.cloth_surround_confidence)
         )
         track.cue_sphere_supported = bool(getattr(detection, "cue_sphere_supported", False))
+        track.cue_sphere_red_occlusion = bool(getattr(detection, "cue_sphere_red_occlusion", False))
 
     def _mark_missed(self, track: Track, t: float) -> None:
         if track.visible:
@@ -361,6 +363,7 @@ class BallTracker:
             shape_confidence=float(detection.shape_confidence),
             cloth_surround_confidence=float(detection.cloth_surround_confidence),
             cue_sphere_supported=bool(getattr(detection, "cue_sphere_supported", False)),
+            cue_sphere_red_occlusion=bool(getattr(detection, "cue_sphere_red_occlusion", False)),
             predicted_position=(float(detection.cx), float(detection.cy)),
             last_update_t=t,
         )
@@ -474,6 +477,9 @@ class BallTracker:
             or (track.label == "cue_ball" and track.shape_confidence >= .80
                 and track.cue_sphere_supported
                 and track.cloth_surround_confidence >= .30)
+            or (track.label == "cue_ball" and track.shape_confidence >= .80
+                and track.cue_sphere_supported and track.cue_sphere_red_occlusion
+                and track.cloth_surround_confidence >= .10)
         )
         # Circle proposals inside a packed group of reds can alternate between
         # neighbouring balls. A weak circular edge with a crowded annulus is

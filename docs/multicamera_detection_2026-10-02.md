@@ -127,8 +127,8 @@ two broadcast replays and two missed terminal colour shots. The implementation
 now revisits sparse quiet intervals before a later declared stop, resets scale
 when cloth geometry exposes a missed camera cut, rejects a bridge identity
 excursion back to the stationary white and bounds sustained non-table footage.
-These newly found source cases remain under verification; the earlier export
-must be regenerated after those checks. Native stop discovery is distinct from
+These source cases now have bounded native verification; the earlier export
+is superseded by the consolidated audit. Native stop discovery is distinct from
 an inferred return-to-table upper bound. Known unusable spans also constrain
 preparation footage, so the two-second lead-in cannot restore referee handling
 or a foreign table.
@@ -138,6 +138,34 @@ numeric regressions recover the terminal black contact near 1058.2 seconds and
 the shaded brown contact near 2139.8 seconds. Compact convex-envelope evidence
 recovers a compressed shaded sphere without admitting the glove, skin and
 colour-ball negative examples. Native source inspection also identified three
-replay passages near 1760, 1809 and 2791 seconds. Their source audit and export
-are being consolidated; a subsequent live contact under the final closing wipe
+replay passages near 1760, 1809 and 2791 seconds. A subsequent live contact under the final closing wipe
 is invisible and cannot receive an exact observed contact time.
+
+The third code iteration passed 421 tests, Ruff and Git whitespace checks.
+It recovers an already moving live white on return from a confirmed replay,
+only when the preceding live shot has a verified earlier stop. The first visible
+roll is recorded as a contact upper bound. A quieter table returning after a
+wipe, a single graphic, a camera identity jump and low-confidence stale stop
+cannot supply this recovery. The automatic clip starts after the replay span.
+
+Two round red neighbours can independently explain missing cloth around a
+compact ivory sphere in a crowded low view. Thin cue attachments are removed
+only from elongated outlines, retaining the sphere's colour, shape and cloth
+tests. Source regressions cover red near 912.43 seconds, colour near 924.96,
+green near 2123.86 and a later red near 2870.25. A coherent launch from measured
+quiet white-ball anchors can outvote player movement in aggregate cloth flow.
+An excursion back to the original white during cue feathering is rejected.
+
+Timeline rebuilding preserves explicitly edited inclusion decisions; it no
+longer restores old automatic inclusion over newly confirmed replay exclusion.
+Sustained non-table spans and cache coverage account for timestamp jitter from
+25fps sampling of a 30fps proxy. Cache reuse still requires the requested
+recorded observation rate, so cheap travel frames cannot replace native proof.
+
+The consolidated source audit retained all 14 selected contact/visible-roll
+references, rejected the aiming zoom and bridge identity excursion, and excluded
+the four specifically inspected replays near 1760, 1809, 2791 and 5495.81 seconds.
+It produces 130 included clips, with no included clip over 20 seconds in this
+audit. The audit combines prior full-match observations with fresh bounded
+windows; it is not a fresh full-match accuracy benchmark or a labelled recall
+measurement. Full match detection across unseen broadcasts remains unmeasured.

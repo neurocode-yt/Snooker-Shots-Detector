@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 from snooker_ai.object_detection.detector import ObjectDetector
+from snooker_ai.tracking.tracker import BallTracker
 
 
 def colour(hue, sat, value):
@@ -92,3 +93,72 @@ def test_shaded_outline_accepts_compact_codec_jaggedness_but_rejects_deep_gaps(
     if supported:
         assert supported[0].cx == pytest.approx(180, abs=1)
         assert supported[0].cy == pytest.approx(130, abs=1)
+
+
+def test_two_round_red_neighbors_explain_low_cloth_support(config):
+    frame = np.full((240, 400, 3), colour(60, 180, 180), np.uint8)
+    cv2.ellipse(frame, (180, 105), (55, 22), 0, 0, 360, colour(173, 22, 250), -1)
+    cv2.circle(frame, (180, 130), 20, colour(30, 85, 220), -1)
+    cv2.circle(frame, (175, 123), 8, colour(25, 20, 255), -1)
+    for x in (150, 210):
+        cv2.circle(frame, (x, 149), 20, colour(2, 230, 210), -1)
+    found = ObjectDetector(config).detect(
+        frame, np.full(frame.shape[:2], 255, np.uint8),
+        use_hough=False, partial_view=True,
+    )
+    cue = [d for d in found if d.label == "cue_ball"]
+    assert len(cue) == 1
+    assert cue[0].cue_sphere_supported and cue[0].cue_sphere_red_occlusion
+    assert cue[0].cx == pytest.approx(180, abs=2)
+    assert cue[0].cloth_surround_confidence < .30
+    tracker = BallTracker()
+    tracker.update(0, cue)
+    track = tracker.cue_ball_track()
+    assert track is not None and tracker.is_ball_quality_track(track)
+
+
+@pytest.mark.parametrize("red_count", [0, 1])
+def test_one_red_or_red_pixels_cannot_claim_two_ball_occlusion(config, red_count):
+    frame = np.full((240, 400, 3), colour(60, 180, 180), np.uint8)
+    cv2.ellipse(frame, (180, 105), (55, 22), 0, 0, 360, colour(173, 22, 250), -1)
+    cv2.circle(frame, (180, 130), 20, colour(30, 85, 220), -1)
+    cv2.circle(frame, (175, 123), 8, colour(25, 20, 255), -1)
+    for i, x in enumerate((150, 210)):
+        if i < red_count:
+            cv2.circle(frame, (x, 149), 20, colour(2, 230, 210), -1)
+        else:
+            cv2.rectangle(frame, (x-19, 145), (x+19, 152), colour(2, 230, 210), -1)
+    found = ObjectDetector(config).detect(
+        frame, np.full(frame.shape[:2], 255, np.uint8),
+        use_hough=False, partial_view=True,
+    )
+    assert not any(d.cue_sphere_red_occlusion for d in found)
+
+
+def test_narrow_warm_cue_detaches_from_a_round_ivory_ball(config):
+    frame = np.full((240, 400, 3), colour(60, 180, 180), np.uint8)
+    cv2.line(frame, (152, 105), (180, 136), colour(30, 65, 240), 3)
+    cv2.circle(frame, (180, 140), 10, colour(30, 85, 220), -1)
+    cv2.circle(frame, (177, 136), 5, colour(25, 20, 255), -1)
+    cue = [d for d in ObjectDetector(config).detect(
+        frame, np.full(frame.shape[:2], 255, np.uint8),
+        use_hough=False, partial_view=True,
+    ) if d.label == "cue_ball"]
+    assert len(cue) == 1 and cue[0].cue_sphere_supported
+    assert cue[0].cx == pytest.approx(180, abs=2)
+    assert cue[0].cy == pytest.approx(140, abs=2)
+    assert cue[0].diameter_px == pytest.approx(20, abs=3)
+
+
+def test_visible_upper_hemisphere_retains_sphere_scale(config):
+    frame = np.full((240, 400, 3), colour(60, 180, 180), np.uint8)
+    cv2.circle(frame, (180, 140), 12, colour(30, 85, 235), -1)
+    yy, xx = np.ogrid[:240, :400]
+    frame[((xx-180)**2 + (yy-140)**2 <= 12**2) & (yy >= 142)] = colour(42, 170, 100)
+    cv2.circle(frame, (177, 134), 5, colour(25, 20, 255), -1)
+    cue = [d for d in ObjectDetector(config).detect(
+        frame, np.full(frame.shape[:2], 255, np.uint8),
+        use_hough=False, partial_view=True,
+    ) if d.label == "cue_ball"]
+    assert len(cue) == 1 and cue[0].cue_sphere_supported
+    assert cue[0].diameter_px == pytest.approx(24, abs=3)

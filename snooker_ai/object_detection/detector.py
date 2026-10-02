@@ -42,6 +42,7 @@ class Detection:
     shape_confidence: float = 0.0
     cloth_surround_confidence: float = 0.0
     cue_sphere_supported: bool = False
+    cue_sphere_red_occlusion: bool = False
 
     def __post_init__(self) -> None:
         _, _, w, h = self.bbox
@@ -73,6 +74,7 @@ class _Proposal:
     shape_confidence: float
     source_count: int = 1
     cue_sphere_supported: bool = False
+    cue_sphere_red_occlusion: bool = False
 
 
 class ObjectDetector:
@@ -393,6 +395,7 @@ class ObjectDetector:
             cue_ball = size_ok and shape_ok and (
                 color_conf >= 0.50 and surround_conf >= 0.65
                 or proposal.cue_sphere_supported and surround_conf >= 0.30
+                or proposal.cue_sphere_red_occlusion and surround_conf >= 0.10
             )
             label = "cue_ball" if cue_ball else "object_ball"
             observation_conf = float(
@@ -419,6 +422,7 @@ class ObjectDetector:
                     shape_confidence=shape,
                     cloth_surround_confidence=surround_conf,
                     cue_sphere_supported=proposal.cue_sphere_supported and cue_ball,
+                    cue_sphere_red_occlusion=proposal.cue_sphere_red_occlusion and cue_ball,
                 )
             )
             if shape >= 0.45 and 0.40 * diameter_prior <= diameter <= 2.2 * diameter_prior:
@@ -444,6 +448,7 @@ class ObjectDetector:
             best_cue = max(
                 cue_candidates,
                 key=lambda d: (
+                    1 if d.cue_sphere_supported else 0,
                     d.color_confidence * d.cloth_surround_confidence,
                     d.confidence,
                     d.shape_confidence,
@@ -496,8 +501,12 @@ class ObjectDetector:
         independent requirements; hue or brightness alone never identifies it.
         """
         warm = cv2.inRange(hsv, (15, 0, 125), (44, 140, 255))
-        neutral = cv2.inRange(hsv, (0, 0, 150), (179, 25, 255))
+        # The sphere's ivory mask can include achromatic highlights. Pink skin
+        # under the arena lighting has a near-neutral magenta cast; including
+        # that cast joins the white ball to the bridge instead of its outline.
+        neutral = cv2.inRange(hsv, (0, 0, 150), (139, 25, 255))
         candidate_mask = cv2.bitwise_and(cv2.bitwise_or(warm, neutral), mask)
+        original_mask = candidate_mask
         candidate_mask = cv2.morphologyEx(
             candidate_mask, cv2.MORPH_OPEN,
             cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)),
@@ -506,6 +515,47 @@ class ObjectDetector:
         contours, _ = cv2.findContours(
             candidate_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
+        detached_contours = []
+        for contour in contours:
+            area = float(cv2.contourArea(contour))
+            perimeter = float(cv2.arcLength(contour, True))
+            if area < 30 or perimeter <= 0:
+                continue
+            x, y, bw, bh = cv2.boundingRect(contour)
+            (_, _), radius = cv2.minEnclosingCircle(contour)
+            circularity = 4 * np.pi * area / perimeter**2
+            fill = area / max(1, np.pi * radius**2)
+            hull = cv2.convexHull(contour)
+            hull_area = float(cv2.contourArea(hull))
+            hull_perimeter = float(cv2.arcLength(hull, True))
+            hull_circularity = 4*np.pi*hull_area/max(1, hull_perimeter**2)
+            rotated_w, rotated_h = cv2.minAreaRect(contour)[1]
+            rotated_aspect = max(rotated_w, rotated_h) / max(1, min(rotated_w, rotated_h))
+            appendage = (
+                rotated_aspect >= 1.25
+                or (max(bw, bh) >= 1.15 * min(bw, bh) and .70 <= hull_circularity < .85
+                    and area/max(1, hull_area) >= .70)
+            )
+            # Retry only an elongated outline with a thin cue attached. Opening
+            # a round fragmented blob would invent supporting sphere geometry.
+            if not appendage or not (
+                circularity < .65 or fill < .48 or max(bw, bh) > 1.80 * min(bw, bh)
+            ):
+                continue
+            size = min(7, max(3, int(round(radius * .55)) | 1))
+            x0, x1 = max(0, x-size), min(hsv.shape[1], x+bw+size)
+            y0, y1 = max(0, y-size), min(hsv.shape[0], y+bh+size)
+            # Re-open the original measured pixels rather than filling its
+            # outline or applying successive openings to its shaded edge.
+            patch = original_mask[y0:y1, x0:x1]
+            offset = np.array([[[x0, y0]]], np.int32)
+            opened = cv2.morphologyEx(
+                patch, cv2.MORPH_OPEN,
+                cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (size, size)),
+            )
+            separated, _ = cv2.findContours(opened, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            detached_contours.extend(c + offset for c in separated)
+        contours = list(contours) + detached_contours
         proposals = []
         for contour in contours:
             area = float(cv2.contourArea(contour))
@@ -529,7 +579,9 @@ class ObjectDetector:
             compact_shaded_outline = (
                 circularity >= 0.55 and hull_circularity >= 0.85 and solidity >= 0.85
             )
-            if (circularity < 0.65 and not compact_shaded_outline) or fill < 0.48 or max(bw, bh) > 1.80 * min(bw, bh):
+            # The visible warm hemisphere may be half as tall as it is wide;
+            # its enclosing circle and independent fill gate retain ball scale.
+            if (circularity < 0.65 and not compact_shaded_outline) or fill < 0.48 or max(bw, bh) > 2.0 * min(bw, bh):
                 continue
             r = max(2, int(round(radius * 0.72)))
             x0, x1 = max(0, round(cx)-r), min(hsv.shape[1], round(cx)+r+1)
@@ -547,14 +599,53 @@ class ObjectDetector:
             if neutral_cap < 0.25:
                 continue
             _, _, surround = self._colour_scores(hsv, cloth, cx, cy, radius)
-            if surround < 0.30:
+            red_occlusion = .10 <= surround < .30 and self._red_neighbors_occlude_sphere(hsv, cx, cy, radius)
+            if surround < 0.30 and not red_occlusion:
                 continue
             proposals.append(_Proposal(
                 float(cx), float(cy), float(radius),
                 float(0.65 + 0.25 * circularity + 0.10 * fill),
                 cue_sphere_supported=True,
+                cue_sphere_red_occlusion=red_occlusion,
             ))
         return proposals
+
+    @staticmethod
+    def _red_neighbors_occlude_sphere(hsv: np.ndarray, cx: float, cy: float, radius: float) -> bool:
+        """Require two distinct round red balls beside the ivory sphere.
+
+        A bridge and two foreground reds can hide almost all of its cloth
+        annulus in a low camera. Red pixels alone cannot relax that cloth gate.
+        """
+        reach = int(np.ceil(radius * 3.2))
+        ix, iy = int(round(cx)), int(round(cy))
+        x0, x1 = max(0, ix-reach), min(hsv.shape[1], ix+reach+1)
+        y0, y1 = max(0, iy-reach), min(hsv.shape[0], iy+reach+1)
+        patch = hsv[y0:y1, x0:x1]
+        red = cv2.inRange(patch, (0, 140, 60), (12, 255, 255))
+        red |= cv2.inRange(patch, (165, 140, 60), (179, 255, 255))
+        contours, _ = cv2.findContours(red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        directions = []
+        for contour in contours:
+            area = float(cv2.contourArea(contour))
+            perimeter = float(cv2.arcLength(contour, True))
+            if perimeter <= 0:
+                continue
+            (rx, ry), rr = cv2.minEnclosingCircle(contour)
+            _, _, bw, bh = cv2.boundingRect(contour)
+            if not .55 * radius <= rr <= 1.50 * radius or max(bw, bh) > 1.8 * min(bw, bh):
+                continue
+            if 4*np.pi*area/perimeter**2 < .50 or area/max(1, np.pi*rr**2) < .45:
+                continue
+            delta = np.array([rx+x0-cx, ry+y0-cy])
+            distance = float(np.linalg.norm(delta))
+            if not 1.25 * radius <= distance <= 2.6 * radius:
+                continue
+            direction = delta / max(distance, 1e-6)
+            if any(float(np.dot(direction, other)) <= .5 for other in directions):
+                return True
+            directions.append(direction)
+        return False
 
     @staticmethod
     def _merge_proposals(
@@ -584,6 +675,7 @@ class ObjectDetector:
                     match.radius * match.source_count + proposal.radius * proposal.source_count
                 ) / total
             match.cue_sphere_supported |= proposal.cue_sphere_supported
+            match.cue_sphere_red_occlusion |= proposal.cue_sphere_red_occlusion
             match.shape_confidence = min(
                 1.0, max(match.shape_confidence, proposal.shape_confidence) + 0.08
             )

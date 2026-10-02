@@ -372,11 +372,31 @@ class StrikeDetector:
         # that wrong identity alone can look straight. Include the real quiet
         # anchor; strong contact or coherent initial launch can justify a true
         # early collision and return instead.
-        return bool(metrics.get("anchor_excursion_diameters", 0) >= 1.5
+        return bool(metrics.get("anchor_excursion_diameters", 0) >= 1.0
                     and metrics.get("anchor_direction_consistency", 1) < .20
                     and metrics.get("pre_cue_address_score", 0) < .65
                     and not (metrics.get("initial_launch_displacement", 0) >= .50
-                             and metrics.get("initial_launch_direction", 0) >= .80))
+                             and metrics.get("initial_launch_direction", 0) >= .80
+                             and metrics.get("cue_contact_score", 0) >= .40))
+
+    @staticmethod
+    def _anchored_launch_confirmed(metrics: dict[str, float]) -> bool:
+        """Independent white-ball evidence can outvote cue/player cloth flow."""
+        return bool(metrics.get("stationary_ratio", 0) >= .80
+                    and (metrics.get("pre_ball_quiet_ratio", 0) >= .80
+                         or (metrics.get("pre_ball_quiet_ratio", 0) >= .50
+                             and metrics.get("cue_geometry_confirmed", 0) >= .5
+                             and metrics.get("cue_contact_score", 0) >= .70))
+                    and metrics.get("pre_sample_count", 0) >= 4
+                    and metrics.get("stable_cue_motion_count", 0) >= 3
+                    and metrics.get("stable_cue_peak_speed", 0) >= 4
+                    and metrics.get("track_confidence", 0) >= .70
+                    and metrics.get("cue_displacement_diameters", 0) >= 1.0
+                    and metrics.get("cue_direction_consistency", 0) >= .90
+                    and metrics.get("anchor_excursion_diameters", 0) >= 1.5
+                    and metrics.get("anchor_direction_consistency", 0) >= .90
+                    and metrics.get("initial_launch_displacement", 0) >= .50
+                    and metrics.get("initial_launch_direction", 0) >= .90)
 
     @staticmethod
     def _stabilized_launch_confirmed(metrics: dict[str, float]) -> bool:
@@ -405,6 +425,7 @@ class StrikeDetector:
             and metrics["cue_contact_score"] >= self.cue_contact_noise_override
         )
         stabilized_launch = self._stabilized_launch_confirmed(metrics)
+        anchored_launch = self._anchored_launch_confirmed(metrics)
         coherent_ball_launch = stabilized_launch or bool(
             metrics["stationary_ratio"] >= 0.80
             and metrics["pre_ball_quiet_ratio"] >= 0.80
@@ -423,7 +444,7 @@ class StrikeDetector:
         # sample; ball handling/refereeing without cue contact cannot use this
         # exception.  The quiet median gate below still has to pass.
         pre_motion_quiet = bool(
-            metrics["pre_motion_quiet_ratio"] >= 0.80
+            anchored_launch or metrics["pre_motion_quiet_ratio"] >= 0.80
             or (
                 contact_overrides_object_noise
                 and metrics["pre_motion_quiet_ratio"]
@@ -460,7 +481,7 @@ class StrikeDetector:
             and metrics["stationary_ratio"] >= 0.65
             and metrics["pre_sample_count"] >= 2
             and pre_motion_quiet
-            and (metrics["pre_motion_raw_median"] <= self.pre_quiet_max_motion
+            and (anchored_launch or metrics["pre_motion_raw_median"] <= self.pre_quiet_max_motion
                  or (coherent_ball_launch and metrics["pre_motion_raw_median"] <= 0.50))
             # Object-ball Hough tracks can produce an isolated speed spike while
             # the cloth and the real cue ball are visibly still.  Do not let one
@@ -787,7 +808,8 @@ class StrikeDetector:
             contact_t, contact_start = self._occluded_contact_time(
                 features, idx, times, max(metrics.get("cue_contact_score", 0.0),
                                          metrics.get("pre_cue_address_score", 0.0)),
-                stabilized_launch=self._stabilized_launch_confirmed(metrics))
+                stabilized_launch=(self._stabilized_launch_confirmed(metrics)
+                                   or self._anchored_launch_confirmed(metrics)))
             if contact_t < f.t:
                 evidence["impact_occlusion_contact"] = 1.0
             candidates.append(
@@ -1237,7 +1259,8 @@ class StrikeDetector:
             contact_t, contact_start = self._occluded_contact_time(
                 dense_features, i, times, max(metrics.get("cue_contact_score", 0.0),
                                              metrics.get("pre_cue_address_score", 0.0)),
-                stabilized_launch=self._stabilized_launch_confirmed(metrics))
+                stabilized_launch=(self._stabilized_launch_confirmed(metrics)
+                                   or self._anchored_launch_confirmed(metrics)))
             cand.timestamp = contact_t
             cand.confidence = max(cand.confidence, float(f.strike_score), 0.75)
             cand.uncertainty_start = contact_start if contact_t < f.t else dense_features[max(0, i - 1)].t
