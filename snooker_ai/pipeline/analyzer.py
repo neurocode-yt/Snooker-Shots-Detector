@@ -54,7 +54,7 @@ from snooker_ai.utils.video import open_capture, sampled_frames
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 18
+_CACHE_VERSION = 20
 
 
 class Analyzer:
@@ -1270,6 +1270,12 @@ class Analyzer:
                 start = min(start, candidate.uncertainty_start)
             contact = observe(start, candidate.timestamp + strike_post, native_fps)
             contact = self.strike_det.score_frames(contact)
+            if self.segmenter._candidate_supported(candidate):
+                # A newer detector can require a few later frames to verify
+                # the same launch. A previously single-frame proof interval
+                # must not reject it before the native trajectory is measured.
+                candidate.uncertainty_start = min(candidate.uncertainty_start, candidate.timestamp-.25)
+                candidate.uncertainty_end = max(candidate.uncertainty_end, candidate.timestamp+.40)
             self.strike_det.refine_boundaries([candidate], contact)
             verified = bool(
                 candidate.evidence.get("dense_transition_confirmed", 0.0) >= 0.5
@@ -1500,7 +1506,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 13,
+            "result_policy_version": 14,
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")
             },

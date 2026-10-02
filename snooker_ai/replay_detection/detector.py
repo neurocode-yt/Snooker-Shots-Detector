@@ -28,6 +28,7 @@ class ReplayDetector:
         "replay_explicit_view", "replay_match_to", "replay_signature_confirmed",
         "replay_layout_confirmed", "replay_layout_similarity",
         "replay_appearance_similarity", "replay_broadcast_marker",
+        "replay_stinger_confirmed",
     )
 
     def __init__(self, config: Config):
@@ -55,6 +56,10 @@ class ReplayDetector:
             return features[bisect_left(times, start):bisect_right(times, end)]
 
         ordered = sorted(candidates, key=lambda c: c.timestamp)
+        stinger_intervals = self._stinger_intervals(features, ordered)
+        for start, end in stinger_intervals:
+            for feature in feature_window(start, end):
+                feature.broadcast_replay = True
         signatures = [self._signature(c.timestamp, features, times=times) for c in ordered]
         layouts = [self._layout_sequence(c.timestamp, features, times) for c in ordered]
         live_candidates: deque[tuple[float, int]] = deque()
@@ -82,6 +87,9 @@ class ReplayDetector:
                     "replay_explicit_view": 1.0,
                     "replay_broadcast_marker": float(marker),
                 }
+            if any(start <= candidate.timestamp <= end for start, end in stinger_intervals):
+                candidate.possible_replay = True
+                candidate.evidence.update(replay_stinger_confirmed=1.0, replay_signature_confirmed=1.0)
 
             while live_candidates and candidate.timestamp - live_candidates[0][0] > self.max_after:
                 live_candidates.popleft()
@@ -117,6 +125,47 @@ class ReplayDetector:
         n_replay = sum(1 for c in candidates if c.possible_replay)
         logger.info("Marked %d/%d candidates as possible replays", n_replay, len(candidates))
         return candidates
+
+    def _stinger_intervals(
+        self, features: list[FrameFeatures], candidates: list[StrikeCandidate],
+    ) -> list[tuple[float, float]]:
+        groups: list[list[FrameFeatures]] = []
+        for feature in features:
+            if len(feature.appearance_signature) != 192:
+                continue
+            if groups and feature.t-groups[-1][-1].t <= .8:
+                groups[-1].append(feature)
+            else:
+                groups.append([feature])
+        intervals = []
+        index = 0
+        while index + 1 < len(groups):
+            opening, closing = groups[index:index+2]
+            index += 1
+            start, end = opening[0].t, closing[-1].t
+            if not 2 <= closing[0].t-opening[-1].t <= 20:
+                continue
+            if not any(self._cosine(np.asarray(a.appearance_signature), np.asarray(b.appearance_signature)) >= .92
+                       for a in opening for b in closing):
+                continue
+            if not any(c.confidence >= .40 and not c.possible_replay
+                       and start-self.max_after <= c.timestamp < start-self.min_after
+                       and not any(lo <= c.timestamp <= hi for lo, hi in intervals)
+                       for c in candidates):
+                continue
+            if not any(c.confidence >= .40 and opening[-1].t < c.timestamp <= min(end, opening[-1].t+4)
+                       for c in candidates):
+                continue
+            intervals.append((start, end))
+            # A closing wipe cannot also open the next replay package. Reusing
+            # it would incorrectly erase live play between consecutive replays.
+            index += 1
+        return intervals
+
+    @staticmethod
+    def _cosine(first: np.ndarray, second: np.ndarray) -> float:
+        denom = float(np.linalg.norm(first)*np.linalg.norm(second))
+        return float(np.dot(first, second)/denom) if denom > 1e-9 else 0.0
 
     @staticmethod
     def _usable_table_feature(feature: FrameFeatures) -> bool:

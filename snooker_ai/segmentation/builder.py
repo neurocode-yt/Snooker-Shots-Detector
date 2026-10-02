@@ -332,7 +332,14 @@ class SegmentBuilder:
         handling_confirmed = False
         previous = None
         foreign_start = None
+        replay_start = None
         for f in features:
+            if f.broadcast_replay:
+                if replay_start is None:
+                    replay_start = f.t
+            elif replay_start is not None:
+                spans.append((replay_start, f.t, "replay_clip_boundary"))
+                replay_start = None
             if not f.match_context_valid:
                 if foreign_start is None:
                     foreign_start = f.t
@@ -356,6 +363,8 @@ class SegmentBuilder:
                     handling_confirmed = True
             previous = f
         if features:
+            if replay_start is not None:
+                spans.append((replay_start, features[-1].t, "replay_clip_boundary"))
             if foreign_start is not None:
                 spans.append((foreign_start, features[-1].t, "foreign_match_clip_boundary"))
             if handling_start is not None and handling_confirmed:

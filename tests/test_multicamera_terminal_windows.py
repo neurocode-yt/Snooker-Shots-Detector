@@ -88,3 +88,15 @@ def test_bridge_identity_excursion_returns_to_quiet_white_without_a_strike(confi
     detector.score_frames(features)
     candidates = detector.detect_candidates(features)
     assert not [c for c in candidates if 2131.8 < c.timestamp < 2132.6]
+
+
+def test_slow_closeup_launch_with_strong_quiet_cue_address_is_retained(config):
+    raw = json.loads((Path(__file__).parent / "fixtures/multicamera_black_closeup.json").read_text())
+    features = [FrameFeatures.model_validate(f) for f in raw["features"]]
+    detector = StrikeDetector(config)
+    detector.score_frames(features)
+    candidates = detector.detect_candidates(features)
+    assert len(candidates) == 1
+    assert 1058.1 <= candidates[0].timestamp <= 1058.3
+    assert candidates[0].evidence["impact_occlusion_contact"] == 1
+    assert candidates[0].evidence["pre_cue_address_score"] >= .7

@@ -85,6 +85,7 @@ class ViewClassifier:
             "replay_graphic_score": r,
             "is_replay_candidate": False,
             "broadcast_graphics_candidate": bool(r >= self.replay_score_thr),
+            "replay_stinger_signature": self.replay_stinger_signature(frame),
             **geometry,
         }
 
@@ -112,6 +113,43 @@ class ViewClassifier:
             return CameraViewType.AUDIENCE, g, extra
 
         return CameraViewType.OTHER, g, extra
+
+    @staticmethod
+    def replay_stinger_signature(frame: np.ndarray) -> list[float]:
+        """Recognize a dark neon-ring wipe; colours alone are insufficient.
+
+        Two nearly complete concentric magenta/yellow rings must surround the
+        centre title. The fingerprint associates opening and closing wipes;
+        this graphic by itself does not label any following play a replay.
+        """
+        small = cv2.resize(frame, (320, 180))
+        hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV)
+        if np.mean(hsv[:, :, 2] < 115) < .55:
+            return []
+        yellow = cv2.inRange(hsv, (15, 90, 140), (42, 255, 255)) > 0
+        pink = cv2.inRange(hsv, (135, 85, 120), (175, 255, 255)) > 0
+        if min(np.count_nonzero(yellow), np.count_nonzero(pink)) < 300:
+            return []
+        yy, xx = np.ogrid[:180, :320]
+        dx, dy = xx-160, yy-90
+        radius = np.hypot(dx, dy)
+        angle = ((np.arctan2(dy, dx)+np.pi)*24/(2*np.pi)).astype(int) % 24
+        rings = []
+        for mask in (pink, yellow):
+            candidates = []
+            for r in range(36, 111, 2):
+                annulus = np.abs(radius-r) <= 2.5
+                coloured = annulus & mask
+                if np.count_nonzero(coloured) / max(1, np.count_nonzero(annulus)) < .35:
+                    continue
+                if len(np.unique(angle[coloured])) < 20:
+                    continue
+                candidates.append(r)
+            rings.append(candidates)
+        if not any(3 <= yellow_r-pink_r <= 18 for pink_r in rings[0] for yellow_r in rings[1]):
+            return []
+        title = cv2.cvtColor(small[58:128, 106:214], cv2.COLOR_BGR2GRAY)
+        return (cv2.resize(title, (16, 12)).astype(np.float32).ravel()/255).tolist()
 
     @staticmethod
     def _cloth_geometry(mask: np.ndarray) -> dict[str, Any]:

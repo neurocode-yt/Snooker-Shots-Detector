@@ -518,7 +518,18 @@ class ObjectDetector:
             _, _, bw, bh = cv2.boundingRect(contour)
             circularity = 4 * np.pi * area / perimeter**2
             fill = area / max(1, np.pi * radius**2)
-            if circularity < 0.65 or fill < 0.48 or max(bw, bh) > 1.80 * min(bw, bh):
+            hull = cv2.convexHull(contour)
+            hull_area = float(cv2.contourArea(hull))
+            hull_perimeter = float(cv2.arcLength(hull, True))
+            hull_circularity = 4 * np.pi * hull_area / max(1, hull_perimeter**2)
+            solidity = area / max(1, hull_area)
+            # Compression makes the shaded lower edge jagged. Accept that
+            # outline only when its convex envelope remains round and filled;
+            # fingers and loose fragments fail these independent shape gates.
+            compact_shaded_outline = (
+                circularity >= 0.55 and hull_circularity >= 0.85 and solidity >= 0.85
+            )
+            if (circularity < 0.65 and not compact_shaded_outline) or fill < 0.48 or max(bw, bh) > 1.80 * min(bw, bh):
                 continue
             r = max(2, int(round(radius * 0.72)))
             x0, x1 = max(0, round(cx)-r), min(hsv.shape[1], round(cx)+r+1)
