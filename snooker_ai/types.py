@@ -133,6 +133,19 @@ class FrameFeatures(BaseModel):
     """Per-sample multimodal features at a single analysis timestamp."""
 
     t: float
+    observation_fps: float = 0.0
+    contact_window: bool = False
+    # Coordinates/identities are local to a continuous camera view. Legacy
+    # observations default to a full table; new extraction measures coverage.
+    camera_scene_id: int = 0
+    view_classified: bool = False
+    table_full_view: bool = True
+    table_handling: bool = False
+    handling_score: float = 0.0
+    match_context_valid: bool = True
+    broadcast_replay: bool = False
+    ball_layout_signature: list[float] = Field(default_factory=list)
+    appearance_signature: list[float] = Field(default_factory=list)
     table_confidence: float = 0.0
     table_mask_area_ratio: float = 0.0
     residual_motion_mean: float = 0.0
@@ -159,6 +172,7 @@ class FrameFeatures(BaseModel):
     cue_ball_y: Optional[float] = None
     cue_ball_speed: float = 0.0
     cue_ball_normalized_speed: float = 0.0
+    cue_ball_stable_normalized_speed: Optional[float] = None
     cue_ball_acceleration: float = 0.0
     cue_ball_track_confidence: float = 0.0
     # Optional cue geometry evidence.  When the cue is occluded these remain
@@ -171,6 +185,7 @@ class FrameFeatures(BaseModel):
     cue_contact_score: float = 0.0
     max_ball_normalized_speed: float = 0.0
     ball_kinematics_valid: bool = False  # zero is measured stillness, not a missing value
+    ambiguous_ball_motion: bool = False  # pixel movement in an unresolved ball cluster
     moving_ball_count: int = 0
     occluded_ball_count: int = 0
     ball_residual_motion: float = 0.0
@@ -310,6 +325,7 @@ class AnalysisResult(BaseModel):
     pause_removed_seconds: float = 0.0
     analysis_version: str = "0.1.1-phase1-strict"
     analysis_signature: str = ""
+    analysis_feature_signature: str = ""  # source/config identity of reusable observations
 
     @model_validator(mode="before")
     @classmethod

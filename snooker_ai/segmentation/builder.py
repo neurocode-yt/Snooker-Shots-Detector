@@ -72,10 +72,26 @@ class SegmentBuilder:
         ordered = self._deduplicate_candidates(candidates)
         shots: list[ShotRecord] = []
         feature_times = [feature.t for feature in features]
+        unusable_spans = self._unusable_spans(features)
+        usable_boundaries = sorted((start, reason) for start, _, reason in unusable_spans)
+        boundary_times = [t for t, _ in usable_boundaries]
 
-        for cand in ordered:
+        for candidate_index, cand in enumerate(ordered):
+            contact_index = bisect_left(feature_times, cand.timestamp)
+            near = features[max(0, contact_index-1):contact_index+2]
+            contact = min(near, key=lambda f: abs(f.t-cand.timestamp), default=None)
+            if contact is not None and abs(contact.t-cand.timestamp) <= 0.2 and (
+                not contact.match_context_valid or contact.table_handling
+            ):
+                continue
+            # A separately verified next strike bounds unresolved tracking.
+            # Sparse proposals and replay events cannot supply this boundary.
+            next_strike = next((later.timestamp for later in ordered[candidate_index + 1:]
+                                if not later.possible_replay
+                                and self._candidate_supported(later)), None)
             stop = self.ball_stop.detect_stop(
-                cand, features, duration, times=feature_times
+                cand, features, duration, times=feature_times,
+                next_strike_timestamp=next_strike,
             )
             refined_end = float(cand.evidence.get("refined_stop_timestamp", 0.0))
             refined_confirmation = float(cand.evidence.get("refined_stop_confirmation_timestamp", 0.0))
@@ -83,7 +99,8 @@ class SegmentBuilder:
             if (
                 cand.timestamp <= refined_end <= refined_confirmation <= duration
                 and refined_confirmation - refined_end + 1e-6 >= self.ball_stop.confirm_s
-                and refined_confidence >= 0.70
+                and (next_strike is None or refined_confirmation < next_strike)
+                and (refined_confidence >= 0.70 or cand.evidence.get("refined_stop_upper_bound", 0) >= 0.5)
             ):
                 stop = StopDetection(
                     motion_start=float(cand.evidence.get("refined_ball_motion_start", cand.timestamp)),
@@ -93,7 +110,9 @@ class SegmentBuilder:
                     end_confidence=refined_confidence, start_confidence=stop.start_confidence,
                     confirmed=True,
                     manual_review_required=bool(cand.evidence.get("refined_stop_review_required", 0)),
-                    reason="confirmed_native_stop",
+                    reason=("confirmed_stationary_after_unseen_interval_upper_bound"
+                            if cand.evidence.get("refined_stop_upper_bound", 0) >= 0.5
+                            else "confirmed_native_stop"),
                 )
 
             # A practice stroke/feathering candidate with no sustained ball
@@ -122,6 +141,13 @@ class SegmentBuilder:
             minimum_clip_end = physical_stop
 
             clip_start = self._strict_start(cand.timestamp, duration)
+            usable_start = 0.0
+            preparation_boundary_reason = ""
+            for _, end, reason in unusable_spans:
+                if usable_start < end <= cand.timestamp:
+                    usable_start = end
+                    preparation_boundary_reason = reason
+            clip_start = max(clip_start, usable_start)
             prep_start = clip_start
             # The strict contract uses an actual physical stop whenever it
             # is observed early.  If tracking remains unresolved, cap the
@@ -149,13 +175,25 @@ class SegmentBuilder:
             # segment.
             max_clip = float(mode_cfg.get("max_clip_seconds", 9.0))
             clip_cap = clamp(clip_start + max_clip, clip_start, duration)
-            if physical_stop > clip_cap + 1e-9:
+            availability_reason = ""
+            boundary_index = bisect_right(boundary_times, cand.timestamp)
+            if boundary_index < len(usable_boundaries):
+                boundary_t, boundary_reason = usable_boundaries[boundary_index]
+                if boundary_t < clip_cap:
+                    clip_cap = boundary_t
+                    availability_reason = boundary_reason
+            if stop.reason == "unconfirmed_ball_handling_boundary":
+                clip_cap = min(clip_cap, physical_stop)
+            # A sustained broadcast cutaway limits usable edit footage. It is
+            # not a measurement of where the balls physically stopped.
+            cutaway_boundary = availability_reason == "non_table_cutaway_clip_boundary"
+            if physical_stop > clip_cap + 1e-9 and not cutaway_boundary:
                 physical_stop = clip_cap
                 confirmation = clip_cap
                 last_motion = min(last_motion, clip_cap)
                 end_confidence = min(end_confidence, 0.20)
                 stop_confirmed = False
-                stop_reason = "max_clip_duration_review_cap"
+                stop_reason = availability_reason or "max_clip_duration_review_cap"
                 stop_review = True
             min_after = max(
                 0.0,
@@ -194,6 +232,7 @@ class SegmentBuilder:
                 or stop_review
                 or not stop_confirmed
                 or float(cand.evidence.get("cue_geometry_confirmed", 1.0)) < 0.5
+                or clip_end-clip_start < minimum_clip
             )
 
             possible_replay = bool(cand.possible_replay)
@@ -228,6 +267,10 @@ class SegmentBuilder:
                     "stop_confirmation_timestamp": confirmation,
                     "stop_confirmed": stop_confirmed,
                     "stop_reason": stop_reason,
+                    "usable_source_end_timestamp": clip_cap,
+                    "usable_source_end_reason": availability_reason,
+                    "usable_source_start_timestamp": usable_start,
+                    "usable_source_start_reason": preparation_boundary_reason,
                 }
             )
             views = self._views_between(
@@ -266,6 +309,104 @@ class SegmentBuilder:
         shots = self._resolve_overlaps(shots, strict=True, source_duration=duration)
         logger.info("Built %d shot segments (strict)", len(shots))
         return shots
+
+    def _unusable_boundaries(self, features: list[FrameFeatures]) -> list[tuple[float, str]]:
+        """Bound padding by established handling or a confirmed foreign table.
+
+        A physical stop can be confirmed before the referee reaches a ball.
+        Minimum-viewing padding must not subsequently extend into that action.
+        Handling flags need a sustained run; foreign flags already carry the
+        broadcast guard's confirmation and retrospective start timestamp.
+        """
+        return sorted((start, reason) for start, _, reason in self._unusable_spans(features))
+
+    def _unusable_spans(self, features: list[FrameFeatures]) -> list[tuple[float, float, str]]:
+        """Known unusable action, ending at the next observed usable frame.
+
+        Retain complete spans so preparation footage as well as minimum-viewing
+        padding can be bounded. A brief handling flag still requires the same
+        sustained confirmation used for end boundaries.
+        """
+        spans = []
+        handling_start = None
+        handling_confirmed = False
+        previous = None
+        foreign_start = None
+        for f in features:
+            if not f.match_context_valid:
+                if foreign_start is None:
+                    foreign_start = f.t
+            elif foreign_start is not None:
+                spans.append((foreign_start, f.t, "foreign_match_clip_boundary"))
+                foreign_start = None
+            usable_handling = (f.table_handling and f.match_context_valid
+                               and not f.broadcast_replay and f.view_type not in {
+                                   CameraViewType.REPLAY, CameraViewType.SLOW_MOTION_REPLAY})
+            continuous = (previous is not None and 0 < f.t-previous.t <= .76
+                          and f.camera_scene_id == previous.camera_scene_id)
+            if handling_start is not None and (not usable_handling or not continuous):
+                if handling_confirmed:
+                    spans.append((handling_start, f.t, "ball_handling_clip_boundary"))
+                handling_start = None
+                handling_confirmed = False
+            if usable_handling:
+                if handling_start is None:
+                    handling_start = f.t
+                if f.t-handling_start >= self.ball_stop.handling_confirmation_s-1e-9:
+                    handling_confirmed = True
+            previous = f
+        if features:
+            if foreign_start is not None:
+                spans.append((foreign_start, features[-1].t, "foreign_match_clip_boundary"))
+            if handling_start is not None and handling_confirmed:
+                spans.append((handling_start, features[-1].t, "ball_handling_clip_boundary"))
+        spans.extend(self._non_table_cutaway_spans(features))
+        return sorted(spans)
+
+    def _non_table_cutaway_spans(self, features: list[FrameFeatures]) -> list[tuple[float, float, str]]:
+        """Sustained measured non-table footage can bound an automatic edit.
+
+        A partial table still supplies ball observations. Only a classified
+        non-table view contributes, and holes longer than the recorded sampling
+        cadence reset confirmation rather than becoming elapsed evidence.
+        """
+        confirmation = max(0.0, float(self.config.get(
+            "ball_stop.non_table_cutaway_boundary_confirmation_seconds", 3.0)))
+        spans = []
+        start = None
+        confirmed = False
+        previous = None
+        for f in features:
+            non_table = bool(f.view_classified and not f.table_observable
+                             and f.match_context_valid and not f.broadcast_replay
+                             and f.view_type not in {
+                                 CameraViewType.REPLAY, CameraViewType.SLOW_MOTION_REPLAY,
+                             })
+            cadence = min(f.observation_fps, previous.observation_fps) if previous is not None else 0
+            max_gap = min(.76, 1.5 / cadence) if cadence > 0 else self.ball_stop.max_observation_gap_s
+            continuous = previous is not None and 0 < f.t-previous.t <= max_gap + 1e-9
+            if start is not None and (not non_table or not continuous):
+                if confirmed:
+                    spans.append((start, f.t, "non_table_cutaway_clip_boundary"))
+                start = None
+                confirmed = False
+            if non_table:
+                if start is None:
+                    start = f.t
+                if f.t-start >= confirmation-1e-9:
+                    confirmed = True
+            previous = f
+        if features and start is not None and confirmed:
+            spans.append((start, features[-1].t, "non_table_cutaway_clip_boundary"))
+        return spans
+
+    @staticmethod
+    def _candidate_supported(candidate: StrikeCandidate) -> bool:
+        evidence = candidate.evidence
+        return bool(evidence.get("dense_transition_confirmed", 0) >= 0.5
+                    or evidence.get("cue_ball_motion_confirmed", 0) >= 0.5
+                    or (evidence.get("occlusion_inferred", 0) >= 0.5
+                        and evidence.get("ball_onset_run", 0) >= 2))
 
     @staticmethod
     def _deduplicate_candidates(
@@ -410,6 +551,7 @@ class SegmentBuilder:
             shot.shot_id = i
             if strict:
                 expected_start = self._strict_start(shot.cue_strike, float("inf"))
+                expected_start = max(expected_start, float(shot.evidence.get("usable_source_start_timestamp", 0)))
                 shot.clip_start = expected_start
                 shot.preparation_start = expected_start
                 physical = float(
@@ -420,7 +562,10 @@ class SegmentBuilder:
                     shot.evidence.get("minimum_clip_end_timestamp") or physical
                 )
                 end_trim = float(shot.evidence.get("end_before_ball_stop_seconds", 0.0))
-                shot.clip_end = max(physical - end_trim, minimum_end)
+                shot.clip_end = min(
+                    float(shot.evidence.get("usable_source_end_timestamp", source_duration)),
+                    max(physical - end_trim, minimum_end),
+                )
                 shot.ball_motion_end = physical
                 shot.cue_strike_timestamp = shot.cue_strike
                 shot.clip_start_timestamp = shot.clip_start
@@ -486,7 +631,7 @@ class SegmentBuilder:
                     # A shortened pre-roll must not shorten the next shot's
                     # minimum viewing time. The following pair reconciles any
                     # new overlap; EOF remains an absolute limit.
-                    minimum_end = min(source_duration, max(
+                    minimum_end = min(source_duration, float(nxt.evidence.get("usable_source_end_timestamp", source_duration)), max(
                         new_start + minimum_clip + float(nxt.evidence.get("minimum_clip_transition_padding_seconds", 0)),
                         nxt.cue_strike + float(nxt.evidence.get("minimum_strike_visibility_seconds", 0)),
                     ))

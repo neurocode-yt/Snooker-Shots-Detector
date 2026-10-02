@@ -123,6 +123,13 @@ def test_occluded_cue_ball_uses_sustained_visual_onset_for_review(config):
     candidates = detector.detect_candidates(feats)
     assert candidates
     assert any(c.evidence.get("occlusion_inferred", 0.0) >= 0.5 for c in candidates)
+    # Reconfirmation must derive the fallback from the native observations,
+    # rather than either losing it or retaining an inherited sparse flag.
+    for feature in feats:
+        feature.view_classified = True
+    confirmed = detector.refine_boundaries(candidates, feats)
+    assert any(c.evidence.get("native_occlusion_confirmed", 0) >= .5
+               and c.evidence.get("ball_onset_run", 0) >= 2 for c in confirmed)
 
 
 def test_colour_respot_is_not_a_cue_strike(config):

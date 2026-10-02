@@ -1,4 +1,4 @@
-"""Heuristic camera-view classification for Phase 1."""
+"""Visual camera-view classification with explicit cloth visibility cues."""
 
 from __future__ import annotations
 
@@ -15,8 +15,8 @@ class ViewClassifier:
     """
     Classifies broadcast frames without a trained CNN (Phase 1).
 
-    Uses green cloth ratio, edge density (graphics), skin-tone ratio (close-ups),
-    and simple spatial layout cues. Phase 2+ should replace with a learned classifier.
+    Cloth extent distinguishes a complete table from a zoomed or clipped table.
+    Graphics scores are diagnostic only: a colourful banner cannot prove replay.
     """
 
     def __init__(self, config: Config):
@@ -65,36 +65,39 @@ class ViewClassifier:
         return float(np.clip(0.6 * top_edges * 5 + 0.4 * high_sat, 0.0, 1.0))
 
     def classify(self, frame_bgr: np.ndarray) -> tuple[CameraViewType, float, dict[str, Any]]:
-        g = self.green_ratio(frame_bgr)
-        e = self.edge_density(frame_bgr)
-        s = self.skin_ratio(frame_bgr)
-        r = self.replay_graphic_score(frame_bgr)
-        # A permanent, saturated tournament banner can score like a replay
-        # graphic on every frame.  A clearly visible main table is stronger
-        # evidence of a live table view; replay duplication is handled later by
-        # temporal signature matching around broadcast cuts.
-        graphic_replay = bool(
-            r >= self.replay_score_thr
-            and self.partial_table_ratio <= g < self.main_table_ratio
-        )
+        # Classification should not run several full-resolution conversions for
+        # every native frame; all these cues are spatially coarse.
+        h, w = frame_bgr.shape[:2]
+        frame = frame_bgr
+        if w > 640:
+            frame = cv2.resize(frame_bgr, (640, max(1, round(h * 640 / w))))
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        green = cv2.inRange(hsv, self.hsv_lower, self.hsv_upper)
+        g = float(np.count_nonzero(green)) / float(green.size)
+        e = self.edge_density(frame)
+        s = self.skin_ratio(frame)
+        r = self.replay_graphic_score(frame)
+        geometry = self._cloth_geometry(green)
         extra: dict[str, Any] = {
             "green_ratio": g,
             "edge_density": e,
             "skin_ratio": s,
             "replay_graphic_score": r,
-            "is_replay_candidate": graphic_replay,
+            "is_replay_candidate": False,
+            "broadcast_graphics_candidate": bool(r >= self.replay_score_thr),
+            **geometry,
         }
 
         if g >= self.main_table_ratio:
-            # Distinguish full table vs zoomed ball close-up: high green + very zoomed feel
-            if g > 0.55 and e < 0.08:
-                return CameraViewType.BALL_CLOSEUP, g, extra
-            return CameraViewType.MAIN_TABLE, g, extra
-
-        if graphic_replay:
-            return CameraViewType.REPLAY, g, extra
+            if geometry["full_table_candidate"]:
+                return CameraViewType.MAIN_TABLE, g, extra
+            return CameraViewType.BALL_CLOSEUP, g, extra
 
         if g >= self.partial_table_ratio:
+            # A wide strip of cloth in the foreground is a useful local ball
+            # view, even when most of the frame contains a player or crowd.
+            if geometry["cloth_width_ratio"] >= 0.55:
+                return CameraViewType.BALL_CLOSEUP, g, extra
             if s > self.closeup_skin_threshold:
                 return CameraViewType.PLAYER_CLOSEUP, g, extra
             return CameraViewType.WIDE_ARENA, g, extra
@@ -109,3 +112,28 @@ class ViewClassifier:
             return CameraViewType.AUDIENCE, g, extra
 
         return CameraViewType.OTHER, g, extra
+
+    @staticmethod
+    def _cloth_geometry(mask: np.ndarray) -> dict[str, Any]:
+        """Report extent only; perspective calibration belongs to the tracker."""
+        h, w = mask.shape
+        work = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+        contours, _ = cv2.findContours(work, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if not contours:
+            return {
+                "cloth_width_ratio": 0.0, "cloth_height_ratio": 0.0,
+                "cloth_clipped": False, "full_table_candidate": False,
+            }
+        contour = max(contours, key=cv2.contourArea)
+        x, y, bw, bh = cv2.boundingRect(contour)
+        clipped = bool(x <= w * 0.01 or x + bw >= w * 0.99 or y <= h * 0.01 or y + bh >= h * 0.99)
+        full = bool(
+            not clipped and bw / w >= 0.30 and bh / h >= 0.22
+            and 0.65 <= bw / max(1, bh) <= 3.2
+        )
+        return {
+            "cloth_width_ratio": float(bw / w),
+            "cloth_height_ratio": float(bh / h),
+            "cloth_clipped": clipped,
+            "full_table_candidate": full,
+        }

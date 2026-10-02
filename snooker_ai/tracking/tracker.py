@@ -6,9 +6,12 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
+import cv2
 from scipy.optimize import linear_sum_assignment
 
 from snooker_ai.object_detection.detector import Detection
+
+_STABLE_MOTION_WINDOW_SECONDS = 0.35
 
 
 @dataclass
@@ -29,6 +32,7 @@ class Track:
     cue_color_confidence: float = 0.0
     shape_confidence: float = 0.0
     cloth_surround_confidence: float = 0.0
+    cue_sphere_supported: bool = False
     predicted_position: Optional[tuple[float, float]] = None
     last_update_t: float = 0.0
     _stable_speed_key: tuple | None = field(default=None, repr=False)
@@ -312,13 +316,17 @@ class BallTracker:
             else 0.70 * track.cloth_surround_confidence
             + 0.30 * float(detection.cloth_surround_confidence)
         )
+        track.cue_sphere_supported = bool(getattr(detection, "cue_sphere_supported", False))
 
     def _mark_missed(self, track: Track, t: float) -> None:
         if track.visible:
             # Preserve the same coherent motion estimate used while visible.
             # Instantaneous centre jitter must not turn a resting ball into an
             # unresolved moving ball merely because a hand covers it.
-            track.last_visible_stable_speed = track.stable_speed(diameter_px=track.diameter)
+            track.last_visible_stable_speed = track.stable_speed(
+                window_seconds=_STABLE_MOTION_WINDOW_SECONDS,
+                diameter_px=track.diameter,
+            )
         track.visible = False
         track.occluded = True
         track.missed_frames += 1
@@ -352,6 +360,7 @@ class BallTracker:
             ),
             shape_confidence=float(detection.shape_confidence),
             cloth_surround_confidence=float(detection.cloth_surround_confidence),
+            cue_sphere_supported=bool(getattr(detection, "cue_sphere_supported", False)),
             predicted_position=(float(detection.cx), float(detection.cy)),
             last_update_t=t,
         )
@@ -394,14 +403,14 @@ class BallTracker:
         if diameter <= 1e-6:
             return 0.0
         speeds = [
-            track.stable_speed(diameter_px=diameter)
+            self.stable_track_speed(track, ball_diameter_px or track.diameter or diameter)
             for track in self.tracks
             if track.active
             and track.visible
             and track.hits >= 2
             and self.is_ball_quality_track(track)
         ]
-        return float(max(speeds) / diameter) if speeds else 0.0
+        return float(max(speeds)) if speeds else 0.0
 
     def stable_track_speed(self, track: Track, ball_diameter_px: float = 0.0) -> float:
         """Return one track's jitter-resistant speed in ball diameters/second."""
@@ -411,7 +420,48 @@ class BallTracker:
         diameter = float(ball_diameter_px or track.diameter or self.estimated_ball_diameter())
         if diameter <= 1e-6:
             return 0.0
-        return float(track.stable_speed(diameter_px=diameter) / diameter)
+        return float(track.stable_speed(
+            window_seconds=_STABLE_MOTION_WINDOW_SECONDS, diameter_px=diameter,
+        ) / diameter)
+
+    def ambiguous_region_motion(self, previous_gray: np.ndarray | None, gray: np.ndarray,
+                                camera_transform: np.ndarray | None = None) -> bool:
+        """Check actual pixels when circles are ambiguous or a ball rolls slowly.
+
+        Rejecting an ambiguous centre jump must not imply that a moving red in
+        the same pack has stopped. Small aligned patches retain that motion
+        without treating the detector's choice of a neighbouring ball as motion.
+        """
+        if previous_gray is None or previous_gray.shape != gray.shape:
+            return False
+        transform = np.asarray(camera_transform if camera_transform is not None
+                               else [[1, 0, 0], [0, 1, 0]], dtype=np.float32)
+        if transform.shape != (2, 3) or not np.isfinite(transform).all():
+            return False
+        h, w = gray.shape
+        for track in self.tracks:
+            recently_visible = track.visible or track.last_update_t-track.last_t <= .40
+            # A red joining another red can lose its individual circle and
+            # coherent speed before the actual rolling edge becomes still.
+            # Keep its small pixel region through that brief identity hole.
+            if (not recently_visible or track.hits < 2
+                or track.shape_confidence < .48 or track.cloth_surround_confidence < .45):
+                continue
+            _, cx, cy = track.positions[-1]
+            radius = max(3, int(round(track.diameter*.75)))
+            x0, x1 = max(0, int(cx)-radius), min(w, int(cx)+radius+1)
+            y0, y1 = max(0, int(cy)-radius), min(h, int(cy)+radius+1)
+            if x1 <= x0 or y1 <= y0:
+                continue
+            local = transform.copy()
+            local[:, 2] -= (x0, y0)
+            before = cv2.warpAffine(previous_gray, local, (x1-x0, y1-y0),
+                                    flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+            delta = gray[y0:y1, x0:x1].astype(np.int16)-before.astype(np.int16)
+            delta = np.abs(delta-np.median(delta))
+            if np.count_nonzero(delta >= 18) >= max(4, delta.size*.025):
+                return True
+        return False
 
     @staticmethod
     def is_ball_quality_track(track: Track) -> bool:
@@ -421,8 +471,19 @@ class BallTracker:
         surround_ok = (
             track.cloth_surround_confidence <= 0.0
             or track.cloth_surround_confidence >= 0.45
+            or (track.label == "cue_ball" and track.shape_confidence >= .80
+                and track.cue_sphere_supported
+                and track.cloth_surround_confidence >= .30)
         )
-        return bool(shape_ok and surround_ok)
+        # Circle proposals inside a packed group of reds can alternate between
+        # neighbouring balls. A weak circular edge with a crowded annulus is
+        # insufficient to assign an individual moving identity. Isolated balls
+        # and well-defined circular components retain their motion evidence.
+        ambiguous_cluster = (
+            0 < track.shape_confidence < 0.80
+            and 0 < track.cloth_surround_confidence < 0.65
+        )
+        return bool(shape_ok and surround_ok and not ambiguous_cluster)
 
     def occluded_moving_count(
         self,

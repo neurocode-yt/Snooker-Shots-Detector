@@ -41,6 +41,7 @@ class SceneObservationStream:
         self.observations: list[SceneObservation] = []
         self._previous_hist: np.ndarray | None = None
         self._two_back_hist: np.ndarray | None = None
+        self._previous_image: np.ndarray | None = None
 
     def observe(
         self,
@@ -57,6 +58,10 @@ class SceneObservationStream:
             if self._previous_hist is not None
             else 0.0
         )
+        image = self.detector.cut_thumbnail(frame_bgr)
+        if self._previous_image is not None:
+            adjacent = max(adjacent, self.detector.structural_cut_score(self._previous_image, image))
+        self._previous_image = image
 
         # Reproduce the original one-sample look-ahead fade confirmation.  Once
         # sample i+1 arrives, observation i can be updated without retaining its
@@ -111,6 +116,24 @@ class SceneDetector:
 
     def start_stream(self) -> SceneObservationStream:
         return SceneObservationStream(self)
+
+    @staticmethod
+    def cut_thumbnail(frame: np.ndarray) -> np.ndarray:
+        return cv2.cvtColor(cv2.resize(frame, (64, 36)), cv2.COLOR_BGR2GRAY)
+
+    @staticmethod
+    def structural_cut_score(before: np.ndarray, after: np.ndarray) -> float:
+        """Catch cuts between similarly green views without trusting ball motion.
+
+        A ball/player changes a small region. A cut rearranges most of the image.
+        Large pans also invalidate image-space tracks and may reset them safely.
+        """
+        difference = cv2.absdiff(before, after)
+        changed = float(np.mean(difference > 24))
+        mean = float(np.mean(difference))
+        if changed < 0.55 or mean < 28:
+            return 0.0
+        return float(np.clip(0.5 + (mean - 28) / 110, 0.5, 1.0))
 
     def histogram(self, frame_bgr: np.ndarray) -> np.ndarray:
         hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)

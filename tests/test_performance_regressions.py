@@ -68,11 +68,13 @@ def test_scene_stream_retains_compact_observations_only(config, synthetic_green_
         assert not any(
             isinstance(value, np.ndarray) for value in vars(observation).values()
         )
-    # Only the two histograms required for fade look-ahead remain resident.
+    # Two histograms and one tiny structural thumbnail remain resident; full
+    # broadcast images must never accumulate in the scene stream.
     arrays = [
         value for value in vars(stream).values() if isinstance(value, np.ndarray)
     ]
-    assert len(arrays) <= 2
+    assert len(arrays) <= 3
+    assert sum(array.nbytes for array in arrays) <= 2 * config.get("scene_detection.histogram_bins", 32)**3 * 4 + 64 * 36
 
 
 def test_analysis_checkpoints_round_trip_and_reject_stale_signatures(
@@ -139,7 +141,7 @@ def test_unresolved_final_candidate_refinement_is_bounded(
     analyzer._refine_candidate_windows(
         tmp_path / "unused.mp4",
         None,
-        TimeMapper(source_duration=3600.0, proxy_duration=3600.0),
+        TimeMapper(source_fps=30.0, source_duration=3600.0, proxy_duration=3600.0),
         3600.0,
         [candidate],
         coarse,
@@ -190,7 +192,7 @@ def test_confirmed_shot_refines_strike_and_stop_edges_not_entire_roll(
     analyzer._refine_candidate_windows(
         tmp_path / "unused.mp4",
         None,
-        TimeMapper(source_duration=300.0, proxy_duration=300.0),
+        TimeMapper(source_fps=30.0, source_duration=300.0, proxy_duration=300.0),
         300.0,
         [candidate],
         coarse,
@@ -227,7 +229,7 @@ def test_legacy_audio_seed_has_no_special_verification_bypass(
     analyzer._refine_candidate_windows(
         tmp_path / "unused.mp4",
         None,
-        TimeMapper(source_duration=3600.0, proxy_duration=3600.0),
+        TimeMapper(source_fps=30.0, source_duration=3600.0, proxy_duration=3600.0),
         3600.0,
         [seed],
         [FrameFeatures(t=99.0), FrameFeatures(t=100.0)],
@@ -247,7 +249,7 @@ def test_rejected_contact_does_not_open_a_long_tracking_window(config, tmp_path,
 
     monkeypatch.setattr(analyzer, "_extract_features", extract)
     analyzer._refine_candidate_windows(
-        tmp_path / "video.mp4", None, TimeMapper(source_duration=3600), 3600,
+        tmp_path / "video.mp4", None, TimeMapper(source_fps=30.0, source_duration=3600), 3600,
         [StrikeCandidate(timestamp=100, confidence=0.8)], [], resume=False,
     )
     assert len(calls) == 1
@@ -286,7 +288,7 @@ def test_rejected_proposal_cannot_overwrite_a_verified_stop(config, tmp_path, mo
 
     monkeypatch.setattr(analyzer, "_extract_features", extract)
     _, features = analyzer._refine_candidate_windows(
-        tmp_path / "video.mp4", None, TimeMapper(source_duration=300), 300,
+        tmp_path / "video.mp4", None, TimeMapper(source_fps=30.0, source_duration=300), 300,
         [StrikeCandidate(timestamp=100, confidence=0.9), StrikeCandidate(timestamp=104, confidence=0.8)],
         [], resume=False,
     )
@@ -323,7 +325,7 @@ def test_visual_refinement_reuses_only_complete_native_rate_observations(
     monkeypatch.setattr(analyzer, "_extract_features", extract)
     _, dense = analyzer._refine_candidate_windows(
         tmp_path / "video.mp4", None,
-        TimeMapper(source_duration=300, proxy_duration=300), 300,
+        TimeMapper(source_fps=30.0, source_duration=300, proxy_duration=300), 300,
         [candidate], existing, resume=False, existing_dense=existing,
     )
     if missing_interval:

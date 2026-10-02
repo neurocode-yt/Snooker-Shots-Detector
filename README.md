@@ -15,8 +15,10 @@ The web timeline remains available for optional inspection.
 
 - **Strict edit mode:** 2s lead-in, at least 4s clear footage and 2s after impact; trim 2–3s from the end when those minimums allow
   (pre-roll and safety horizon configurable)
-- **Multimodal detection** — residual motion after camera compensation + table mask + audio support
-- **Replay-aware** — replays flagged and excluded by default
+- **Visual shot detection** — cue/ball trajectories, camera compensation and table motion; commentary does not trigger shots
+- **Multiple camera angles** — resets local tracking at cuts, links continuing shots, adapts close-up scale and requires complete table coverage to confirm all-ball stillness
+- **Replay association** — excludes verified repeated motion/layouts; incomplete unmarked replays can remain uncertain
+- **Referee handling and broadcast cutaways** — suppresses supported ball-handling actions and sustained mismatching score overlays
 - **Pre-analysis match editor** — split/delete frame breaks with a 1×–64× zoomable timeline; original uploads remain untouched
 - **Review UI** — move boundaries, add/delete shots, mark replays, export labels
 - **Selected-shots preview** — immediately play included shots as one continuous virtual timeline
@@ -74,6 +76,12 @@ stationary confirmation supplies evidence and does not itself add edit padding.
 Automatic tracking follows longer rolls beyond seven seconds, with a configurable
 60-second safety horizon. Uncertainty remains in the diagnostics and does not
 block automatic export. A video that ends during a shot keeps its remaining footage.
+
+Camera cuts inside a shot retain their original timing; mix transitions join
+separate shots. When contact or the final stop is hidden, the editor records a
+bounded estimate rather than pretending to observe the exact instant. The
+[multicamera detection notes](docs/multicamera_detection_2026-10-02.md) describe
+the verified behavior and visibility limits.
 
 `strict` is the only editing mode, with the viewing-time minimum taking priority. When the next
 shot starts before the previous window would end (fast break play), the boundary

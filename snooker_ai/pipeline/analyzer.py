@@ -26,8 +26,12 @@ from snooker_ai.ingestion.proxy import generate_proxy
 from snooker_ai.object_detection.detector import ObjectDetector
 from snooker_ai.replay_detection.detector import ReplayDetector
 from snooker_ai.scene_detection.detector import SceneDetector, SceneObservation
+from snooker_ai.scene_detection.broadcast_context import BroadcastContextGuard
+from snooker_ai.scene_detection.table_context import (
+    TableInteractionDetector, ViewGeometry, ball_layout, view_geometry,
+)
 from snooker_ai.segmentation.builder import SegmentBuilder
-from snooker_ai.table_detection.localizer import TableLocalizer
+from snooker_ai.table_detection.localizer import TableLocalizer, TableObservation
 from snooker_ai.temporal_model.state_machine import ShotStateMachine
 from snooker_ai.tracking.tracker import BallTracker
 from snooker_ai.motion.residual import ResidualMotionAnalyzer
@@ -50,7 +54,7 @@ from snooker_ai.utils.video import open_capture, sampled_frames
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 11
+_CACHE_VERSION = 18
 
 
 class Analyzer:
@@ -74,6 +78,8 @@ class Analyzer:
         self.objects = ObjectDetector(config)
         self.tracker = BallTracker()
         self._last_cue_tip: Optional[tuple[float, float, float]] = None
+        self.broadcast_context = BroadcastContextGuard(config)
+        self._coarse_context_reference: list[FrameFeatures] = []
 
     def analyze(
         self,
@@ -92,13 +98,17 @@ class Analyzer:
         checkpoint_path = self.job_dir / "checkpoint.json"
         analysis_path = self.job_dir / "analysis.json"
         source = Path(source)
+        self.broadcast_context.reset_observations(preserve_target=False)
+        self._coarse_context_reference = []
         result_signature = self._result_signature(source)
+        prior_result = None
 
         # Resume completed analysis
         if resume and not force_reanalyze and analysis_path.exists():
             try:
                 data = json.loads(analysis_path.read_text(encoding="utf-8"))
                 result = AnalysisResult.model_validate(data)
+                prior_result = result
                 if result.analysis_signature == result_signature:
                     if result.mode != mode:
                         result = self._rebuild_segments(result, mode)
@@ -181,6 +191,7 @@ class Analyzer:
         rack_waits = self._rack_wait_intervals(features)
         preparation_intervals = self._preparation_intervals(features)
         rack_reference = features
+        self._coarse_context_reference = features
         # Only the interior of continuously observed waiting intervals is
         # suppressed. Keep their edges available for break-off recovery.
         candidates = [candidate for candidate in candidates if not any(
@@ -214,9 +225,12 @@ class Analyzer:
             ),
             signature=analysis_signature,
             resume=resume,
+            existing_dense=(prior_result.features if prior_result is not None
+                            and prior_result.analysis_feature_signature == analysis_signature else None),
         )
         if dense_features:
             self._annotate_scenes(dense_features, scenes)
+            self._apply_match_context(dense_features, rack_reference)
             dense_features = self.strike_det.score_frames(dense_features)
             features = self._merge_feature_layers(features, dense_features)
             # Dense ranges may reveal a strike that the sparse proposal pass
@@ -245,10 +259,39 @@ class Analyzer:
                     retained.append(candidate)
             candidates = retained
 
+            # A contact can become supported only after independently decoded
+            # views have been combined. Its original proposal then never ran
+            # travel tracking. Sparse quiet rows cannot confirm a physical stop,
+            # so recover those missing intervals before constructing clips.
+            unresolved = self._unresolved_stop_candidates(candidates, features, metadata.duration)
+            if unresolved:
+                _, recovered = self._refine_candidate_windows(
+                    proxy.proxy_path, proxy.audio_path, proxy.mapper,
+                    metadata.duration, unresolved, rack_reference,
+                    progress=lambda frac, msg: report(
+                        0.90 + 0.02 * frac, JobStatus.REFINING.value, msg
+                    ),
+                    signature=f"{analysis_signature}:stop-recovery",
+                    resume=resume, existing_dense=dense_features,
+                )
+                if recovered:
+                    self._annotate_scenes(recovered, scenes)
+                    self._apply_match_context(recovered, rack_reference)
+                    dense_features = self._merge_feature_layers(dense_features, recovered)
+                    self.strike_det.score_frames(dense_features)
+                    features = self._merge_feature_layers(rack_reference, dense_features)
+                    candidates = self._deduplicate_candidates(
+                        candidates + self.strike_det.detect_candidates(features)
+                    )
+                    candidates = self.strike_det.refine_boundaries(candidates, dense_features)
+                    candidates = [c for c in candidates if self.segmenter._candidate_supported(c)
+                                  and not any(lo <= c.timestamp <= hi for lo, hi in preparation_intervals)
+                                  and self._rack_candidate_supported(c, rack_reference)]
+
             candidates = self.replay_det.mark_candidates(candidates, features)
             features = self.state_machine.label(features)
 
-        report(0.9, JobStatus.SEGMENTING.value, "Building shot segments")
+        report(0.92, JobStatus.SEGMENTING.value, "Building shot segments")
         shots = self.segmenter.build(candidates, features, metadata.duration, mode)
         shots = self._preserve_user_edits(shots, job_id)
         shots = self._score_importance(shots, features)
@@ -308,6 +351,7 @@ class Analyzer:
             edited_duration=edited,
             pause_removed_seconds=removed,
             analysis_signature=result_signature,
+            analysis_feature_signature=analysis_signature,
         )
         self._save_result(result)
         if checkpoint_path.exists():
@@ -449,12 +493,24 @@ class Analyzer:
         )
         prev_gray: Optional[np.ndarray] = None
         prev_hist: Optional[np.ndarray] = None
+        prev_image: Optional[np.ndarray] = None
         prev_sample_t: Optional[float] = None
+        camera_scene_id = 0
+        interaction = TableInteractionDetector()
+        geometry = ViewGeometry()
+        current_view = CameraViewType.OTHER
+        current_view_extra: dict = {}
+        self.broadcast_context.reset_observations(preserve_target=True)
+        last_context_t: float | None = None
+        context = None
+        active_foreign = False
+        context_reference_times = [f.t for f in self._coarse_context_reference]
         idx = 0
         kept = 0
         scene_step = max(1, int(round(sample_fps / 2)))  # ~2 fps for scene detect
         refine_fps = float(self.config.get("analysis.refine_fps", 30.0))
-        dense_pass = sample_fps >= refine_fps * 0.90
+        native_target = min(refine_fps, proxy_fps, mapper.source_fps or refine_fps)
+        dense_pass = sample_fps >= native_target * 0.90
         rack_gate = (
             RackIdleGate() if sample_fps <= 3
             and bool(self.config.get("analysis.skip_racked_waits", True)) else None
@@ -535,13 +591,19 @@ class Analyzer:
                 # observation, never a stationary frame, and view-local trackers are
                 # reacquired without terminating the logical shot.
                 hist = self.scene_det.histogram(frame)
+                cut_image = self.scene_det.cut_thumbnail(frame)
                 online_cut = 0.0
                 if prev_hist is not None:
                     online_cut = self.scene_det.cut_score_simple(prev_hist, hist)
+                if prev_image is not None:
+                    online_cut = max(online_cut, self.scene_det.structural_cut_score(prev_image, cut_image))
+                prev_image = cut_image
                 cut_like = online_cut >= float(
                     self.config.get("scene_detection.hard_cut_threshold", 0.42)
                 )
                 if cut_like:
+                    camera_scene_id = int(round(t * 1000)) + 1
+                    interaction.reset()
                     self.table.reset()
                     self.motion.reset()
                     self.objects.reset()
@@ -556,11 +618,14 @@ class Analyzer:
                 if rack_gate is not None and rack_gate.observe(frame, t):
                     features.append(FrameFeatures(
                         t=t, rack_idle=True, red_rack_intact=True, observation_valid=False,
+                        observation_fps=sample_fps,
                         red_area_ratio=rack_gate.red_area_ratio, rack_observation_valid=True,
                         table_observable=True, table_confidence=0.9,
                         green_ratio=rack_gate.table_ratio,
                         table_mask_area_ratio=rack_gate.table_ratio,
                         scene_cut_score=online_cut,
+                        camera_scene_id=camera_scene_id,
+                        table_full_view=False,
                     ))
                     if scene_stream is not None and kept % scene_step == 0:
                         scene_stream.observe(frame, t, histogram=hist)
@@ -584,13 +649,53 @@ class Analyzer:
                     or last_table_t is None
                     or t - last_table_t + 1e-9 >= table_refresh_period
                 ):
+                    prior_table = table_obs
                     table_obs = self.table.detect(frame)
+                    if not cut_like and self._table_view_changed(prior_table, table_obs):
+                        # Similar green histograms can conceal a close-up to
+                        # overhead cut. A large playing-surface rearrangement
+                        # still invalidates image coordinates and ball scale.
+                        online_cut = max(online_cut, .5)
+                        cut_like = True
+                        camera_scene_id = int(round(t * 1000)) + 1
+                        interaction.reset()
+                        self.table.reset()
+                        table_obs = self.table.detect(frame)
+                        self.motion.reset()
+                        self.objects.reset()
+                        self.tracker = BallTracker()
+                        self._last_cue_tip = None
+                        prev_gray = None
+                        prev_sample_t = None
+                        last_flow_t = None
+                    geometry = view_geometry(table_obs, frame.shape)
+                    current_view, _, current_view_extra = self.scene_det.classifier.classify(frame)
+                    if geometry.full_table:
+                        current_view = CameraViewType.MAIN_TABLE
                     last_table_t = t
+                if last_context_t is None or t - last_context_t >= 0.49:
+                    context = self.broadcast_context.observe(frame, t, current_view)
+                    last_context_t = t
+                    if context.foreign_match:
+                        active_foreign = True
+                    elif context.identity_known and context.identity_similarity >= self.broadcast_context.same_threshold:
+                        active_foreign = False
+                    if context.foreign_match and context.foreign_interval_start is not None:
+                        for earlier in reversed(features):
+                            if earlier.t < context.foreign_interval_start:
+                                break
+                            earlier.match_context_valid = False
+                context_valid = not active_foreign
+                observable = bool(table_obs.confidence >= 0.25 and table_obs.area_ratio >= 0.03)
                 dets = self.objects.detect(
                     frame,
                     table_obs.mask,
                     use_hough=kept % hough_step == 0,
-                )
+                    partial_view=not geometry.full_table,
+                    table_bounds=((table_obs.bbox[0], table_obs.bbox[1],
+                                   table_obs.bbox[0]+table_obs.bbox[2], table_obs.bbox[1]+table_obs.bbox[3])
+                                  if table_obs.bbox is not None else None),
+                ) if observable and context_valid else []
                 ball_regions = [
                     (d.cx, d.cy, d.diameter_px)
                     for d in dets
@@ -599,7 +704,8 @@ class Analyzer:
                     and d.cloth_surround_confidence >= 0.45
                 ]
                 residual = None
-                if prev_gray is not None:
+                comparison_gray = prev_gray
+                if prev_gray is not None and observable and context_valid:
                     dt = t - prev_sample_t if prev_sample_t is not None else 1.0 / max(sample_fps, 1.0)
                     refresh_flow = last_flow_t is None or t - last_flow_t + 1e-9 >= flow_refresh_period
                     residual = self.motion.analyze(
@@ -612,7 +718,7 @@ class Analyzer:
                     )
                     if refresh_flow:
                         last_flow_t = t
-                prev_gray = gray
+                prev_gray = gray if observable and context_valid else None
                 prev_sample_t = t
                 prev_hist = hist
                 tracks = self.tracker.update(
@@ -633,16 +739,21 @@ class Analyzer:
                     1
                     for tr in visible_tracks
                     if diameter > 0.5
-                    and self.tracker.stable_track_speed(tr, diameter) >= stop_speed
+                    and self.tracker.stable_track_speed(tr, tr.diameter or diameter) >= stop_speed
                 )
                 cue_speed_px = cue.speed() if cue is not None and cue.visible else 0.0
-                cue_speed_norm = cue_speed_px / diameter if cue is not None and diameter > 0.5 else 0.0
+                cue_diameter = cue.diameter if cue is not None and cue.diameter > 0.5 else diameter
+                cue_speed_norm = cue_speed_px / cue_diameter if cue is not None and cue_diameter > 0.5 else 0.0
                 cue_accel_norm = (
-                    float(np.hypot(cue.ax, cue.ay) / diameter)
-                    if cue is not None and cue.visible and diameter > 0.5
+                    float(np.hypot(cue.ax, cue.ay) / cue_diameter)
+                    if cue is not None and cue.visible and cue_diameter > 0.5
                     else 0.0
                 )
-                cue_geometry = self._cue_geometry(frame, table_obs.mask, cue, diameter, t)
+                cue_geometry = self._cue_geometry(frame, table_obs.mask, cue, cue_diameter, t)
+                handling, handling_score = interaction.observe(
+                    frame, table_obs, dets, t,
+                    cue_visible=bool(cue_geometry["visible"]) or cue_speed_norm >= 1.0,
+                ) if observable and context_valid else (False, 0.0)
                 table_observable = bool(
                     table_obs.confidence >= float(
                         self.config.get("table_detection.min_confidence", 0.25)
@@ -651,15 +762,23 @@ class Analyzer:
                 )
                 observation_valid = bool(
                     table_observable
+                    and context_valid
                     and not cut_like
                     and (residual is None or residual.observation_valid)
                 )
 
 
-                from snooker_ai.types import CameraViewType
-
                 feat = FrameFeatures(
                     t=t,
+                    observation_fps=sample_fps,
+                    camera_scene_id=camera_scene_id,
+                    view_classified=True,
+                    table_full_view=geometry.full_table,
+                    table_handling=handling,
+                    handling_score=handling_score,
+                    match_context_valid=context_valid,
+                    appearance_signature=current_view_extra.get("replay_stinger_signature", []),
+                    ball_layout_signature=ball_layout(frame, dets, geometry) if kept % max(1, int(sample_fps / 5)) == 0 else [],
                     rack_restart=bool(rack_gate and rack_gate.just_released),
                     red_rack_intact=bool(rack_gate and rack_gate.racked),
                     red_area_ratio=rack_gate.red_area_ratio if rack_gate else 0.0,
@@ -670,7 +789,7 @@ class Analyzer:
                     residual_motion_max=residual.residual_max if residual else 0.0,
                     motion_area_ratio=residual.motion_area_ratio if residual else 0.0,
                     camera_motion_magnitude=residual.camera_magnitude if residual else 0.0,
-                    view_type=CameraViewType.OTHER,
+                    view_type=current_view,
                     green_ratio=table_obs.area_ratio,
                     ball_count=len([tr for tr in tracks if tr.active]),
                     cue_ball_detected=cue is not None and cue.visible,
@@ -682,6 +801,9 @@ class Analyzer:
                     cue_ball_y=(cue.positions[-1][2] if cue is not None and cue.visible else None),
                     cue_ball_speed=cue_speed_px,
                     cue_ball_normalized_speed=cue_speed_norm,
+                    cue_ball_stable_normalized_speed=(
+                        self.tracker.stable_track_speed(cue, cue_diameter)
+                        if cue is not None and cue.visible else None),
                     cue_ball_acceleration=cue_accel_norm,
                     cue_ball_track_confidence=(cue.confidence if cue is not None and cue.visible else 0.0),
                     cue_tip_visible=bool(cue_geometry["visible"]),
@@ -689,11 +811,13 @@ class Analyzer:
                     cue_approach_speed=float(cue_geometry["approach_speed"]),
                     cue_forward_motion=float(cue_geometry["forward_motion"]),
                     cue_contact_score=float(cue_geometry["contact_score"]),
-                    max_ball_normalized_speed=self.tracker.max_normalized_speed(diameter),
+                    max_ball_normalized_speed=self.tracker.max_normalized_speed(),
                     ball_kinematics_valid=any(
                         tr.hits >= 2 and self.tracker.is_ball_quality_track(tr)
                         for tr in visible_tracks
                     ),
+                    ambiguous_ball_motion=self.tracker.ambiguous_region_motion(
+                        comparison_gray, gray, residual.camera_transform if residual else None),
                     moving_ball_count=moving_count,
                     occluded_ball_count=self.tracker.occluded_moving_count(
                         min_normalized_speed=stop_speed,
@@ -704,6 +828,7 @@ class Analyzer:
                     motion_raw=residual.motion_raw if residual else 0.0,
                     scene_cut_score=online_cut,
                 )
+                self._apply_match_context([feat], self._coarse_context_reference, context_reference_times)
                 features.append(feat)
 
                 if scene_stream is not None and kept % scene_step == 0:
@@ -741,7 +866,96 @@ class Analyzer:
         if progress:
             progress(1.0, f"Sampled {len(features)} frames")
         observations = scene_stream.observations if scene_stream is not None else []
+        self._apply_match_context(features, self._coarse_context_reference)
         return features, observations, []
+
+    @staticmethod
+    def _apply_match_context(features: list[FrameFeatures], reference: list[FrameFeatures],
+                             reference_times: list[float] | None = None) -> None:
+        """Carry confirmed foreign-table spans into scoreboard-free dense views.
+
+        A refinement seek must not learn a foreign scoreboard as a new target.
+        Coarse decisions are reused only inside the observed invalid interval.
+        """
+        if not reference:
+            return
+        times = reference_times if reference_times is not None else [f.t for f in reference]
+        for f in features:
+            i = bisect_right(times, f.t) - 1
+            if 0 <= i < len(reference) and f.t - reference[i].t <= 0.76:
+                if not reference[i].match_context_valid:
+                    f.match_context_valid = False
+                    f.observation_valid = False
+
+    @staticmethod
+    def _table_view_changed(before: TableObservation | None, after: TableObservation) -> bool:
+        """Detect a major view-local cloth change missed by image histograms."""
+        if (before is None or before.contour is None or after.contour is None
+                or before.confidence < .5 or after.confidence < .5
+                or before.bbox is None or after.bbox is None):
+            return False
+        ax, ay, aw, ah = before.bbox
+        bx, by, bw, bh = after.bbox
+        area_a, area_b = aw*ah, bw*bh
+        if min(area_a, area_b) <= 0:
+            return False
+        intersection = max(0, min(ax+aw, bx+bw)-max(ax, bx))*max(0, min(ay+ah, by+bh)-max(ay, by))
+        overlap = intersection / (area_a+area_b-intersection)
+        scale = area_b / area_a
+        return overlap < .35 or (overlap < .60 and (scale < .55 or scale > 1.8))
+
+    def _unresolved_stop_candidates(
+        self, candidates: list[StrikeCandidate], features: list[FrameFeatures], duration: float,
+    ) -> list[StrikeCandidate]:
+        """Find supported contacts whose forward stop observations are missing."""
+        selected = []
+        times = [f.t for f in features]
+        ordered = sorted(candidates, key=lambda c: c.timestamp)
+        for index, candidate in enumerate(ordered):
+            if candidate.possible_replay or not self.segmenter._candidate_supported(candidate):
+                continue
+            evidence = candidate.evidence
+            declared_stop = float(evidence.get("refined_stop_timestamp", duration))
+            next_t = ordered[index+1].timestamp if index+1 < len(ordered) else None
+            limit = min(declared_stop-.5, duration,
+                        candidate.timestamp+(self.segmenter.ball_stop.max_after_strike or 60))
+            baseline = self.segmenter.ball_stop._baseline(features, candidate.timestamp, times)
+            quiet_start = None
+            previous = None
+            earlier_quiet = False
+            sparse_run = False
+            for f in features[bisect_left(times, candidate.timestamp+.2):bisect_left(times, limit)]:
+                quiet = (self.segmenter.ball_stop._is_full_table_observation(f)
+                         and not self.segmenter.ball_stop._moving_evidence(
+                             f, already_moving=True, baseline=baseline))
+                continuous = (previous is not None and f.t-previous.t <= .76
+                              and f.camera_scene_id == previous.camera_scene_id)
+                if not quiet or not continuous or quiet_start is None:
+                    quiet_start = f.t if quiet else None
+                    sparse_run = bool(quiet and 0 < f.observation_fps <= 3)
+                else:
+                    sparse_run = sparse_run or (0 < f.observation_fps <= 3)
+                if (sparse_run and quiet_start is not None
+                        and f.t-quiet_start >= max(.75, self.segmenter.ball_stop.confirm_s)):
+                    # Sparse quiet samples are a decoding proposal, never stop
+                    # proof. Revisit them rather than borrowing a later shot's
+                    # native boundary beyond a hole in the original coverage.
+                    earlier_quiet = True
+                    break
+                previous = f
+            if earlier_quiet:
+                selected.append(candidate)
+                continue
+            if (evidence.get("refined_stop_timestamp", 0) > candidate.timestamp
+                    and (evidence.get("refined_stop_confidence", 0) >= .70
+                         or evidence.get("refined_stop_upper_bound", 0) >= .5)):
+                continue
+            stop = self.segmenter.ball_stop.detect_stop(
+                candidate, features, duration, times=times, next_strike_timestamp=next_t,
+            )
+            if not stop.confirmed and stop.reason != "unconfirmed_ball_handling_boundary":
+                selected.append(candidate)
+        return selected
 
     def _refine_candidate_windows(
         self,
@@ -779,6 +993,8 @@ class Analyzer:
                 self.config.get("analysis.sample_fps", 10.0),
             )
         )
+        dense_fps = min(dense_fps, mapper.source_fps or dense_fps,
+                        float(self.config.get("proxy.target_fps", dense_fps)))
         merge_gap = float(
             self.config.get("analysis.refine_merge_gap_seconds", 0.25)
         )
@@ -965,7 +1181,9 @@ class Analyzer:
         long safety horizon therefore preserves genuine long rolls without
         decoding a minute at native rate for every proposed strike.
         """
-        native_fps = float(self.config.get("analysis.refine_fps", 30.0))
+        native_fps = min(float(self.config.get("analysis.refine_fps", 30.0)),
+                         mapper.source_fps or 30.0,
+                         float(self.config.get("proxy.target_fps", 30.0)))
         tracking_fps = min(native_fps, float(self.config.get("analysis.stop_tracking_fps", 10.0)))
         backward = float(self.config.get("analysis.refine_backward_seconds", 2.0))
         strike_post = float(self.config.get("analysis.strike_refine_post_seconds", 2.0))
@@ -975,7 +1193,10 @@ class Analyzer:
         horizon = stop_detector.max_after_strike or float(self.config.get("motion.max_ball_travel_seconds", 60.0))
         known = sorted(existing_dense or [], key=lambda feature: feature.t)
         known_times = [feature.t for feature in known]
-        priorities = {int(round(feature.t * 10000)): 1 for feature in known}
+        priorities = {int(round(feature.t * 10000)): (
+            4 if feature.contact_window else 3 if feature.view_classified and 0 < i < len(known)-1
+            and max(feature.t-known[i-1].t,known[i+1].t-feature.t) <= 1.5/native_fps else 1
+        ) for i,feature in enumerate(known)}
         window_index = 0
 
         def remember(part: list[FrameFeatures], priority: int = 0) -> None:
@@ -997,7 +1218,8 @@ class Analyzer:
             if not part or part[-1].t < candidate.timestamp + stop_detector.min_travel_s + stop_detector.confirm_s:
                 return False
             stop = stop_detector.detect_stop(candidate, part, duration)
-            return stop.confirmed and part[-1].t + 1e-6 >= stop.stop_confirmation_timestamp + tail
+            bounded = stop.confirmed or stop.reason == "unconfirmed_ball_handling_boundary"
+            return bounded and part[-1].t + 1e-6 >= stop.stop_confirmation_timestamp + tail
 
         def observe(start: float, end: float, fps: float, candidate: StrikeCandidate | None = None, priority: int = 0) -> list[FrameFeatures]:
             nonlocal window_index
@@ -1025,7 +1247,7 @@ class Analyzer:
                 priority < 3
                 or all(priorities.get(int(round(feature.t * 10000)), -1) >= priority for feature in covered)
             ):
-                return covered
+                return self._merge_feature_layers([], covered)
             part = self._load_dense_window(signature, index, start, end) if resume and signature else None
             if part is None:
                 part, _, _ = self._extract_features(
@@ -1042,6 +1264,8 @@ class Analyzer:
         total = max(1, len(candidates))
         for number, candidate in enumerate(candidates):
             start = candidate.timestamp - backward
+            if candidate.evidence.get("sparse_proposal", 0) >= .5 and candidate.uncertainty_start > 0:
+                start = min(start, candidate.uncertainty_start - min(backward, .75))
             if candidate.evidence.get("rack_restart", 0) >= 0.5:
                 start = min(start, candidate.uncertainty_start)
             contact = observe(start, candidate.timestamp + strike_post, native_fps)
@@ -1072,11 +1296,13 @@ class Analyzer:
                 if progress:
                     progress((number + 1) / total, f"Rejected non-strike proposal {number + 1}/{len(candidates)}")
                 continue
-            remember(contact, 3)
+            for feature in contact:
+                feature.contact_window = True
+            remember(contact, 4)
             tracking = observe(start, candidate.timestamp + horizon, tracking_fps, candidate, priority=1)
             # Restore native observations where the cheaper tracking layer used
             # the same timestamps, keeping exact contact evidence authoritative.
-            remember(contact, 3)
+            remember(contact, 4)
             if tracking:
                 stop = stop_detector.detect_stop(candidate, tracking, duration)
                 if stop.confirmed:
@@ -1099,21 +1325,64 @@ class Analyzer:
                             "refined_stop_confidence": refined_stop.end_confidence,
                             "refined_ball_motion_start": stop.motion_start,
                             "refined_stop_review_required": float(refined_stop.manual_review_required),
+                            "refined_stop_upper_bound": float("upper_bound" in refined_stop.reason),
                         })
             if progress:
                 progress((number + 1) / total, f"Tracked shot {number + 1}/{len(candidates)}")
-        return candidates, known
+        return candidates, self._merge_feature_layers([], known)
 
     @staticmethod
     def _merge_feature_layers(
         coarse: list[FrameFeatures], dense: list[FrameFeatures]
     ) -> list[FrameFeatures]:
-        by_time: dict[int, FrameFeatures] = {
-            int(round(f.t * 10000.0)): f for f in coarse
-        }
-        for f in dense:
-            by_time[int(round(f.t * 10000.0))] = f
-        return [by_time[key] for key in sorted(by_time)]
+        # Keep independently decoded contact windows intact: canonical IDs on
+        # the combined timeline must never mutate the caller's tracker output.
+        dense_times = [f.t for f in dense]
+        coarse_times = [f.t for f in coarse]
+        by_time: dict[int, FrameFeatures] = {}
+        for f in coarse:
+            i = bisect_right(dense_times, f.t)
+            covered = 0 < i < len(dense) and dense[i].t-dense[i-1].t <= .16
+            finer = (covered and f.t > dense[0].t+1e-6
+                     and dense[i-1].observation_fps > f.observation_fps > 0
+                     and f.match_context_valid)
+            if not finer:
+                by_time[int(round(f.t * 10000.0))] = f.model_copy()
+        for i, original in enumerate(dense):
+            j = bisect_right(coarse_times, original.t)
+            if 0 < j < len(coarse):
+                left, right = coarse[j-1], coarse[j]
+                if (left.observation_fps > original.observation_fps > 0
+                        and right.observation_fps == left.observation_fps
+                        and right.t-left.t <= 1.5/left.observation_fps
+                        and original.match_context_valid):
+                    continue
+            f = original.model_copy()
+            key = int(round(f.t * 10000.0))
+            prior = by_time.get(key)
+            if prior is not None:
+                if ((prior.contact_window and not f.contact_window)
+                        or prior.observation_fps > f.observation_fps > 0):
+                    prior.match_context_valid = prior.match_context_valid and f.match_context_valid
+                    continue
+                # A first seek image cannot measure its preceding cut. Inside
+                # a continuous dense window, its measured cut timing wins over
+                # a delayed coarse comparison of the same camera change.
+                if i == 0 or f.t-dense[i-1].t > .16:
+                    f.scene_cut_score = max(f.scene_cut_score, prior.scene_cut_score)
+                f.match_context_valid = f.match_context_valid and prior.match_context_valid
+            by_time[key] = f
+        merged = [by_time[key] for key in sorted(by_time)]
+        # Seek-local IDs cannot be compared between independently decoded
+        # windows. Rebuild IDs from the observed cuts on the merged timeline.
+        scene_id = 0
+        previous_t = None
+        for f in merged:
+            if f.scene_cut_score >= 0.5 or (previous_t is not None and f.t-previous_t > 0.76):
+                scene_id = int(round(f.t*10000)) + 1
+            f.camera_scene_id = scene_id
+            previous_t = f.t
+        return merged
 
     def _deduplicate_candidates(
         self, candidates: list[StrikeCandidate]
@@ -1134,6 +1403,8 @@ class Analyzer:
                 continue
             if candidate.confidence > kept[-1].confidence:
                 previous = kept[-1]
+                candidate.uncertainty_start = min(candidate.uncertainty_start, previous.uncertainty_start)
+                candidate.uncertainty_end = max(candidate.uncertainty_end, previous.uncertainty_end)
                 # Retain useful sparse evidence when a dense candidate replaces
                 # it, while letting the dense timestamp/confidence win.
                 candidate.evidence = {
@@ -1142,6 +1413,8 @@ class Analyzer:
                 }
                 kept[-1] = candidate
             else:
+                kept[-1].uncertainty_start = min(kept[-1].uncertainty_start, candidate.uncertainty_start)
+                kept[-1].uncertainty_end = max(kept[-1].uncertainty_end, candidate.uncertainty_end)
                 kept[-1].evidence = {
                     **candidate.evidence,
                     **kept[-1].evidence,
@@ -1176,7 +1449,8 @@ class Analyzer:
             if scene.start <= feature.t < scene.end or (
                 scene_idx == len(ordered_scenes) - 1 and feature.t >= scene.start
             ):
-                feature.view_type = scene.view_type
+                if not feature.view_classified:
+                    feature.view_type = scene.view_type
 
             cut_idx = bisect_left(cut_times, feature.t)
             near_cut = any(
@@ -1184,7 +1458,7 @@ class Analyzer:
                 for index in (cut_idx - 1, cut_idx)
                 if 0 <= index < len(cut_times)
             )
-            if near_cut:
+            if near_cut and not feature.view_classified:
                 feature.scene_cut_score = max(feature.scene_cut_score, 1.0)
 
     def _analysis_signature(self, source: Path) -> str:
@@ -1197,6 +1471,7 @@ class Analyzer:
             "analysis",
             "scene_detection",
             "camera_view",
+            "broadcast_context",
             "table_detection",
             "camera_motion",
             "motion",
@@ -1225,7 +1500,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 4,  # visual-only selection; reuse observation caches
+            "result_policy_version": 13,
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")
             },
@@ -1308,6 +1583,10 @@ class Analyzer:
         payload = {
             "cache_version": _CACHE_VERSION,
             "signature": signature,
+            # The identity belongs to these source/configuration observations.
+            # Commit it atomically with the matching coarse cache so a crash
+            # cannot pair new observations with another source's old target.
+            "broadcast_target": self.broadcast_context.export_target(),
             "features": [item.model_dump(mode="json") for item in features],
             "scenes": [item.model_dump(mode="json") for item in scenes],
             "candidates": [item.model_dump(mode="json") for item in candidates],
@@ -1355,6 +1634,11 @@ class Analyzer:
             ]
             if not features:
                 return None
+            # Older caches may have no target. Never fall back to the former
+            # unbound broadcast_target.json file, nor keep a previous source's
+            # template on a reused Analyzer instance.
+            self.broadcast_context.reset_observations(preserve_target=False)
+            self.broadcast_context.restore_target(payload.get("broadcast_target", []))
             logger.info(
                 "Loaded coarse checkpoint (%d features, %d candidates)",
                 len(features),
