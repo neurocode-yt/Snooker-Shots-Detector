@@ -169,3 +169,22 @@ It produces 130 included clips, with no included clip over 20 seconds in this
 audit. The audit combines prior full-match observations with fresh bounded
 windows; it is not a fresh full-match accuracy benchmark or a labelled recall
 measurement. Full match detection across unseen broadcasts remains unmeasured.
+
+The final 14-shot preview and 130-clip consolidated export were rendered at
+1280×720, 25fps with H.264 video and stereo 48kHz AAC audio. Complete FFmpeg
+decoding with errors treated as fatal succeeded for both files. Their audio
+and video streams start at zero and have matching durations of 105.08 and
+946.76 seconds respectively, exactly matching the planned export durations.
+The combined preview and full export completed in 444.8 seconds on this
+workspace; this is an export measurement, not a detection speed benchmark.
+
+The full export uses 125 mixes of 0.24 seconds across 129 joins. Four joins
+use a cut because an overlap would cover contact or reduce protected viewing
+time. The source-limited black shot near 1058.129 seconds has 3.30 usable
+seconds before a sustained broadcast cutaway; frame quantization preserves
+3.28 seconds, including 1.28 seconds after the estimated contact. The editor
+retains that shot rather than filling its minimum with unrelated footage.
+All other included clips satisfy the clear-footage and post-contact minimums
+within one frame of export quantization. Preview contact/end images were also
+inspected. This validates the rendered timeline and selected source cases,
+not detection precision or recall across the entire match.
