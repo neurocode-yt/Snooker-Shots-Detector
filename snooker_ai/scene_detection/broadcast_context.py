@@ -25,6 +25,7 @@ class BroadcastContextObservation:
     foreign_match: bool = False
     foreign_interval_start: float | None = None
     target_ready: bool = False
+    target_interval_start: float | None = None
 
 
 class BroadcastContextGuard:
@@ -44,6 +45,8 @@ class BroadcastContextGuard:
         self.foreign_samples = max(2, int(cfg.get("foreign_samples", 3)))
         self.foreign_seconds = float(cfg.get("foreign_seconds", 1.0))
         self.max_gap = float(cfg.get("identity_max_gap_seconds", 2.0))
+        self.return_max_seconds = float(cfg.get("target_return_max_seconds", 15.0))
+        self.return_non_table_seconds = float(cfg.get("target_return_non_table_seconds", 1.0))
         self._learning: list[np.ndarray] = []
         self._learning_start = 0.0
         self._template: np.ndarray | None = None
@@ -51,6 +54,9 @@ class BroadcastContextGuard:
         self._foreign_start: float | None = None
         self._foreign_count = 0
         self._last_time: float | None = None
+        self._foreign_active = False
+        self._non_table_start: float | None = None
+        self._return_table_start: float | None = None
 
     @property
     def target_ready(self) -> bool:
@@ -86,6 +92,37 @@ class BroadcastContextGuard:
         self._foreign_start = None
         self._foreign_count = 0
         self._last_foreign = 0.0
+        self._foreign_active = False
+        self._non_table_start = None
+        self._return_table_start = None
+
+    def _observe_return_episode(
+        self, timestamp: float, view_type: CameraViewType | None,
+    ) -> None:
+        """Remember a new table episode, without assigning it a match yet.
+
+        A foreign-table insert can end on a player or arena view, followed by
+        the target's break-off close-up with no scoreboard.  The following
+        target scoreboard can identify this bounded table episode afterwards.
+        A bare camera cut or elapsed time supplies no identity evidence.
+        """
+        if self._last_time is not None and timestamp - self._last_time > self.max_gap:
+            self._non_table_start = None
+            self._return_table_start = None
+        if not self._foreign_active or view_type is None:
+            return
+        if view_type in (CameraViewType.MAIN_TABLE, CameraViewType.BALL_CLOSEUP):
+            if self._non_table_start is not None:
+                if timestamp - self._non_table_start >= self.return_non_table_seconds:
+                    self._return_table_start = timestamp
+                self._non_table_start = None
+            if (self._return_table_start is not None
+                    and timestamp - self._return_table_start > self.return_max_seconds):
+                self._return_table_start = None
+        else:
+            self._return_table_start = None
+            if self._non_table_start is None:
+                self._non_table_start = timestamp
 
     @staticmethod
     def scoreboard_signature(frame_bgr: np.ndarray) -> np.ndarray | None:
@@ -181,6 +218,7 @@ class BroadcastContextGuard:
         timestamp = float(timestamp)
         if self._last_time is not None and timestamp < self._last_time:
             raise ValueError("Broadcast context observations must be chronological")
+        self._observe_return_episode(timestamp, view_type)
         self._last_time = timestamp
         if view_type is not None and view_type != CameraViewType.MAIN_TABLE:
             return BroadcastContextObservation(timestamp, target_ready=self._template is not None)
@@ -206,7 +244,11 @@ class BroadcastContextGuard:
             )
         similarity = float(np.clip(np.dot(signature, self._template), 0.0, 1.0))
         strong_foreign = similarity < self.foreign_threshold
+        target_interval_start = None
         if strong_foreign:
+            # Contradictory scoreboard evidence invalidates the entire proposed
+            # return, even before enough samples confirm another foreign span.
+            self._return_table_start = None
             if self._foreign_start is None or timestamp - self._last_foreign > self.max_gap:
                 self._foreign_start = timestamp
                 self._foreign_count = 0
@@ -215,15 +257,24 @@ class BroadcastContextGuard:
         else:
             self._foreign_start = None
             self._foreign_count = 0
+            if similarity >= self.same_threshold:
+                if self._foreign_active:
+                    target_interval_start = self._return_table_start
+                self._foreign_active = False
+                self._return_table_start = None
+                self._non_table_start = None
         confirmed = bool(
             strong_foreign and self._foreign_start is not None
             and self._foreign_count >= self.foreign_samples
             and timestamp - self._foreign_start >= self.foreign_seconds
         )
+        if confirmed:
+            self._foreign_active = True
         return BroadcastContextObservation(
             timestamp, scoreboard_visible=True,
             identity_known=similarity >= self.same_threshold or strong_foreign,
             identity_similarity=similarity, foreign_match=confirmed,
             foreign_interval_start=self._foreign_start if confirmed else None,
             target_ready=True,
+            target_interval_start=target_interval_start,
         )
