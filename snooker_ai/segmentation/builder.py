@@ -102,8 +102,15 @@ class SegmentBuilder:
                 and (next_strike is None or refined_confirmation < next_strike)
                 and (refined_confidence >= 0.70 or cand.evidence.get("refined_stop_upper_bound", 0) >= 0.5)
             ):
+                refined_motion_start = float(cand.evidence.get("refined_ball_motion_start", cand.timestamp))
+                # A separate end-window tracker may reacquire the rolling ball
+                # later than the native contact observations. Preserve that
+                # earlier measured onset when adopting its refined stop; a
+                # default/unconfirmed onset supplies no such evidence.
+                if stop.start_confidence >= .70:
+                    refined_motion_start = min(refined_motion_start, stop.motion_start)
                 stop = StopDetection(
-                    motion_start=float(cand.evidence.get("refined_ball_motion_start", cand.timestamp)),
+                    motion_start=refined_motion_start,
                     last_ball_motion_timestamp=float(cand.evidence.get("refined_last_motion_timestamp", refined_end)),
                     physical_stop_timestamp=refined_end,
                     stop_confirmation_timestamp=refined_confirmation,
