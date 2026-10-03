@@ -83,6 +83,10 @@ bounded estimate rather than pretending to observe the exact instant. The
 [multicamera detection notes](docs/multicamera_detection_2026-10-02.md) describe
 the verified behavior and visibility limits.
 
+The [broadcast recall benchmark](benchmarks/README.md) measures missed and extra
+shots against independently inspected source intervals. It separates sections
+used to develop fixes from held-out checks; it does not claim full-match accuracy.
+
 `strict` is the only editing mode, with the viewing-time minimum taking priority. When the next
 shot starts before the previous window would end (fast break play), the boundary
 is trimmed between the two shots so neither shot is lost. Legacy mode names are

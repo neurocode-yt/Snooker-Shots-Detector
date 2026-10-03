@@ -1,0 +1,38 @@
+# Broadcast shot recall
+
+`selby_lisowski_recall.json` contains complete, bounded source intervals from
+`Jack Lisowski vs Mark Selby - 2026 Quarter-Final.mp4`. Times are source seconds.
+The video is not distributed with the repository.
+
+The labels were made by inspecting continuous source-image sweeps, then checking
+the potential contacts at 10–25 fps. Every live target-match shot inside a window
+is listed. Referee handling, replays, waiting, and preparation are negatives.
+Contact bounds describe visible uncertainty; they are not invented exact impact
+frames. Physical ball stops and clip viewing quality are separate checks.
+
+The opening and return-from-break windows are **development** data: their misses
+informed the detector changes. The late-frame and arena-break windows were marked
+after those changes were frozen, without consulting predictions, and are held-out
+checks for that iteration. If future changes use their failures, treat them as
+development data and add another independently inspected section. A second
+mid-frame holdout was inspected independently. The late-frame endpoint was
+extended after checking a baseline prediction at the original boundary; its
+annotation note records this limitation.
+
+Run the evaluator from the repository root in PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.evaluate_broadcast_recall `
+    "path\to\analysis.json" `
+    "benchmarks\selby_lisowski_recall.json" `
+    --output "path\to\recall_report.json"
+```
+
+The report counts one-to-one matched contacts, missed live shots, and extra
+contacts inside labelled windows only. The default contact tolerance is 0.5
+seconds outside the labelled bounds. A duplicate prediction is an extra contact.
+Report development and held-out windows separately when describing results.
+
+These short sections do not establish full-match accuracy, performance on other
+broadcasts, or universal coverage of camera angles. A larger output clip count
+alone is not evidence of better recall or precision.
