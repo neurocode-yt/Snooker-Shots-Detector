@@ -54,7 +54,7 @@ from snooker_ai.utils.video import open_capture, sampled_frames
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 21
+_CACHE_VERSION = 22
 
 
 class Analyzer:
@@ -80,6 +80,8 @@ class Analyzer:
         self._last_cue_tip: Optional[tuple[float, float, float]] = None
         self.broadcast_context = BroadcastContextGuard(config)
         self._coarse_context_reference: list[FrameFeatures] = []
+        self._confirmed_target_returns: list[tuple[float, float]] = []
+        self._detection_diagnostics: dict = {"stages": [], "native_proposals": []}
 
     def analyze(
         self,
@@ -100,6 +102,8 @@ class Analyzer:
         source = Path(source)
         self.broadcast_context.reset_observations(preserve_target=False)
         self._coarse_context_reference = []
+        self._confirmed_target_returns = []
+        self._detection_diagnostics = {"stages": [], "native_proposals": []}
         result_signature = self._result_signature(source)
         prior_result = None
 
@@ -187,6 +191,7 @@ class Analyzer:
         # Re-propose from observations even when resuming an older checkpoint:
         # commentary peaks saved by older versions are not shot candidates.
         candidates = self._visual_proposals(features)
+        self._record_detection_stage("coarse_proposals", candidates, features)
 
         rack_waits = self._rack_wait_intervals(features)
         preparation_intervals = self._preparation_intervals(features)
@@ -208,6 +213,7 @@ class Analyzer:
                     evidence={"rack_restart": 1.0},
                 ))
         candidates = self._deduplicate_candidates(candidates)
+        self._record_detection_stage("after_wait_filters", candidates)
 
         report(0.85, JobStatus.REFINING.value, "Refining strike boundaries")
         # Decode candidate windows at the configured refinement rate.  The same
@@ -258,6 +264,7 @@ class Analyzer:
                 if confirmed and not in_preparation and self._rack_candidate_supported(candidate, rack_reference):
                     retained.append(candidate)
             candidates = retained
+            self._record_detection_stage("native_contact_confirmation", candidates, dense_features)
 
             # A contact can become supported only after independently decoded
             # views have been combined. Its original proposal then never ran
@@ -290,12 +297,16 @@ class Analyzer:
 
             candidates = self.replay_det.mark_candidates(candidates, features)
             candidates = self._recover_replay_returns(candidates, features, metadata.duration)
+            self._record_detection_stage("replay_and_live_returns", candidates)
             features = self.state_machine.label(features)
 
         report(0.92, JobStatus.SEGMENTING.value, "Building shot segments")
         shots = self.segmenter.build(candidates, features, metadata.duration, mode)
         shots = self._preserve_user_edits(shots, job_id)
         shots = self._score_importance(shots, features)
+        self._record_detection_stage("segmentation", candidates, extra={
+            "shot_records": len(shots), "included_shots": sum(s.included for s in shots),
+        })
 
         edited, removed = self.segmenter.recompute_durations(shots, metadata.duration)
 
@@ -366,9 +377,115 @@ class Analyzer:
         features = self.strike_det.score_frames(features)
         if float(self.config.get("analysis.sample_fps", 2.0)) <= 3.0:
             candidates = self.strike_det.detect_sparse_candidates(features)
+            candidates.extend(self._coverage_proposals(features, candidates))
+            candidates = self._deduplicate_candidates(candidates)
         else:
             candidates = self.strike_det.detect_candidates(features)
         return self.replay_det.mark_candidates(candidates, features)
+
+    def _coverage_proposals(
+        self, features: list[FrameFeatures], candidates: list[StrikeCandidate],
+    ) -> list[StrikeCandidate]:
+        """Cover localized table action which a sparse onset cannot measure.
+
+        Coarse camera fitting can fail throughout an otherwise useful close-up,
+        and a short roll can disappear between its two samples. Those failures
+        must open a native verification window rather than veto its extraction.
+        Ball/address evidence or a verified target return is still required;
+        neither aggregate motion nor a camera cut confirms a strike here.
+        """
+        forward = max(.5, float(self.config.get("analysis.strike_refine_post_seconds", 2)))
+        intervals = [self._contact_window(candidate) for candidate in candidates]
+        intervals.sort()
+        merged = []
+        for start, end in intervals:
+            if merged and start <= merged[-1][1]:
+                merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
+            else:
+                merged.append((start, end))
+        ends = [end for _, end in merged]
+        proposed = []
+        covered_until = -1.0
+        previous_t = None
+        previous_scene = None
+        for frame in features:
+            if (not frame.match_context_valid or frame.broadcast_replay or frame.table_handling
+                    or frame.rack_idle or not frame.table_observable or frame.table_confidence < .25
+                    or frame.view_type in {CameraViewType.REPLAY, CameraViewType.SLOW_MOTION_REPLAY,
+                                           CameraViewType.ADVERTISEMENT, CameraViewType.SCOREBOARD,
+                                           CameraViewType.AUDIENCE, CameraViewType.PLAYER_CLOSEUP}):
+                continue
+            if (previous_t is None or frame.t-previous_t > .76
+                    or previous_scene != frame.camera_scene_id):
+                covered_until = -1.0
+            previous_t, previous_scene = frame.t, frame.camera_scene_id
+            diameter = max(1.0, frame.ball_diameter_px)
+            addressed = bool(frame.cue_ball_detected and frame.cue_ball_track_confidence >= .45
+                             and frame.cue_tip_visible and frame.cue_tip_distance_to_ball <= 4*diameter)
+            localized_motion = bool(frame.ball_count > 0 and (
+                frame.cue_ball_normalized_speed >= .5 or frame.max_ball_normalized_speed >= .6
+                or frame.moving_ball_count > 0 or frame.ball_residual_motion >= .15))
+            uncertain_closeup = bool(frame.view_type == CameraViewType.BALL_CLOSEUP
+                                     and frame.ball_count > 0
+                                     and (not frame.observation_valid or frame.motion_raw >= .12))
+            returned = any(start <= frame.t <= end for start, end in self._confirmed_target_returns)
+            if not (addressed or localized_motion or uncertain_closeup or returned):
+                continue
+            # Keep half a second on both sides of an action row. A row merely
+            # touching another window's edge lacks reliable pre/post context.
+            lo, hi = frame.t-.5, frame.t+.5
+            index = bisect_left(ends, hi)
+            already_covered = index < len(merged) and merged[index][0] <= lo
+            if already_covered or hi <= covered_until:
+                continue
+            proposed.append(StrikeCandidate(
+                timestamp=frame.t, confidence=.5, uncertainty_start=max(0, frame.t-1.5),
+                uncertainty_end=frame.t+1.5, camera_view=frame.view_type,
+                evidence={"sparse_proposal": 1., "coverage_proposal": 1.,
+                          "coverage_cue_address": float(addressed),
+                          "coverage_localized_motion": float(localized_motion),
+                          "coverage_uncertain_closeup": float(uncertain_closeup),
+                          "coverage_target_return": float(returned)},
+            ))
+            covered_until = frame.t+forward
+        return proposed
+
+    def _contact_window(self, candidate: StrikeCandidate) -> tuple[float, float]:
+        """Decode the uncertainty union even after nearby proposals are merged."""
+        backward = float(self.config.get("analysis.refine_backward_seconds", 2))
+        forward = float(self.config.get("analysis.strike_refine_post_seconds", 2))
+        start, end = candidate.timestamp-backward, candidate.timestamp+forward
+        if candidate.evidence.get("sparse_proposal", 0) >= .5:
+            if candidate.uncertainty_start > 0:
+                start = min(start, candidate.uncertainty_start-min(backward, .75))
+            end = max(end, candidate.uncertainty_end+.5)
+        if candidate.evidence.get("rack_restart", 0) >= .5:
+            start = min(start, candidate.uncertainty_start)
+        return start, end
+
+    def _record_detection_stage(
+        self, stage: str, candidates: list[StrikeCandidate],
+        features: list[FrameFeatures] | None = None, extra: dict | None = None,
+    ) -> None:
+        """Persist counts at each gate so lost contacts are diagnosable."""
+        row = {"stage": stage, "candidates": len(candidates),
+               "possible_replays": sum(c.possible_replay for c in candidates),
+               "coverage_proposals": sum(c.evidence.get("coverage_proposal", 0) >= .5 for c in candidates),
+               "timestamps": [round(c.timestamp, 6) for c in candidates]}
+        if features is not None:
+            row.update(observations=len(features),
+                       table_observable=sum(f.table_observable for f in features),
+                       valid_observations=sum(f.observation_valid for f in features),
+                       foreign_observations=sum(not f.match_context_valid for f in features),
+                       cue_ball_observations=sum(f.cue_ball_detected for f in features),
+                       native_observations=sum(f.observation_fps >= 10 for f in features))
+        row.update(extra or {})
+        self._detection_diagnostics["stages"].append(row)
+        self._detection_diagnostics["confirmed_target_returns"] = self._confirmed_target_returns
+        try:
+            self._write_json_atomic(self.job_dir/"detection_diagnostics.json", self._detection_diagnostics)
+        except OSError as exc:
+            logger.warning("Could not save detection diagnostics: %s", exc)
 
     def _recover_replay_returns(
         self, candidates: list[StrikeCandidate], features: list[FrameFeatures], duration: float,
@@ -709,6 +826,8 @@ class Analyzer:
                         active_foreign = True
                     elif context.identity_known and context.identity_similarity >= self.broadcast_context.same_threshold:
                         active_foreign = False
+                    if context.target_interval_start is not None:
+                        self._confirm_target_return(features, context.target_interval_start, t)
                     if context.foreign_match and context.foreign_interval_start is not None:
                         for earlier in reversed(features):
                             if earlier.t < context.foreign_interval_start:
@@ -915,6 +1034,23 @@ class Analyzer:
                 if not reference[i].match_context_valid:
                     f.match_context_valid = False
                     f.observation_valid = False
+
+    def _confirm_target_return(
+        self, features: list[FrameFeatures], start: float, end: float,
+    ) -> None:
+        """Reopen only the bounded table episode proved by the target overlay.
+
+        Previously blocked rows contain no object evidence. Repair their match
+        identity, retain their observation uncertainty, and queue native scans
+        through the episode rather than inventing ball observations.
+        """
+        if not 0 < end-start <= 15:
+            return
+        self._confirmed_target_returns.append((start, end))
+        for rows in (features, self._coarse_context_reference):
+            times = [f.t for f in rows]
+            for frame in rows[bisect_left(times, start):bisect_right(times, end)]:
+                frame.match_context_valid = True
 
     @staticmethod
     def _table_view_changed(before: TableObservation | None, after: TableObservation) -> bool:
@@ -1214,8 +1350,6 @@ class Analyzer:
                          mapper.source_fps or 30.0,
                          float(self.config.get("proxy.target_fps", 30.0)))
         tracking_fps = min(native_fps, float(self.config.get("analysis.stop_tracking_fps", 10.0)))
-        backward = float(self.config.get("analysis.refine_backward_seconds", 2.0))
-        strike_post = float(self.config.get("analysis.strike_refine_post_seconds", 2.0))
         stop_warmup = float(self.config.get("analysis.stop_refine_window_seconds", 1.5))
         tail = float(self.config.get("analysis.stop_tracking_tail_seconds", 0.2))
         stop_detector = self.segmenter.ball_stop
@@ -1297,12 +1431,8 @@ class Analyzer:
 
         total = max(1, len(candidates))
         for number, candidate in enumerate(candidates):
-            start = candidate.timestamp - backward
-            if candidate.evidence.get("sparse_proposal", 0) >= .5 and candidate.uncertainty_start > 0:
-                start = min(start, candidate.uncertainty_start - min(backward, .75))
-            if candidate.evidence.get("rack_restart", 0) >= 0.5:
-                start = min(start, candidate.uncertainty_start)
-            contact = observe(start, candidate.timestamp + strike_post, native_fps)
+            start, contact_end = self._contact_window(candidate)
+            contact = observe(start, contact_end, native_fps)
             contact = self.strike_det.score_frames(contact)
             if self.segmenter._candidate_supported(candidate):
                 # A newer detector can require a few later frames to verify
@@ -1332,6 +1462,26 @@ class Analyzer:
                     verified = True
             if verified and not self._rack_candidate_supported(candidate, rack_features or []):
                 verified = False
+                rejection_reason = "racked_table_without_cue_contact"
+            else:
+                rejection_reason = "native_transition_unconfirmed"
+            self._detection_diagnostics["native_proposals"].append({
+                "timestamp": round(candidate.timestamp, 6),
+                "window_start": round(start, 6),
+                "requested_window_end": round(contact_end, 6),
+                "window_end": round(contact[-1].t, 6) if contact else start,
+                "accepted": verified,
+                "reason": "native_contact_confirmed" if verified else rejection_reason,
+                "coverage_proposal": candidate.evidence.get("coverage_proposal", 0) >= .5,
+                "observations": len(contact),
+                "valid_observations": sum(f.observation_valid for f in contact),
+                "foreign_observations": sum(not f.match_context_valid for f in contact),
+                "cue_ball_observations": sum(f.cue_ball_detected for f in contact),
+                "confirmation": {key: candidate.evidence.get(key, 0) for key in (
+                    "dense_transition_confirmed", "sparse_dense_transition",
+                    "occlusion_inferred", "ball_onset_run",
+                )},
+            })
             if not verified:
                 if progress:
                     progress((number + 1) / total, f"Rejected non-strike proposal {number + 1}/{len(candidates)}")
@@ -1540,7 +1690,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 15,
+            "result_policy_version": 16,
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")
             },
@@ -1627,6 +1777,7 @@ class Analyzer:
             # Commit it atomically with the matching coarse cache so a crash
             # cannot pair new observations with another source's old target.
             "broadcast_target": self.broadcast_context.export_target(),
+            "confirmed_target_returns": self._confirmed_target_returns,
             "features": [item.model_dump(mode="json") for item in features],
             "scenes": [item.model_dump(mode="json") for item in scenes],
             "candidates": [item.model_dump(mode="json") for item in candidates],
@@ -1679,6 +1830,8 @@ class Analyzer:
             # template on a reused Analyzer instance.
             self.broadcast_context.reset_observations(preserve_target=False)
             self.broadcast_context.restore_target(payload.get("broadcast_target", []))
+            self._confirmed_target_returns = [tuple(span) for span in payload.get("confirmed_target_returns", [])
+                                              if len(span) == 2 and 0 < span[1]-span[0] <= 15]
             logger.info(
                 "Loaded coarse checkpoint (%d features, %d candidates)",
                 len(features),
@@ -1764,7 +1917,11 @@ class Analyzer:
             return empty
         cx, cy = float(cue.positions[-1][1]), float(cue.positions[-1][2])
         h, w = frame.shape[:2]
-        half = int(np.clip(diameter * 10.0, 45, 180))
+        large_ball = diameter > 45
+        # A 145px close-up white used to require a 507px line inside a 361px
+        # crop. Show enough shaft around large balls, while keeping work bounded.
+        half = int(np.clip(diameter * (3.0 if large_ball else 10.0), 45,
+                           360 if large_ball else 180))
         x0, x1 = max(0, int(cx) - half), min(w, int(cx) + half + 1)
         y0, y1 = max(0, int(cy) - half), min(h, int(cy) + half + 1)
         if x1 <= x0 or y1 <= y0:
@@ -1775,14 +1932,15 @@ class Analyzer:
             local_mask = table_mask[y0:y1, x0:x1]
             crop = cv2.bitwise_and(crop, crop, mask=local_mask)
         edges = cv2.Canny(crop, 50, 150, apertureSize=3)
-        min_len = max(18, int(round(diameter * 3.5)))
+        min_len = max(18, int(round(diameter * (1.0 if large_ball else 3.5))))
         lines = cv2.HoughLinesP(
             edges,
             1.0,
             np.pi / 180.0,
-            threshold=max(12, int(round(diameter * 1.4))),
+            threshold=max(12, int(round(min(diameter * 1.4, min_len * .45)))),
             minLineLength=min_len,
-            maxLineGap=max(3, int(round(diameter * 0.8))),
+            maxLineGap=max(3, int(round(min(diameter * .8, min_len * .15)))) if large_ball
+            else max(3, int(round(diameter * .8))),
         )
         if lines is None:
             self._last_cue_tip = None
@@ -1802,7 +1960,10 @@ class Analyzer:
             db = float(np.hypot(local_cx - bx, local_cy - by))
             nearest = (ax, ay) if da <= db else (bx, by)
             endpoint_dist = min(da, db)
-            if cross > diameter * 1.35 or endpoint_dist > diameter * 3.2:
+            if cross > diameter * (.35 if large_ball else 1.35) or endpoint_dist > diameter * (2.0 if large_ball else 3.2):
+                continue
+            if large_ball and (endpoint_dist < .30*diameter
+                               or max(da, db) < endpoint_dist+.75*diameter):
                 continue
             # The far endpoint must extend away from the ball; this rejects
             # short cushion/scoreboard edges crossing the crop.

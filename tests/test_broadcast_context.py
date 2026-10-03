@@ -125,3 +125,93 @@ def test_corrupt_target_caches_are_rejected_without_replacing_learned_identity(v
     expected = guard.export_target()
     assert not guard.restore_target(values)
     assert guard.export_target() == expected
+
+
+def foreign_guard():
+    guard = learned_guard()
+    for t in (4.0, 4.5, 5.0):
+        observation = guard.observe(foreign_score_frame(), t, CameraViewType.MAIN_TABLE)
+    assert observation.foreign_match
+    return guard
+
+
+def return_closeup_episode(guard, start=5.5):
+    unknown = np.zeros((360, 640, 3), np.uint8)
+    for offset in (0.0, 0.5, 1.0):
+        observation = guard.observe(unknown, start + offset, CameraViewType.PLAYER_CLOSEUP)
+        assert observation.target_interval_start is None
+    for offset in (1.5, 2.0, 2.5):
+        observation = guard.observe(unknown, start + offset, CameraViewType.BALL_CLOSEUP)
+        assert observation.target_interval_start is None
+
+
+def test_following_target_scoreboard_identifies_returning_scoreboard_free_table_episode():
+    guard = foreign_guard()
+    return_closeup_episode(guard)
+    returned = guard.observe(score_frame(), 8.5, CameraViewType.MAIN_TABLE)
+    assert returned.identity_known and not returned.foreign_match
+    assert returned.target_interval_start == 7.0
+    # The preceding non-table interval and any subsequent episode are not
+    # silently relabeled; this is a single retrospective observation.
+    assert guard.observe(score_frame(), 9.0, CameraViewType.MAIN_TABLE).target_interval_start is None
+
+
+def test_direct_foreign_closeup_to_target_cut_does_not_relabel_foreign_shot():
+    guard = foreign_guard()
+    unknown = np.zeros((360, 640, 3), np.uint8)
+    for t in (5.5, 6.0, 6.5):
+        guard.observe(unknown, t, CameraViewType.BALL_CLOSEUP)
+    returned = guard.observe(score_frame(), 7.0, CameraViewType.MAIN_TABLE)
+    assert returned.target_interval_start is None
+
+
+def test_foreign_scoreboard_after_unidentified_episode_cancels_return_proposal():
+    guard = foreign_guard()
+    return_closeup_episode(guard)
+    foreign = guard.observe(foreign_score_frame(), 8.5, CameraViewType.MAIN_TABLE)
+    assert foreign.target_interval_start is None
+    returned = guard.observe(score_frame(), 9.0, CameraViewType.MAIN_TABLE)
+    assert returned.target_interval_start is None
+
+
+def test_unknown_scoreboard_cannot_establish_target_return():
+    guard = foreign_guard()
+    return_closeup_episode(guard)
+    unknown = guard.observe(score_frame("Stan Moody", "Highfield"), 8.5,
+                            CameraViewType.MAIN_TABLE)
+    assert not unknown.identity_known
+    assert unknown.target_interval_start is None
+
+
+def test_sparse_observation_gap_cannot_bridge_target_return_episode():
+    guard = foreign_guard()
+    return_closeup_episode(guard)
+    returned = guard.observe(score_frame(), 12.0, CameraViewType.MAIN_TABLE)
+    assert returned.target_interval_start is None
+
+
+def test_long_unidentified_table_episode_cannot_be_relabelled_by_later_target():
+    guard = foreign_guard()
+    return_closeup_episode(guard)
+    unknown = np.zeros((360, 640, 3), np.uint8)
+    for t in np.arange(8.5, 25.0, 0.5):
+        guard.observe(unknown, t, CameraViewType.BALL_CLOSEUP)
+    returned = guard.observe(score_frame(), 25.0, CameraViewType.MAIN_TABLE)
+    assert returned.target_interval_start is None
+
+
+def test_short_non_table_flash_cannot_relabel_another_table_episode():
+    guard = foreign_guard()
+    unknown = np.zeros((360, 640, 3), np.uint8)
+    guard.observe(unknown, 5.5, CameraViewType.PLAYER_CLOSEUP)
+    guard.observe(unknown, 6.0, CameraViewType.BALL_CLOSEUP)
+    returned = guard.observe(score_frame(), 6.5, CameraViewType.MAIN_TABLE)
+    assert returned.target_interval_start is None
+
+
+def test_reset_discards_unconfirmed_target_return_episode():
+    guard = foreign_guard()
+    return_closeup_episode(guard)
+    guard.reset_observations(preserve_target=True)
+    returned = guard.observe(score_frame(), 0.0, CameraViewType.MAIN_TABLE)
+    assert returned.target_interval_start is None

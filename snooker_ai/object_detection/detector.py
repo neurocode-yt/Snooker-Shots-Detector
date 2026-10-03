@@ -43,6 +43,7 @@ class Detection:
     cloth_surround_confidence: float = 0.0
     cue_sphere_supported: bool = False
     cue_sphere_red_occlusion: bool = False
+    cue_sphere_black_occlusion: bool = False
 
     def __post_init__(self) -> None:
         _, _, w, h = self.bbox
@@ -75,6 +76,7 @@ class _Proposal:
     source_count: int = 1
     cue_sphere_supported: bool = False
     cue_sphere_red_occlusion: bool = False
+    cue_sphere_black_occlusion: bool = False
 
 
 class ObjectDetector:
@@ -194,6 +196,12 @@ class ObjectDetector:
                 cv2.drawContours(mask, [cv2.convexHull(max(contours, key=cv2.contourArea))], -1, 255, -1)
 
         x0, y0, x1, y1 = table_bounds if table_bounds is not None else self._table_bbox(mask)
+        upper_ball_margin = max(4, int(round(min(h, w) * .06))) if partial_view else 0
+        if partial_view:
+            # A low camera sees the upper half of a ball above the visible
+            # cloth boundary. Keep those source pixels in the ROI; only the
+            # independently checked ivory-sphere proposals may use them.
+            y0 = max(0, y0 - upper_ball_margin)
         if x1 <= x0 or y1 <= y0:
             return []
         roi = frame_bgr[y0:y1, x0:x1]
@@ -203,7 +211,14 @@ class ObjectDetector:
 
         table_h, table_w = roi.shape[:2]
         hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-        warm_spheres = self._warm_cue_spheres(hsv, roi_mask) if partial_view else []
+        if partial_view:
+            upper_mask = cv2.dilate(
+                roi_mask, np.ones((upper_ball_margin + 1, 1), np.uint8),
+                anchor=(0, 0),
+            )
+            warm_spheres = self._warm_cue_spheres(hsv, upper_mask)
+        else:
+            warm_spheres = []
         diameter_prior = self._diameter_prior(table_w, table_h)
         if partial_view:
             # A close-up can show a 50px white ball on only a fraction of the
@@ -396,6 +411,7 @@ class ObjectDetector:
                 color_conf >= 0.50 and surround_conf >= 0.65
                 or proposal.cue_sphere_supported and surround_conf >= 0.30
                 or proposal.cue_sphere_red_occlusion and surround_conf >= 0.10
+                or proposal.cue_sphere_black_occlusion and surround_conf >= 0.20
             )
             label = "cue_ball" if cue_ball else "object_ball"
             observation_conf = float(
@@ -423,6 +439,7 @@ class ObjectDetector:
                     cloth_surround_confidence=surround_conf,
                     cue_sphere_supported=proposal.cue_sphere_supported and cue_ball,
                     cue_sphere_red_occlusion=proposal.cue_sphere_red_occlusion and cue_ball,
+                    cue_sphere_black_occlusion=proposal.cue_sphere_black_occlusion and cue_ball,
                 )
             )
             if shape >= 0.45 and 0.40 * diameter_prior <= diameter <= 2.2 * diameter_prior:
@@ -563,7 +580,9 @@ class ObjectDetector:
             if area < 30 or perimeter <= 0:
                 continue
             (cx, cy), radius = cv2.minEnclosingCircle(contour)
-            if not 4 <= radius <= min(hsv.shape[:2]) * 0.18:
+            # The cropped playing surface can be a shallow strip in a low
+            # camera while a ball occupies much of that strip's height.
+            if not 4 <= radius <= min(min(hsv.shape[:2]) * .48, max(hsv.shape[:2]) * .18):
                 continue
             _, _, bw, bh = cv2.boundingRect(contour)
             circularity = 4 * np.pi * area / perimeter**2
@@ -600,15 +619,45 @@ class ObjectDetector:
                 continue
             _, _, surround = self._colour_scores(hsv, cloth, cx, cy, radius)
             red_occlusion = .10 <= surround < .30 and self._red_neighbors_occlude_sphere(hsv, cx, cy, radius)
-            if surround < 0.30 and not red_occlusion:
+            black_occlusion = .20 <= surround < .45 and self._black_neighbor_occludes_sphere(hsv, cx, cy, radius)
+            if surround < 0.30 and not (red_occlusion or black_occlusion):
                 continue
             proposals.append(_Proposal(
                 float(cx), float(cy), float(radius),
                 float(0.65 + 0.25 * circularity + 0.10 * fill),
                 cue_sphere_supported=True,
                 cue_sphere_red_occlusion=red_occlusion,
+                cue_sphere_black_occlusion=black_occlusion,
             ))
         return proposals
+
+    @staticmethod
+    def _black_neighbor_occludes_sphere(hsv: np.ndarray, cx: float, cy: float, radius: float) -> bool:
+        """Verify a round black ball directly in front of the ivory sphere."""
+        reach = int(np.ceil(radius * 3.0))
+        ix, iy = int(round(cx)), int(round(cy))
+        x0, x1 = max(0, ix-reach), min(hsv.shape[1], ix+reach+1)
+        y0, y1 = max(0, iy-reach), min(hsv.shape[0], iy+reach+1)
+        dark = cv2.inRange(hsv[y0:y1, x0:x1], (0, 0, 0), (179, 255, 80))
+        dark = cv2.morphologyEx(dark, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
+        contours, _ = cv2.findContours(dark, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for contour in contours:
+            area = float(cv2.contourArea(contour))
+            perimeter = float(cv2.arcLength(contour, True))
+            if perimeter <= 0:
+                continue
+            (bx, by), br = cv2.minEnclosingCircle(contour)
+            _, _, bw, bh = cv2.boundingRect(contour)
+            if not .65*radius <= br <= 1.5*radius or max(bw, bh) > 1.5*min(bw, bh):
+                continue
+            hull_area = float(cv2.contourArea(cv2.convexHull(contour)))
+            if (4*np.pi*area/perimeter**2 < .60 or area/max(1, np.pi*br**2) < .60
+                    or area/max(1, hull_area) < .80):
+                continue
+            dx, dy = bx+x0-cx, by+y0-cy
+            if dy >= .6*radius and abs(dx) <= radius and 1.1*radius <= np.hypot(dx, dy) <= 2.6*radius:
+                return True
+        return False
 
     @staticmethod
     def _red_neighbors_occlude_sphere(hsv: np.ndarray, cx: float, cy: float, radius: float) -> bool:
@@ -676,6 +725,7 @@ class ObjectDetector:
                 ) / total
             match.cue_sphere_supported |= proposal.cue_sphere_supported
             match.cue_sphere_red_occlusion |= proposal.cue_sphere_red_occlusion
+            match.cue_sphere_black_occlusion |= proposal.cue_sphere_black_occlusion
             match.shape_confidence = min(
                 1.0, max(match.shape_confidence, proposal.shape_confidence) + 0.08
             )

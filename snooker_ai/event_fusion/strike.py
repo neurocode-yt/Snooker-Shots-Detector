@@ -327,6 +327,7 @@ class StrikeDetector:
             initial_direction = net / max(path, 1e-6)
             initial_displacement = net / diameter
         return {
+            "ball_diameter_px": diameter,
             "stationary_ratio": float(stationary_ratio),
             "sustained_ratio": float(sustained_ratio),
             "sustained_count": float(sustained_count),
@@ -422,6 +423,8 @@ class StrikeDetector:
                     and metrics.get("pre_cue_address_score", 0) >= .20)
 
     def _transition_confirmed(self, metrics: dict[str, float]) -> bool:
+        if self._short_launch_confirmed(metrics) or self._addressed_slow_launch_confirmed(metrics):
+            return True
         object_tracks_quiet = bool(
             metrics["pre_ball_quiet_ratio"] >= self.pre_ball_quiet_min_ratio
             and metrics["pre_ball_speed_median"] <= self.pre_quiet_max_ball_speed
@@ -506,6 +509,49 @@ class StrikeDetector:
                  or (metrics.get("stable_cue_motion_count", 0) >= 2
                      and metrics.get("stable_cue_peak_speed", 0) >= .75*self.start_speed))
         )
+
+    @staticmethod
+    def _addressed_slow_launch_confirmed(metrics: dict[str, float]) -> bool:
+        """Strong cue address and straight ball travel survive foreground flow."""
+        return bool(metrics.get("stationary_ratio", 0) >= .90
+                    and metrics.get("pre_sample_count", 0) >= 6
+                    and metrics.get("pre_ball_quiet_ratio", 0) >= .90
+                    and metrics.get("pre_cue_address_score", 0) >= .85
+                    and metrics.get("pre_motion_raw_median", 1) <= .80
+                    and metrics.get("track_confidence", 0) >= .80
+                    and metrics.get("speed_crossing", 0) > 0
+                    and metrics.get("cue_speed", 0) >= 1.25
+                    and metrics.get("sustained_run", 0) >= 3
+                    and metrics.get("stable_cue_motion_count", 0) >= 3
+                    and metrics.get("stable_cue_peak_speed", 0) >= 1.50
+                    and metrics.get("cue_displacement_diameters", 0) >= .40
+                    and metrics.get("cue_direction_consistency", 0) >= .95
+                    and metrics.get("anchor_excursion_diameters", 0) >= .50
+                    and metrics.get("anchor_direction_consistency", 0) >= .90)
+
+    @staticmethod
+    def _short_launch_confirmed(metrics: dict[str, float]) -> bool:
+        """Resolve a short collision at high spatial resolution.
+
+        In an extreme close-up the white can strike a touching colour and stop
+        or rebound before travelling half its diameter. Require a measured
+        quiet anchor and a coherent initial leg spanning many image pixels;
+        neither small-ball jitter nor aggregate camera/player motion qualifies.
+        """
+        return bool(metrics.get("ball_diameter_px", 0) >= 60
+                    and metrics.get("stationary_ratio", 0) >= .85
+                    and metrics.get("pre_sample_count", 0) >= 6
+                    and metrics.get("pre_ball_quiet_ratio", 0) >= .90
+                    and metrics.get("pre_motion_raw_median", 1) <= .35
+                    and metrics.get("track_confidence", 0) >= .75
+                    and metrics.get("cue_speed", 0) >= .50
+                    and metrics.get("post_peak_cue_speed", 0) >= 1.50
+                    and metrics.get("stable_cue_motion_count", 0) >= 4
+                    and metrics.get("stable_cue_peak_speed", 0) >= 1.25
+                    and metrics.get("initial_launch_displacement", 0) >= .20
+                    and metrics.get("initial_launch_direction", 0) >= .95
+                    and metrics.get("anchor_excursion_diameters", 0) >= .35
+                    and metrics.get("anchor_direction_consistency", 0) >= .65)
 
     def _sparse_dense_transition_confirmed(self, metrics: dict[str, float]) -> bool:
         """Relaxed native-rate confirmation for a 2fps proposal.
