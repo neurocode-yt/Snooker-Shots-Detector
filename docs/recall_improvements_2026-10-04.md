@@ -28,5 +28,20 @@ Changing the worker count preserves feature and result signatures because it
 changes scheduling only. Result policy 17 separately invalidates saved final
 clips for the verified motion-onset correction in commit `b7ad706`.
 
+## Partially hidden white balls
+
+Low camera views can crop the white at a cloth-mask boundary, or leave only its
+ivory hemisphere or crescent visible behind a red or pink. The detector now
+retains a small horizontal mask margin and verifies the visible circular arc
+against an independently measured round foreground ball. The tracker carries
+that geometric evidence with the cue-ball identity. Ordinary skin, glove,
+yellow-ball and rectangular-colour fragments cannot use this recovery path.
+
+Fresh native extraction recovers the white in the three investigated source
+sequences near 1770, 7593 and 7617 seconds. All 32 object/tracking tests pass.
+These object observations alone do not establish final export recall; strike,
+replay, and boundary checks still follow. Feature cache version 23 invalidates
+older coarse observations and contact windows so existing jobs are reanalysed.
+
 Audit outputs and source images are local under
 `data/editor_audit/recall_2026_10_03/`; the source video is not distributed.

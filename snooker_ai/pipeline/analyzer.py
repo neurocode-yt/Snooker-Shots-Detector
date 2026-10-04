@@ -58,7 +58,7 @@ from snooker_ai.utils.video import open_capture, sampled_frames
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 22
+_CACHE_VERSION = 23
 
 
 class Analyzer:
@@ -2368,4 +2368,3 @@ class _NativeContactPrefetch:
         finally:
             self.pending.pop(key, None)
             self.discarded.discard(key)
-
