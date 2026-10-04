@@ -65,6 +65,9 @@ reported referee replacement near 756 seconds. All 528 automated tests pass;
 Ruff passes for the changed Python files. One almost entirely obscured contact
 near 1632 seconds remains unresolved. Final pipeline recall and rendered output
 require the fresh validation run; candidate-only checks are not final accuracy.
+Result policy 18 also forces completed results from the intervening detector
+commit to run the updated strike decisions, while preserving version-23 raw
+observations. The 29 cache-resume and scheduling tests pass after that change.
 
 Audit outputs and source images are local under
 `data/editor_audit/recall_2026_10_03/`; the source video is not distributed.
