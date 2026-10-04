@@ -1003,6 +1003,7 @@ class StrikeDetector:
             )
         logger.info("Found %d cue-strike candidates", len(candidates))
         for inferred in (self._camera_contact_candidates(features)
+                         + self._address_memory_candidates(features)
                          + self._occluded_launch_candidates(features)
                          + self._interrupted_departure_candidates(features)):
             if not any(abs(c.timestamp-inferred.timestamp) < self.min_dist for c in candidates):
@@ -1203,6 +1204,110 @@ class StrikeDetector:
                     return onset.t, anchor.t
                 break
         return current.t, current.t
+
+    def _address_memory_candidates(self, features: list[FrameFeatures]) -> list[StrikeCandidate]:
+        """Retain a quiet cue address when the next angle hides the white.
+
+        The destination must remain observed and quiet until its first visible
+        white immediately rolls away from the cue. Coordinates are compared
+        only within each view. The reacquisition time is an upper bound on the
+        hidden contact, with uncertainty back to the last visible quiet white.
+        """
+        times = [f.t for f in features]
+        recovered: list[StrikeCandidate] = []
+        for index, cut in enumerate(features):
+            if index == 0 or cut.scene_cut_score < self.hard_cut_threshold:
+                continue
+            if cut.camera_scene_id == features[index-1].camera_scene_id:
+                continue
+            if (cut.observation_fps < 10 or not cut.match_context_valid
+                    or cut.broadcast_replay or cut.table_handling
+                    or cut.view_type in (CameraViewType.REPLAY, CameraViewType.SLOW_MOTION_REPLAY)):
+                continue
+            before = features[bisect_left(times, cut.t-.6):index]
+            if len(before) < 6 or before[-1].t-before[0].t < .4:
+                continue
+            if not all(self._valid(f) and self._same_view(f, before[-1])
+                       and f.observation_fps >= 10 and f.cue_ball_detected
+                       and self._track_conf(f) >= .65
+                       and f.cue_ball_x is not None and f.cue_ball_y is not None for f in before):
+                continue
+            if self._stationary_ratio(before) < .90:
+                continue
+            if float(np.median([f.motion_raw for f in before])) > self.pre_quiet_max_motion:
+                continue
+            if sum(f.max_ball_normalized_speed <= self.pre_quiet_max_ball_speed
+                   for f in before) < .9*len(before):
+                continue
+            if sum(f.cue_tip_visible and f.cue_tip_distance_to_ball <= 2*max(f.ball_diameter_px, 1)
+                   and f.cue_contact_score >= .35 for f in before) < 2:
+                continue
+
+            hidden: list[FrameFeatures] = []
+            onset_index = None
+            for j in range(index+1, bisect_right(times, cut.t+4.)):
+                frame = features[j]
+                if (not self._valid(frame) or not self._same_view(frame, cut)
+                        or frame.scene_cut_score >= self.hard_cut_threshold):
+                    break
+                if frame.cue_ball_detected:
+                    onset_index = j
+                    break
+                hidden.append(frame)
+            if onset_index is None or not hidden or features[onset_index].t-cut.t < .5:
+                continue
+            onset = features[onset_index]
+            quiet = [f for f in hidden if f.t >= onset.t-.6]
+            if len(quiet) < 6 or quiet[-1].t-quiet[0].t < .4:
+                continue
+            if float(np.median([f.motion_raw for f in quiet])) > self.pre_quiet_max_motion:
+                continue
+            if sum(f.max_ball_normalized_speed <= 1. for f in quiet) < .8*len(quiet):
+                continue
+            post = features[onset_index:bisect_right(times, onset.t+.55)]
+            if len(post) < 6 or post[-1].t-post[0].t < .4:
+                continue
+            if not all(self._valid(f) and self._same_view(f, onset)
+                       and f.scene_cut_score < self.hard_cut_threshold
+                       and f.cue_ball_detected and self._track_conf(f) >= .65
+                       and f.cue_ball_x is not None and f.cue_ball_y is not None for f in post):
+                continue
+            observed = before + [cut] + hidden + post
+            if any(f.observation_fps < 10 for f in observed):
+                continue
+            if any(b.t-a.t > 2/min(a.observation_fps, b.observation_fps)+.005
+                   for a, b in zip(observed, observed[1:])):
+                continue
+            # Reacquisition must already be moving, not a new stationary
+            # address which happens to produce a stroke later in this window.
+            if any((f.cue_ball_stable_normalized_speed or 0.) < 2. for f in post[1:3]):
+                continue
+            diameter = max(1., float(np.median([f.ball_diameter_px for f in post])))
+            xy = np.array([(f.cue_ball_x, f.cue_ball_y) for f in post])
+            steps = np.linalg.norm(np.diff(xy, axis=0), axis=1)
+            distance = float(np.linalg.norm(xy[-1]-xy[0]))
+            displacement = distance/diameter
+            direction = distance/max(float(np.sum(steps)), 1e-6)
+            if displacement < 1. or direction < .85 or max(steps)/diameter > 1.:
+                continue
+            if sum((f.cue_ball_stable_normalized_speed or 0.) >= 2.
+                   for f in post[1:]) < .8*(len(post)-1):
+                continue
+            early = [f for f in post if f.t <= onset.t+.15]
+            if not any(f.cue_tip_visible and f.cue_contact_score >= .65
+                       and f.cue_tip_distance_to_ball <= max(f.ball_diameter_px, 1) for f in early):
+                continue
+            recovered.append(StrikeCandidate(
+                timestamp=onset.t, confidence=.72, camera_view=onset.view_type,
+                uncertainty_start=before[-1].t, uncertainty_end=onset.t,
+                evidence={"camera_contact_inferred": 1., "camera_address_memory": 1.,
+                          "occlusion_inferred": 1., "cue_geometry_confirmed": 1.,
+                          "dense_transition_confirmed": 1., "ball_onset_run": float(len(post)),
+                          "address_memory_seconds": onset.t-before[-1].t,
+                          "reacquired_roll_displacement": displacement,
+                          "reacquired_roll_direction": direction},
+            ))
+        return recovered
 
     def _camera_contact_candidates(self, features: list[FrameFeatures], sparse: bool = False) -> list[StrikeCandidate]:
         """Associate an impact hidden in a low view with rolling in the next view.
@@ -1542,14 +1647,15 @@ class StrikeDetector:
         if any(f.view_classified for f in dense_features):
             for candidate in candidates:
                 for key in ("dense_transition_confirmed", "sparse_dense_transition",
-                            "occlusion_inferred", "camera_contact_inferred",
+                            "occlusion_inferred", "camera_contact_inferred", "camera_address_memory",
                             "ball_onset_run", "cue_ball_motion_confirmed"):
                     candidate.evidence[key] = 0.0
         cue_available = self._has_cue_kinematics(dense_features)
         if not cue_available:
             return candidates
         times = [f.t for f in dense_features]
-        camera_contacts = self._camera_contact_candidates(dense_features)
+        camera_contacts = (self._camera_contact_candidates(dense_features)
+                           + self._address_memory_candidates(dense_features))
         native_occlusions: list[StrikeCandidate] | None = None
 
         refined: list[StrikeCandidate] = []
@@ -1558,7 +1664,7 @@ class StrikeDetector:
             # sparse match can survive through the downstream acceptance OR.
             cand.evidence["sparse_dense_transition"] = 0.0
             for key in ("dense_transition_confirmed", "occlusion_inferred",
-                        "camera_contact_inferred", "ball_onset_run",
+                        "camera_contact_inferred", "camera_address_memory", "ball_onset_run",
                         "cue_ball_motion_confirmed"):
                 cand.evidence[key] = 0.0
             lo = bisect_left(times, cand.uncertainty_start)

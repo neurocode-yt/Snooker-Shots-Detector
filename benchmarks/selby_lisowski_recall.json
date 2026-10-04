@@ -422,6 +422,66 @@
       "annotation_note": "First ten live contacts labelled before consulting predictions. The initial audit ended at7780 during a launch; the endpoint was extended through7785 and an eleventh contact independently confirmed from source after inspecting baseline output. This boundary refinement is not a fully blind label.",
       "original_split": "holdout_for_2c4fa77",
       "development_note": "Failures from this interval informed the 2026-10-04 fixes; no longer an independent holdout for those fixes."
+    },
+    {
+      "name": "live_break_holdout_2800",
+      "start": 2800.0,
+      "end": 2920.0,
+      "split": "holdout",
+      "frozen_before_prediction_review": true,
+      "contacts": [
+        {
+          "lower": 2819.24,
+          "upper": 2819.28,
+          "description": "Live blue pot using rest; large white/blue close-up with immediate collision.",
+          "last_stationary_frame": 70482,
+          "first_moving_frame": 70483
+        },
+        {
+          "lower": 2835.44,
+          "upper": 2835.48,
+          "description": "Live red pot from right rail; small white in full-table view.",
+          "last_stationary_frame": 70887,
+          "first_moving_frame": 70888
+        },
+        {
+          "lower": 2850.36,
+          "upper": 2850.4,
+          "description": "Live green pot; angled baulk-end close view.",
+          "last_stationary_frame": 71260,
+          "first_moving_frame": 71261
+        },
+        {
+          "lower": 2870.2,
+          "upper": 2870.24,
+          "description": "Live red pot; low frontal table view followed by overhead during roll.",
+          "last_stationary_frame": 71756,
+          "first_moving_frame": 71757
+        },
+        {
+          "lower": 2887.76,
+          "upper": 2887.8,
+          "description": "Live blue pot; overhead close view, fast white departure.",
+          "last_stationary_frame": 72195,
+          "first_moving_frame": 72196
+        },
+        {
+          "lower": 2906.44,
+          "upper": 2906.48,
+          "description": "Live red attempt; low side view followed by overhead during roll.",
+          "last_stationary_frame": 72662,
+          "first_moving_frame": 72663
+        }
+      ],
+      "annotation_note": "All 240 original-source half-second overview samples inspected, followed by 10fps contact sheets and adjacent native-frame crops for every identified live stroke. No detector predictions, analysis output or export in this interval consulted before freeze. Replay begins around 2917.5 and includes the repeated 2906 stroke near 2919; excluded. A previous shot is already rolling at the interval opening and is not a new contact. Contact bounds use decoded PTS relative to video start; native frame indexes also retained.",
+      "negative_examples": [
+        {
+          "start": 2918.5,
+          "end": 2920.0,
+          "description": "Broadcast replay of the preceding red attempt, introduced by replay wipe."
+        }
+      ],
+      "frozen_source_labels_sha256": "0858d892c2dee9fb7ede1ec8a593aad8877fbb7e0d7bf0008e50690c9f8fc1d1"
     }
   ]
 }
