@@ -44,6 +44,7 @@ class Detection:
     cue_sphere_supported: bool = False
     cue_sphere_red_occlusion: bool = False
     cue_sphere_black_occlusion: bool = False
+    cue_sphere_colour_occlusion: bool = False
 
     def __post_init__(self) -> None:
         _, _, w, h = self.bbox
@@ -77,6 +78,7 @@ class _Proposal:
     cue_sphere_supported: bool = False
     cue_sphere_red_occlusion: bool = False
     cue_sphere_black_occlusion: bool = False
+    cue_sphere_colour_occlusion: bool = False
 
 
 class ObjectDetector:
@@ -199,8 +201,10 @@ class ObjectDetector:
         upper_ball_margin = max(4, int(round(min(h, w) * .06))) if partial_view else 0
         if partial_view:
             # A low camera sees the upper half of a ball above the visible
-            # cloth boundary. Keep those source pixels in the ROI; only the
-            # independently checked ivory-sphere proposals may use them.
+            # cloth boundary, or a bridge splits the cloth contour beside it.
+            # Keep that small border available to independently checked spheres.
+            x0 = max(0, x0 - upper_ball_margin)
+            x1 = min(w, x1 + upper_ball_margin)
             y0 = max(0, y0 - upper_ball_margin)
         if x1 <= x0 or y1 <= y0:
             return []
@@ -213,8 +217,9 @@ class ObjectDetector:
         hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
         if partial_view:
             upper_mask = cv2.dilate(
-                roi_mask, np.ones((upper_ball_margin + 1, 1), np.uint8),
-                anchor=(0, 0),
+                roi_mask,
+                np.ones((upper_ball_margin + 1, 2 * upper_ball_margin + 1), np.uint8),
+                anchor=(upper_ball_margin, 0),
             )
             warm_spheres = self._warm_cue_spheres(hsv, upper_mask)
         else:
@@ -412,6 +417,7 @@ class ObjectDetector:
                 or proposal.cue_sphere_supported and surround_conf >= 0.30
                 or proposal.cue_sphere_red_occlusion and surround_conf >= 0.10
                 or proposal.cue_sphere_black_occlusion and surround_conf >= 0.20
+                or proposal.cue_sphere_colour_occlusion and surround_conf >= 0.12
             )
             label = "cue_ball" if cue_ball else "object_ball"
             observation_conf = float(
@@ -440,6 +446,7 @@ class ObjectDetector:
                     cue_sphere_supported=proposal.cue_sphere_supported and cue_ball,
                     cue_sphere_red_occlusion=proposal.cue_sphere_red_occlusion and cue_ball,
                     cue_sphere_black_occlusion=proposal.cue_sphere_black_occlusion and cue_ball,
+                    cue_sphere_colour_occlusion=proposal.cue_sphere_colour_occlusion and cue_ball,
                 )
             )
             if shape >= 0.45 and 0.40 * diameter_prior <= diameter <= 2.2 * diameter_prior:
@@ -584,6 +591,9 @@ class ObjectDetector:
             # camera while a ball occupies much of that strip's height.
             if not 4 <= radius <= min(min(hsv.shape[:2]) * .48, max(hsv.shape[:2]) * .18):
                 continue
+            occluded = self._occluded_cue_sphere(hsv, cloth, contour)
+            if occluded is not None:
+                proposals.append(occluded)
             _, _, bw, bh = cv2.boundingRect(contour)
             circularity = 4 * np.pi * area / perimeter**2
             fill = area / max(1, np.pi * radius**2)
@@ -620,7 +630,8 @@ class ObjectDetector:
             _, _, surround = self._colour_scores(hsv, cloth, cx, cy, radius)
             red_occlusion = .10 <= surround < .30 and self._red_neighbors_occlude_sphere(hsv, cx, cy, radius)
             black_occlusion = .20 <= surround < .45 and self._black_neighbor_occludes_sphere(hsv, cx, cy, radius)
-            if surround < 0.30 and not (red_occlusion or black_occlusion):
+            colour_occlusion = .12 <= surround < .30 and self._round_colour_overlaps_sphere(hsv, cx, cy, radius)
+            if surround < 0.30 and not (red_occlusion or black_occlusion or colour_occlusion):
                 continue
             proposals.append(_Proposal(
                 float(cx), float(cy), float(radius),
@@ -628,8 +639,115 @@ class ObjectDetector:
                 cue_sphere_supported=True,
                 cue_sphere_red_occlusion=red_occlusion,
                 cue_sphere_black_occlusion=black_occlusion,
+                cue_sphere_colour_occlusion=colour_occlusion,
             ))
         return proposals
+
+    def _occluded_cue_sphere(
+        self, hsv: np.ndarray, cloth: np.ndarray, contour: np.ndarray,
+    ) -> _Proposal | None:
+        """Recover a measured ivory arc behind an overlapping red or pink.
+
+        The coloured ball must independently explain the missing lower outline.
+        A nearby colour or a hand alone cannot relax the ordinary sphere gates.
+        """
+        hull = cv2.convexHull(contour).reshape(-1, 2).astype(np.float64)
+        if len(hull) < 7:
+            return None
+        x, y, width, height = cv2.boundingRect(contour)
+        if min(width, height) < 7 or max(width, height) > 2.2 * min(width, height):
+            return None
+        # Fit the convex arc, not the concave edge made by the foreground ball.
+        # Centre coordinates are local to avoid poor conditioning at HD widths.
+        origin = np.mean(hull, axis=0)
+        points = hull - origin
+        matrix = np.column_stack((2 * points, np.ones(len(points))))
+        solution = np.linalg.lstsq(matrix, np.sum(points**2, axis=1), rcond=None)[0]
+        radius_squared = solution[2] + np.sum(solution[:2]**2)
+        if radius_squared <= 0:
+            return None
+        radius = float(np.sqrt(radius_squared))
+        cx, cy = solution[:2] + origin
+        if not (4 <= radius <= min(min(hsv.shape[:2]) * .48, max(hsv.shape[:2]) * .18)):
+            return None
+        errors = np.abs(np.linalg.norm(hull - [cx, cy], axis=1) - radius) / radius
+        area = cv2.contourArea(contour)
+        if (np.mean(errors) > .08 or np.max(errors) > .20
+                or not .20 <= area / (np.pi * radius**2) <= .90
+                or not x <= cx <= x + width or not y <= cy <= y + height + .35 * radius):
+            return None
+        # A short highlight arc cannot identify a whole sphere.
+        angles = np.sort(np.arctan2(hull[:, 1] - cy, hull[:, 0] - cx))
+        span = 2 * np.pi - np.max(np.diff(np.r_[angles, angles[0] + 2 * np.pi]))
+        if span < np.deg2rad(150):
+            return None
+        patch_mask = np.zeros((height, width), np.uint8)
+        shifted = contour - np.array([[[x, y]]], np.int32)
+        cv2.drawContours(patch_mask, [shifted], -1, 255, -1)
+        pixels = hsv[y:y + height, x:x + width][patch_mask > 0]
+        hue, saturation, value = np.median(pixels, axis=0)
+        cap = np.mean((pixels[:, 1] < 110) & (pixels[:, 2] >= 210))
+        if not (15 <= hue <= 44 and 35 <= saturation <= 125 and value >= 150 and cap >= .25):
+            return None
+        _, _, surround = self._colour_scores(hsv, cloth, cx, cy, radius)
+        if not .12 <= surround < .45:
+            return None
+        if not self._round_colour_overlaps_sphere(hsv, cx, cy, radius, minimum_overlap=.08):
+            return None
+        return _Proposal(
+            float(cx), float(cy), radius,
+            float(np.clip(.95 - np.mean(errors), .80, .95)),
+            cue_sphere_supported=True, cue_sphere_colour_occlusion=True,
+        )
+
+    @staticmethod
+    def _round_colour_overlaps_sphere(
+        hsv: np.ndarray, cx: float, cy: float, radius: float, *, minimum_overlap: float = 0.0,
+    ) -> bool:
+        """Require a compact red/pink component in front of the white arc."""
+        reach = int(np.ceil(radius * 3.2))
+        ix, iy = int(round(cx)), int(round(cy))
+        x0, x1 = max(0, ix-reach), min(hsv.shape[1], ix+reach+1)
+        y0, y1 = max(0, iy-reach), min(hsv.shape[0], iy+reach+1)
+        patch = hsv[y0:y1, x0:x1]
+        colour = cv2.inRange(patch, (0, 95, 60), (14, 255, 255))
+        colour |= cv2.inRange(patch, (150, 95, 60), (179, 255, 255))
+        colour = cv2.morphologyEx(colour, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
+        contours, _ = cv2.findContours(colour, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        yy, xx = np.ogrid[y0:y1, x0:x1]
+        distance_squared = (xx-cx)**2 + (yy-cy)**2
+        sphere = distance_squared <= radius**2
+        annulus = (distance_squared <= (1.9*radius)**2) & ~sphere
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            perimeter = cv2.arcLength(contour, True)
+            if perimeter <= 0:
+                continue
+            (bx, by), br = cv2.minEnclosingCircle(contour)
+            _, _, width, height = cv2.boundingRect(contour)
+            hull = cv2.convexHull(contour)
+            hull_area = cv2.contourArea(hull)
+            hull_perimeter = cv2.arcLength(hull, True)
+            if (not .65*radius <= br <= 1.65*radius
+                    or max(width, height) > 1.6*min(width, height)
+                    or 4*np.pi*area/perimeter**2 < .45
+                    or area/max(1, np.pi*br**2) < .50
+                    or area/max(1, hull_area) < .78
+                    or 4*np.pi*hull_area/max(1, hull_perimeter**2) < .80):
+                continue
+            dx, dy = bx+x0-cx, by+y0-cy
+            if not (.35*radius <= dy <= 2*radius and abs(dx) <= 2*radius):
+                continue
+            # A complete warm hemisphere needs an explanation for its missing
+            # cloth annulus. A fitted crescent additionally requires actual
+            # foreground pixels inside the inferred sphere.
+            component = np.zeros(colour.shape, np.uint8)
+            cv2.drawContours(component, [contour], -1, 255, -1)
+            overlap = np.count_nonzero((component > 0) & sphere) / max(1, np.count_nonzero(sphere))
+            annulus_coverage = np.count_nonzero((component > 0) & annulus) / max(1, np.count_nonzero(annulus))
+            if overlap >= minimum_overlap and annulus_coverage >= .12:
+                return True
+        return False
 
     @staticmethod
     def _black_neighbor_occludes_sphere(hsv: np.ndarray, cx: float, cy: float, radius: float) -> bool:
@@ -726,6 +844,7 @@ class ObjectDetector:
             match.cue_sphere_supported |= proposal.cue_sphere_supported
             match.cue_sphere_red_occlusion |= proposal.cue_sphere_red_occlusion
             match.cue_sphere_black_occlusion |= proposal.cue_sphere_black_occlusion
+            match.cue_sphere_colour_occlusion |= proposal.cue_sphere_colour_occlusion
             match.shape_confidence = min(
                 1.0, max(match.shape_confidence, proposal.shape_confidence) + 0.08
             )

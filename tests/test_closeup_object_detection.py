@@ -162,3 +162,59 @@ def test_visible_upper_hemisphere_retains_sphere_scale(config):
     ) if d.label == "cue_ball"]
     assert len(cue) == 1 and cue[0].cue_sphere_supported
     assert cue[0].diameter_px == pytest.approx(24, abs=3)
+
+
+@pytest.mark.parametrize("occluder_hue", [2, 170])
+def test_ivory_crescent_behind_round_colour_retains_identity_and_scale(config, occluder_hue):
+    frame = np.full((240, 400, 3), colour(60, 180, 180), np.uint8)
+    cv2.ellipse(frame, (180, 118), (48, 22), 0, 0, 360, colour(173, 22, 250), -1)
+    cv2.circle(frame, (180, 140), 20, colour(30, 85, 220), -1)
+    cv2.circle(frame, (175, 132), 8, colour(25, 20, 255), -1)
+    cv2.circle(frame, (184, 158), 22, colour(occluder_hue, 180, 210), -1)
+    cue = [d for d in ObjectDetector(config).detect(
+        frame, np.full(frame.shape[:2], 255, np.uint8),
+        use_hough=False, partial_view=True,
+    ) if d.label == "cue_ball"]
+    assert len(cue) == 1 and cue[0].cue_sphere_colour_occlusion
+    assert cue[0].cx == pytest.approx(180, abs=3)
+    assert cue[0].cy == pytest.approx(140, abs=3)
+    assert cue[0].diameter_px == pytest.approx(40, abs=4)
+    tracker = BallTracker()
+    tracker.update(0, cue)
+    assert tracker.is_ball_quality_track(tracker.cue_ball_track())
+
+
+@pytest.mark.parametrize("substitute", ["skin", "glove", "yellow", "rectangle"])
+def test_foreground_and_colour_fragments_cannot_claim_crescent_occlusion(config, substitute):
+    frame = np.full((240, 400, 3), colour(60, 180, 180), np.uint8)
+    cv2.ellipse(frame, (180, 118), (48, 22), 0, 0, 360, colour(173, 22, 250), -1)
+    sphere_colour = {
+        "skin": colour(3, 65, 230), "glove": (245, 245, 245),
+        "yellow": colour(30, 220, 245), "rectangle": colour(30, 85, 220),
+    }[substitute]
+    cv2.circle(frame, (180, 140), 20, sphere_colour, -1)
+    cv2.circle(frame, (175, 132), 8, (255, 255, 255), -1)
+    if substitute == "rectangle":
+        cv2.rectangle(frame, (161, 139), (207, 157), colour(2, 180, 210), -1)
+    else:
+        cv2.circle(frame, (184, 158), 22, colour(2, 180, 210), -1)
+    found = ObjectDetector(config).detect(
+        frame, np.full(frame.shape[:2], 255, np.uint8),
+        use_hough=False, partial_view=True,
+    )
+    assert not any(d.cue_sphere_colour_occlusion for d in found)
+
+
+def test_partial_cloth_contour_does_not_crop_its_boundary_cue_ball(config):
+    frame = np.full((240, 400, 3), colour(60, 180, 180), np.uint8)
+    cv2.circle(frame, (196, 140), 12, colour(30, 85, 220), -1)
+    cv2.circle(frame, (192, 135), 5, colour(25, 20, 255), -1)
+    mask = np.zeros(frame.shape[:2], np.uint8)
+    mask[100:220, :200] = 255
+    cue = [d for d in ObjectDetector(config).detect(
+        frame, mask, table_bounds=(0, 100, 200, 220),
+        use_hough=False, partial_view=True,
+    ) if d.label == "cue_ball"]
+    assert len(cue) == 1 and cue[0].cue_sphere_supported
+    assert cue[0].cx == pytest.approx(196, abs=1)
+    assert cue[0].diameter_px == pytest.approx(24, abs=2)
