@@ -48,6 +48,7 @@ analysis:
   refine_window_seconds: 2.0  # second-pass temporal resolution around candidates
   refine_fps: 30.0
   adaptive_stop_tracking: true
+  native_contact_workers: 2  # independent contact prefetch; 1 keeps serial extraction
   stop_tracking_fps: 10.0  # follow long rolls cheaply; native cadence at strike and stop
   native_flow_fps: 10.0  # supporting table flow; ball centres/camera still update at native fps
   stop_tracking_tail_seconds: 0.2

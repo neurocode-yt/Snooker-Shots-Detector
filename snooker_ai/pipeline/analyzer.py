@@ -8,10 +8,14 @@ Phase 1 flow:
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
+import os
+import threading
 import time
 from bisect import bisect_left, bisect_right
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -1340,6 +1344,22 @@ class Analyzer:
         existing_dense: list[FrameFeatures] | None = None,
         rack_features: list[FrameFeatures] | None = None,
     ) -> tuple[list[StrikeCandidate], list[FrameFeatures]]:
+        with _NativeContactPrefetch(self, proxy_path, audio_path, mapper, duration, candidates) as prefetch:
+            return self._refine_adaptive_windows_inner(
+                proxy_path, audio_path, mapper, duration, candidates, progress=progress,
+                signature=signature, resume=resume, existing_dense=existing_dense,
+                rack_features=rack_features, contact_prefetch=prefetch,
+            )
+
+    def _refine_adaptive_windows_inner(
+        self, proxy_path: Path, audio_path: Optional[Path], mapper: TimeMapper,
+        duration: float, candidates: list[StrikeCandidate], *,
+        progress: Optional[Callable[[float, str], None]] = None,
+        signature: str = "", resume: bool = True,
+        existing_dense: list[FrameFeatures] | None = None,
+        rack_features: list[FrameFeatures] | None = None,
+        contact_prefetch: _NativeContactPrefetch | None = None,
+    ) -> tuple[list[StrikeCandidate], list[FrameFeatures]]:
         """Track through the roll cheaply; spend native cadence on the boundaries.
 
         Stop tracking exits as soon as stationary evidence is confirmed. The
@@ -1385,6 +1405,15 @@ class Analyzer:
             bounded = stop.confirmed or stop.reason == "unconfirmed_ball_handling_boundary"
             return bounded and part[-1].t + 1e-6 >= stop.stop_confirmation_timestamp + tail
 
+        def needs_contact_window(key: tuple[float, float, float]) -> bool:
+            start, end, fps = key
+            part = known[bisect_left(known_times, start-1e-6):bisect_right(known_times, end+1e-6)]
+            max_gap = 2/max(fps, 1)
+            return not (len(part) >= 2 and part[0].t-start <= max_gap
+                        and end-part[-1].t <= max_gap
+                        and all(b.t-a.t <= max_gap for a, b in zip(part, part[1:]))
+                        and all(f.observation_fps <= 0 or f.observation_fps+1e-3 >= fps for f in part))
+
         def observe(start: float, end: float, fps: float, candidate: StrikeCandidate | None = None, priority: int = 0) -> list[FrameFeatures]:
             nonlocal window_index
             start, end = max(0.0, start), min(duration, end)
@@ -1415,15 +1444,22 @@ class Analyzer:
                 priority < 3
                 or all(priorities.get(int(round(feature.t * 10000)), -1) >= priority for feature in covered)
             ):
+                if contact_prefetch is not None:
+                    contact_prefetch.discard((start, end, fps))
                 return self._merge_feature_layers([], covered)
             part = self._load_dense_window(signature, index, start, end) if resume and signature else None
+            if part is not None and contact_prefetch is not None:
+                contact_prefetch.discard((start, end, fps))
             if part is None:
-                part, _, _ = self._extract_features(
-                    proxy_path, audio_path, mapper, duration,
-                    sample_fps=fps, start_time=start, end_time=end,
-                    collect_scene_observations=False, checkpoint_stage="adaptive_refinement",
-                    stop_when=(lambda features: settled(features, candidate)) if candidate is not None else None,
-                )
+                if contact_prefetch is not None and candidate is None and priority == 0 and fps == native_fps:
+                    part = contact_prefetch.pull(number, (start, end, fps), needs_contact_window)
+                if part is None:
+                    part, _, _ = self._extract_features(
+                        proxy_path, audio_path, mapper, duration,
+                        sample_fps=fps, start_time=start, end_time=end,
+                        collect_scene_observations=False, checkpoint_stage="adaptive_refinement",
+                        stop_when=(lambda features: settled(features, candidate)) if candidate is not None else None,
+                    )
                 if signature:
                     self._save_dense_window(signature, index, start, end, part)
             remember(part, priority)
@@ -1681,6 +1717,10 @@ class Analyzer:
             # strike candidates and therefore must not discard expensive caches.
             "config": {key: self.config.get(key) for key in analysis_keys},
         }
+        # Thread count changes scheduling only. Preserve extracted observations
+        # when the user selects serial or parallel native refinement.
+        payload["config"]["analysis"] = dict(payload["config"].get("analysis") or {})
+        payload["config"]["analysis"].pop("native_contact_workers", None)
         encoded = json.dumps(
             payload, sort_keys=True, separators=(",", ":"), default=str
         ).encode("utf-8")
@@ -1690,7 +1730,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 16,
+            "result_policy_version": 17,
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")
             },
@@ -2205,3 +2245,127 @@ class Analyzer:
         for i, s in enumerate(shots, start=1):
             s.shot_id = i
         return shots
+
+
+class _NativeContactPrefetch:
+    """Bounded extraction of exact contact requests, with isolated trackers.
+
+    Native evidence is consumed in the original order. Stop/travel scans stay
+    synchronous; an uncertain identity or returning-target episode also stays
+    on the parent to preserve its chronological context correction.
+    """
+
+    def __init__(self, parent: Analyzer, proxy: Path, audio: Optional[Path], mapper: TimeMapper,
+                 duration: float, candidates: list[StrikeCandidate]):
+        self.parent = parent
+        self.proxy, self.audio, self.mapper, self.duration = proxy, audio, mapper, duration
+        self.config_data = parent.config.as_dict()
+        self.target = parent.broadcast_context.export_target()
+        # Keep the exact learned float32 template. restore_target() normalizes
+        # its input again, which can perturb identity scores at a threshold.
+        self.context_guard = copy.deepcopy(parent.broadcast_context)
+        self.reference = [(f.t, f.match_context_valid) for f in parent._coarse_context_reference]
+        self.times = [t for t, _ in self.reference]
+        requested = max(1, int(parent.config.get("analysis.native_contact_workers", 2)))
+        self.workers = min(requested, 2, max(1, (os.cpu_count() or 1)//2))
+        fps = min(float(parent.config.get("analysis.refine_fps", 30)), mapper.source_fps or 30,
+                  float(parent.config.get("proxy.target_fps", 30)))
+        self.plans = [(max(0., start), min(duration, end), fps)
+                      for start, end in (parent._contact_window(c) for c in candidates)]
+        self.pool = None
+        self.pending = {}
+        self.discarded = set()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        if self.pool is not None:
+            for future in self.pending.values():
+                future.cancel()
+            self.pool.shutdown(wait=True, cancel_futures=True)
+        self.pending.clear()
+
+    def _context(self, key):
+        start, end, _ = key
+        lo, hi = bisect_left(self.times, start-.76), bisect_right(self.times, end)
+        return self.reference[lo:hi]
+
+    def eligible(self, key):
+        if self.workers < 2 or not self.target:
+            return False
+        start, end, _ = key
+        rows = self._context(key)
+        if (end <= start or len(rows) < 2 or rows[0][0] > start+1e-6
+                or start-rows[0][0] > .76
+                or end-rows[-1][0] > .76 or any(not valid for _, valid in rows)
+                or any(b[0]-a[0] > .76 for a, b in zip(rows, rows[1:]))):
+            return False
+        return not any(lo-.76 <= end and start <= hi+.76
+                       for lo, hi in self.parent._confirmed_target_returns)
+
+    def _run(self, key):
+        start, end, fps = key
+        worker = Analyzer(Config(self.config_data),
+                          self.parent.job_dir/"contact_workers"/str(threading.get_ident()))
+        worker.broadcast_context = copy.deepcopy(self.context_guard)
+        worker._coarse_context_reference = [FrameFeatures(t=t, match_context_valid=valid)
+                                            for t, valid in self._context(key)]
+        features, _, _ = worker._extract_features(
+            self.proxy, self.audio, self.mapper, self.duration, sample_fps=fps,
+            start_time=start, end_time=end, collect_scene_observations=False,
+            checkpoint_stage="contact_prefetch",
+        )
+        if worker._confirmed_target_returns:
+            # A newly discovered context correction must be applied in parent
+            # order. Repeat this uncommon window synchronously to preserve it.
+            return None
+        return features
+
+    def _reap(self):
+        for key in list(self.discarded):
+            future = self.pending.get(key)
+            if future is None or future.done():
+                self.pending.pop(key, None)
+                self.discarded.discard(key)
+
+    def discard(self, key):
+        future = self.pending.get(key)
+        if future is not None:
+            if future.cancel() or future.done():
+                self.pending.pop(key, None)
+            else:
+                # A running result remains counted against the two-job limit
+                # until it finishes, even when parent coverage supersedes it.
+                self.discarded.add(key)
+        self._reap()
+
+    def pull(self, number, key, needed):
+        self._reap()
+        if not self.eligible(key):
+            return None
+        if self.pool is None:
+            self.pool = ThreadPoolExecutor(max_workers=self.workers, thread_name_prefix="snooker-contact")
+        if key not in self.pending:
+            if len(self.pending) >= self.workers:
+                return None
+            self.pending[key] = self.pool.submit(self._run, key)
+        # Only one following proposal is considered. The current cache has
+        # already been checked by observe(); complete known coverage also
+        # prevents speculative extraction of the following request.
+        for following in self.plans[number+1:number+self.workers]:
+            if len(self.pending) >= self.workers:
+                break
+            if following not in self.pending and self.eligible(following) and needed(following):
+                self.pending[following] = self.pool.submit(self._run, following)
+        future = self.pending[key]
+        try:
+            return future.result()
+        except Exception as exc:
+            logger.warning("Contact prefetch failed for %.3f-%.3f; retrying synchronously: %s",
+                           key[0], key[1], exc)
+            return None
+        finally:
+            self.pending.pop(key, None)
+            self.discarded.discard(key)
+
