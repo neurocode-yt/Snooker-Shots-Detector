@@ -68,6 +68,7 @@ class StrikeDetector:
             cfg.get("occlusion_identity_jump_ball_diameters", 1.50)
         )
         self.local_norm_window = int(cfg.get("local_norm_window_frames", 40))
+        self.hard_cut_threshold = float(config.get("scene_detection.hard_cut_threshold", .42))
         self.allow_legacy_fallback = bool(cfg.get("allow_legacy_motion_fallback", True))
         self.sparse_pre_quiet_s = float(
             cfg.get("sparse_candidate_pre_quiet_seconds", 1.5)
@@ -183,6 +184,23 @@ class StrikeDetector:
         pre_hi = bisect_left(times, t - 0.03)
         post_lo = bisect_left(times, t)
         post_hi = bisect_right(times, t + self.post_motion_s)
+        # Keep the observed launch before a cut/invalid camera estimate, but
+        # never join it to a new velocity sequence on the other side.
+        post_end = next((j for j in range(post_lo, post_hi)
+                         if not self._valid(features[j]) or not self._same_view(features[j], f)), post_hi)
+        if post_end < post_hi and f.observation_fps >= 10:
+            invalid = [j for j in range(post_lo, post_hi) if not self._valid(features[j])]
+            established = [x for x in features[post_lo:post_end]
+                           if x.cue_ball_detected and x.cue_ball_stable_normalized_speed is not None
+                           and x.cue_ball_stable_normalized_speed >= self.start_speed]
+            # One short registration failure after an already measured roll
+            # need not erase that roll. It cannot establish motion which only
+            # appears on the far side, and it can never bridge a camera cut.
+            if (len(invalid) == 1 and len(established) >= 3 and post_lo < post_end < post_hi-1
+                    and all(self._same_view(x, f) and x.scene_cut_score < self.hard_cut_threshold
+                            for x in features[post_lo:post_hi])
+                    and features[post_end+1].t-features[post_end-1].t <= 2/f.observation_fps+.005):
+                post_end = post_hi
         pre = [
             x
             for x in features[pre_lo:pre_hi]
@@ -192,7 +210,7 @@ class StrikeDetector:
         ]
         post = [
             x
-            for x in features[post_lo:post_hi]
+            for x in features[post_lo:post_end]
             if self._valid(x)
             and self._same_view(x, f)
             and self._track_conf(x) >= self.min_track_conf * 0.7
@@ -331,8 +349,9 @@ class StrikeDetector:
             path = float(np.sum(np.linalg.norm(np.diff(xy, axis=0), axis=1)))
             initial_direction = net / max(path, 1e-6)
             initial_displacement = net / diameter
-        return {
+        metrics = {
             "observation_fps": self._value(f, "observation_fps"),
+            "post_observation_contiguous": float(post_end == post_hi),
             "ball_diameter_px": diameter,
             "stationary_ratio": float(stationary_ratio),
             "sustained_ratio": float(sustained_ratio),
@@ -378,6 +397,48 @@ class StrikeDetector:
                 cue_contact >= 0.20 or cue_approach >= 0.15
             ),
         }
+        metrics["gradual_launch_confirmed"] = float(
+            self._gradual_launch_confirmed(features, idx, times, metrics))
+        return metrics
+
+    def _gradual_launch_confirmed(self, features: list[FrameFeatures], idx: int,
+                                  times: list[float], metrics: dict[str, float]) -> bool:
+        """Give a gentle addressed stroke time to establish a measured roll."""
+        if (metrics["observation_fps"] < 10 or metrics["ball_diameter_px"] < 24
+                or metrics["stationary_ratio"] < .90 or metrics["pre_sample_count"] < 6
+                or metrics["pre_ball_quiet_ratio"] < .90 or metrics["pre_motion_raw_median"] > .50
+                or metrics["track_confidence"] < .80 or not metrics["speed_crossing"]
+                or metrics["cue_speed"] < self.start_speed):
+            return False
+        current = features[idx]
+        before = features[bisect_left(times, current.t-.50):idx]
+        after = features[idx:bisect_right(times, current.t+.80)]
+        rows = before+after
+        if (len(before) < 6 or len(after) < 8 or after[-1].t-current.t < .65
+                or any(not self._valid(f) or not self._same_view(f, current)
+                       or f.observation_fps < 10 or not f.cue_ball_detected
+                       or f.cue_ball_x is None or f.cue_ball_y is None
+                       or self._track_conf(f) < .75 for f in rows)
+                or any(not 0 < b.t-a.t <= 2/min(a.observation_fps, b.observation_fps)+.005
+                       for a, b in zip(rows, rows[1:]))):
+            return False
+        diameter = max(1., float(np.median([f.ball_diameter_px for f in rows])))
+        anchor = np.median([(f.cue_ball_x, f.cue_ball_y) for f in before], axis=0)
+        quiet_xy = np.asarray([(f.cue_ball_x, f.cue_ball_y) for f in before])
+        if max(np.linalg.norm(quiet_xy-anchor, axis=1))/diameter > .15:
+            return False
+        contact = max((f.cue_contact_score for f in after
+                       if f.t <= current.t+.20 and f.cue_tip_visible), default=0.)
+        if contact < .75:
+            return False
+        xy = np.asarray([(f.cue_ball_x, f.cue_ball_y) for f in after])
+        steps = np.linalg.norm(np.diff(xy, axis=0), axis=1)/diameter
+        net = float(np.linalg.norm(xy[-1]-xy[0]))/diameter
+        direction = net/max(float(np.sum(steps)), 1e-6)
+        stable = [f.cue_ball_stable_normalized_speed for f in after]
+        return bool(net >= .75 and direction >= .95 and max(steps) <= .25
+                    and np.linalg.norm(xy[0]-anchor)/diameter <= .25
+                    and sum(v is not None and v >= self.continue_speed for v in stable)/len(stable) >= .80)
 
     @staticmethod
     def _single_step_identity_jump(metrics: dict[str, float]) -> bool:
@@ -454,6 +515,8 @@ class StrikeDetector:
     def _transition_confirmed(self, metrics: dict[str, float]) -> bool:
         if self._single_step_identity_jump(metrics):
             return False
+        if metrics.get("gradual_launch_confirmed", 0) >= .5:
+            return True
         if self._short_launch_confirmed(metrics) or self._addressed_slow_launch_confirmed(metrics):
             return True
         object_tracks_quiet = bool(
@@ -641,6 +704,8 @@ class StrikeDetector:
         pre_hi = bisect_left(times, t - 0.03)
         post_lo = bisect_left(times, t)
         post_hi = bisect_right(times, t + max(self.post_motion_s, 0.20))
+        onset_observed = all(self._valid(x) and self._same_view(x, f)
+                             for x in features[pre_lo:post_hi])
         pre = [
             x
             for x in features[pre_lo:pre_hi]
@@ -709,16 +774,20 @@ class StrikeDetector:
             ax = self._value(anchor, "cue_ball_x")
             ay = self._value(anchor, "cue_ball_y")
             diameter = max(self._value(anchor, "ball_diameter_px"), 1.0)
-            reliable_post = [x for x in post_after_onset
+            reliable_post = [x for x in post
                              if x.cue_ball_detected and self._track_conf(x) >= self.min_track_conf
-                             and x.cue_ball_x is not None and x.cue_ball_y is not None]
+                             and x.cue_ball_x is not None and x.cue_ball_y is not None
+                             and .70 <= self._value(x, "ball_diameter_px") / diameter <= 1.40]
             # Missing interleaved observations do not establish an occlusion
             # when the same stationary white is repeatedly seen through the
-            # alleged onset. This happens during referee movement/respots.
+            # alleged onset. Match its scale because a partial occluder may
+            # temporarily inflate the fitted circle. Seeing the same white
+            # through half the onset window contradicts that early onset;
+            # a later genuine departure remains eligible at its own time.
             cue_stationary_after_onset = bool(
                 len(reliable_post) >= 2
                 and reliable_post[-1].t - reliable_post[0].t >= .10
-                and reliable_post[-1].t >= t + .75 * max(self.post_motion_s, .20)
+                and reliable_post[-1].t >= t + .50 * max(self.post_motion_s, .20) - 1e-6
                 and all(np.hypot(x.cue_ball_x-ax, x.cue_ball_y-ay) / diameter <= .25
                         for x in reliable_post)
                 and self._stationary_ratio(reliable_post) >= .80)
@@ -739,6 +808,7 @@ class StrikeDetector:
                         cue_identity_jump = True
                         break
         return {
+            "onset_observation_contiguous": float(onset_observed),
             "pre_motion_quiet_ratio": float(pre_quiet),
             "pre_motion_raw_median": float(np.median(raw)) if raw else 1.0,
             "pre_ball_quiet_ratio": float(pre_ball_quiet),
@@ -761,7 +831,8 @@ class StrikeDetector:
 
     def _ball_onset_confirmed(self, metrics: dict[str, float]) -> bool:
         return bool(
-            metrics["pre_motion_quiet_ratio"] >= 0.80
+            metrics.get("onset_observation_contiguous", 1.) >= .5
+            and metrics["pre_motion_quiet_ratio"] >= 0.80
             and metrics["pre_motion_raw_median"] <= self.pre_quiet_max_motion
             and metrics["pre_ball_quiet_ratio"]
             >= self.fallback_pre_ball_quiet_min_ratio

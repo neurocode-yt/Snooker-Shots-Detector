@@ -71,3 +71,37 @@ observations. The 29 cache-resume and scheduling tests pass after that change.
 
 Audit outputs and source images are local under
 `data/editor_audit/recall_2026_10_03/`; the source video is not distributed.
+
+## Corrected reference and second contact pass
+
+The reference now has 49 contacts. A later source review found that an unmatched
+prediction at 5044.86 seconds was a genuine live shot omitted from the original
+seven-contact 5000–5300 reference. That original frozen file and its hash remain
+preserved. The corrected interval and its soft-shot failure now count as
+development data. Two late-frame timing brackets were also corrected from later
+object-ball motion to the white's first departure. Only the negative arena-break
+interval remains independent for the current iteration.
+
+Against the same corrected 49-contact manifest, the earlier complete `2c4fa77`
+analysis matched 40 contacts, missed nine and had four extras. The policy-18
+bounded pipeline matched 47, missed two and had four extras. Neither result is
+a full-match accuracy measurement. The bounded export decoded without errors,
+but source/output inspection found referee footage in four clips, including two
+genuine shot tails. It is not a final validated edit.
+
+The next contact pass requires continuous evidence across the launch and retains
+configured camera-cut boundaries when merging cached observations. One brief
+invalid registration frame is allowed only after an already established roll;
+it cannot bridge a cut. Repeated scale-consistent sightings of a stationary white
+reject referee movement as an inferred hidden impact. A gentle, visibly addressed
+stroke can use a longer continuous white-ball trajectory to confirm its roll.
+
+On all 45,880 saved bounded observations, these rules remove the four known
+extra contacts and add the missed soft shot at 5017.41 seconds without losing
+previously matched reference contacts. This is a candidate-stage comparison;
+the full pipeline and export must still be checked. Source fixtures include
+referee, camera-pan, cut, identity-jump and interrupted-footage counterexamples.
+Result policy 19 invalidates final timelines while retaining raw feature cache
+23. The remaining almost fully hidden 1632-second stroke is still unresolved.
+All 543 automated tests pass after this iteration; Ruff and whitespace checks
+also pass. Rendering and source validation remain separate from these tests.

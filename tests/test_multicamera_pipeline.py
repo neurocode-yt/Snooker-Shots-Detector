@@ -317,18 +317,55 @@ def test_native_unobservable_view_cannot_keep_sparse_inferred_contact(config):
     assert candidate.evidence["occlusion_inferred"] == 0
 
 
-def test_merged_camera_ids_preserve_actual_cut_but_ignore_seek_local_ids():
+def test_merged_camera_ids_preserve_actual_cut_but_ignore_seek_local_ids(config, tmp_path):
     coarse = [FrameFeatures(t=t, camera_scene_id=100 if t < 1 else 200,
                             scene_cut_score=1 if t == 1 else 0)
               for t in (0, .5, 1, 1.5, 2)]
     dense = [FrameFeatures(t=t, camera_scene_id=0,
                            scene_cut_score=1 if t == 1 else 0)
              for t in (.8, .9, 1, 1.1, 1.2)]
-    merged = Analyzer._merge_feature_layers(coarse, dense)
+    merged = Analyzer(config, tmp_path)._merge_feature_layers(coarse, dense)
     before = [f.camera_scene_id for f in merged if f.t < 1]
     after = [f.camera_scene_id for f in merged if f.t >= 1]
     assert len(set(before)) == len(set(after)) == 1
     assert before[0] != after[0]
+
+
+@pytest.mark.parametrize("threshold, expected_cut", [(None, True), (.42, True), (.5, False)])
+def test_merged_camera_ids_use_configured_cut_after_cache_reload_and_remerge(
+    tmp_path, threshold, expected_cut,
+):
+    overrides = {"device": "cpu"}
+    if threshold is not None:
+        overrides["scene_detection"] = {"hard_cut_threshold": threshold}
+    analyzer = Analyzer(load_config(overrides=overrides), tmp_path)
+    coarse = [FrameFeatures(t=t, observation_fps=2) for t in (.5, 1, 1.5)]
+    # A real overhead-to-low camera cut measured .456. Former merged caches
+    # kept the same scene ID on both sides despite retaining that cut score.
+    native = [FrameFeatures(
+        t=round(.8+i*.04, 2), observation_fps=25, camera_scene_id=17,
+        scene_cut_score=.456 if i == 5 else 0, observation_valid=i != 5,
+    ) for i in range(9)]
+    analyzer._save_dense_window("source", 0, .8, 1.12, native)
+    loaded = analyzer._load_dense_window("source", 0, .8, 1.12)
+    assert loaded is not None
+    merged = analyzer._merge_feature_layers(coarse, loaded)
+    original_ids = [f.camera_scene_id for f in merged]
+    # Native recovery and stop windows merge an already consolidated timeline
+    # again. Neither its canonical IDs nor a later seek-local ID defines cuts.
+    tail = [FrameFeatures(t=t, observation_fps=25, camera_scene_id=999)
+            for t in (1.54, 1.58, 1.62)]
+    remerged = analyzer._merge_feature_layers(merged, tail)
+    for rows in (merged, remerged):
+        before = {f.camera_scene_id for f in rows if f.t < 1}
+        after = {f.camera_scene_id for f in rows if f.t >= 1}
+        assert len(before) == len(after) == 1
+        assert (before != after) == expected_cut
+        boundary = next(f for f in rows if f.t == 1)
+        assert boundary.scene_cut_score == .456
+        assert not boundary.observation_valid
+    assert [f.camera_scene_id for f in loaded] == [17] * len(native)
+    assert [f.camera_scene_id for f in merged] == original_ids
 
 
 def test_contact_bridge_cannot_borrow_a_later_new_shot_after_quiet_reacquisition(config):
@@ -358,7 +395,7 @@ def test_contact_bridge_cannot_borrow_a_later_new_shot_after_quiet_reacquisition
     assert refined.evidence.get("camera_contact_inferred", 0) == 0
 
 
-def test_native_window_beginning_at_cut_cannot_erase_coarse_camera_boundary():
+def test_native_window_beginning_at_cut_cannot_erase_coarse_camera_boundary(config, tmp_path):
     coarse = [FrameFeatures(t=.5, camera_scene_id=1, observation_fps=2),
               FrameFeatures(t=1, camera_scene_id=2, scene_cut_score=1, observation_fps=2),
               FrameFeatures(t=1.5, camera_scene_id=2, observation_fps=2)]
@@ -366,7 +403,7 @@ def test_native_window_beginning_at_cut_cannot_erase_coarse_camera_boundary():
     # image to compare, so its first cut score is naturally zero.
     dense = [FrameFeatures(t=1, camera_scene_id=0, scene_cut_score=0, observation_fps=25),
              FrameFeatures(t=1.04, camera_scene_id=0, scene_cut_score=0, observation_fps=25)]
-    merged = Analyzer._merge_feature_layers(coarse, dense)
+    merged = Analyzer(config, tmp_path)._merge_feature_layers(coarse, dense)
     before = next(f for f in merged if f.t == .5)
     boundary = next(f for f in merged if f.t == 1)
     after = next(f for f in merged if f.t == 1.04)
@@ -375,7 +412,7 @@ def test_native_window_beginning_at_cut_cannot_erase_coarse_camera_boundary():
     assert boundary.camera_scene_id == after.camera_scene_id
 
 
-def test_native_cut_replaces_delayed_coarse_cut_without_mutating_contact():
+def test_native_cut_replaces_delayed_coarse_cut_without_mutating_contact(config, tmp_path):
     coarse = [FrameFeatures(t=t, observation_fps=2,
                             scene_cut_score=1 if t == 1.5 else 0)
               for t in (.5, 1, 1.5, 2)]
@@ -384,41 +421,41 @@ def test_native_cut_replaces_delayed_coarse_cut_without_mutating_contact():
                            scene_cut_score=1 if i == 10 else 0)
              for i in range(26)]
     original_ids = [f.camera_scene_id for f in dense]
-    merged = Analyzer._merge_feature_layers(coarse, dense)
+    merged = Analyzer(config, tmp_path)._merge_feature_layers(coarse, dense)
     assert [f.t for f in merged if f.scene_cut_score >= .5] == [1.2]
     assert len({f.camera_scene_id for f in merged if 1.2 <= f.t <= 1.8}) == 1
     assert [f.camera_scene_id for f in dense] == original_ids
     assert coarse[2].scene_cut_score == 1
 
 
-def test_native_measurement_wins_at_exact_coarse_cut_timestamp():
+def test_native_measurement_wins_at_exact_coarse_cut_timestamp(config, tmp_path):
     coarse = [FrameFeatures(t=1, scene_cut_score=1)]
     dense = [FrameFeatures(t=t, camera_scene_id=3,
                            scene_cut_score=1 if t == .9 else 0)
              for t in (.8, .9, 1, 1.1)]
-    merged = Analyzer._merge_feature_layers(coarse, dense)
+    merged = Analyzer(config, tmp_path)._merge_feature_layers(coarse, dense)
     assert [f.t for f in merged if f.scene_cut_score >= .5] == [.9]
     assert dense[2].scene_cut_score == 0
 
 
-def test_travel_layer_cannot_interleave_or_replace_native_contact_kinematics():
+def test_travel_layer_cannot_interleave_or_replace_native_contact_kinematics(config, tmp_path):
     native = [FrameFeatures(t=round(1+i*.04, 2), observation_fps=25,
                             cue_ball_normalized_speed=4) for i in range(11)]
     travel = [FrameFeatures(t=t, observation_fps=10,
                             cue_ball_normalized_speed=99) for t in (1.05, 1.15, 1.2, 1.25, 1.35)]
-    merged = Analyzer._merge_feature_layers(native, travel)
+    merged = Analyzer(config, tmp_path)._merge_feature_layers(native, travel)
     assert [f.t for f in merged] == [f.t for f in native]
     assert all(f.cue_ball_normalized_speed == 4 for f in merged)
     assert travel[0].cue_ball_normalized_speed == 99
 
 
-def test_short_shot_stop_warmup_cannot_replace_its_verified_contact():
+def test_short_shot_stop_warmup_cannot_replace_its_verified_contact(config, tmp_path):
     contact = [FrameFeatures(t=round(1+i*.04, 2), observation_fps=25,
                              contact_window=True, cue_ball_normalized_speed=4)
                for i in range(16)]
     stopping = [FrameFeatures(t=f.t, observation_fps=25,
                               cue_ball_normalized_speed=0) for f in contact]
-    merged = Analyzer._merge_feature_layers(contact, stopping)
+    merged = Analyzer(config, tmp_path)._merge_feature_layers(contact, stopping)
     assert all(f.contact_window and f.cue_ball_normalized_speed == 4 for f in merged)
 
 

@@ -1557,9 +1557,8 @@ class Analyzer:
                 progress((number + 1) / total, f"Tracked shot {number + 1}/{len(candidates)}")
         return candidates, self._merge_feature_layers([], known)
 
-    @staticmethod
     def _merge_feature_layers(
-        coarse: list[FrameFeatures], dense: list[FrameFeatures]
+        self, coarse: list[FrameFeatures], dense: list[FrameFeatures]
     ) -> list[FrameFeatures]:
         # Keep independently decoded contact windows intact: canonical IDs on
         # the combined timeline must never mutate the caller's tracker output.
@@ -1601,10 +1600,13 @@ class Analyzer:
         merged = [by_time[key] for key in sorted(by_time)]
         # Seek-local IDs cannot be compared between independently decoded
         # windows. Rebuild IDs from the observed cuts on the merged timeline.
+        # Use the extraction threshold so consolidation cannot erase a cut
+        # that already reset the tracker and invalidated its observation.
+        cut_threshold = float(self.config.get("scene_detection.hard_cut_threshold", 0.42))
         scene_id = 0
         previous_t = None
         for f in merged:
-            if f.scene_cut_score >= 0.5 or (previous_t is not None and f.t-previous_t > 0.76):
+            if f.scene_cut_score >= cut_threshold or (previous_t is not None and f.t-previous_t > 0.76):
                 scene_id = int(round(f.t*10000)) + 1
             f.camera_scene_id = scene_id
             previous_t = f.t
@@ -1730,7 +1732,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 18,
+            "result_policy_version": 19,
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")
             },
