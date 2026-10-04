@@ -11,13 +11,29 @@ Contact bounds describe visible uncertainty; they are not invented exact impact
 frames. Physical ball stops and clip viewing quality are separate checks.
 
 The opening and return-from-break windows are **development** data: their misses
-informed the detector changes. The late-frame and arena-break windows were marked
-after those changes were frozen, without consulting predictions, and are held-out
-checks for that iteration. If future changes use their failures, treat them as
-development data and add another independently inspected section. A second
-mid-frame holdout was inspected independently. The late-frame endpoint was
+informed the detector changes. The middle, late-frame, and arena-break windows
+were inspected without consulting predictions for the `2c4fa77` iteration.
+The middle and late-frame failures then informed the 4 October fixes, so those
+two windows are now development data. The arena-break negative interval remains
+an independent check. The late-frame endpoint was
 extended after checking a baseline prediction at the original boundary; its
 annotation note records this limitation.
+
+A 5000–5300-second interval originally had seven contacts frozen and hashed
+before predictions were inspected. Reviewing an unmatched prediction revealed
+an eighth genuine shot at 5044.84–5044.88 seconds. The original annotation had
+incorrectly grouped it with earlier referee repositioning. The original frozen
+file and hash remain preserved locally; the manifest records the correction.
+The corrected interval is development data, and its missed soft shot subsequently
+informed detection changes. It must not be described as a complete blind holdout.
+
+The manifest now contains 49 contacts. Compare iterations against this same
+manifest, while retaining the original frozen evaluation for provenance. Native
+reinspection also corrected two late-frame labels to the white ball's departure,
+before later object-ball motion. Contact timestamps use decoded presentation
+time relative to video start. The local proof records frame indexes, since index
+divided by average frame rate differs slightly on this source. Only the negative
+arena-break interval remains an independent holdout for the current changes.
 
 Run the evaluator from the repository root in PowerShell:
 

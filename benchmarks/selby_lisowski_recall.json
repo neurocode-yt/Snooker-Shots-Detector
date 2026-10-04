@@ -1,6 +1,6 @@
 {
   "source_basename": "Jack Lisowski vs Mark Selby - 2026 Quarter-Final.mp4",
-  "method": "Independent continuous source-image sweeps before consulting predictions, then 10-25 fps inspection of contact bounds. Development windows informed fixes; holdout windows were inspected after those fixes were frozen. This is not a full-match test set. Physical stops are not labelled.",
+  "method": "Continuous source-image sweeps followed by 10-25 fps contact inspection. Development windows informed fixes. Original frozen source labels are retained locally; subsequent timing and completeness corrections are explicitly recorded per window. This is not a full-match test set. Physical stops are not labelled.",
   "windows": [
     {
       "name": "opening_development",
@@ -77,67 +77,92 @@
     },
     {
       "name": "mid_frame_holdout",
-      "split": "holdout",
+      "split": "development",
       "start": 1600.0,
       "end": 1900.0,
       "contacts": [
         {
-          "lower": 1611.8,
-          "upper": 1611.92,
+          "lower": 1611.84,
+          "upper": 1611.88,
           "description": "high oblique blue"
         },
         {
           "lower": 1632.6,
           "upper": 1632.72,
-          "description": "occluded close-up red"
+          "description": "occluded close-up red; cue contact hidden between last stationary appearance and first visible roll"
         },
         {
-          "lower": 1658.72,
+          "lower": 1658.76,
           "upper": 1658.8,
           "description": "wide blue"
         },
         {
-          "lower": 1674.8,
+          "lower": 1674.88,
           "upper": 1674.92,
           "description": "close-up red"
         },
         {
-          "lower": 1693.6,
+          "lower": 1693.68,
           "upper": 1693.72,
           "description": "high oblique blue"
         },
         {
-          "lower": 1722.0,
-          "upper": 1722.2,
+          "lower": 1722.08,
+          "upper": 1722.12,
           "description": "oblique red, camera cuts during roll"
         },
         {
-          "lower": 1747.92,
+          "lower": 1747.96,
           "upper": 1748.0,
-          "description": "wide baulk colour"
+          "description": "wide brown attempt"
         },
         {
-          "lower": 1770.2,
-          "upper": 1770.32,
-          "description": "close-up red"
+          "lower": 1770.04,
+          "upper": 1770.08,
+          "description": "close-up red; cue-ball onset precedes visible red movement by about 0.2 seconds"
         },
         {
-          "lower": 1795.4,
-          "upper": 1795.52,
+          "lower": 1795.44,
+          "upper": 1795.48,
           "description": "reverse oblique green"
         },
         {
-          "lower": 1867.6,
-          "upper": 1867.72,
+          "lower": 1867.64,
+          "upper": 1867.68,
           "description": "oblique long red"
         },
         {
           "lower": 1890.72,
-          "upper": 1890.8,
+          "upper": 1890.76,
           "description": "wide blue"
         }
       ],
       "negative_examples": [
+        {
+          "start": 1620.0,
+          "end": 1627.0,
+          "description": "Replay of 1611.86 blue"
+        },
+        {
+          "start": 1734.0,
+          "end": 1742.0,
+          "description": "Replay of 1722.10 red"
+        },
+        {
+          "start": 1760.0,
+          "end": 1764.0,
+          "description": "Replay of 1747.98 brown attempt"
+        },
+        {
+          "start": 1785.0,
+          "end": 1789.0,
+          "description": "Replay of 1770.06 red"
+        },
+        {
+          "start": 1809.0,
+          "end": 1816.0,
+          "description": "Replay of 1795.46 green attempt"
+        },
         {
           "start": 1828.0,
           "end": 1831.0,
@@ -151,9 +176,31 @@
         {
           "start": 1877.0,
           "end": 1883.0,
-          "description": "Replay of previous live red"
+          "description": "Replay of 1867.66 red"
+        },
+        {
+          "start": 1617.5,
+          "end": 1619.0,
+          "description": "Referee blue replacement"
+        },
+        {
+          "start": 1663.0,
+          "end": 1665.5,
+          "description": "Referee blue replacement"
+        },
+        {
+          "start": 1699.0,
+          "end": 1702.0,
+          "description": "Referee blue replacement"
+        },
+        {
+          "start": 1897.0,
+          "end": 1900.0,
+          "description": "Referee blue replacement"
         }
-      ]
+      ],
+      "original_split": "holdout_for_2c4fa77",
+      "development_note": "Failures from this interval informed the 2026-10-04 fixes; no longer an independent holdout for those fixes."
     },
     {
       "name": "return_from_break_development",
@@ -194,6 +241,93 @@
       "split": "development"
     },
     {
+      "name": "safety_exchange_holdout_5000",
+      "start": 5000.0,
+      "end": 5300.0,
+      "split": "development",
+      "frozen_source_labels_sha256": "24ac2fd50d0b339d45703c8ae4ce836fca1e3be59210246a334e5496428a3317",
+      "annotation_note": "Seven contacts were frozen and hashed before predictions were inspected. Review of an unmatched prediction revealed a real eighth contact at 5044.84-5044.88; the original review incorrectly grouped it with earlier referee repositioning. The original seven-contact reference and hash remain unchanged locally. All 300 overview samples were rechecked with predictions known. This corrected eight-contact interval is development data, not a complete blind holdout. The missed soft shot at 5017 subsequently informed detector changes. Bounds use decoded presentation times relative to video start, with native frame indexes recorded.",
+      "contacts": [
+        {
+          "lower": 5017.36,
+          "upper": 5017.4,
+          "description": "Soft head-on table shot. The white is stationary through the first frame; its lower edge advances in the next and continues forward with cue follow-through.",
+          "last_stationary_frame": 125435,
+          "first_moving_frame": 125436
+        },
+        {
+          "lower": 5044.84,
+          "upper": 5044.88,
+          "description": "Live shot after earlier repositioning: player strikes the stationary white from the baulk rail; white travels down-table into reds.",
+          "last_stationary_frame": 126122,
+          "first_moving_frame": 126123,
+          "added_after_prediction_review": true
+        },
+        {
+          "lower": 5111.68,
+          "upper": 5111.72,
+          "description": "Wide table shot. Cue reaches the white and the white launches away from the bridge in the next native frame.",
+          "last_stationary_frame": 127793,
+          "first_moving_frame": 127794
+        },
+        {
+          "lower": 5137.64,
+          "upper": 5137.68,
+          "description": "Address close-up cuts to the wide table before contact. White launches from the baulk end at the cue tip, before the later cushion rebound.",
+          "last_stationary_frame": 128442,
+          "first_moving_frame": 128443
+        },
+        {
+          "lower": 5208.8,
+          "upper": 5208.84,
+          "description": "Wide table shot with small white. First movement is subtle in the contact frame, followed by continuous travel and red collision; raw source pixels support the boundary.",
+          "last_stationary_frame": 130221,
+          "first_moving_frame": 130222
+        },
+        {
+          "lower": 5237.16,
+          "upper": 5237.2,
+          "description": "Wide table shot. White starts moving at the forward cue stroke, followed by travel toward the reds.",
+          "last_stationary_frame": 130930,
+          "first_moving_frame": 130931
+        },
+        {
+          "lower": 5261.08,
+          "upper": 5261.12,
+          "description": "Low oblique side view. White is stationary, then launches from the cue with blur and later black-ball motion.",
+          "last_stationary_frame": 131528,
+          "first_moving_frame": 131529
+        },
+        {
+          "lower": 5287.52,
+          "upper": 5287.56,
+          "description": "Elevated close view. White launches at the cue tip, strikes a red, and then the broadcast returns to the main camera during the roll.",
+          "last_stationary_frame": 132189,
+          "first_moving_frame": 132190
+        }
+      ],
+      "negative_examples": [
+        {
+          "start": 5059,
+          "end": 5068,
+          "description": "Replay of an earlier live shot"
+        },
+        {
+          "start": 5244,
+          "end": 5250,
+          "description": "Replay of an earlier live shot"
+        },
+        {
+          "start": 5272,
+          "end": 5280,
+          "description": "Replay of an earlier live shot"
+        }
+      ],
+      "original_split": "holdout_for_4f7e802",
+      "original_seven_contacts_frozen_before_prediction_review": true,
+      "correction_note": "Removed the former 5029-5053 negative interval because it included the genuine 5044.86 shot; no replacement negative boundary is claimed without native annotation."
+    },
+    {
       "name": "arena_break_holdout",
       "split": "holdout",
       "start": 6000.0,
@@ -202,7 +336,7 @@
     },
     {
       "name": "late_frame_holdout",
-      "split": "holdout",
+      "split": "development",
       "start": 7480.0,
       "end": 7785.0,
       "contacts": [
@@ -217,14 +351,20 @@
           "description": "wide oblique, black"
         },
         {
-          "lower": 7592.887,
-          "upper": 7593.087,
-          "description": "bridge close-up, red"
+          "lower": 7592.72,
+          "upper": 7592.76,
+          "description": "bridge close-up, red",
+          "last_stationary_frame": 189820,
+          "first_moving_frame": 189821,
+          "timing_note": "Native development re-audit: white departure precedes later reappearance/object-ball movement used by the original label."
         },
         {
-          "lower": 7616.887,
-          "upper": 7617.007,
-          "description": "low side view, black"
+          "lower": 7616.76,
+          "upper": 7616.8,
+          "description": "low side view, black",
+          "last_stationary_frame": 190421,
+          "first_moving_frame": 190422,
+          "timing_note": "Native development re-audit: white departure precedes subsequent black-ball motion used by the original label."
         },
         {
           "lower": 7631.207,
@@ -279,7 +419,9 @@
           "description": "Player aims without striking inside interval"
         }
       ],
-      "annotation_note": "First ten live contacts labelled before consulting predictions. The initial audit ended at7780 during a launch; the endpoint was extended through7785 and an eleventh contact independently confirmed from source after inspecting baseline output. This boundary refinement is not a fully blind label."
+      "annotation_note": "First ten live contacts labelled before consulting predictions. The initial audit ended at7780 during a launch; the endpoint was extended through7785 and an eleventh contact independently confirmed from source after inspecting baseline output. This boundary refinement is not a fully blind label.",
+      "original_split": "holdout_for_2c4fa77",
+      "development_note": "Failures from this interval informed the 2026-10-04 fixes; no longer an independent holdout for those fixes."
     }
   ]
 }
