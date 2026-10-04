@@ -67,3 +67,20 @@ def test_hidden_contact_requires_the_complete_visual_sequence(config, invalid):
         elif invalid == "sparse":
             f.observation_fps = 2
     assert not StrikeDetector(config)._occluded_launch_candidates(features)
+
+
+@pytest.mark.parametrize("invalid", ["no_cue", "no_stable_motion", "no_quiet_anchor"])
+def test_slow_contact_gate_still_requires_independent_launch_evidence(config, invalid):
+    features = observations("slow_contact_in_partial_view")
+    detector = StrikeDetector(config)
+    times = [f.t for f in features]
+    index = min(range(len(features)), key=lambda i: abs(features[i].t-264.0322))
+    metrics = detector._transition_metrics(features, index, times)
+    assert detector._addressed_slow_launch_confirmed(metrics)
+    if invalid == "no_cue":
+        metrics["pre_cue_address_score"] = metrics["cue_contact_score"] = 0
+    elif invalid == "no_stable_motion":
+        metrics["stable_cue_motion_count"] = 0
+    else:
+        metrics["stationary_ratio"] = .5
+    assert not detector._addressed_slow_launch_confirmed(metrics)

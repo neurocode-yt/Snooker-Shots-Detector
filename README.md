@@ -177,7 +177,7 @@ docs/                # Architecture, API, setup
 3. **Table mask** — HSV green cloth + contour  
 4. **Camera motion** — affine from LK features; residual flow on table  
 5. **Scenes** — histogram cuts + view heuristics  
-6. **Audio** — onset / band energy (capped weight)  
+6. **Audio** — retained for playback and export; excluded from shot detection
 7. **Strike fusion** — cue-ball transition scoring, contact geometry, and visual occlusion recovery
 8. **Dense refinement** — native-FPS windows at strike/stop edges only  
 9. **Ball stop** — settling period on ball-specific and residual motion  

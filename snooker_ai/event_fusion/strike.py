@@ -303,14 +303,19 @@ class StrikeDetector:
         diameter = max(self._value(f, "ball_diameter_px"), 1.0)
         anchor_direction = 1.0
         anchor_excursion = 0.0
+        largest_step = 0.0
+        other_step_travel = 0.0
         reliable_pre = [x for x in pre if x.cue_ball_detected and self._track_conf(x) >= .55
                         and x.cue_ball_x is not None and x.cue_ball_y is not None]
         if reliable_pre and points:
             anchor = np.array([reliable_pre[-1].cue_ball_x, reliable_pre[-1].cue_ball_y])
             anchored = np.vstack((anchor, np.asarray(points)))
-            path = float(np.sum(np.linalg.norm(np.diff(anchored, axis=0), axis=1)))
+            step_lengths = np.linalg.norm(np.diff(anchored, axis=0), axis=1)
+            path = float(np.sum(step_lengths))
             anchor_direction = float(np.linalg.norm(anchored[-1]-anchor)) / max(path, 1e-6)
             anchor_excursion = float(np.max(np.linalg.norm(anchored[1:]-anchor, axis=1))) / diameter
+            largest_step = float(np.max(step_lengths)) / diameter
+            other_step_travel = path / diameter - largest_step
         stable_post = [x.cue_ball_stable_normalized_speed for x in post
                        if x.cue_ball_stable_normalized_speed is not None]
         # The first collision can bend the white's path inside the post window.
@@ -327,6 +332,7 @@ class StrikeDetector:
             initial_direction = net / max(path, 1e-6)
             initial_displacement = net / diameter
         return {
+            "observation_fps": self._value(f, "observation_fps"),
             "ball_diameter_px": diameter,
             "stationary_ratio": float(stationary_ratio),
             "sustained_ratio": float(sustained_ratio),
@@ -347,6 +353,13 @@ class StrikeDetector:
             "cue_direction_consistency": float(direction_consistency),
             "anchor_direction_consistency": anchor_direction,
             "anchor_excursion_diameters": anchor_excursion,
+            "largest_cue_step_diameters": largest_step,
+            "other_cue_step_travel_diameters": other_step_travel,
+            "independent_object_motion_count": float(sum(
+                x.cue_ball_detected and x.moving_ball_count > 0
+                and x.cue_ball_stable_normalized_speed is not None
+                and x.max_ball_normalized_speed >= max(1.5, x.cue_ball_stable_normalized_speed + 1.)
+                for x in post)),
             "stable_cue_observed": float(bool(stable_post)),
             "stable_cue_motion_count": float(sum(v >= self.continue_speed for v in stable_post)),
             "stable_cue_peak_speed": float(max(stable_post or [0])),
@@ -365,6 +378,22 @@ class StrikeDetector:
                 cue_contact >= 0.20 or cue_approach >= 0.15
             ),
         }
+
+    @staticmethod
+    def _single_step_identity_jump(metrics: dict[str, float]) -> bool:
+        # A white-to-red/bridge identity swap can look like a straight launch:
+        # the tracker reports a large jump, then its velocity filter decays
+        # while the replacement object is still. Require actual travel beyond
+        # that single step before accepting its apparent sustained speed.
+        largest = metrics.get("largest_cue_step_diameters", 0.0)
+        remaining = metrics.get("other_cue_step_travel_diameters", 0.0)
+        # Sparse sampling can contain a complete genuine collision in one
+        # step. Even at native cadence, independently moving object balls and
+        # contact geometry explain a white that stops abruptly after impact.
+        collision = (metrics.get("independent_object_motion_count", 0) >= 3
+                     and metrics.get("cue_contact_score", 0) >= .65)
+        return bool(metrics.get("observation_fps", 0) >= 10 and not collision
+                    and largest >= .75 and remaining < max(.50, .10 * largest))
 
     @staticmethod
     def _identity_return(metrics: dict[str, float]) -> bool:
@@ -423,6 +452,8 @@ class StrikeDetector:
                     and metrics.get("pre_cue_address_score", 0) >= .20)
 
     def _transition_confirmed(self, metrics: dict[str, float]) -> bool:
+        if self._single_step_identity_jump(metrics):
+            return False
         if self._short_launch_confirmed(metrics) or self._addressed_slow_launch_confirmed(metrics):
             return True
         object_tracks_quiet = bool(
@@ -516,7 +547,11 @@ class StrikeDetector:
         return bool(metrics.get("stationary_ratio", 0) >= .90
                     and metrics.get("pre_sample_count", 0) >= 6
                     and metrics.get("pre_ball_quiet_ratio", 0) >= .90
-                    and metrics.get("pre_cue_address_score", 0) >= .85
+                    # The cue can become clearly visible only at impact. Its
+                    # measured contact is as useful as the preceding address,
+                    # with the same quiet anchor and stabilized launch checks.
+                    and max(metrics.get("pre_cue_address_score", 0),
+                            metrics.get("cue_contact_score", 0)) >= .85
                     and metrics.get("pre_motion_raw_median", 1) <= .80
                     and metrics.get("track_confidence", 0) >= .80
                     and metrics.get("speed_crossing", 0) > 0
@@ -564,6 +599,7 @@ class StrikeDetector:
         """
         return bool(
             not self._identity_return(metrics)
+            and not self._single_step_identity_jump(metrics)
             and metrics.get("pre_sample_count", 0.0) >= 3
             and metrics.get("stationary_ratio", 0.0) >= 0.50
             and metrics.get("pre_ball_quiet_ratio", 0.0) >= self.fallback_pre_ball_quiet_min_ratio
@@ -667,11 +703,25 @@ class StrikeDetector:
             for x in post_after_onset
         )
         cue_identity_jump = False
+        cue_stationary_after_onset = False
         if reliable_pre:
             anchor = reliable_pre[-1]
             ax = self._value(anchor, "cue_ball_x")
             ay = self._value(anchor, "cue_ball_y")
             diameter = max(self._value(anchor, "ball_diameter_px"), 1.0)
+            reliable_post = [x for x in post_after_onset
+                             if x.cue_ball_detected and self._track_conf(x) >= self.min_track_conf
+                             and x.cue_ball_x is not None and x.cue_ball_y is not None]
+            # Missing interleaved observations do not establish an occlusion
+            # when the same stationary white is repeatedly seen through the
+            # alleged onset. This happens during referee movement/respots.
+            cue_stationary_after_onset = bool(
+                len(reliable_post) >= 2
+                and reliable_post[-1].t - reliable_post[0].t >= .10
+                and reliable_post[-1].t >= t + .75 * max(self.post_motion_s, .20)
+                and all(np.hypot(x.cue_ball_x-ax, x.cue_ball_y-ay) / diameter <= .25
+                        for x in reliable_post)
+                and self._stationary_ratio(reliable_post) >= .80)
             for x in post_after_onset:
                 if (
                     bool(getattr(x, "cue_ball_detected", False))
@@ -703,6 +753,7 @@ class StrikeDetector:
             "pre_cue_stationary_ratio": float(pre_cue_stationary_ratio),
             "cue_missing_after_onset": float(missing_after_onset),
             "cue_identity_jump": float(cue_identity_jump),
+            "cue_stationary_after_onset": float(cue_stationary_after_onset),
             "cue_observation_disrupted": float(
                 missing_after_onset or cue_identity_jump
             ),
@@ -718,6 +769,7 @@ class StrikeDetector:
             and metrics["pre_cue_sample_count"] >= 2
             and metrics["pre_cue_stationary_ratio"] >= 0.70
             and metrics["cue_observation_disrupted"] >= 0.5
+            and metrics.get("cue_stationary_after_onset", 0.0) < .5
             and metrics["ball_onset_run"] >= 2
             and metrics["ball_onset_raw"] >= 0.22
             and metrics["ball_onset_normalized_speed"] >= 1.0
@@ -880,11 +932,103 @@ class StrikeDetector:
             )
         logger.info("Found %d cue-strike candidates", len(candidates))
         for inferred in (self._camera_contact_candidates(features)
-                         + self._occluded_launch_candidates(features)):
+                         + self._occluded_launch_candidates(features)
+                         + self._interrupted_departure_candidates(features)):
             if not any(abs(c.timestamp-inferred.timestamp) < self.min_dist for c in candidates):
                 candidates.append(inferred)
         candidates.sort(key=lambda c: c.timestamp)
         return candidates
+
+    def _interrupted_departure_candidates(self, features: list[FrameFeatures]) -> list[StrikeCandidate]:
+        """Join a visible departure to its roll behind a nearby object ball.
+
+        A low camera can lose the white behind a red immediately after cue
+        contact, longer than the ordinary post window. Its measured departure,
+        nearby reappearance and continued travel together establish the shot.
+        """
+        times = [f.t for f in features]
+        recovered: list[StrikeCandidate] = []
+
+        def positioned(f: FrameFeatures) -> bool:
+            return (f.cue_ball_detected and f.cue_ball_x is not None
+                    and f.cue_ball_y is not None and self._track_conf(f) >= .65)
+
+        def continuously_observed(rows: list[FrameFeatures]) -> bool:
+            return (all(f.observation_fps >= 10 for f in rows)
+                    and all(0 < b.t-a.t <= 2/min(a.observation_fps, b.observation_fps)+.005
+                            for a, b in zip(rows, rows[1:])))
+
+        for i, current in enumerate(features):
+            if (current.observation_fps < 10 or not self._valid(current)
+                    or not positioned(current) or self._cue_speed(current) < self.start_speed
+                    or current.ball_diameter_px < 24
+                    or (recovered and current.t-recovered[-1].timestamp < self.min_dist)):
+                continue
+            pre = features[bisect_left(times, current.t-.50):bisect_left(times, current.t-.03)]
+            if (len(pre) < 6 or any(not self._valid(f) or not self._same_view(f, current) for f in pre)
+                    or sum(positioned(f) for f in pre)/len(pre) < .80
+                    or self._stationary_ratio(pre) < .90
+                    or np.median([f.motion_raw for f in pre]) > .50
+                    or sum(f.max_ball_normalized_speed <= self.pre_quiet_max_ball_speed for f in pre)/len(pre) < .90):
+                continue
+            quiet = [f for f in pre if positioned(f)]
+            if len(quiet) < 6 or quiet[-1].t-quiet[0].t < .20:
+                continue
+            anchor = quiet[-1]
+            diameter = max(1., float(np.median([f.ball_diameter_px for f in quiet])))
+            anchor_xy = np.asarray([anchor.cue_ball_x, anchor.cue_ball_y])
+            if max(np.hypot(f.cue_ball_x-anchor_xy[0], f.cue_ball_y-anchor_xy[1]) for f in quiet) > .20*diameter:
+                continue
+            post = []
+            for f in features[i:bisect_right(times, current.t+1.)]:
+                if not self._valid(f) or not self._same_view(f, current):
+                    break
+                post.append(f)
+            # An observed hidden ball is different from missing source images.
+            # Require native-rate coverage on both sides and through the gap.
+            if not continuously_observed(pre+post):
+                continue
+            gap_index = next((j for j, f in enumerate(post) if not positioned(f)), None)
+            if gap_index is None or gap_index < 2 or post[gap_index].t-current.t > .15:
+                continue
+            initial = post[:gap_index]
+            if (any(f.cue_ball_stable_normalized_speed is None or f.cue_ball_stable_normalized_speed < .30 for f in initial)
+                    or np.hypot(current.cue_ball_x-anchor_xy[0], current.cue_ball_y-anchor_xy[1]) < max(2., .05*diameter)):
+                continue
+            return_index = next((j for j in range(gap_index+1, len(post)) if positioned(post[j])), None)
+            if return_index is None:
+                continue
+            reappearance = post[return_index]
+            if (not .20 <= reappearance.t-post[gap_index].t <= .65
+                    or reappearance.t-current.t > .75):
+                continue
+            tail = post[return_index:]
+            visible = [f for f in tail if positioned(f)]
+            if (len(visible) < 4 or len(visible)/len(tail) < .75
+                    or visible[-1].t-visible[0].t < .16):
+                continue
+            stable = [f.cue_ball_stable_normalized_speed for f in visible
+                      if f.cue_ball_stable_normalized_speed is not None]
+            if sum(v >= self.continue_speed for v in stable) < 3 or max(stable, default=0) < 2.:
+                continue
+            xy = np.asarray([(f.cue_ball_x, f.cue_ball_y) for f in visible])
+            net = float(np.linalg.norm(xy[-1]-xy[0]))
+            path = float(np.sum(np.linalg.norm(np.diff(xy, axis=0), axis=1)))
+            excursion = float(np.linalg.norm(xy[-1]-anchor_xy))/diameter
+            if (net/diameter < .65 or excursion < .85 or net/max(path, 1e-6) < .80
+                    or np.linalg.norm(xy[0]-anchor_xy) > .75*diameter):
+                continue
+            recovered.append(StrikeCandidate(
+                timestamp=current.t, confidence=.78, uncertainty_start=anchor.t,
+                uncertainty_end=current.t, camera_view=current.view_type,
+                evidence={"occlusion_inferred": 1., "ball_onset_run": float(len(visible)),
+                          "interrupted_cue_departure": 1., "cue_ball_motion_confirmed": 1.,
+                          "cue_geometry_confirmed": 0., "cue_displacement_diameters": net/diameter,
+                          "cue_direction_consistency": net/max(path, 1e-6),
+                          "anchor_excursion_diameters": excursion,
+                          "occlusion_duration_seconds": reappearance.t-post[gap_index].t},
+            ))
+        return recovered
 
     def _occluded_launch_candidates(self, features: list[FrameFeatures]) -> list[StrikeCandidate]:
         """Reconnect a quiet addressed white to a coherent roll after occlusion.
