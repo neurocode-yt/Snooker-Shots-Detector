@@ -1730,7 +1730,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 17,
+            "result_policy_version": 18,
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")
             },
