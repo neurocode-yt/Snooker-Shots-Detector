@@ -105,3 +105,28 @@ Result policy 19 invalidates final timelines while retaining raw feature cache
 23. The remaining almost fully hidden 1632-second stroke is still unresolved.
 All 543 automated tests pass after this iteration; Ruff and whitespace checks
 also pass. Rendering and source validation remain separate from these tests.
+
+The subsequent normal policy-19 bounded pipeline matched 48 of those 49 contacts
+with no extras. All 55 selected clips exported and fully decoded without errors;
+minimum clear viewing time is four seconds and minimum unmixed post-contact time
+is 2.24 seconds. Two referee tails remain, so this is still an intermediate edit.
+
+## Address memory across a camera change
+
+A stationary white and visible cue address in one view can now support a launch
+hidden by the following angle. The new view must remain continuously observed
+and quiet until the white reappears already rolling, with immediate visible cue
+contact and a coherent trajectory. It never compares coordinates across cameras.
+Missing images, extra cuts, replay, foreign-match footage, handling, stationary
+reacquisition and identity switches reject this recovery.
+
+Across 46,772 bounded observations, the only new candidate is the remaining
+1632-second stroke; no candidate is removed. Its timestamp is first reacquisition
+(1632.793), with explicit uncertainty back to the prior visible stationary white.
+This does not claim exact contact timing during occlusion. All 569 automated
+tests and changed-file Ruff checks pass. Policy 20 reruns final decisions while
+preserving feature cache 23. Normal pipeline verification is still required.
+
+A new 2800–2920-second source-only holdout has six live contacts, with native
+frame brackets frozen before predictions were consulted. It is kept separate
+from the 49 development contacts when reporting the next validation.

@@ -27,13 +27,20 @@ file and hash remain preserved locally; the manifest records the correction.
 The corrected interval is development data, and its missed soft shot subsequently
 informed detection changes. It must not be described as a complete blind holdout.
 
-The manifest now contains 49 contacts. Compare iterations against this same
+The corrected development manifest contains 49 contacts. Compare iterations against the same
 manifest, while retaining the original frozen evaluation for provenance. Native
 reinspection also corrected two late-frame labels to the white ball's departure,
 before later object-ball motion. Contact timestamps use decoded presentation
 time relative to video start. The local proof records frame indexes, since index
 divided by average frame rate differs slightly on this source. Only the negative
-arena-break interval remains an independent holdout for the current changes.
+arena-break interval remained an independent holdout at that stage.
+
+A further 2800–2920-second interval adds six independently annotated live shots,
+bringing the current manifest to 55 contacts. All 240 half-second source samples
+were reviewed, then each contact was bracketed using adjacent original frames.
+Those labels were frozen before consulting detector output in that interval;
+the manifest records their hash. They remain a separate holdout for the
+address-memory and referee-tail work. A replay at the interval end is a negative.
 
 Run the evaluator from the repository root in PowerShell:
 
