@@ -43,5 +43,28 @@ These object observations alone do not establish final export recall; strike,
 replay, and boundary checks still follow. Feature cache version 23 invalidates
 older coarse observations and contact windows so existing jobs are reanalysed.
 
+## Contact continuity and false detections
+
+Slow launches can use a cue visible at contact even when it was hidden during
+the preceding address. A separate native-cadence check reconnects a measured
+two-frame white-ball departure to a nearby coherent roll after a brief
+occlusion. It requires continuous observed footage through the hidden interval;
+missing images, a camera cut, distant reappearance, or handling cannot prove
+that sequence. The investigated 1770-second contact is recovered within its
+source bracket of 1770.04–1770.08 seconds.
+
+A single large identity jump followed by a stationary replacement cannot use
+the tracker's decaying velocity as proof of a shot. A real rapid collision can
+still pass with cue-contact geometry and independently moving object balls.
+Repeated observations of the stationary white also contradict a claimed hidden
+impact. Source fixtures reject the false events near 411, 1698 and 1717 seconds.
+
+Fresh extraction of the earlier `software_check_2.mp4` regression retains the
+145.5-second shot and produces no contact in 750–763 seconds, including the
+reported referee replacement near 756 seconds. All 528 automated tests pass;
+Ruff passes for the changed Python files. One almost entirely obscured contact
+near 1632 seconds remains unresolved. Final pipeline recall and rendered output
+require the fresh validation run; candidate-only checks are not final accuracy.
+
 Audit outputs and source images are local under
 `data/editor_audit/recall_2026_10_03/`; the source video is not distributed.
