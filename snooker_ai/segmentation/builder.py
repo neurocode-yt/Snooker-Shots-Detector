@@ -191,9 +191,21 @@ class SegmentBuilder:
                     availability_reason = boundary_reason
             if stop.reason == "unconfirmed_ball_handling_boundary":
                 clip_cap = min(clip_cap, physical_stop)
+            visual_cap = float(cand.evidence.get("visual_hand_entry_clip_cap_timestamp", 0.))
+            visual_entry = float(cand.evidence.get("visual_hand_entry_timestamp", 0.))
+            visual_confirmation = float(cand.evidence.get("visual_hand_entry_confirmation_timestamp", 0.))
+            visual_floor = max(clip_start + minimum_clip,
+                               cand.timestamp + minimum_visibility)
+            if (cand.evidence.get("visual_hand_entry_confidence", 0.) >= .8
+                    and visual_floor-1e-6 <= visual_cap < visual_entry < visual_confirmation <= duration
+                    and visual_cap < clip_cap):
+                clip_cap = visual_cap
+                availability_reason = "visual_hand_entry_clip_boundary"
             # A sustained broadcast cutaway limits usable edit footage. It is
             # not a measurement of where the balls physically stopped.
-            cutaway_boundary = availability_reason == "non_table_cutaway_clip_boundary"
+            cutaway_boundary = availability_reason in {
+                "non_table_cutaway_clip_boundary", "visual_hand_entry_clip_boundary",
+            }
             if physical_stop > clip_cap + 1e-9 and not cutaway_boundary:
                 physical_stop = clip_cap
                 confirmation = clip_cap
@@ -226,6 +238,18 @@ class SegmentBuilder:
                 clip_start,
                 min(duration, clip_cap),
             )
+            object_motion_end = self._last_independent_object_motion(
+                features, cand.timestamp, min(physical_stop, clip_cap), feature_times,
+            )
+            if object_motion_end > cand.timestamp:
+                # Trimming settling time must not hide an object ball's final
+                # approach to a pocket. Keep its supported travel and a short
+                # outcome hold clear of the outgoing dissolve. Source handling
+                # and replay limits remain authoritative.
+                minimum_clip_end = max(minimum_clip_end, clamp(
+                    object_motion_end + .40 + transition,
+                    clip_start, min(duration, clip_cap),
+                ))
             clip_end = clamp(
                 max(physical_stop - end_trim, minimum_clip_end),
                 clip_start,
@@ -263,6 +287,7 @@ class SegmentBuilder:
                     # the exported strict boundary may be capped separately.
                     "uncapped_physical_stop_timestamp": uncapped_physical_stop,
                     "minimum_clip_end_timestamp": minimum_clip_end,
+                    "last_independent_object_motion_timestamp": object_motion_end,
                     "minimum_clip_seconds": minimum_clip,
                     "minimum_strike_visibility_seconds": minimum_visibility,
                     "minimum_clip_transition_padding_seconds": 2 * transition,
@@ -341,10 +366,10 @@ class SegmentBuilder:
         previous = None
         foreign_start = None
         replay_start = None
-        for f in features:
+        for index, f in enumerate(features):
             if f.broadcast_replay:
                 if replay_start is None:
-                    replay_start = f.t
+                    replay_start = self._replay_fade_start(features, index)
             elif replay_start is not None:
                 spans.append((replay_start, f.t, "replay_clip_boundary"))
                 replay_start = None
@@ -379,6 +404,57 @@ class SegmentBuilder:
                 spans.append((handling_start, features[-1].t, "ball_handling_clip_boundary"))
         spans.extend(self._non_table_cutaway_spans(features))
         return sorted(spans)
+
+    @staticmethod
+    def _last_independent_object_motion(features, strike_t, end_t, times) -> float:
+        """Require sustained measured object travel beyond the white's speed."""
+        latest = 0.
+        run_start = None
+        previous = None
+        for f in features[bisect_right(times, strike_t+.15):bisect_right(times, end_t)]:
+            qualified = bool(
+                f.observation_fps >= 10 and f.observation_valid and f.table_observable
+                and f.ball_kinematics_valid and f.match_context_valid
+                and not f.broadcast_replay and not f.table_handling
+                and f.view_type not in {CameraViewType.REPLAY, CameraViewType.SLOW_MOTION_REPLAY}
+                and f.scene_cut_score < .5 and f.cue_ball_detected and f.cue_ball_quality
+                and f.cue_ball_track_confidence >= .65
+                and f.cue_ball_stable_normalized_speed is not None
+                and f.moving_ball_count >= 1
+                and f.max_ball_normalized_speed >= max(
+                    1.5, f.cue_ball_stable_normalized_speed + .75,
+                ))
+            continuous = bool(qualified and previous is not None and previous.camera_scene_id == f.camera_scene_id
+                              and 0 < f.t-previous.t <= 2/min(f.observation_fps,previous.observation_fps)+.005)
+            if not qualified:
+                run_start = None
+            elif run_start is None or not continuous:
+                run_start = f.t
+            elif f.t-run_start >= .16-1e-9:
+                latest = f.t
+            previous = f if qualified else None
+        return latest
+
+    @staticmethod
+    def _replay_fade_start(features, index) -> float:
+        """Bound the fade into an already paired detector-owned replay wipe."""
+        opening = features[index]
+        if (not opening.replay_stinger_annotated or opening.replay_stinger_original_marker
+                or opening.observation_fps < 10):
+            return opening.t
+        start = opening.t
+        previous = opening
+        count = 0
+        for f in reversed(features[:index]):
+            if (opening.t-f.t > .60 or f.observation_fps < 10
+                    or not f.match_context_valid or f.broadcast_replay
+                    or not 0 < previous.t-f.t <= 2/min(f.observation_fps,previous.observation_fps)+.005
+                    or f.scene_cut_score < .08):
+                break
+            start = f.t
+            count += 1
+            previous = f
+        return start if count >= 3 and opening.t-start >= .16-1e-9 else opening.t
 
     def _non_table_cutaway_spans(self, features: list[FrameFeatures]) -> list[tuple[float, float, str]]:
         """Sustained measured non-table footage can bound an automatic edit.
@@ -516,6 +592,14 @@ class SegmentBuilder:
                 # authoritative for mid-motion suppression.
                 stop_confirmed = prev.evidence.get("stop_confirmed")
                 reliable_stop = stop_confirmed is not False
+                usable_end = float(prev.evidence.get("usable_source_end_timestamp", float("inf")))
+                if prev_stop > usable_end+1e-6 and prev.evidence.get("usable_source_end_reason") in {
+                    "non_table_cutaway_clip_boundary", "visual_hand_entry_clip_boundary", "replay_clip_boundary",
+                }:
+                    # A stop reacquired after unusable footage is an upper
+                    # bound. It cannot erase the next independently proven
+                    # contact as if its balls were observed moving throughout.
+                    reliable_stop = False
                 mid_motion = (
                     reliable_stop and shot.cue_strike <= prev_stop + 1e-6
                 )
@@ -669,6 +753,8 @@ class SegmentBuilder:
         Compare launch trajectories, confidence, and pre-strike stillness.
         Commentary and collision sounds cannot change which event survives.
         """
+        if previous.included != current.included:
+            return current.included
 
         def launch_evidence(shot: ShotRecord) -> float:
             ev = shot.evidence

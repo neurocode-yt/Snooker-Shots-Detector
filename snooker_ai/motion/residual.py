@@ -53,8 +53,10 @@ class ResidualMotionAnalyzer:
         ball_regions: Optional[list[tuple[float, float, float]]] = None,
         frame_dt: float = 1.0,
         refresh_flow: bool = True,
+        camera_static_regions: Optional[list[tuple[float, float, float]]] = None,
     ) -> MotionSample:
-        cam = self.cam.estimate(prev_gray, gray, mask=table_mask)
+        cam = self.cam.estimate(prev_gray, gray, mask=table_mask,
+                               static_regions=camera_static_regions)
         if not refresh_flow and self._last_sample is not None:
             # Native-rate ball centres and camera compensation still update on
             # every frame. Aggregate flow is supporting evidence and can reuse

@@ -5,6 +5,7 @@ from pathlib import Path
 from snooker_ai.ingestion.proxy import generate_proxy
 from snooker_ai.types import VideoMetadata
 from snooker_ai.utils.ffmpeg import FFmpegError
+import pytest
 
 
 def _setup(config, tmp_path, monkeypatch, gpu=False):
@@ -67,6 +68,27 @@ def test_proxy_records_cpu_fallback_and_reuses_it(config, tmp_path, monkeypatch)
     monkeypatch.setattr("snooker_ai.ingestion.proxy.run_command", fail_gpu)
     generate_proxy(source, output, metadata, config)
     assert (output / "proxy.backend").read_text() == "cpu"
+    calls.clear()
+    generate_proxy(source, output, metadata, config)
+    assert calls == []
+
+
+@pytest.mark.parametrize("source_fps,expected", [(25.,25.), (24.,24.), (50.,30.)])
+@pytest.mark.parametrize("gpu", [False, True])
+def test_proxy_preserves_source_cadence_below_the_configured_ceiling(
+    config, tmp_path, monkeypatch, source_fps, expected, gpu,
+):
+    source, output, metadata, calls, _ = _setup(config, tmp_path, monkeypatch, gpu=gpu)
+    metadata.fps = source_fps
+    proxy_metadata = VideoMetadata(path="proxy.mp4", width=960, height=540,
+                                   duration=5, fps=expected, has_audio=True)
+    monkeypatch.setattr("snooker_ai.ingestion.probe.probe_video", lambda path: proxy_metadata)
+    result = generate_proxy(source, output, metadata, config)
+    assert result.fps == expected
+    if gpu:
+        assert calls[0][calls[0].index("-r")+1] == str(expected)
+    else:
+        assert f"fps={expected}" in calls[0][calls[0].index("-vf")+1]
     calls.clear()
     generate_proxy(source, output, metadata, config)
     assert calls == []

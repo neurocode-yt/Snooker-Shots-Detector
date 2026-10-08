@@ -165,12 +165,14 @@ def test_visible_upper_hemisphere_retains_sphere_scale(config):
 
 
 @pytest.mark.parametrize("occluder_hue", [2, 170])
-def test_ivory_crescent_behind_round_colour_retains_identity_and_scale(config, occluder_hue):
+@pytest.mark.parametrize("saturation", [10, 85])
+@pytest.mark.parametrize("occluder_y", [148, 158])
+def test_ivory_crescent_behind_round_colour_retains_identity_and_scale(config, occluder_hue, saturation, occluder_y):
     frame = np.full((240, 400, 3), colour(60, 180, 180), np.uint8)
     cv2.ellipse(frame, (180, 118), (48, 22), 0, 0, 360, colour(173, 22, 250), -1)
-    cv2.circle(frame, (180, 140), 20, colour(30, 85, 220), -1)
+    cv2.circle(frame, (180, 140), 20, colour(30, saturation, 220), -1)
     cv2.circle(frame, (175, 132), 8, colour(25, 20, 255), -1)
-    cv2.circle(frame, (184, 158), 22, colour(occluder_hue, 180, 210), -1)
+    cv2.circle(frame, (184, occluder_y), 22, colour(occluder_hue, 180, 210), -1)
     cue = [d for d in ObjectDetector(config).detect(
         frame, np.full(frame.shape[:2], 255, np.uint8),
         use_hough=False, partial_view=True,

@@ -51,6 +51,10 @@ class ReplayDetector:
         if any(a.t > b.t for a, b in zip(features, features[1:])):
             features = sorted(features, key=lambda f: f.t)
         times = [f.t for f in features]
+        for feature in features:
+            if feature.replay_stinger_annotated:
+                feature.broadcast_replay = feature.replay_stinger_original_marker
+                feature.replay_stinger_annotated = False
 
         def feature_window(start: float, end: float) -> list[FrameFeatures]:
             return features[bisect_left(times, start):bisect_right(times, end)]
@@ -59,6 +63,8 @@ class ReplayDetector:
         stinger_intervals = self._stinger_intervals(features, ordered)
         for start, end in stinger_intervals:
             for feature in feature_window(start, end):
+                feature.replay_stinger_original_marker = feature.broadcast_replay
+                feature.replay_stinger_annotated = True
                 feature.broadcast_replay = True
         signatures = [self._signature(c.timestamp, features, times=times) for c in ordered]
         layouts = [self._layout_sequence(c.timestamp, features, times) for c in ordered]
@@ -148,18 +154,18 @@ class ReplayDetector:
             if not any(self._cosine(np.asarray(a.appearance_signature), np.asarray(b.appearance_signature)) >= .92
                        for a in opening for b in closing):
                 continue
+            # Pair ownership is graphical evidence. A replay contact may be
+            # occluded or already filtered from native candidates; its closing
+            # wipe still cannot open a package spanning the next live shot.
+            index += 1
             if not any(c.confidence >= .40 and not c.possible_replay
                        and start-self.max_after <= c.timestamp < start-self.min_after
                        and not any(lo <= c.timestamp <= hi for lo, hi in intervals)
                        for c in candidates):
                 continue
-            if not any(c.confidence >= .40 and opening[-1].t < c.timestamp <= min(end, opening[-1].t+4)
-                       for c in candidates):
-                continue
             intervals.append((start, end))
             # A closing wipe cannot also open the next replay package. Reusing
             # it would incorrectly erase live play between consecutive replays.
-            index += 1
         return intervals
 
     def returning_live_candidates(

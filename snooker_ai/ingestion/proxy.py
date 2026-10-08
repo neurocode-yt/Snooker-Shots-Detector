@@ -59,6 +59,11 @@ def generate_proxy(
     max_w = int(proxy_cfg.get("max_width", 960))
     max_h = int(proxy_cfg.get("max_height", 540))
     target_fps = float(proxy_cfg.get("target_fps", 15.0))
+    # Upsampling 25fps footage to 30fps and later refining at 25fps drops
+    # original images according to the seek phase. Preserve source cadence
+    # when it is below the configured ceiling, avoiding duplicated frames.
+    if metadata.fps > 0:
+        target_fps = min(target_fps, float(metadata.fps))
     crf = int(proxy_cfg.get("crf", 28))
     preset = str(proxy_cfg.get("preset", "veryfast"))
     keyframe_s = max(0.25, float(proxy_cfg.get("seek_keyframe_seconds", 2.0)))

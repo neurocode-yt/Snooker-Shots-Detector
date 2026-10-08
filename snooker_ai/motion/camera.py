@@ -42,6 +42,7 @@ class CameraMotionEstimator:
         prev_gray: np.ndarray,
         gray: np.ndarray,
         mask: Optional[np.ndarray] = None,
+        static_regions: list[tuple[float, float, float]] | None = None,
     ) -> CameraMotion:
         work_prev = prev_gray
         work_gray = gray
@@ -159,6 +160,51 @@ class CameraMotionEstimator:
         scale = float(np.hypot(a, b))
         mag = float(np.hypot(tx, ty))
         is_cut = mag >= self.cut_mag or n_in < self.min_inliers
+        if (not is_cut and static_regions and len(static_regions) >= 2
+                and (abs(scale-1.) >= .0015 or mag >= .5)):
+            # Background spectators lie on a different plane from the cloth.
+            # A low-angle zoom can leave resting balls apparently rolling.
+            # Coloured balls provide local registration; the white is excluded.
+            region_mask = np.zeros(work_prev.shape, np.uint8)
+            centres = np.asarray([(x*self.estimation_scale, y*self.estimation_scale)
+                                  for x, y, _ in static_regions])
+            diameters = np.asarray([d*self.estimation_scale for _, _, d in static_regions])
+            spread = float(np.max(np.linalg.norm(centres[:, None]-centres[None, :], axis=2)))
+            if spread >= 2*float(np.median(diameters)):
+                for (x, y), diameter in zip(centres, diameters):
+                    cv2.circle(region_mask, (round(x), round(y)), max(3, round(.75*diameter)), 255, -1)
+                try:
+                    table_prev, table_next, table_status = track_features(work_prev, work_gray, region_mask)
+                except cv2.error:
+                    table_prev = table_next = table_status = None
+                if table_prev is not None and table_next is not None and table_status is not None:
+                    keep = table_status.reshape(-1) == 1
+                    first, second = table_prev[keep], table_next[keep]
+                    if len(first) >= self.min_inliers:
+                        plane, plane_inliers = cv2.estimateAffine2D(
+                            first, second, method=cv2.RANSAC,
+                            ransacReprojThreshold=min(self.ransac*self.estimation_scale, .5))
+                        if plane is not None and plane_inliers is not None:
+                            valid = plane_inliers.reshape(-1).astype(bool)
+                            count = int(valid.sum())
+                            singular = np.linalg.svd(plane[:, :2], compute_uv=False)
+                            previous = first[valid].reshape(-1, 2)
+                            local_prediction = previous@plane[:, :2].T+plane[:, 2]
+                            global_work = transform.copy()
+                            global_work[:, 2] *= self.estimation_scale
+                            global_prediction = previous@global_work[:, :2].T+global_work[:, 2]
+                            disagreement = np.linalg.norm(local_prediction-global_prediction, axis=1)
+                            if (count >= self.min_inliers and count >= .75*len(first)
+                                    and .94 <= min(singular) <= max(singular) <= 1.06
+                                    and np.max(np.abs(plane[:, :2]-global_work[:, :2])) <= .04
+                                    and cv2.contourArea(cv2.convexHull(previous.astype(np.float32)))
+                                    >= max(20., float(np.median(diameters))**2)
+                                    and float(np.median(disagreement)) <= max(
+                                        3*self.estimation_scale, .25*float(np.median(diameters)))):
+                                plane[:, 2] /= self.estimation_scale
+                                transform = plane
+                                n_in = count
+                                scale = float(np.sqrt(abs(np.linalg.det(plane[:, :2]))))
         return CameraMotion(mag, scale if scale > 0 else 1.0, n_in, transform, is_cut)
 
     def warp_prev(self, prev_gray: np.ndarray, transform: np.ndarray) -> np.ndarray:

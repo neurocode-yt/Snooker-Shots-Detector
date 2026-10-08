@@ -35,6 +35,7 @@ from snooker_ai.scene_detection.table_context import (
     TableInteractionDetector, ViewGeometry, ball_layout, view_geometry,
 )
 from snooker_ai.segmentation.builder import SegmentBuilder
+from snooker_ai.segmentation.visual_tail import VisualTailDetector
 from snooker_ai.table_detection.localizer import TableLocalizer, TableObservation
 from snooker_ai.temporal_model.state_machine import ShotStateMachine
 from snooker_ai.tracking.tracker import BallTracker
@@ -58,7 +59,7 @@ from snooker_ai.utils.video import open_capture, sampled_frames
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 23
+_CACHE_VERSION = 32
 
 
 class Analyzer:
@@ -82,6 +83,7 @@ class Analyzer:
         self.objects = ObjectDetector(config)
         self.tracker = BallTracker()
         self._last_cue_tip: Optional[tuple[float, float, float]] = None
+        self._native_source: Optional[Path] = None
         self.broadcast_context = BroadcastContextGuard(config)
         self._coarse_context_reference: list[FrameFeatures] = []
         self._confirmed_target_returns: list[tuple[float, float]] = []
@@ -116,6 +118,7 @@ class Analyzer:
             try:
                 data = json.loads(analysis_path.read_text(encoding="utf-8"))
                 result = AnalysisResult.model_validate(data)
+                self._restore_legacy_replay_annotations(result.features, data.get("features", []))
                 prior_result = result
                 if result.analysis_signature == result_signature:
                     if result.mode != mode:
@@ -131,6 +134,7 @@ class Analyzer:
         max_h = float(self.config.get("analysis.max_video_hours", 12.0))
         metadata = validate_video(source, max_hours=max_h)
         source = Path(metadata.path)
+        self._native_source = source
         analysis_signature = self._analysis_signature(source)
 
         report(0.08, JobStatus.PROXY.value, "Generating analysis proxy")
@@ -306,6 +310,14 @@ class Analyzer:
 
         report(0.92, JobStatus.SEGMENTING.value, "Building shot segments")
         shots = self.segmenter.build(candidates, features, metadata.duration, mode)
+        report(0.94, JobStatus.SEGMENTING.value, "Checking shot endings for referee entry")
+        entries = VisualTailDetector(self.config).detect(
+            source, proxy.proxy_path, proxy.mapper, shots, features,
+        )
+        if self._record_visual_tail_boundaries(
+            candidates, shots, entries, metadata.duration, metadata.fps,
+        ):
+            shots = self.segmenter.build(candidates, features, metadata.duration, mode)
         shots = self._preserve_user_edits(shots, job_id)
         shots = self._score_importance(shots, features)
         self._record_detection_stage("segmentation", candidates, extra={
@@ -375,6 +387,49 @@ class Analyzer:
 
         report(1.0, JobStatus.READY_FOR_REVIEW.value, f"Detected {len(shots)} shots")
         return result
+
+    def _record_visual_tail_boundaries(
+        self, candidates, shots, entries, duration: float, source_fps: float,
+    ) -> bool:
+        """Store verified obstruction limits without declaring a physical stop."""
+        settings = self.config.mode_settings(EditMode.STRICT)
+        minimum_clip = max(0., float(settings.get("minimum_clip_seconds", 0.)))
+        minimum_after = max(0., float(settings.get("minimum_strike_visibility_seconds", .1)))
+        changed = False
+        for entry in entries:
+            values = (entry.strike_timestamp, entry.entry_timestamp,
+                      entry.confirmation_timestamp, entry.source_entry_pts, entry.confidence)
+            if not all(np.isfinite(v) for v in values) or entry.confidence < .8:
+                continue
+            if not entry.strike_timestamp < entry.entry_timestamp < entry.confirmation_timestamp <= duration:
+                continue
+            shot = next((s for s in shots if abs(s.cue_strike-entry.strike_timestamp) < 1e-4), None)
+            candidate = next((c for c in candidates if abs(c.timestamp-entry.strike_timestamp) < 1e-4), None)
+            if (shot is None or candidate is None or not shot.included
+                    or shot.possible_replay or shot.user_modified):
+                continue
+            # Leave the first visible glove frame out even after frame-rate
+            # quantization. Native decoded PTS supplies the source-time limit.
+            cap = min(entry.entry_timestamp, entry.source_entry_pts) - 1/max(source_fps, 1.)
+            # Proven unusable footage takes precedence over optional dissolve
+            # padding. The renderer reduces the adjacent overlaps to preserve
+            # the clear viewing budget instead of extending into the referee.
+            viewing_floor = max(shot.clip_start + minimum_clip,
+                                shot.cue_strike + minimum_after)
+            if not viewing_floor-1e-6 <= cap < shot.clip_end:
+                continue
+            earlier_cap = float(candidate.evidence.get("visual_hand_entry_clip_cap_timestamp", 0.))
+            if earlier_cap > 0 and earlier_cap <= cap:
+                continue
+            candidate.evidence.update({
+                "visual_hand_entry_timestamp": entry.entry_timestamp,
+                "visual_hand_entry_confirmation_timestamp": entry.confirmation_timestamp,
+                "visual_hand_entry_source_pts": entry.source_entry_pts,
+                "visual_hand_entry_confidence": entry.confidence,
+                "visual_hand_entry_clip_cap_timestamp": cap,
+            })
+            changed = True
+        return changed
 
     def _visual_proposals(self, features: list[FrameFeatures]) -> list[StrikeCandidate]:
         """Rebuild proposals independently of audio and stale cached scores."""
@@ -620,6 +675,7 @@ class Analyzer:
     ) -> tuple[list[FrameFeatures], list[SceneObservation], list[float]]:
         sample_fps = float(sample_fps or self.config.get("analysis.sample_fps", 10.0))
         start_time = max(0.0, float(start_time))
+        requested_start = start_time
         end_time = duration if end_time is None else min(duration, float(end_time))
         # Sound is preserved in preview/export, but never analysed for strikes.
 
@@ -631,6 +687,30 @@ class Analyzer:
             raise RuntimeError(f"Cannot open proxy video: {proxy_path}")
 
         proxy_fps = cap.get(cv2.CAP_PROP_FPS) or float(self.config.get("proxy.target_fps", 15.0))
+        resize_to = None
+        to_source = mapper.to_source
+        to_decode = mapper.to_proxy
+        native_target = min(float(self.config.get("analysis.refine_fps", 30.)),
+                            proxy_fps, mapper.source_fps or 30.)
+        if (self._native_source is not None and sample_fps >= .90*native_target
+                and self.config.get("analysis.native_source_contacts", True)):
+            # Confirmation must see the original images, including tiny white
+            # arcs lost to proxy compression. Keep proxy geometry so camera-local
+            # coordinates and lower-rate travel observations remain compatible.
+            resize_to = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+            cap.release()
+            cap = open_capture(self._native_source,
+                               prefer_hwaccel=bool(self.config.get("analysis.hwaccel_decode", True)))
+            if not cap.isOpened():
+                raise RuntimeError(f"Cannot open native source video: {self._native_source}")
+            proxy_fps = cap.get(cv2.CAP_PROP_FPS) or mapper.source_fps
+            sample_fps = proxy_fps
+            def source_time(t):
+                return t
+            to_source = to_decode = source_time
+            # A canonical warmup prevents seek-local Hough/track state from
+            # changing the same contact when proposal windows begin differently.
+            start_time = max(0., float(np.floor(requested_start-1.)))
         # Timestamp-based sampling avoids the old ``round(proxy_fps / fps)``
         # drift (15fps/10fps silently became 7.5fps).  The dense refinement pass
         # below can then use the native presentation timestamps.
@@ -680,7 +760,6 @@ class Analyzer:
             sample_fps,
             float(self.config.get(table_key, 10.0 if dense_pass else 2.0)),
         )
-        table_refresh_period = 1.0 / max(table_refresh_fps, 1e-6)
         last_table_t: float | None = None
         table_obs = None
         self.motion.flow_scale = float(
@@ -707,11 +786,15 @@ class Analyzer:
             )
         )
         hough_step = max(1, int(round(sample_fps / max(hough_fps, 1e-6))))
+        if dense_pass and resize_to is not None:
+            # A one-frame contact/white arc cannot depend on alternating circle
+            # proposals. Native windows retain every source image and circle pass.
+            hough_step = 1
         # Seek close to the requested source interval for dense refinement.  We
         # still discard frames until the mapped presentation time reaches the
         # exact start boundary, so VFR/mapper rounding cannot leak earlier data.
         if start_time > 0.0:
-            cap.set(cv2.CAP_PROP_POS_MSEC, mapper.to_proxy(start_time) * 1000.0)
+            cap.set(cv2.CAP_PROP_POS_MSEC, to_decode(start_time) * 1000.0)
             idx = max(0, int(cap.get(cv2.CAP_PROP_POS_FRAMES) or 0))
 
         self.table.reset()
@@ -726,7 +809,7 @@ class Analyzer:
         frames = sampled_frames(
             cap,
             proxy_fps=proxy_fps,
-            to_source=mapper.to_source,
+            to_source=to_source,
             start_time=start_time,
             end_time=end_time,
             sample_period=sample_period,
@@ -735,6 +818,8 @@ class Analyzer:
         )
         try:
             for idx, t, frame in frames:
+                if resize_to is not None and frame.shape[1::-1] != resize_to:
+                    frame = cv2.resize(frame, resize_to, interpolation=cv2.INTER_AREA)
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
                 # Detect cuts before optical flow/tracking.  A cut is an unknown
@@ -797,7 +882,7 @@ class Analyzer:
                 if (
                     table_obs is None
                     or last_table_t is None
-                    or t - last_table_t + 1e-9 >= table_refresh_period
+                    or int(t*table_refresh_fps+1e-6) != int(last_table_t*table_refresh_fps+1e-6)
                 ):
                     prior_table = table_obs
                     table_obs = self.table.detect(frame)
@@ -842,7 +927,7 @@ class Analyzer:
                 dets = self.objects.detect(
                     frame,
                     table_obs.mask,
-                    use_hough=kept % hough_step == 0,
+                    use_hough=idx % hough_step == 0,
                     partial_view=not geometry.full_table,
                     table_bounds=((table_obs.bbox[0], table_obs.bbox[1],
                                    table_obs.bbox[0]+table_obs.bbox[2], table_obs.bbox[1]+table_obs.bbox[3])
@@ -867,6 +952,11 @@ class Analyzer:
                         ball_regions=ball_regions,
                         frame_dt=dt,
                         refresh_flow=refresh_flow,
+                        camera_static_regions=[
+                            (d.cx, d.cy, d.diameter_px) for d in dets
+                            if dense_pass and d.label != "cue_ball"
+                            and d.shape_confidence >= .55 and d.cloth_surround_confidence >= .35
+                        ],
                     )
                     if refresh_flow:
                         last_flow_t = t
@@ -919,7 +1009,6 @@ class Analyzer:
                     and (residual is None or residual.observation_valid)
                 )
 
-
                 feat = FrameFeatures(
                     t=t,
                     observation_fps=sample_fps,
@@ -951,6 +1040,10 @@ class Analyzer:
                     ball_diameter_px=diameter,
                     cue_ball_x=(cue.positions[-1][1] if cue is not None and cue.visible else None),
                     cue_ball_y=(cue.positions[-1][2] if cue is not None and cue.visible else None),
+                    camera_frame_transform=(residual.camera_transform.reshape(-1).tolist()
+                                            if residual is not None and residual.camera_transform is not None
+                                            else None),
+                    camera_frame_dt=(dt if residual is not None and comparison_gray is not None else 0.),
                     cue_ball_speed=cue_speed_px,
                     cue_ball_normalized_speed=cue_speed_norm,
                     cue_ball_stable_normalized_speed=(
@@ -958,6 +1051,11 @@ class Analyzer:
                         if cue is not None and cue.visible else None),
                     cue_ball_acceleration=cue_accel_norm,
                     cue_ball_track_confidence=(cue.confidence if cue is not None and cue.visible else 0.0),
+                    cue_ball_quality=bool(cue is not None and cue.visible
+                                          and self.tracker.is_ball_quality_track(cue)),
+                    cue_ball_observations=cue.hits if cue is not None and cue.visible else 0,
+                    object_ball_launch_count=(self.tracker.object_ball_launch_count(t)
+                                              if dense_pass and diameter >= 50 else 0),
                     cue_tip_visible=bool(cue_geometry["visible"]),
                     cue_tip_distance_to_ball=float(cue_geometry["distance"]),
                     cue_approach_speed=float(cue_geometry["approach_speed"]),
@@ -1019,7 +1117,7 @@ class Analyzer:
             progress(1.0, f"Sampled {len(features)} frames")
         observations = scene_stream.observations if scene_stream is not None else []
         self._apply_match_context(features, self._coarse_context_reference)
-        return features, observations, []
+        return [f for f in features if f.t >= requested_start-1e-6], observations, []
 
     @staticmethod
     def _apply_match_context(features: list[FrameFeatures], reference: list[FrameFeatures],
@@ -1732,7 +1830,8 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 20,
+            "result_policy_version": 34,
+            "visual_tail": self.config.get("visual_tail", {}),
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")
             },
@@ -1857,6 +1956,7 @@ class Analyzer:
                 FrameFeatures.model_validate(item)
                 for item in payload.get("features", [])
             ]
+            self._restore_legacy_replay_annotations(features, payload.get("features", []))
             scenes = [
                 SceneSegment.model_validate(item)
                 for item in payload.get("scenes", [])
@@ -1883,6 +1983,20 @@ class Analyzer:
         except (OSError, ValueError, TypeError) as exc:
             logger.warning("Could not load coarse checkpoint: %s", exc)
             return None
+
+    @staticmethod
+    def _restore_legacy_replay_annotations(features: list[FrameFeatures], raw: list[dict]) -> None:
+        """Migrate old detector-owned replay spans without re-decoding pixels.
+
+        Old pipeline caches set broadcast_replay only through replay association
+        and did not persist its ownership. New caches preserve independent
+        caller markers when an inferred stinger span is recalculated.
+        """
+        for feature, item in zip(features, raw):
+            if "replay_stinger_annotated" not in item:
+                feature.broadcast_replay = feature.view_type in {
+                    CameraViewType.REPLAY, CameraViewType.SLOW_MOTION_REPLAY,
+                }
 
     def _dense_cache_path(self, index: int) -> Path:
         return self.job_dir / "refinement_cache" / f"window_{index:04d}.json"
@@ -1970,7 +2084,7 @@ class Analyzer:
             self._last_cue_tip = None
             return empty
         crop = cv2.cvtColor(frame[y0:y1, x0:x1], cv2.COLOR_BGR2GRAY)
-        if table_mask is not None and table_mask.shape[:2] == frame.shape[:2]:
+        if not large_ball and table_mask is not None and table_mask.shape[:2] == frame.shape[:2]:
             local_mask = table_mask[y0:y1, x0:x1]
             crop = cv2.bitwise_and(crop, crop, mask=local_mask)
         edges = cv2.Canny(crop, 50, 150, apertureSize=3)
@@ -2310,6 +2424,7 @@ class _NativeContactPrefetch:
         start, end, fps = key
         worker = Analyzer(Config(self.config_data),
                           self.parent.job_dir/"contact_workers"/str(threading.get_ident()))
+        worker._native_source = self.parent._native_source
         worker.broadcast_context = copy.deepcopy(self.context_guard)
         worker._coarse_context_reference = [FrameFeatures(t=t, match_context_valid=valid)
                                             for t, valid in self._context(key)]

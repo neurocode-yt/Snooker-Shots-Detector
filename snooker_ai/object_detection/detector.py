@@ -417,7 +417,7 @@ class ObjectDetector:
                 or proposal.cue_sphere_supported and surround_conf >= 0.30
                 or proposal.cue_sphere_red_occlusion and surround_conf >= 0.10
                 or proposal.cue_sphere_black_occlusion and surround_conf >= 0.20
-                or proposal.cue_sphere_colour_occlusion and surround_conf >= 0.12
+                or proposal.cue_sphere_colour_occlusion and surround_conf >= 0.04
             )
             label = "cue_ball" if cue_ball else "object_ball"
             observation_conf = float(
@@ -566,19 +566,20 @@ class ObjectDetector:
                 circularity < .65 or fill < .48 or max(bw, bh) > 1.80 * min(bw, bh)
             ):
                 continue
-            size = min(7, max(3, int(round(radius * .55)) | 1))
+            size = min(13, max(3, int(round(radius * .75)) | 1))
             x0, x1 = max(0, x-size), min(hsv.shape[1], x+bw+size)
             y0, y1 = max(0, y-size), min(hsv.shape[0], y+bh+size)
             # Re-open the original measured pixels rather than filling its
             # outline or applying successive openings to its shaded edge.
             patch = original_mask[y0:y1, x0:x1]
             offset = np.array([[[x0, y0]]], np.int32)
-            opened = cv2.morphologyEx(
-                patch, cv2.MORPH_OPEN,
-                cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (size, size)),
-            )
-            separated, _ = cv2.findContours(opened, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            detached_contours.extend(c + offset for c in separated)
+            for opening_size in range(min(7, size), size + 1, 2):
+                opened = cv2.morphologyEx(
+                    patch, cv2.MORPH_OPEN,
+                    cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (opening_size, opening_size)),
+                )
+                separated, _ = cv2.findContours(opened, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                detached_contours.extend(c + offset for c in separated)
         contours = list(contours) + detached_contours
         proposals = []
         for contour in contours:
@@ -655,7 +656,7 @@ class ObjectDetector:
         if len(hull) < 7:
             return None
         x, y, width, height = cv2.boundingRect(contour)
-        if min(width, height) < 7 or max(width, height) > 2.2 * min(width, height):
+        if min(width, height) < 4 or max(width, height) > 6.0 * min(width, height):
             return None
         # Fit the convex arc, not the concave edge made by the foreground ball.
         # Centre coordinates are local to avoid poor conditioning at HD widths.
@@ -671,15 +672,32 @@ class ObjectDetector:
         if not (4 <= radius <= min(min(hsv.shape[:2]) * .48, max(hsv.shape[:2]) * .18)):
             return None
         errors = np.abs(np.linalg.norm(hull - [cx, cy], axis=1) - radius) / radius
+        # One codec/cue-edge vertex can pull a measured crescent off its
+        # circular arc. Remove at most one vertex, retaining at least 90% of
+        # the independently measured convex outline, then fit it again.
+        if len(hull) >= 10 and np.mean(errors) <= .10 and np.max(errors) > .20:
+            hull = np.delete(hull, int(np.argmax(errors)), axis=0)
+            origin = np.mean(hull, axis=0)
+            points = hull - origin
+            matrix = np.column_stack((2 * points, np.ones(len(points))))
+            solution = np.linalg.lstsq(matrix, np.sum(points**2, axis=1), rcond=None)[0]
+            radius_squared = solution[2] + np.sum(solution[:2]**2)
+            if radius_squared <= 0:
+                return None
+            radius = float(np.sqrt(radius_squared))
+            cx, cy = solution[:2] + origin
+            errors = np.abs(np.linalg.norm(hull - [cx, cy], axis=1) - radius) / radius
+            if not (4 <= radius <= min(min(hsv.shape[:2]) * .48, max(hsv.shape[:2]) * .18)):
+                return None
         area = cv2.contourArea(contour)
         if (np.mean(errors) > .08 or np.max(errors) > .20
-                or not .20 <= area / (np.pi * radius**2) <= .90
-                or not x <= cx <= x + width or not y <= cy <= y + height + .35 * radius):
+                or not .04 <= area / (np.pi * radius**2) <= .90
+                or not x <= cx <= x + width or not y <= cy <= y + height + 1.1 * radius):
             return None
         # A short highlight arc cannot identify a whole sphere.
         angles = np.sort(np.arctan2(hull[:, 1] - cy, hull[:, 0] - cx))
         span = 2 * np.pi - np.max(np.diff(np.r_[angles, angles[0] + 2 * np.pi]))
-        if span < np.deg2rad(150):
+        if span < np.deg2rad(120):
             return None
         patch_mask = np.zeros((height, width), np.uint8)
         shifted = contour - np.array([[[x, y]]], np.int32)
@@ -687,10 +705,10 @@ class ObjectDetector:
         pixels = hsv[y:y + height, x:x + width][patch_mask > 0]
         hue, saturation, value = np.median(pixels, axis=0)
         cap = np.mean((pixels[:, 1] < 110) & (pixels[:, 2] >= 210))
-        if not (15 <= hue <= 44 and 35 <= saturation <= 125 and value >= 150 and cap >= .25):
+        if not (15 <= hue <= 44 and saturation <= 125 and value >= 150 and cap >= .25):
             return None
         _, _, surround = self._colour_scores(hsv, cloth, cx, cy, radius)
-        if not .12 <= surround < .45:
+        if not .04 <= surround < .45:
             return None
         if not self._round_colour_overlaps_sphere(hsv, cx, cy, radius, minimum_overlap=.08):
             return None
@@ -710,8 +728,8 @@ class ObjectDetector:
         x0, x1 = max(0, ix-reach), min(hsv.shape[1], ix+reach+1)
         y0, y1 = max(0, iy-reach), min(hsv.shape[0], iy+reach+1)
         patch = hsv[y0:y1, x0:x1]
-        colour = cv2.inRange(patch, (0, 95, 60), (14, 255, 255))
-        colour |= cv2.inRange(patch, (150, 95, 60), (179, 255, 255))
+        colour = cv2.inRange(patch, (0, 95, 30), (14, 255, 255))
+        colour |= cv2.inRange(patch, (150, 95, 30), (179, 255, 255))
         colour = cv2.morphologyEx(colour, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
         contours, _ = cv2.findContours(colour, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         yy, xx = np.ogrid[y0:y1, x0:x1]
@@ -746,6 +764,44 @@ class ObjectDetector:
             overlap = np.count_nonzero((component > 0) & sphere) / max(1, np.count_nonzero(sphere))
             annulus_coverage = np.count_nonzero((component > 0) & annulus) / max(1, np.count_nonzero(annulus))
             if overlap >= minimum_overlap and annulus_coverage >= .12:
+                return True
+        # Touching reds merge into one non-circular colour component. Verify
+        # an individual circle against its measured interior and radial colour
+        # boundary rather than treating that merged component as a hand.
+        circles = cv2.HoughCircles(
+            cv2.GaussianBlur(colour, (5, 5), 0), cv2.HOUGH_GRADIENT,
+            dp=1.2, minDist=max(4., .8*radius), param1=90, param2=18,
+            minRadius=max(3, int(.65*radius)), maxRadius=max(4, int(1.65*radius)),
+        )
+        angles = np.linspace(0, 2*np.pi, 48, endpoint=False)
+        for bx, by, br in circles[0] if circles is not None else []:
+            dx, dy = bx+x0-cx, by+y0-cy
+            if not (.35*radius <= dy <= 2*radius and abs(dx) <= 2*radius):
+                continue
+            interior = (xx-(bx+x0))**2 + (yy-(by+y0))**2 <= (.7*br)**2
+            interior_coverage = float(np.mean(colour[interior] > 0))
+            if interior_coverage < .65:
+                continue
+            radial = []
+            for factor in (.8, 1.18):
+                xs = np.rint(bx+factor*br*np.cos(angles)).astype(int)
+                ys = np.rint(by+factor*br*np.sin(angles)).astype(int)
+                if np.any(xs < 0) or np.any(xs >= colour.shape[1]) or np.any(ys < 0) or np.any(ys >= colour.shape[0]):
+                    break
+                radial.append(colour[ys, xs] > 0)
+            if len(radial) != 2:
+                continue
+            boundary_support = float(np.mean(radial[0] & ~radial[1]))
+            circle = (xx-(bx+x0))**2 + (yy-(by+y0))**2 <= br**2
+            measured = circle & (colour > 0)
+            overlap = np.count_nonzero(measured & sphere) / max(1, np.count_nonzero(sphere))
+            annulus_coverage = np.count_nonzero(measured & annulus) / max(1, np.count_nonzero(annulus))
+            ordinary = boundary_support >= .50 and annulus_coverage >= .12
+            # A deeply overlapping, shaded ball occupies mostly the inferred
+            # white disc, with little remaining colour in its cloth annulus.
+            deep_overlap = (interior_coverage >= .80 and boundary_support >= .40
+                            and overlap >= .40 and annulus_coverage >= .08)
+            if overlap >= minimum_overlap and (ordinary or deep_overlap):
                 return True
         return False
 
