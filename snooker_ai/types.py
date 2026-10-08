@@ -144,6 +144,8 @@ class FrameFeatures(BaseModel):
     handling_score: float = 0.0
     match_context_valid: bool = True
     broadcast_replay: bool = False
+    replay_stinger_annotated: bool = False
+    replay_stinger_original_marker: bool = False
     ball_layout_signature: list[float] = Field(default_factory=list)
     appearance_signature: list[float] = Field(default_factory=list)
     table_confidence: float = 0.0
@@ -170,11 +172,17 @@ class FrameFeatures(BaseModel):
     ball_diameter_px: float = 0.0
     cue_ball_x: Optional[float] = None
     cue_ball_y: Optional[float] = None
+    camera_frame_transform: Optional[list[float]] = None
+    camera_frame_dt: float = 0.0
+    cue_ball_image_diameter_px: Optional[float] = None
     cue_ball_speed: float = 0.0
     cue_ball_normalized_speed: float = 0.0
     cue_ball_stable_normalized_speed: Optional[float] = None
     cue_ball_acceleration: float = 0.0
     cue_ball_track_confidence: float = 0.0
+    cue_ball_quality: bool = False  # measured ball shape/cloth support, not just a bright track
+    cue_ball_observations: int = 0  # distinguishes a measured rest from tracker bootstrap zero speed
+    object_ball_launch_count: int = 0  # independently observed high-resolution colour departures
     # Optional cue geometry evidence.  When the cue is occluded these remain
     # unset and the detector falls back to stationary-ball acceleration with a
     # reduced confidence/manual-review flag.

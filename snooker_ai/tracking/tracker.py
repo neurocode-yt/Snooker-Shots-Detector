@@ -155,6 +155,7 @@ class BallTracker:
         self._next_id = 1
         self.tracks: list[Track] = []
         self._diameter_history: list[float] = []
+        self._cue_identity: int | None = None
 
     def update(
         self, t: float, detections: list[Detection],
@@ -491,7 +492,7 @@ class BallTracker:
                 and track.cloth_surround_confidence >= .20)
             or (track.label == "cue_ball" and track.shape_confidence >= .80
                 and track.cue_sphere_supported and track.cue_sphere_colour_occlusion
-                and track.cloth_surround_confidence >= .12)
+                and track.cloth_surround_confidence >= .04)
         )
         # Circle proposals inside a packed group of reds can alternate between
         # neighbouring balls. A weak circular edge with a crowded annulus is
@@ -525,19 +526,64 @@ class BallTracker:
                 count += 1
         return count
 
+    def object_ball_launch_count(self, t: float) -> int:
+        """Verify large coloured-ball travel even in a crowded cloth annulus."""
+        count = 0
+        for track in self.tracks:
+            if (not track.visible or track.label == "cue_ball" or track.hits < 8
+                    or track.diameter < 50 or track.shape_confidence < .55):
+                continue
+            before = [p for p in track.positions if t-.70 <= p[0] <= t-.30]
+            after = [p for p in track.positions if t-.30 < p[0] <= t]
+            if len(before) < 4 or len(after) < 4 or after[-1][0]-after[0][0] < .12:
+                continue
+            rows = before+after
+            if any(b[0]-a[0] > .12 for a, b in zip(rows, rows[1:])):
+                continue
+            quiet = np.asarray([(p[1],p[2]) for p in before])
+            anchor = np.median(quiet, axis=0)
+            if np.max(np.linalg.norm(quiet-anchor, axis=1))/track.diameter > .10:
+                continue
+            xy = np.asarray([(p[1],p[2]) for p in after])
+            steps = np.linalg.norm(np.diff(xy, axis=0), axis=1)
+            net = float(np.linalg.norm(xy[-1]-xy[0]))
+            if (net/track.diameter >= .15 and net/max(float(np.sum(steps)),1e-6) >= .80
+                    and max(steps)/track.diameter <= .35
+                    and np.linalg.norm(xy[-1]-anchor)/track.diameter >= .20):
+                count += 1
+        return count
+
     def cue_ball_track(self) -> Optional[Track]:
-        candidates = [tr for tr in self.tracks if tr.active and tr.label == "cue_ball"]
+        scale = self.estimated_ball_diameter()
+        candidates = [tr for tr in self.tracks if tr.active and tr.label == "cue_ball"
+                      and (scale <= 0 or tr.diameter <= 0 or .35*scale <= tr.diameter <= 2.5*scale)]
         if not candidates:
+            self._cue_identity = None
             return None
+        established = next((tr for tr in candidates if tr.track_id == self._cue_identity), None)
+        if (established is not None and established.visible and self.is_ball_quality_track(established)
+                and established.cloth_surround_confidence >= .85):
+            # A brighter bridge/cue fragment must not replace an already
+            # measured white, nor fill a brief occlusion with remote coordinates.
+            return established
         # Prefer a visible, repeatedly observed, strongly white track.  This avoids
         # returning the first bright false circle forever.
-        return max(
+        selected = max(
             candidates,
             key=lambda tr: (
                 1 if tr.visible else 0,
+                1 if self.is_ball_quality_track(tr) else 0,
+                1 if tr.cue_sphere_supported else 0,
                 tr.cue_color_confidence,
                 tr.confidence,
                 tr.hits,
                 tr.last_t,
             ),
         )
+        if (selected.visible and selected.hits >= 4 and len(selected.positions) >= 4
+                and selected.positions[-1][0]-selected.positions[0][0] >= .15
+                and selected.shape_confidence >= .48
+                and selected.cloth_surround_confidence > 0
+                and self.is_ball_quality_track(selected)):
+            self._cue_identity = selected.track_id
+        return selected
