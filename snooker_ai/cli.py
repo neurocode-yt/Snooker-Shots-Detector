@@ -17,6 +17,7 @@ from snooker_ai.config import load_config
 from snooker_ai.evaluation.metrics import evaluate_dataset
 from snooker_ai.jobs.store import JobStore
 from snooker_ai.pipeline.analyzer import Analyzer
+from snooker_ai.pipeline.algorithms import Algorithm, algorithm_capabilities, create_analyzer
 from snooker_ai.rendering.exporter import Exporter
 from snooker_ai.types import EditMode, ExportRequest, JobStatus, ShotUpdate
 from snooker_ai.utils.logging import setup_logging
@@ -32,6 +33,17 @@ console = Console()
 
 def _cfg(config: Optional[Path]):
     return load_config(config) if config else load_config()
+
+
+def _require_algorithm(cfg, algorithm: Algorithm) -> None:
+    if algorithm is Algorithm.CLASSIC:
+        return
+    capability = next(
+        item for item in algorithm_capabilities(cfg) if item["id"] == algorithm.value
+    )
+    if not capability.get("available", False):
+        console.print(f"[red]{capability.get('reason') or 'DL Algo is not ready'}[/red]")
+        raise typer.Exit(1)
 
 
 @app.callback()
@@ -56,6 +68,9 @@ def analyze(
         "-m",
         help="strict (only supported mode; legacy names coerce to strict)",
     ),
+    algorithm: Algorithm = typer.Option(
+        Algorithm.CLASSIC, "--algorithm", help="Detection algorithm: classic or dl_algo",
+    ),
     config: Optional[Path] = typer.Option(None, "--config", "-c", help="YAML config path"),
     job_id: Optional[str] = typer.Option(None, "--job-id", help="Reuse / set job id"),
     no_resume: bool = typer.Option(False, "--no-resume", help="Ignore previous analysis"),
@@ -66,22 +81,39 @@ def analyze(
     cfg.ensure_dirs()
     store = JobStore(cfg)
     edit_mode = EditMode.from_string(mode)
+    _require_algorithm(cfg, algorithm)
+    if output_dir and (Path(output_dir) / "job.json").is_file():
+        destination_meta = json.loads((Path(output_dir) / "job.json").read_text(encoding="utf-8"))
+        if algorithm != Algorithm.parse(destination_meta.get("algorithm")):
+            raise typer.BadParameter("Choose a separate output directory for a different algorithm")
 
     if job_id:
         jid = job_id
         job_dir = store.job_dir(jid)
+        if (job_dir / "job.json").exists():
+            old_meta = store.get_meta(jid)
+            if algorithm != Algorithm.parse(old_meta.get("algorithm")):
+                if output_dir and Path(output_dir).resolve().is_relative_to(job_dir.resolve()):
+                    raise typer.BadParameter("Choose a separate output directory for a different algorithm")
+                jid = store.create(input_video, mode=edit_mode.value, algorithm=algorithm)
+                meta = store.get_meta(jid)
+                meta["derived_from_job_id"] = job_id
+                store._write_meta(jid, meta)
+                job_dir = store.job_dir(jid)
+                console.print(f"Previous job {job_id} preserved; using separate job {jid}")
         job_dir.mkdir(parents=True, exist_ok=True)
         if not (job_dir / "job.json").exists():
             meta = {
                 "job_id": jid,
                 "source_path": str(input_video.resolve()),
                 "mode": edit_mode.value,
+                "algorithm": algorithm.value,
                 "status": JobStatus.PENDING.value,
                 "progress": 0.0,
             }
             (job_dir / "job.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     else:
-        jid = store.create(input_video, mode=edit_mode.value)
+        jid = store.create(input_video, mode=edit_mode.value, algorithm=algorithm)
 
     job_dir = output_dir or store.job_dir(jid)
     job_dir = Path(job_dir)
@@ -89,9 +121,10 @@ def analyze(
 
     console.print(f"[bold]Job[/bold] {jid}")
     console.print(f"[bold]Mode[/bold] {edit_mode.value}")
+    console.print(f"[bold]Algorithm[/bold] {'DL Algo' if algorithm is Algorithm.DL_ALGO else 'Current algorithm'}")
     console.print(f"[bold]Input[/bold] {input_video}")
 
-    analyzer = Analyzer(cfg, job_dir)
+    analyzer = create_analyzer(cfg, job_dir, algorithm)
 
     with Progress(
         SpinnerColumn(),
@@ -212,10 +245,13 @@ def export(
     store = JobStore(cfg)
     result = store.load_analysis(job_id)
     if mode:
-        from snooker_ai.pipeline.analyzer import Analyzer
-
-        analyzer = Analyzer(cfg, store.job_dir(job_id))
-        result = analyzer.resegment(result, EditMode.from_string(mode))
+        requested_mode = EditMode.from_string(mode)
+        selected = Algorithm.parse(store.get_meta(job_id).get("algorithm"))
+        if selected is Algorithm.CLASSIC:
+            analyzer = Analyzer(cfg, store.job_dir(job_id))
+            result = analyzer.resegment(result, requested_mode)
+        elif requested_mode != result.mode:
+            raise typer.BadParameter("DL Algo supports strict editing")
 
     out_dir = store.job_dir(job_id) / "export"
     request = ExportRequest(
@@ -254,6 +290,9 @@ def export(
 def batch(
     directory: Path = typer.Argument(..., exists=True, file_okay=False),
     mode: str = typer.Option("strict", "--mode", "-m"),
+    algorithm: Algorithm = typer.Option(
+        Algorithm.CLASSIC, "--algorithm", help="Detection algorithm: classic or dl_algo",
+    ),
     config: Optional[Path] = typer.Option(None, "--config", "-c"),
     pattern: str = typer.Option("*.mp4", "--pattern"),
     export_after: bool = typer.Option(True, "--export/--no-export"),
@@ -263,6 +302,7 @@ def batch(
     cfg.ensure_dirs()
     store = JobStore(cfg)
     edit_mode = EditMode.from_string(mode)
+    _require_algorithm(cfg, algorithm)
 
     videos = sorted(directory.rglob(pattern))
     if pattern == "*.mp4":
@@ -278,8 +318,8 @@ def batch(
     for vid in videos:
         console.rule(str(vid.name))
         try:
-            jid = store.create(vid, mode=edit_mode.value)
-            analyzer = Analyzer(cfg, store.job_dir(jid))
+            jid = store.create(vid, mode=edit_mode.value, algorithm=algorithm)
+            analyzer = create_analyzer(cfg, store.job_dir(jid), algorithm)
 
             def on_prog(p: float, stage: str, msg: str, _jid: str = jid) -> None:
                 store.update_progress(_jid, p, stage, msg)

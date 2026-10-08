@@ -1,0 +1,13 @@
+# Install into .venv-dl, not the current mode's environment.
+# Install torch/torchvision separately from the official CUDA or CPU index.
+transformers>=4.56,<5
+safetensors>=0.6,<1
+numpy>=1.26,<2
+opencv-python-headless>=4.10,<4.11
+av>=14,<18
+pydantic>=2.5,<3
+pyyaml>=6,<7
+scipy>=1.11,<1.15
+tqdm>=4.66
+pytest>=7.4
+ruff>=0.8

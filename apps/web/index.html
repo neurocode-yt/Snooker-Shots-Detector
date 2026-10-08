@@ -20,9 +20,11 @@
           <select id="workflow" aria-describedby="workflow-description">
             <option value="automatic">Automatic video</option>
             <option value="classic">Classic editor (previous interface)</option>
+            <option value="dl_algo">DL Algo</option>
           </select>
         </label>
         <p id="workflow-description" class="muted">Upload the entire match. Remove waiting and setup footage, then export with mix transitions.</p>
+        <p id="algorithm-status" class="muted hidden" role="status" aria-live="polite"></p>
         <label class="file-label">
           <input type="file" id="file" accept="video/*,.mp4,.mov,.mkv,.avi,.webm" required />
           <span id="file-name">Choose a snooker video…</span>
@@ -91,6 +93,6 @@
     </section>
   </main>
 
-  <script src="/static/app.js?v=20261001classic"></script>
+  <script src="/static/app.js?v=20261008dlalgo"></script>
 </body>
 </html>
