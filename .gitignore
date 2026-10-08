@@ -1,4 +1,5 @@
 .venv/
+.venv-dl/
 venv/
 __pycache__/
 *.py[cod]
@@ -24,6 +25,10 @@ data/*.log
 models/*.pt
 models/*.onnx
 models/*.pth
+models/dl_algo/
+data/dl_features/
+data/dl_training/
+data/dl/
 *.mp4
 *.mov
 *.mkv

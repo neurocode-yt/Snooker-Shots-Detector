@@ -1,0 +1,1759 @@
+{
+  "manifest_version": 1,
+  "heads": [
+    "event",
+    "keep",
+    "end",
+    "replay",
+    "handling"
+  ],
+  "paths_relative_to": "../../..",
+  "feature_contract": {
+    "timestamps": "float64[T] source presentation seconds",
+    "features": "float32[T,D] frozen RGB+learned motion features",
+    "feature_spec": "JSON scalar; no classic detection features"
+  },
+  "label_policy": "Only explicitly reviewed intervals supervise negatives; contacts use uncertainty bags; non-replay is inferred only inside reviewed live-contact brackets",
+  "split_policy": "Underlying match group isolation, including different cleaned frames and replays",
+  "independent_holdout_available": false,
+  "limitations": [
+    "Only two independently sourced underlying matches have reviewed contacts",
+    "Zhao\u2013Trump trains; Selby\u2013Lisowski selects hyperparameters",
+    "A third unseen match with frozen independent source labels is required for a final holdout",
+    "Neural superiority over classic cannot be claimed from this dataset"
+  ],
+  "split": "dev",
+  "videos": [
+    {
+      "id": "selby_lisowski_benchmark",
+      "group_id": "lisowski_selby_2026_quarter_final",
+      "split": "dev",
+      "source_path": "G:/Adobe Premiere Pro Auto-Save/Snooker yt shorts/nWindows/Jack Lisowski vs Mark Selby - 2026 Quarter-Final.mp4",
+      "duration": 7988.165,
+      "features_path": "data/dl/features/selby_lisowski_benchmark.npz",
+      "source_fingerprint": {
+        "basename": "Jack Lisowski vs Mark Selby - 2026 Quarter-Final.mp4",
+        "size_bytes": 1691807860,
+        "mtime_ns": 1788653566713300300,
+        "note": "Local file identity, not a cryptographic video-content hash"
+      },
+      "reviewed_intervals": [
+        {
+          "start": 140.0,
+          "end": 460.0,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "original_classic_split": "development"
+        },
+        {
+          "start": 1600.0,
+          "end": 1900.0,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "original_classic_split": "development"
+        },
+        {
+          "start": 4000.0,
+          "end": 4360.0,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "original_classic_split": "development"
+        },
+        {
+          "start": 5000.0,
+          "end": 5300.0,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "original_classic_split": "development"
+        },
+        {
+          "start": 6000.0,
+          "end": 6600.0,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "original_classic_split": "holdout"
+        },
+        {
+          "start": 7480.0,
+          "end": 7785.0,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "original_classic_split": "development"
+        },
+        {
+          "start": 2800.0,
+          "end": 2920.0,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "original_classic_split": "holdout"
+        }
+      ],
+      "contacts": [
+        {
+          "lower": 143.5,
+          "upper": 144.0,
+          "description": "break_off",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 186.0,
+          "upper": 187.0,
+          "description": "safety",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 210.0,
+          "upper": 211.0,
+          "description": "red_pot",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 245.0,
+          "upper": 246.0,
+          "description": "blue_pot",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 264.0,
+          "upper": 264.04,
+          "description": "red_pot",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 280.0,
+          "upper": 281.0,
+          "description": "black_pot",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 315.32,
+          "upper": 315.36,
+          "description": "red_pot",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 338.44,
+          "upper": 338.48,
+          "description": "black_miss",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 380.04,
+          "upper": 380.08,
+          "description": "red_pot",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 396.0,
+          "upper": 397.0,
+          "description": "blue_pot",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 416.2,
+          "upper": 416.28,
+          "description": "red_pot",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 441.92,
+          "upper": 441.96,
+          "description": "pink_pot",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "original_bounds": {
+            "lower": 441.0,
+            "upper": 441.08
+          },
+          "timing_provenance": "ai_source_visual_adjudication:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c",
+          "adjudication": {
+            "original_bounds": {
+              "lower": 441.0,
+              "upper": 441.08
+            },
+            "new_bounds": {
+              "lower": 441.92,
+              "upper": 441.96
+            },
+            "description": "pink_pot",
+            "last_stationary_frame": 11048,
+            "first_moving_frame": 11049,
+            "last_stationary_source_pts": 441.92,
+            "first_moving_source_pts": 441.96,
+            "reason": "Cue approaches the stationary white through441.92; at441.96 forward cue blur and changed white edge appear, followed by continuous white/pink departure at442.00. The original441.00\u2013441.08 frames show preparation. No predictions consulted.",
+            "evidence_sheet": "data/dl/label_review/selby_final/12_native_contact.jpg",
+            "original_frozen_labels": "data/evaluation/dl/selby_contacts_before_adjudication.json"
+          }
+        },
+        {
+          "lower": 458.28,
+          "upper": 458.36,
+          "description": "red_pot",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 1611.84,
+          "upper": 1611.88,
+          "description": "high oblique blue",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 1632.6,
+          "upper": 1632.72,
+          "description": "occluded close-up red; cue contact hidden between last stationary appearance and first visible roll",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 1658.76,
+          "upper": 1658.8,
+          "description": "wide blue",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 1674.88,
+          "upper": 1674.92,
+          "description": "close-up red",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 1693.68,
+          "upper": 1693.72,
+          "description": "high oblique blue",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 1722.08,
+          "upper": 1722.12,
+          "description": "oblique red, camera cuts during roll",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 1747.96,
+          "upper": 1748.0,
+          "description": "wide brown attempt",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 1770.04,
+          "upper": 1770.08,
+          "description": "close-up red; cue-ball onset precedes visible red movement by about 0.2 seconds",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 1795.44,
+          "upper": 1795.48,
+          "description": "reverse oblique green",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 1867.64,
+          "upper": 1867.68,
+          "description": "oblique long red",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 1890.72,
+          "upper": 1890.76,
+          "description": "wide blue",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 4010.961583,
+          "upper": 4011.041582,
+          "description": "Selby pink, frame-winning clearance",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 4253.959255,
+          "upper": 4253.999255,
+          "description": "Selby break-off, cue near brown, frontal zoom",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 4272.719075,
+          "upper": 4272.759075,
+          "description": "Lisowski long red, miss",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 4304.518771,
+          "upper": 4304.55877,
+          "description": "Selby red pot near pink, low close-up",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 4326.718558,
+          "upper": 4326.758558,
+          "description": "Selby black pot, wide oblique moving camera",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 4345.238381,
+          "upper": 4345.31838,
+          "description": "Selby red pot, moving rear oblique camera",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 5017.36,
+          "upper": 5017.4,
+          "description": "Soft head-on table shot. The white is stationary through the first frame; its lower edge advances in the next and continues forward with cue follow-through.",
+          "last_stationary_frame": 125435,
+          "first_moving_frame": 125436,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 5044.84,
+          "upper": 5044.88,
+          "description": "Live shot after earlier repositioning: player strikes the stationary white from the baulk rail; white travels down-table into reds.",
+          "last_stationary_frame": 126122,
+          "first_moving_frame": 126123,
+          "added_after_prediction_review": true,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 5111.68,
+          "upper": 5111.72,
+          "description": "Wide table shot. Cue reaches the white and the white launches away from the bridge in the next native frame.",
+          "last_stationary_frame": 127793,
+          "first_moving_frame": 127794,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 5137.64,
+          "upper": 5137.68,
+          "description": "Address close-up cuts to the wide table before contact. White launches from the baulk end at the cue tip, before the later cushion rebound.",
+          "last_stationary_frame": 128442,
+          "first_moving_frame": 128443,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 5208.8,
+          "upper": 5208.84,
+          "description": "Wide table shot with small white. First movement is subtle in the contact frame, followed by continuous travel and red collision; raw source pixels support the boundary.",
+          "last_stationary_frame": 130221,
+          "first_moving_frame": 130222,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 5237.16,
+          "upper": 5237.2,
+          "description": "Wide table shot. White starts moving at the forward cue stroke, followed by travel toward the reds.",
+          "last_stationary_frame": 130930,
+          "first_moving_frame": 130931,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 5261.08,
+          "upper": 5261.12,
+          "description": "Low oblique side view. White is stationary, then launches from the cue with blur and later black-ball motion.",
+          "last_stationary_frame": 131528,
+          "first_moving_frame": 131529,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 5287.52,
+          "upper": 5287.56,
+          "description": "Elevated close view. White launches at the cue tip, strikes a red, and then the broadcast returns to the main camera during the roll.",
+          "last_stationary_frame": 132189,
+          "first_moving_frame": 132190,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 7532.608,
+          "upper": 7532.808,
+          "description": "wide table, red",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 7556.288,
+          "upper": 7556.408,
+          "description": "wide oblique, black",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 7592.72,
+          "upper": 7592.76,
+          "description": "bridge close-up, red",
+          "last_stationary_frame": 189820,
+          "first_moving_frame": 189821,
+          "timing_note": "Native development re-audit: white departure precedes later reappearance/object-ball movement used by the original label.",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 7616.76,
+          "upper": 7616.8,
+          "description": "low side view, black",
+          "last_stationary_frame": 190421,
+          "first_moving_frame": 190422,
+          "timing_note": "Native development re-audit: white departure precedes subsequent black-ball motion used by the original label.",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 7631.207,
+          "upper": 7631.287,
+          "description": "low side view, red",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 7647.687,
+          "upper": 7647.887,
+          "description": "high oblique, pink",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 7666.287,
+          "upper": 7666.407,
+          "description": "extreme close-up after camera cut, red",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 7688.406,
+          "upper": 7688.606,
+          "description": "low side view, pink",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 7730.886,
+          "upper": 7731.006,
+          "description": "overhead close-up with rest, red",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 7757.286,
+          "upper": 7757.486,
+          "description": "wide table, blue",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 7779.885,
+          "upper": 7780.005,
+          "description": "wide table with rest, red at original audit boundary",
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 2819.24,
+          "upper": 2819.28,
+          "description": "Live blue pot using rest; large white/blue close-up with immediate collision.",
+          "last_stationary_frame": 70482,
+          "first_moving_frame": 70483,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 2835.44,
+          "upper": 2835.48,
+          "description": "Live red pot from right rail; small white in full-table view.",
+          "last_stationary_frame": 70887,
+          "first_moving_frame": 70888,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 2850.36,
+          "upper": 2850.4,
+          "description": "Live green pot; angled baulk-end close view.",
+          "last_stationary_frame": 71260,
+          "first_moving_frame": 71261,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 2870.2,
+          "upper": 2870.24,
+          "description": "Live red pot; low frontal table view followed by overhead during roll.",
+          "last_stationary_frame": 71756,
+          "first_moving_frame": 71757,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 2887.76,
+          "upper": 2887.8,
+          "description": "Live blue pot; overhead close view, fast white departure.",
+          "last_stationary_frame": 72195,
+          "first_moving_frame": 72196,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "lower": 2906.44,
+          "upper": 2906.48,
+          "description": "Live red attempt; low side view followed by overhead during roll.",
+          "last_stationary_frame": 72662,
+          "first_moving_frame": 72663,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        }
+      ],
+      "clip_reviewed_intervals": [
+        {
+          "start": 140.52,
+          "end": 159.52,
+          "weight": 0.7,
+          "description": "AI visual review around contact 1; sampled source frames, not every native frame",
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "start": 183.0,
+          "end": 202.52,
+          "weight": 0.7,
+          "description": "AI visual review around contact 2; sampled source frames, not every native frame",
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "start": 207.0,
+          "end": 226.52,
+          "weight": 0.7,
+          "description": "AI visual review around contact 3; sampled source frames, not every native frame",
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "start": 242.0,
+          "end": 261.52,
+          "weight": 0.7,
+          "description": "AI visual review around contact 4; sampled source frames, not every native frame",
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "start": 261.0,
+          "end": 280.0,
+          "weight": 0.7,
+          "description": "AI visual review around contact 5; sampled source frames, not every native frame",
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "start": 277.0,
+          "end": 296.52,
+          "weight": 0.7,
+          "description": "AI visual review around contact 6; sampled source frames, not every native frame",
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "start": 312.32,
+          "end": 331.32,
+          "weight": 0.7,
+          "description": "AI visual review around contact 7; sampled source frames, not every native frame",
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "start": 335.44,
+          "end": 354.44,
+          "weight": 0.7,
+          "description": "AI visual review around contact 8; sampled source frames, not every native frame",
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "start": 377.04,
+          "end": 396.04,
+          "weight": 0.7,
+          "description": "AI visual review around contact 9; sampled source frames, not every native frame",
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "start": 393.0,
+          "end": 412.52,
+          "weight": 0.7,
+          "description": "AI visual review around contact 10; sampled source frames, not every native frame",
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "start": 413.2,
+          "end": 432.2,
+          "weight": 0.7,
+          "description": "AI visual review around contact 11; sampled source frames, not every native frame",
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "start": 438.0,
+          "end": 457.0,
+          "weight": 0.7,
+          "description": "AI visual review around contact 12; sampled source frames, not every native frame",
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        }
+      ],
+      "clips": [
+        {
+          "contact_lower": 143.5,
+          "contact_upper": 144.0,
+          "description": "break_off",
+          "start": 141.76,
+          "end": 154.0,
+          "start_lower": 141.64,
+          "start_upper": 141.88,
+          "end_lower": 153.76,
+          "end_upper": 154.24,
+          "weight": 0.7,
+          "source_review_note": "Red pack opens and white returns to baulk; retain final layout before reaction cutaway.",
+          "annotation_kind": "ai_visual_editorial_preference",
+          "confirmed_replay_free": true,
+          "confirmed_handling_free": false,
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/01_contact.jpg",
+            "data/dl/label_review/selby_opening/01_outcome.jpg",
+            "data/dl/label_review/selby_native/01_end.jpg"
+          ],
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "contact_lower": 186.0,
+          "contact_upper": 187.0,
+          "description": "safety",
+          "start": 184.52,
+          "end": 195.68,
+          "start_lower": 184.4,
+          "start_upper": 184.64,
+          "end_lower": 195.44,
+          "end_upper": 195.92,
+          "weight": 0.7,
+          "source_review_note": "Retain safety collision, rebound and final white near reds before prolonged repositioning.",
+          "annotation_kind": "ai_visual_editorial_preference",
+          "confirmed_replay_free": true,
+          "confirmed_handling_free": false,
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/02_contact.jpg",
+            "data/dl/label_review/selby_opening/02_outcome.jpg",
+            "data/dl/label_review/selby_native/02_end.jpg"
+          ],
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "contact_lower": 210.0,
+          "contact_upper": 211.0,
+          "description": "red_pot",
+          "start": 208.52,
+          "end": 219.2,
+          "start_lower": 208.4,
+          "start_upper": 208.64,
+          "end_lower": 218.96,
+          "end_upper": 219.44,
+          "weight": 0.7,
+          "source_review_note": "Red is visibly absent and score increments; include white return across the table before next aim.",
+          "annotation_kind": "ai_visual_editorial_preference",
+          "confirmed_replay_free": true,
+          "confirmed_handling_free": false,
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/03_contact.jpg",
+            "data/dl/label_review/selby_opening/03_outcome.jpg",
+            "data/dl/label_review/selby_native/03_end.jpg"
+          ],
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "contact_lower": 245.0,
+          "contact_upper": 246.0,
+          "description": "blue_pot",
+          "start": 243.52,
+          "end": 249.76,
+          "start_lower": 243.4,
+          "start_upper": 243.64,
+          "end_lower": 249.6,
+          "end_upper": 249.92,
+          "weight": 0.7,
+          "source_review_note": "Blue visibly disappears and score changes; end before referee leans toward pocket and later blue respot.",
+          "annotation_kind": "ai_visual_editorial_preference",
+          "confirmed_replay_free": true,
+          "confirmed_handling_free": false,
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/04_contact.jpg",
+            "data/dl/label_review/selby_opening/04_outcome.jpg",
+            "data/dl/label_review/selby_native/04_end.jpg"
+          ],
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "contact_lower": 264.0,
+          "contact_upper": 264.04,
+          "description": "red_pot",
+          "start": 262.04,
+          "end": 270.0,
+          "start_lower": 261.92,
+          "start_upper": 262.16,
+          "end_lower": 269.76,
+          "end_upper": 270.24,
+          "weight": 0.7,
+          "source_review_note": "Red disappears, score increments and white approaches foot cushion; end before next black preparation.",
+          "annotation_kind": "ai_visual_editorial_preference",
+          "confirmed_replay_free": true,
+          "confirmed_handling_free": false,
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/05_contact.jpg",
+            "data/dl/label_review/selby_opening/05_outcome.jpg",
+            "data/dl/label_review/selby_native/05_end.jpg"
+          ],
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "contact_lower": 280.0,
+          "contact_upper": 281.0,
+          "description": "black_pot",
+          "start": 278.52,
+          "end": 284.0,
+          "start_lower": 278.4,
+          "start_upper": 278.64,
+          "end_lower": 283.76,
+          "end_upper": 284.24,
+          "weight": 0.7,
+          "source_review_note": "Black visibly potted and reds displaced; end before referee retrieves and replaces black while white continues.",
+          "annotation_kind": "ai_visual_editorial_preference",
+          "confirmed_replay_free": true,
+          "confirmed_handling_free": false,
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/06_contact.jpg",
+            "data/dl/label_review/selby_opening/06_outcome.jpg",
+            "data/dl/label_review/selby_native/06_end.jpg"
+          ],
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "contact_lower": 315.32,
+          "contact_upper": 315.36,
+          "description": "red_pot",
+          "start": 313.36,
+          "end": 323.52,
+          "start_lower": 313.24,
+          "start_upper": 313.48,
+          "end_lower": 323.28,
+          "end_upper": 323.76,
+          "weight": 0.7,
+          "source_review_note": "Red visibly potted and white returns near foot/right rail; stop before deadtime and replay wipe.",
+          "annotation_kind": "ai_visual_editorial_preference",
+          "confirmed_replay_free": true,
+          "confirmed_handling_free": false,
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/07_contact.jpg",
+            "data/dl/label_review/selby_opening/07_outcome.jpg",
+            "data/dl/label_review/selby_native/07_end.jpg"
+          ],
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "contact_lower": 338.44,
+          "contact_upper": 338.48,
+          "description": "black_miss",
+          "start": 336.48,
+          "end": 344.24,
+          "start_lower": 336.36,
+          "start_upper": 336.6,
+          "end_lower": 344.0,
+          "end_upper": 344.48,
+          "weight": 0.7,
+          "source_review_note": "Black misses into jaw/rail and remains on cloth; keep miss outcome and resulting white position.",
+          "annotation_kind": "ai_visual_editorial_preference",
+          "confirmed_replay_free": true,
+          "confirmed_handling_free": false,
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/08_contact.jpg",
+            "data/dl/label_review/selby_opening/08_outcome.jpg",
+            "data/dl/label_review/selby_native/08_end.jpg"
+          ],
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "contact_lower": 380.04,
+          "contact_upper": 380.08,
+          "description": "red_pot",
+          "start": 378.08,
+          "end": 386.64,
+          "start_lower": 377.96,
+          "start_upper": 378.2,
+          "end_lower": 386.4,
+          "end_upper": 386.88,
+          "weight": 0.7,
+          "source_review_note": "Red is absent and score increments; retain white return before next blue address.",
+          "annotation_kind": "ai_visual_editorial_preference",
+          "confirmed_replay_free": true,
+          "confirmed_handling_free": false,
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/09_contact.jpg",
+            "data/dl/label_review/selby_opening/09_outcome.jpg",
+            "data/dl/label_review/selby_native/09_end.jpg"
+          ],
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "contact_lower": 396.0,
+          "contact_upper": 397.0,
+          "description": "blue_pot",
+          "start": 394.52,
+          "end": 401.44,
+          "start_lower": 394.4,
+          "start_upper": 394.64,
+          "end_lower": 401.2,
+          "end_upper": 401.68,
+          "weight": 0.7,
+          "source_review_note": "Blue disappears in right side pocket and score changes; end before referee reaches pocket and then blue spot.",
+          "annotation_kind": "ai_visual_editorial_preference",
+          "confirmed_replay_free": true,
+          "confirmed_handling_free": false,
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/10_contact.jpg",
+            "data/dl/label_review/selby_opening/10_outcome.jpg",
+            "data/dl/label_review/selby_native/10_end.jpg"
+          ],
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "contact_lower": 416.2,
+          "contact_upper": 416.28,
+          "description": "red_pot",
+          "start": 414.24,
+          "end": 421.2,
+          "start_lower": 414.12,
+          "start_upper": 414.36,
+          "end_lower": 420.96,
+          "end_upper": 421.44,
+          "weight": 0.7,
+          "source_review_note": "Red visibly disappears and score increments; include resulting table position before next pink preparation.",
+          "annotation_kind": "ai_visual_editorial_preference",
+          "confirmed_replay_free": true,
+          "confirmed_handling_free": false,
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/11_contact.jpg",
+            "data/dl/label_review/selby_opening/11_outcome.jpg",
+            "data/dl/label_review/selby_native/11_end.jpg"
+          ],
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "contact_lower": 441.92,
+          "contact_upper": 441.96,
+          "description": "pink_pot",
+          "start": 439.96,
+          "end": 445.6,
+          "start_lower": 439.84,
+          "start_upper": 440.08,
+          "end_lower": 445.44,
+          "end_upper": 445.76,
+          "weight": 0.7,
+          "source_review_note": "Pink disappears and score changes to13; end before referee bends toward side pocket and later pink spot.",
+          "annotation_kind": "ai_visual_editorial_preference",
+          "confirmed_replay_free": true,
+          "confirmed_handling_free": false,
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/12_contact.jpg",
+            "data/dl/label_review/selby_opening/12_outcome.jpg",
+            "data/dl/label_review/selby_native/12_end.jpg"
+          ],
+          "provenance": "ai_source_visual_editorial_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        }
+      ],
+      "labels": [
+        {
+          "start": 1620.0,
+          "end": 1627.0,
+          "description": "Replay of 1611.86 blue",
+          "head": "replay",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "start": 1734.0,
+          "end": 1742.0,
+          "description": "Replay of 1722.10 red",
+          "head": "replay",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "start": 1760.0,
+          "end": 1764.0,
+          "description": "Replay of 1747.98 brown attempt",
+          "head": "replay",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "start": 1785.0,
+          "end": 1789.0,
+          "description": "Replay of 1770.06 red",
+          "head": "replay",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "start": 1809.0,
+          "end": 1816.0,
+          "description": "Replay of 1795.46 green attempt",
+          "head": "replay",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "start": 1877.0,
+          "end": 1883.0,
+          "description": "Replay of 1867.66 red",
+          "head": "replay",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "start": 1617.5,
+          "end": 1619.0,
+          "description": "Referee blue replacement",
+          "head": "handling",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "start": 1663.0,
+          "end": 1665.5,
+          "description": "Referee blue replacement",
+          "head": "handling",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "start": 1699.0,
+          "end": 1702.0,
+          "description": "Referee blue replacement",
+          "head": "handling",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "start": 1897.0,
+          "end": 1900.0,
+          "description": "Referee blue replacement",
+          "head": "handling",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "start": 5059,
+          "end": 5068,
+          "description": "Replay of an earlier live shot",
+          "head": "replay",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "start": 5244,
+          "end": 5250,
+          "description": "Replay of an earlier live shot",
+          "head": "replay",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "start": 5272,
+          "end": 5280,
+          "description": "Replay of an earlier live shot",
+          "head": "replay",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "start": 7480.0,
+          "end": 7484.5,
+          "description": "Replay bracketed by broadcast replay wipe",
+          "head": "replay",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "start": 7763.0,
+          "end": 7767.0,
+          "description": "Referee respots blue; no cue strike",
+          "head": "handling",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "start": 2918.5,
+          "end": 2920.0,
+          "description": "Broadcast replay of the preceding red attempt, introduced by replay wipe.",
+          "head": "replay",
+          "value": 1,
+          "weight": 1,
+          "provenance": "benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732"
+        },
+        {
+          "head": "handling",
+          "start": 144.48,
+          "end": 147.48,
+          "value": 0,
+          "weight": 0.7,
+          "description": "Visually inspected clean play for contact1: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+          "inference": "Explicit source-image visual judgement; not derived from contact existence",
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/01_contact.jpg",
+            "data/dl/label_review/selby_opening/01_outcome.jpg"
+          ],
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "handling",
+          "start": 186.76,
+          "end": 189.0,
+          "value": 0,
+          "weight": 0.7,
+          "description": "Visually inspected clean play for contact2: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+          "inference": "Explicit source-image visual judgement; not derived from contact existence",
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/02_contact.jpg",
+            "data/dl/label_review/selby_opening/02_outcome.jpg"
+          ],
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "handling",
+          "start": 210.52,
+          "end": 213.52,
+          "value": 0,
+          "weight": 0.7,
+          "description": "Visually inspected clean play for contact3: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+          "inference": "Explicit source-image visual judgement; not derived from contact existence",
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/03_contact.jpg",
+            "data/dl/label_review/selby_opening/03_outcome.jpg"
+          ],
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "handling",
+          "start": 245.52,
+          "end": 247.12,
+          "value": 0,
+          "weight": 0.7,
+          "description": "Visually inspected clean play for contact4: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+          "inference": "Explicit source-image visual judgement; not derived from contact existence",
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/04_contact.jpg",
+            "data/dl/label_review/selby_opening/04_outcome.jpg"
+          ],
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "handling",
+          "start": 264.4,
+          "end": 266.0,
+          "value": 0,
+          "weight": 0.7,
+          "description": "Visually inspected clean play for contact5: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+          "inference": "Explicit source-image visual judgement; not derived from contact existence",
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/05_contact.jpg",
+            "data/dl/label_review/selby_opening/05_outcome.jpg"
+          ],
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "handling",
+          "start": 281.12,
+          "end": 282.52,
+          "value": 0,
+          "weight": 0.7,
+          "description": "Visually inspected clean play for contact6: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+          "inference": "Explicit source-image visual judgement; not derived from contact existence",
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/06_contact.jpg",
+            "data/dl/label_review/selby_opening/06_outcome.jpg"
+          ],
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "handling",
+          "start": 315.48,
+          "end": 318.84,
+          "value": 0,
+          "weight": 0.7,
+          "description": "Visually inspected clean play for contact7: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+          "inference": "Explicit source-image visual judgement; not derived from contact existence",
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/07_contact.jpg",
+            "data/dl/label_review/selby_opening/07_outcome.jpg"
+          ],
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "handling",
+          "start": 338.6,
+          "end": 341.96,
+          "value": 0,
+          "weight": 0.7,
+          "description": "Visually inspected clean play for contact8: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+          "inference": "Explicit source-image visual judgement; not derived from contact existence",
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/08_contact.jpg",
+            "data/dl/label_review/selby_opening/08_outcome.jpg"
+          ],
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "handling",
+          "start": 380.08,
+          "end": 382.08,
+          "value": 0,
+          "weight": 0.7,
+          "description": "Visually inspected clean play for contact9: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+          "inference": "Explicit source-image visual judgement; not derived from contact existence",
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/09_contact.jpg",
+            "data/dl/label_review/selby_opening/09_outcome.jpg"
+          ],
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "handling",
+          "start": 396.76,
+          "end": 399.2,
+          "value": 0,
+          "weight": 0.7,
+          "description": "Visually inspected clean play for contact10: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+          "inference": "Explicit source-image visual judgement; not derived from contact existence",
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/10_contact.jpg",
+            "data/dl/label_review/selby_opening/10_outcome.jpg"
+          ],
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "handling",
+          "start": 416.24,
+          "end": 418.72,
+          "value": 0,
+          "weight": 0.7,
+          "description": "Visually inspected clean play for contact11: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+          "inference": "Explicit source-image visual judgement; not derived from contact existence",
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/11_contact.jpg",
+            "data/dl/label_review/selby_opening/11_outcome.jpg"
+          ],
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "handling",
+          "start": 442.0,
+          "end": 443.52,
+          "value": 0,
+          "weight": 0.7,
+          "description": "Visually inspected clean play for contact12: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+          "inference": "Explicit source-image visual judgement; not derived from contact existence",
+          "evidence_sheets": [
+            "data/dl/label_review/selby_opening/12_contact.jpg",
+            "data/dl/label_review/selby_opening/12_outcome.jpg"
+          ],
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "handling",
+          "start": 251.84,
+          "end": 253.84,
+          "value": 1,
+          "weight": 0.7,
+          "description": "Referee gloved hand over cloth returning blue",
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "handling",
+          "start": 287.36,
+          "end": 289.76,
+          "value": 1,
+          "weight": 0.7,
+          "description": "Referee arm over cloth returning black",
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "handling",
+          "start": 403.6,
+          "end": 405.92,
+          "value": 1,
+          "weight": 0.7,
+          "description": "Referee gloved hand reaches blue spot and returns blue",
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "handling",
+          "start": 447.52,
+          "end": 450.64,
+          "value": 1,
+          "weight": 0.7,
+          "description": "Referee hand over cloth returning pink",
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "replay",
+          "start": 325.6,
+          "end": 331.92,
+          "value": 1,
+          "weight": 0.7,
+          "description": "Repeated red following opening British Open wipe and before closing wipe",
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "replay",
+          "start": 349.84,
+          "end": 355.48,
+          "value": 1,
+          "weight": 0.7,
+          "description": "Repeated black miss after opening British Open wipe; closing wipe visible at355.6",
+          "provenance": "ai_source_visual_behavior_review:data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c"
+        },
+        {
+          "head": "replay",
+          "start": 143.5,
+          "end": 144.0,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: break_off",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 186.0,
+          "end": 187.0,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: safety",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 210.0,
+          "end": 211.0,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: red_pot",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 245.0,
+          "end": 246.0,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: blue_pot",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 264.0,
+          "end": 264.04,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: red_pot",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 280.0,
+          "end": 281.0,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: black_pot",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 315.32,
+          "end": 315.36,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: red_pot",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 338.44,
+          "end": 338.48,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: black_miss",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 380.04,
+          "end": 380.08,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: red_pot",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 396.0,
+          "end": 397.0,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: blue_pot",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 416.2,
+          "end": 416.28,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: red_pot",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 441.92,
+          "end": 441.96,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: pink_pot",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 458.28,
+          "end": 458.36,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: red_pot",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 1611.84,
+          "end": 1611.88,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: high oblique blue",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 1632.6,
+          "end": 1632.72,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: occluded close-up red; cue contact hidden between last stationary appearance and first visible roll",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 1658.76,
+          "end": 1658.8,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: wide blue",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 1674.88,
+          "end": 1674.92,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: close-up red",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 1693.68,
+          "end": 1693.72,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: high oblique blue",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 1722.08,
+          "end": 1722.12,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: oblique red, camera cuts during roll",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 1747.96,
+          "end": 1748.0,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: wide brown attempt",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 1770.04,
+          "end": 1770.08,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: close-up red; cue-ball onset precedes visible red movement by about 0.2 seconds",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 1795.44,
+          "end": 1795.48,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: reverse oblique green",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 1867.64,
+          "end": 1867.68,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: oblique long red",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 1890.72,
+          "end": 1890.76,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: wide blue",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 4010.961583,
+          "end": 4011.041582,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Selby pink, frame-winning clearance",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 4253.959255,
+          "end": 4253.999255,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Selby break-off, cue near brown, frontal zoom",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 4272.719075,
+          "end": 4272.759075,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Lisowski long red, miss",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 4304.518771,
+          "end": 4304.55877,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Selby red pot near pink, low close-up",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 4326.718558,
+          "end": 4326.758558,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Selby black pot, wide oblique moving camera",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 4345.238381,
+          "end": 4345.31838,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Selby red pot, moving rear oblique camera",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 5017.36,
+          "end": 5017.4,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Soft head-on table shot. The white is stationary through the first frame; its lower edge advances in the next and continues forward with cue follow-through.",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 5044.84,
+          "end": 5044.88,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Live shot after earlier repositioning: player strikes the stationary white from the baulk rail; white travels down-table into reds.",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 5111.68,
+          "end": 5111.72,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Wide table shot. Cue reaches the white and the white launches away from the bridge in the next native frame.",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 5137.64,
+          "end": 5137.68,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Address close-up cuts to the wide table before contact. White launches from the baulk end at the cue tip, before the later cushion rebound.",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 5208.8,
+          "end": 5208.84,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Wide table shot with small white. First movement is subtle in the contact frame, followed by continuous travel and red collision; raw source pixels support the boundary.",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 5237.16,
+          "end": 5237.2,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Wide table shot. White starts moving at the forward cue stroke, followed by travel toward the reds.",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 5261.08,
+          "end": 5261.12,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Low oblique side view. White is stationary, then launches from the cue with blur and later black-ball motion.",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 5287.52,
+          "end": 5287.56,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Elevated close view. White launches at the cue tip, strikes a red, and then the broadcast returns to the main camera during the roll.",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 7532.608,
+          "end": 7532.808,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: wide table, red",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 7556.288,
+          "end": 7556.408,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: wide oblique, black",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 7592.72,
+          "end": 7592.76,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: bridge close-up, red",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 7616.76,
+          "end": 7616.8,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: low side view, black",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 7631.207,
+          "end": 7631.287,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: low side view, red",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 7647.687,
+          "end": 7647.887,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: high oblique, pink",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 7666.287,
+          "end": 7666.407,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: extreme close-up after camera cut, red",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 7688.406,
+          "end": 7688.606,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: low side view, pink",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 7730.886,
+          "end": 7731.006,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: overhead close-up with rest, red",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 7757.286,
+          "end": 7757.486,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: wide table, blue",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 7779.885,
+          "end": 7780.005,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: wide table with rest, red at original audit boundary",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 2819.24,
+          "end": 2819.28,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Live blue pot using rest; large white/blue close-up with immediate collision.",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 2835.44,
+          "end": 2835.48,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Live red pot from right rail; small white in full-table view.",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 2850.36,
+          "end": 2850.4,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Live green pot; angled baulk-end close view.",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 2870.2,
+          "end": 2870.24,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Live red pot; low frontal table view followed by overhead during roll.",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 2887.76,
+          "end": 2887.8,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Live blue pot; overhead close view, fast white departure.",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        },
+        {
+          "head": "replay",
+          "start": 2906.44,
+          "end": 2906.48,
+          "value": 0,
+          "weight": 1,
+          "provenance": "derived_from_reviewed_live_contact:benchmarks/selby_lisowski_recall.json#sha256=c893817a9030a08bcd9e7ee5c38da51bc527b4576e9aebf4074b1f7206e3d732",
+          "description": "Reviewed live cue contact: Live red attempt; low side view followed by overhead during roll.",
+          "inference": "A reviewed live contact implies non-replay footage inside this uncertainty bracket only; adjacent time and handling remain unknown"
+        }
+      ],
+      "annotation_method": "Continuous source-image sweeps followed by 10-25 fps contact inspection. Development windows informed fixes. Original frozen source labels are retained locally; subsequent timing and completeness corrections are explicitly recorded per window. This is not a full-match test set. Physical stops are not labelled.",
+      "limitations": [
+        "Contact-reviewed intervals only; source outside them is unknown",
+        "Used as neural validation, so no longer a neural final holdout",
+        "Twelve AI-reviewed editorial intervals; other boundaries remain unknown; not human approved"
+      ],
+      "additional_review": {
+        "provenance": "data/evaluation/dl/selby_opening_editorial_review.json#sha256=dceb25a02aca434851f67d1cfdec236e4333cf70da4657987617fee4cb92ca8c",
+        "human_approved": false,
+        "reviewer_consulted_model_predictions": false,
+        "independent_holdout": false,
+        "reviewed_frame_count": 1456
+      }
+    }
+  ]
+}

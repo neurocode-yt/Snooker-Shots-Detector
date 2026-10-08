@@ -1,0 +1,27 @@
+# Settings for the independent neural mode. Classic defaults are untouched.
+dl_algo:
+  python: .venv-dl/Scripts/python.exe
+  checkpoint: models/dl_algo/temporal-v1.pt
+  assets: models/dl_algo/backbones
+  feature_cache: data/dl/features
+  device: auto
+  rgb_model: facebook/dinov2-small
+  global_size: 224
+  crop_size: 224
+  sample_fps: 8.0
+  batch_frames: 4
+  flow_height: 288
+  flow_width: 512
+  flow_updates: 6
+  flow_grid_height: 8
+  flow_grid_width: 14
+  temporal_chunk_frames: 512
+  selection:
+    pre_roll: 2.0
+    min_clip_seconds: 4.0
+    min_post_seconds: 2.0
+    max_post_seconds: 30.0
+    fallback_post_seconds: 8.0
+    nms_seconds: 1.0
+    transition_seconds: 0.24
+    minimum_probability_duration_seconds: 0.4

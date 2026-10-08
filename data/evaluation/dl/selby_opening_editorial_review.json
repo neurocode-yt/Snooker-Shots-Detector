@@ -1,0 +1,7338 @@
+{
+  "annotation_version": 1,
+  "source_basename": "Jack Lisowski vs Mark Selby - 2026 Quarter-Final.mp4",
+  "source_group_id": "lisowski_selby_2026_quarter_final",
+  "annotation_kind": "AI source-image visual review blinded to neural predictions and classic boundaries",
+  "review_date": "2026-10-08",
+  "reviewer": "Codex AI visual inspection",
+  "human_approved": false,
+  "independent_holdout": false,
+  "reviewer_consulted_model_predictions": false,
+  "reviewer_consulted_classic_boundaries": false,
+  "method": "All first12 original-source contact/outcome sheets and native editorial/handling/replay sheets inspected; source alone determines desired starts/ends. Original benchmark contact labels consulted solely to locate scenes. End bounds are acceptable editorial uncertainty, not physical-stop timestamps.",
+  "source_timebase": {
+    "format_start_time": "0.003000",
+    "streams": [
+      {
+        "codec_type": "video",
+        "start_time": "0.003000",
+        "time_base": "1/90000",
+        "r_frame_rate": "25/1",
+        "avg_frame_rate": "816975000/32678687",
+        "duration": "7988.123489"
+      },
+      {
+        "codec_type": "audio",
+        "start_time": "0.008000",
+        "time_base": "1/48000",
+        "r_frame_rate": "0/0",
+        "avg_frame_rate": "0/0",
+        "duration": "7988.160000"
+      }
+    ]
+  },
+  "timestamp_convention": "Source seconds relative to video stream start. OpenCV native frame presentation times recorded. Video start0.003s and avg-FPS drift at442s below0.005s cannot explain0.9s pink label discrepancy.",
+  "limitations": [
+    "AI visual labels have not been human approved",
+    "Source samples are sparse over outcome context and dense at proposed boundaries; exact inspected frames are recorded",
+    "These are development/validation labels, not independent neural holdout data",
+    "White may continue rolling where editorial ending avoids referee handling; no physical stop claimed"
+  ],
+  "clips": [
+    {
+      "contact_lower": 143.5,
+      "contact_upper": 144.0,
+      "description": "break_off",
+      "start": 141.76,
+      "end": 154.0,
+      "start_lower": 141.64,
+      "start_upper": 141.88,
+      "end_lower": 153.76,
+      "end_upper": 154.24,
+      "weight": 0.7,
+      "source_review_note": "Red pack opens and white returns to baulk; retain final layout before reaction cutaway.",
+      "annotation_kind": "ai_visual_editorial_preference",
+      "confirmed_replay_free": true,
+      "confirmed_handling_free": false,
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/01_contact.jpg",
+        "data/dl/label_review/selby_opening/01_outcome.jpg",
+        "data/dl/label_review/selby_native/01_end.jpg"
+      ]
+    },
+    {
+      "contact_lower": 186.0,
+      "contact_upper": 187.0,
+      "description": "safety",
+      "start": 184.52,
+      "end": 195.68,
+      "start_lower": 184.4,
+      "start_upper": 184.64,
+      "end_lower": 195.44,
+      "end_upper": 195.92,
+      "weight": 0.7,
+      "source_review_note": "Retain safety collision, rebound and final white near reds before prolonged repositioning.",
+      "annotation_kind": "ai_visual_editorial_preference",
+      "confirmed_replay_free": true,
+      "confirmed_handling_free": false,
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/02_contact.jpg",
+        "data/dl/label_review/selby_opening/02_outcome.jpg",
+        "data/dl/label_review/selby_native/02_end.jpg"
+      ]
+    },
+    {
+      "contact_lower": 210.0,
+      "contact_upper": 211.0,
+      "description": "red_pot",
+      "start": 208.52,
+      "end": 219.2,
+      "start_lower": 208.4,
+      "start_upper": 208.64,
+      "end_lower": 218.96,
+      "end_upper": 219.44,
+      "weight": 0.7,
+      "source_review_note": "Red is visibly absent and score increments; include white return across the table before next aim.",
+      "annotation_kind": "ai_visual_editorial_preference",
+      "confirmed_replay_free": true,
+      "confirmed_handling_free": false,
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/03_contact.jpg",
+        "data/dl/label_review/selby_opening/03_outcome.jpg",
+        "data/dl/label_review/selby_native/03_end.jpg"
+      ]
+    },
+    {
+      "contact_lower": 245.0,
+      "contact_upper": 246.0,
+      "description": "blue_pot",
+      "start": 243.52,
+      "end": 249.76,
+      "start_lower": 243.4,
+      "start_upper": 243.64,
+      "end_lower": 249.6,
+      "end_upper": 249.92,
+      "weight": 0.7,
+      "source_review_note": "Blue visibly disappears and score changes; end before referee leans toward pocket and later blue respot.",
+      "annotation_kind": "ai_visual_editorial_preference",
+      "confirmed_replay_free": true,
+      "confirmed_handling_free": false,
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/04_contact.jpg",
+        "data/dl/label_review/selby_opening/04_outcome.jpg",
+        "data/dl/label_review/selby_native/04_end.jpg"
+      ]
+    },
+    {
+      "contact_lower": 264.0,
+      "contact_upper": 264.04,
+      "description": "red_pot",
+      "start": 262.04,
+      "end": 270.0,
+      "start_lower": 261.92,
+      "start_upper": 262.16,
+      "end_lower": 269.76,
+      "end_upper": 270.24,
+      "weight": 0.7,
+      "source_review_note": "Red disappears, score increments and white approaches foot cushion; end before next black preparation.",
+      "annotation_kind": "ai_visual_editorial_preference",
+      "confirmed_replay_free": true,
+      "confirmed_handling_free": false,
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/05_contact.jpg",
+        "data/dl/label_review/selby_opening/05_outcome.jpg",
+        "data/dl/label_review/selby_native/05_end.jpg"
+      ]
+    },
+    {
+      "contact_lower": 280.0,
+      "contact_upper": 281.0,
+      "description": "black_pot",
+      "start": 278.52,
+      "end": 284.0,
+      "start_lower": 278.4,
+      "start_upper": 278.64,
+      "end_lower": 283.76,
+      "end_upper": 284.24,
+      "weight": 0.7,
+      "source_review_note": "Black visibly potted and reds displaced; end before referee retrieves and replaces black while white continues.",
+      "annotation_kind": "ai_visual_editorial_preference",
+      "confirmed_replay_free": true,
+      "confirmed_handling_free": false,
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/06_contact.jpg",
+        "data/dl/label_review/selby_opening/06_outcome.jpg",
+        "data/dl/label_review/selby_native/06_end.jpg"
+      ]
+    },
+    {
+      "contact_lower": 315.32,
+      "contact_upper": 315.36,
+      "description": "red_pot",
+      "start": 313.36,
+      "end": 323.52,
+      "start_lower": 313.24,
+      "start_upper": 313.48,
+      "end_lower": 323.28,
+      "end_upper": 323.76,
+      "weight": 0.7,
+      "source_review_note": "Red visibly potted and white returns near foot/right rail; stop before deadtime and replay wipe.",
+      "annotation_kind": "ai_visual_editorial_preference",
+      "confirmed_replay_free": true,
+      "confirmed_handling_free": false,
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/07_contact.jpg",
+        "data/dl/label_review/selby_opening/07_outcome.jpg",
+        "data/dl/label_review/selby_native/07_end.jpg"
+      ]
+    },
+    {
+      "contact_lower": 338.44,
+      "contact_upper": 338.48,
+      "description": "black_miss",
+      "start": 336.48,
+      "end": 344.24,
+      "start_lower": 336.36,
+      "start_upper": 336.6,
+      "end_lower": 344.0,
+      "end_upper": 344.48,
+      "weight": 0.7,
+      "source_review_note": "Black misses into jaw/rail and remains on cloth; keep miss outcome and resulting white position.",
+      "annotation_kind": "ai_visual_editorial_preference",
+      "confirmed_replay_free": true,
+      "confirmed_handling_free": false,
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/08_contact.jpg",
+        "data/dl/label_review/selby_opening/08_outcome.jpg",
+        "data/dl/label_review/selby_native/08_end.jpg"
+      ]
+    },
+    {
+      "contact_lower": 380.04,
+      "contact_upper": 380.08,
+      "description": "red_pot",
+      "start": 378.08,
+      "end": 386.64,
+      "start_lower": 377.96,
+      "start_upper": 378.2,
+      "end_lower": 386.4,
+      "end_upper": 386.88,
+      "weight": 0.7,
+      "source_review_note": "Red is absent and score increments; retain white return before next blue address.",
+      "annotation_kind": "ai_visual_editorial_preference",
+      "confirmed_replay_free": true,
+      "confirmed_handling_free": false,
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/09_contact.jpg",
+        "data/dl/label_review/selby_opening/09_outcome.jpg",
+        "data/dl/label_review/selby_native/09_end.jpg"
+      ]
+    },
+    {
+      "contact_lower": 396.0,
+      "contact_upper": 397.0,
+      "description": "blue_pot",
+      "start": 394.52,
+      "end": 401.44,
+      "start_lower": 394.4,
+      "start_upper": 394.64,
+      "end_lower": 401.2,
+      "end_upper": 401.68,
+      "weight": 0.7,
+      "source_review_note": "Blue disappears in right side pocket and score changes; end before referee reaches pocket and then blue spot.",
+      "annotation_kind": "ai_visual_editorial_preference",
+      "confirmed_replay_free": true,
+      "confirmed_handling_free": false,
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/10_contact.jpg",
+        "data/dl/label_review/selby_opening/10_outcome.jpg",
+        "data/dl/label_review/selby_native/10_end.jpg"
+      ]
+    },
+    {
+      "contact_lower": 416.2,
+      "contact_upper": 416.28,
+      "description": "red_pot",
+      "start": 414.24,
+      "end": 421.2,
+      "start_lower": 414.12,
+      "start_upper": 414.36,
+      "end_lower": 420.96,
+      "end_upper": 421.44,
+      "weight": 0.7,
+      "source_review_note": "Red visibly disappears and score increments; include resulting table position before next pink preparation.",
+      "annotation_kind": "ai_visual_editorial_preference",
+      "confirmed_replay_free": true,
+      "confirmed_handling_free": false,
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/11_contact.jpg",
+        "data/dl/label_review/selby_opening/11_outcome.jpg",
+        "data/dl/label_review/selby_native/11_end.jpg"
+      ]
+    },
+    {
+      "contact_lower": 441.92,
+      "contact_upper": 441.96,
+      "description": "pink_pot",
+      "start": 439.96,
+      "end": 445.6,
+      "start_lower": 439.84,
+      "start_upper": 440.08,
+      "end_lower": 445.44,
+      "end_upper": 445.76,
+      "weight": 0.7,
+      "source_review_note": "Pink disappears and score changes to13; end before referee bends toward side pocket and later pink spot.",
+      "annotation_kind": "ai_visual_editorial_preference",
+      "confirmed_replay_free": true,
+      "confirmed_handling_free": false,
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/12_contact.jpg",
+        "data/dl/label_review/selby_opening/12_outcome.jpg",
+        "data/dl/label_review/selby_native/12_end.jpg"
+      ]
+    }
+  ],
+  "clip_reviewed_intervals": [
+    {
+      "start": 140.52,
+      "end": 159.52,
+      "weight": 0.7,
+      "description": "AI visual review around contact 1; sampled source frames, not every native frame"
+    },
+    {
+      "start": 183.0,
+      "end": 202.52,
+      "weight": 0.7,
+      "description": "AI visual review around contact 2; sampled source frames, not every native frame"
+    },
+    {
+      "start": 207.0,
+      "end": 226.52,
+      "weight": 0.7,
+      "description": "AI visual review around contact 3; sampled source frames, not every native frame"
+    },
+    {
+      "start": 242.0,
+      "end": 261.52,
+      "weight": 0.7,
+      "description": "AI visual review around contact 4; sampled source frames, not every native frame"
+    },
+    {
+      "start": 261.0,
+      "end": 280.0,
+      "weight": 0.7,
+      "description": "AI visual review around contact 5; sampled source frames, not every native frame"
+    },
+    {
+      "start": 277.0,
+      "end": 296.52,
+      "weight": 0.7,
+      "description": "AI visual review around contact 6; sampled source frames, not every native frame"
+    },
+    {
+      "start": 312.32,
+      "end": 331.32,
+      "weight": 0.7,
+      "description": "AI visual review around contact 7; sampled source frames, not every native frame"
+    },
+    {
+      "start": 335.44,
+      "end": 354.44,
+      "weight": 0.7,
+      "description": "AI visual review around contact 8; sampled source frames, not every native frame"
+    },
+    {
+      "start": 377.04,
+      "end": 396.04,
+      "weight": 0.7,
+      "description": "AI visual review around contact 9; sampled source frames, not every native frame"
+    },
+    {
+      "start": 393.0,
+      "end": 412.52,
+      "weight": 0.7,
+      "description": "AI visual review around contact 10; sampled source frames, not every native frame"
+    },
+    {
+      "start": 413.2,
+      "end": 432.2,
+      "weight": 0.7,
+      "description": "AI visual review around contact 11; sampled source frames, not every native frame"
+    },
+    {
+      "start": 438.0,
+      "end": 457.0,
+      "weight": 0.7,
+      "description": "AI visual review around contact 12; sampled source frames, not every native frame"
+    }
+  ],
+  "labels": [
+    {
+      "head": "handling",
+      "start": 144.48,
+      "end": 147.48,
+      "value": 0,
+      "weight": 0.7,
+      "description": "Visually inspected clean play for contact1: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+      "inference": "Explicit source-image visual judgement; not derived from contact existence",
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/01_contact.jpg",
+        "data/dl/label_review/selby_opening/01_outcome.jpg"
+      ]
+    },
+    {
+      "head": "handling",
+      "start": 186.76,
+      "end": 189.0,
+      "value": 0,
+      "weight": 0.7,
+      "description": "Visually inspected clean play for contact2: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+      "inference": "Explicit source-image visual judgement; not derived from contact existence",
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/02_contact.jpg",
+        "data/dl/label_review/selby_opening/02_outcome.jpg"
+      ]
+    },
+    {
+      "head": "handling",
+      "start": 210.52,
+      "end": 213.52,
+      "value": 0,
+      "weight": 0.7,
+      "description": "Visually inspected clean play for contact3: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+      "inference": "Explicit source-image visual judgement; not derived from contact existence",
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/03_contact.jpg",
+        "data/dl/label_review/selby_opening/03_outcome.jpg"
+      ]
+    },
+    {
+      "head": "handling",
+      "start": 245.52,
+      "end": 247.12,
+      "value": 0,
+      "weight": 0.7,
+      "description": "Visually inspected clean play for contact4: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+      "inference": "Explicit source-image visual judgement; not derived from contact existence",
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/04_contact.jpg",
+        "data/dl/label_review/selby_opening/04_outcome.jpg"
+      ]
+    },
+    {
+      "head": "handling",
+      "start": 264.4,
+      "end": 266.0,
+      "value": 0,
+      "weight": 0.7,
+      "description": "Visually inspected clean play for contact5: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+      "inference": "Explicit source-image visual judgement; not derived from contact existence",
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/05_contact.jpg",
+        "data/dl/label_review/selby_opening/05_outcome.jpg"
+      ]
+    },
+    {
+      "head": "handling",
+      "start": 281.12,
+      "end": 282.52,
+      "value": 0,
+      "weight": 0.7,
+      "description": "Visually inspected clean play for contact6: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+      "inference": "Explicit source-image visual judgement; not derived from contact existence",
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/06_contact.jpg",
+        "data/dl/label_review/selby_opening/06_outcome.jpg"
+      ]
+    },
+    {
+      "head": "handling",
+      "start": 315.48,
+      "end": 318.84,
+      "value": 0,
+      "weight": 0.7,
+      "description": "Visually inspected clean play for contact7: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+      "inference": "Explicit source-image visual judgement; not derived from contact existence",
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/07_contact.jpg",
+        "data/dl/label_review/selby_opening/07_outcome.jpg"
+      ]
+    },
+    {
+      "head": "handling",
+      "start": 338.6,
+      "end": 341.96,
+      "value": 0,
+      "weight": 0.7,
+      "description": "Visually inspected clean play for contact8: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+      "inference": "Explicit source-image visual judgement; not derived from contact existence",
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/08_contact.jpg",
+        "data/dl/label_review/selby_opening/08_outcome.jpg"
+      ]
+    },
+    {
+      "head": "handling",
+      "start": 380.08,
+      "end": 382.08,
+      "value": 0,
+      "weight": 0.7,
+      "description": "Visually inspected clean play for contact9: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+      "inference": "Explicit source-image visual judgement; not derived from contact existence",
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/09_contact.jpg",
+        "data/dl/label_review/selby_opening/09_outcome.jpg"
+      ]
+    },
+    {
+      "head": "handling",
+      "start": 396.76,
+      "end": 399.2,
+      "value": 0,
+      "weight": 0.7,
+      "description": "Visually inspected clean play for contact10: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+      "inference": "Explicit source-image visual judgement; not derived from contact existence",
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/10_contact.jpg",
+        "data/dl/label_review/selby_opening/10_outcome.jpg"
+      ]
+    },
+    {
+      "head": "handling",
+      "start": 416.24,
+      "end": 418.72,
+      "value": 0,
+      "weight": 0.7,
+      "description": "Visually inspected clean play for contact11: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+      "inference": "Explicit source-image visual judgement; not derived from contact existence",
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/11_contact.jpg",
+        "data/dl/label_review/selby_opening/11_outcome.jpg"
+      ]
+    },
+    {
+      "head": "handling",
+      "start": 442.0,
+      "end": 443.52,
+      "value": 0,
+      "weight": 0.7,
+      "description": "Visually inspected clean play for contact12: cue/balls move; no visible referee ball pickup or placement. Referee standing/walking alone is not handling.",
+      "inference": "Explicit source-image visual judgement; not derived from contact existence",
+      "evidence_sheets": [
+        "data/dl/label_review/selby_opening/12_contact.jpg",
+        "data/dl/label_review/selby_opening/12_outcome.jpg"
+      ]
+    },
+    {
+      "head": "handling",
+      "start": 251.84,
+      "end": 253.84,
+      "value": 1,
+      "weight": 0.7,
+      "description": "Referee gloved hand over cloth returning blue"
+    },
+    {
+      "head": "handling",
+      "start": 287.36,
+      "end": 289.76,
+      "value": 1,
+      "weight": 0.7,
+      "description": "Referee arm over cloth returning black"
+    },
+    {
+      "head": "handling",
+      "start": 403.6,
+      "end": 405.92,
+      "value": 1,
+      "weight": 0.7,
+      "description": "Referee gloved hand reaches blue spot and returns blue"
+    },
+    {
+      "head": "handling",
+      "start": 447.52,
+      "end": 450.64,
+      "value": 1,
+      "weight": 0.7,
+      "description": "Referee hand over cloth returning pink"
+    },
+    {
+      "head": "replay",
+      "start": 325.6,
+      "end": 331.92,
+      "value": 1,
+      "weight": 0.7,
+      "description": "Repeated red following opening British Open wipe and before closing wipe"
+    },
+    {
+      "head": "replay",
+      "start": 349.84,
+      "end": 355.48,
+      "value": 1,
+      "weight": 0.7,
+      "description": "Repeated black miss after opening British Open wipe; closing wipe visible at355.6"
+    }
+  ],
+  "contact_adjudications": [
+    {
+      "original_bounds": {
+        "lower": 441.0,
+        "upper": 441.08
+      },
+      "new_bounds": {
+        "lower": 441.92,
+        "upper": 441.96
+      },
+      "description": "pink_pot",
+      "last_stationary_frame": 11048,
+      "first_moving_frame": 11049,
+      "last_stationary_source_pts": 441.92,
+      "first_moving_source_pts": 441.96,
+      "reason": "Cue approaches the stationary white through441.92; at441.96 forward cue blur and changed white edge appear, followed by continuous white/pink departure at442.00. The original441.00\u2013441.08 frames show preparation. No predictions consulted.",
+      "evidence_sheet": "data/dl/label_review/selby_final/12_native_contact.jpg",
+      "original_frozen_labels": "data/evaluation/dl/selby_contacts_before_adjudication.json"
+    }
+  ],
+  "reviewed_frame_count": 1456,
+  "reviewed_frame_occurrences": 1598,
+  "evidence": [
+    {
+      "sheet": "data/dl/label_review/selby_opening/01_contact.jpg",
+      "sha256": "4659d0c10d58f7cbf9ec563d9d5f9b7f4f997bc11e40990f17e2f9ca71673648",
+      "reviewed_frames": [
+        {
+          "frame_index": 3564,
+          "source_pts": 142.56
+        },
+        {
+          "frame_index": 3567,
+          "source_pts": 142.68
+        },
+        {
+          "frame_index": 3570,
+          "source_pts": 142.8
+        },
+        {
+          "frame_index": 3573,
+          "source_pts": 142.92
+        },
+        {
+          "frame_index": 3576,
+          "source_pts": 143.04
+        },
+        {
+          "frame_index": 3579,
+          "source_pts": 143.16
+        },
+        {
+          "frame_index": 3582,
+          "source_pts": 143.28
+        },
+        {
+          "frame_index": 3585,
+          "source_pts": 143.4
+        },
+        {
+          "frame_index": 3588,
+          "source_pts": 143.52
+        },
+        {
+          "frame_index": 3591,
+          "source_pts": 143.64
+        },
+        {
+          "frame_index": 3594,
+          "source_pts": 143.76
+        },
+        {
+          "frame_index": 3597,
+          "source_pts": 143.88
+        },
+        {
+          "frame_index": 3600,
+          "source_pts": 144.0
+        },
+        {
+          "frame_index": 3603,
+          "source_pts": 144.12
+        },
+        {
+          "frame_index": 3606,
+          "source_pts": 144.24
+        },
+        {
+          "frame_index": 3609,
+          "source_pts": 144.36
+        },
+        {
+          "frame_index": 3612,
+          "source_pts": 144.48
+        },
+        {
+          "frame_index": 3615,
+          "source_pts": 144.6
+        },
+        {
+          "frame_index": 3618,
+          "source_pts": 144.72
+        },
+        {
+          "frame_index": 3621,
+          "source_pts": 144.84
+        },
+        {
+          "frame_index": 3624,
+          "source_pts": 144.96
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/01_outcome.jpg",
+      "sha256": "b53d6319f1bf799c4a9eb4273fcd872c21cf7ed718cc9b8962b78c89bb7fdf0b",
+      "reviewed_frames": [
+        {
+          "frame_index": 3513,
+          "source_pts": 140.52
+        },
+        {
+          "frame_index": 3525,
+          "source_pts": 141.0
+        },
+        {
+          "frame_index": 3538,
+          "source_pts": 141.52
+        },
+        {
+          "frame_index": 3550,
+          "source_pts": 142.0
+        },
+        {
+          "frame_index": 3563,
+          "source_pts": 142.52
+        },
+        {
+          "frame_index": 3575,
+          "source_pts": 143.0
+        },
+        {
+          "frame_index": 3588,
+          "source_pts": 143.52
+        },
+        {
+          "frame_index": 3600,
+          "source_pts": 144.0
+        },
+        {
+          "frame_index": 3613,
+          "source_pts": 144.52
+        },
+        {
+          "frame_index": 3625,
+          "source_pts": 145.0
+        },
+        {
+          "frame_index": 3638,
+          "source_pts": 145.52
+        },
+        {
+          "frame_index": 3650,
+          "source_pts": 146.0
+        },
+        {
+          "frame_index": 3663,
+          "source_pts": 146.52
+        },
+        {
+          "frame_index": 3675,
+          "source_pts": 147.0
+        },
+        {
+          "frame_index": 3688,
+          "source_pts": 147.52
+        },
+        {
+          "frame_index": 3700,
+          "source_pts": 148.0
+        },
+        {
+          "frame_index": 3713,
+          "source_pts": 148.52
+        },
+        {
+          "frame_index": 3725,
+          "source_pts": 149.0
+        },
+        {
+          "frame_index": 3738,
+          "source_pts": 149.52
+        },
+        {
+          "frame_index": 3750,
+          "source_pts": 150.0
+        },
+        {
+          "frame_index": 3763,
+          "source_pts": 150.52
+        },
+        {
+          "frame_index": 3775,
+          "source_pts": 151.0
+        },
+        {
+          "frame_index": 3788,
+          "source_pts": 151.52
+        },
+        {
+          "frame_index": 3800,
+          "source_pts": 152.0
+        },
+        {
+          "frame_index": 3813,
+          "source_pts": 152.52
+        },
+        {
+          "frame_index": 3825,
+          "source_pts": 153.0
+        },
+        {
+          "frame_index": 3838,
+          "source_pts": 153.52
+        },
+        {
+          "frame_index": 3850,
+          "source_pts": 154.0
+        },
+        {
+          "frame_index": 3863,
+          "source_pts": 154.52
+        },
+        {
+          "frame_index": 3875,
+          "source_pts": 155.0
+        },
+        {
+          "frame_index": 3888,
+          "source_pts": 155.52
+        },
+        {
+          "frame_index": 3900,
+          "source_pts": 156.0
+        },
+        {
+          "frame_index": 3913,
+          "source_pts": 156.52
+        },
+        {
+          "frame_index": 3925,
+          "source_pts": 157.0
+        },
+        {
+          "frame_index": 3938,
+          "source_pts": 157.52
+        },
+        {
+          "frame_index": 3950,
+          "source_pts": 158.0
+        },
+        {
+          "frame_index": 3963,
+          "source_pts": 158.52
+        },
+        {
+          "frame_index": 3975,
+          "source_pts": 159.0
+        },
+        {
+          "frame_index": 3988,
+          "source_pts": 159.52
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/02_contact.jpg",
+      "sha256": "55a057f233eeabab1e2b126de9d84e6ea8790359772f90c9805b8da40019ae62",
+      "reviewed_frames": [
+        {
+          "frame_index": 4633,
+          "source_pts": 185.32
+        },
+        {
+          "frame_index": 4636,
+          "source_pts": 185.44
+        },
+        {
+          "frame_index": 4639,
+          "source_pts": 185.56
+        },
+        {
+          "frame_index": 4642,
+          "source_pts": 185.68
+        },
+        {
+          "frame_index": 4645,
+          "source_pts": 185.8
+        },
+        {
+          "frame_index": 4648,
+          "source_pts": 185.92
+        },
+        {
+          "frame_index": 4651,
+          "source_pts": 186.04
+        },
+        {
+          "frame_index": 4654,
+          "source_pts": 186.16
+        },
+        {
+          "frame_index": 4657,
+          "source_pts": 186.28
+        },
+        {
+          "frame_index": 4660,
+          "source_pts": 186.4
+        },
+        {
+          "frame_index": 4663,
+          "source_pts": 186.52
+        },
+        {
+          "frame_index": 4666,
+          "source_pts": 186.64
+        },
+        {
+          "frame_index": 4669,
+          "source_pts": 186.76
+        },
+        {
+          "frame_index": 4672,
+          "source_pts": 186.88
+        },
+        {
+          "frame_index": 4675,
+          "source_pts": 187.0
+        },
+        {
+          "frame_index": 4678,
+          "source_pts": 187.12
+        },
+        {
+          "frame_index": 4681,
+          "source_pts": 187.24
+        },
+        {
+          "frame_index": 4684,
+          "source_pts": 187.36
+        },
+        {
+          "frame_index": 4687,
+          "source_pts": 187.48
+        },
+        {
+          "frame_index": 4690,
+          "source_pts": 187.6
+        },
+        {
+          "frame_index": 4693,
+          "source_pts": 187.72
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/02_outcome.jpg",
+      "sha256": "1e83b9ad7462f85b7753ffda896b38dd15398c0c706dd9169af240b25f01d4fe",
+      "reviewed_frames": [
+        {
+          "frame_index": 4575,
+          "source_pts": 183.0
+        },
+        {
+          "frame_index": 4588,
+          "source_pts": 183.52
+        },
+        {
+          "frame_index": 4600,
+          "source_pts": 184.0
+        },
+        {
+          "frame_index": 4613,
+          "source_pts": 184.52
+        },
+        {
+          "frame_index": 4625,
+          "source_pts": 185.0
+        },
+        {
+          "frame_index": 4638,
+          "source_pts": 185.52
+        },
+        {
+          "frame_index": 4650,
+          "source_pts": 186.0
+        },
+        {
+          "frame_index": 4663,
+          "source_pts": 186.52
+        },
+        {
+          "frame_index": 4675,
+          "source_pts": 187.0
+        },
+        {
+          "frame_index": 4688,
+          "source_pts": 187.52
+        },
+        {
+          "frame_index": 4700,
+          "source_pts": 188.0
+        },
+        {
+          "frame_index": 4713,
+          "source_pts": 188.52
+        },
+        {
+          "frame_index": 4725,
+          "source_pts": 189.0
+        },
+        {
+          "frame_index": 4738,
+          "source_pts": 189.52
+        },
+        {
+          "frame_index": 4750,
+          "source_pts": 190.0
+        },
+        {
+          "frame_index": 4763,
+          "source_pts": 190.52
+        },
+        {
+          "frame_index": 4775,
+          "source_pts": 191.0
+        },
+        {
+          "frame_index": 4788,
+          "source_pts": 191.52
+        },
+        {
+          "frame_index": 4800,
+          "source_pts": 192.0
+        },
+        {
+          "frame_index": 4813,
+          "source_pts": 192.52
+        },
+        {
+          "frame_index": 4825,
+          "source_pts": 193.0
+        },
+        {
+          "frame_index": 4838,
+          "source_pts": 193.52
+        },
+        {
+          "frame_index": 4850,
+          "source_pts": 194.0
+        },
+        {
+          "frame_index": 4863,
+          "source_pts": 194.52
+        },
+        {
+          "frame_index": 4875,
+          "source_pts": 195.0
+        },
+        {
+          "frame_index": 4888,
+          "source_pts": 195.52
+        },
+        {
+          "frame_index": 4900,
+          "source_pts": 196.0
+        },
+        {
+          "frame_index": 4913,
+          "source_pts": 196.52
+        },
+        {
+          "frame_index": 4925,
+          "source_pts": 197.0
+        },
+        {
+          "frame_index": 4938,
+          "source_pts": 197.52
+        },
+        {
+          "frame_index": 4950,
+          "source_pts": 198.0
+        },
+        {
+          "frame_index": 4963,
+          "source_pts": 198.52
+        },
+        {
+          "frame_index": 4975,
+          "source_pts": 199.0
+        },
+        {
+          "frame_index": 4988,
+          "source_pts": 199.52
+        },
+        {
+          "frame_index": 5000,
+          "source_pts": 200.0
+        },
+        {
+          "frame_index": 5013,
+          "source_pts": 200.52
+        },
+        {
+          "frame_index": 5025,
+          "source_pts": 201.0
+        },
+        {
+          "frame_index": 5038,
+          "source_pts": 201.52
+        },
+        {
+          "frame_index": 5050,
+          "source_pts": 202.0
+        },
+        {
+          "frame_index": 5063,
+          "source_pts": 202.52
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/03_contact.jpg",
+      "sha256": "b4f0ab2f10113b56a5fe6fed8a7284b1cf5195d33d8906c8c9f5f4116caf84b7",
+      "reviewed_frames": [
+        {
+          "frame_index": 5233,
+          "source_pts": 209.32
+        },
+        {
+          "frame_index": 5236,
+          "source_pts": 209.44
+        },
+        {
+          "frame_index": 5239,
+          "source_pts": 209.56
+        },
+        {
+          "frame_index": 5242,
+          "source_pts": 209.68
+        },
+        {
+          "frame_index": 5245,
+          "source_pts": 209.8
+        },
+        {
+          "frame_index": 5248,
+          "source_pts": 209.92
+        },
+        {
+          "frame_index": 5251,
+          "source_pts": 210.04
+        },
+        {
+          "frame_index": 5254,
+          "source_pts": 210.16
+        },
+        {
+          "frame_index": 5257,
+          "source_pts": 210.28
+        },
+        {
+          "frame_index": 5260,
+          "source_pts": 210.4
+        },
+        {
+          "frame_index": 5263,
+          "source_pts": 210.52
+        },
+        {
+          "frame_index": 5266,
+          "source_pts": 210.64
+        },
+        {
+          "frame_index": 5269,
+          "source_pts": 210.76
+        },
+        {
+          "frame_index": 5272,
+          "source_pts": 210.88
+        },
+        {
+          "frame_index": 5275,
+          "source_pts": 211.0
+        },
+        {
+          "frame_index": 5278,
+          "source_pts": 211.12
+        },
+        {
+          "frame_index": 5281,
+          "source_pts": 211.24
+        },
+        {
+          "frame_index": 5284,
+          "source_pts": 211.36
+        },
+        {
+          "frame_index": 5287,
+          "source_pts": 211.48
+        },
+        {
+          "frame_index": 5290,
+          "source_pts": 211.6
+        },
+        {
+          "frame_index": 5293,
+          "source_pts": 211.72
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/03_outcome.jpg",
+      "sha256": "54248f644bddd81cf4d8410d049ff681ca8da82a46351a2f1a22cc737d5c2673",
+      "reviewed_frames": [
+        {
+          "frame_index": 5175,
+          "source_pts": 207.0
+        },
+        {
+          "frame_index": 5188,
+          "source_pts": 207.52
+        },
+        {
+          "frame_index": 5200,
+          "source_pts": 208.0
+        },
+        {
+          "frame_index": 5213,
+          "source_pts": 208.52
+        },
+        {
+          "frame_index": 5225,
+          "source_pts": 209.0
+        },
+        {
+          "frame_index": 5238,
+          "source_pts": 209.52
+        },
+        {
+          "frame_index": 5250,
+          "source_pts": 210.0
+        },
+        {
+          "frame_index": 5263,
+          "source_pts": 210.52
+        },
+        {
+          "frame_index": 5275,
+          "source_pts": 211.0
+        },
+        {
+          "frame_index": 5288,
+          "source_pts": 211.52
+        },
+        {
+          "frame_index": 5300,
+          "source_pts": 212.0
+        },
+        {
+          "frame_index": 5313,
+          "source_pts": 212.52
+        },
+        {
+          "frame_index": 5325,
+          "source_pts": 213.0
+        },
+        {
+          "frame_index": 5338,
+          "source_pts": 213.52
+        },
+        {
+          "frame_index": 5350,
+          "source_pts": 214.0
+        },
+        {
+          "frame_index": 5363,
+          "source_pts": 214.52
+        },
+        {
+          "frame_index": 5375,
+          "source_pts": 215.0
+        },
+        {
+          "frame_index": 5388,
+          "source_pts": 215.52
+        },
+        {
+          "frame_index": 5400,
+          "source_pts": 216.0
+        },
+        {
+          "frame_index": 5413,
+          "source_pts": 216.52
+        },
+        {
+          "frame_index": 5425,
+          "source_pts": 217.0
+        },
+        {
+          "frame_index": 5438,
+          "source_pts": 217.52
+        },
+        {
+          "frame_index": 5450,
+          "source_pts": 218.0
+        },
+        {
+          "frame_index": 5463,
+          "source_pts": 218.52
+        },
+        {
+          "frame_index": 5475,
+          "source_pts": 219.0
+        },
+        {
+          "frame_index": 5488,
+          "source_pts": 219.52
+        },
+        {
+          "frame_index": 5500,
+          "source_pts": 220.0
+        },
+        {
+          "frame_index": 5513,
+          "source_pts": 220.52
+        },
+        {
+          "frame_index": 5525,
+          "source_pts": 221.0
+        },
+        {
+          "frame_index": 5538,
+          "source_pts": 221.52
+        },
+        {
+          "frame_index": 5550,
+          "source_pts": 222.0
+        },
+        {
+          "frame_index": 5563,
+          "source_pts": 222.52
+        },
+        {
+          "frame_index": 5575,
+          "source_pts": 223.0
+        },
+        {
+          "frame_index": 5588,
+          "source_pts": 223.52
+        },
+        {
+          "frame_index": 5600,
+          "source_pts": 224.0
+        },
+        {
+          "frame_index": 5613,
+          "source_pts": 224.52
+        },
+        {
+          "frame_index": 5625,
+          "source_pts": 225.0
+        },
+        {
+          "frame_index": 5638,
+          "source_pts": 225.52
+        },
+        {
+          "frame_index": 5650,
+          "source_pts": 226.0
+        },
+        {
+          "frame_index": 5663,
+          "source_pts": 226.52
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/04_contact.jpg",
+      "sha256": "4ee0f748dae97ab7d1f307b9f4c521f98af45c03f3b6e20e719529f42dc4398f",
+      "reviewed_frames": [
+        {
+          "frame_index": 6108,
+          "source_pts": 244.32
+        },
+        {
+          "frame_index": 6111,
+          "source_pts": 244.44
+        },
+        {
+          "frame_index": 6114,
+          "source_pts": 244.56
+        },
+        {
+          "frame_index": 6117,
+          "source_pts": 244.68
+        },
+        {
+          "frame_index": 6120,
+          "source_pts": 244.8
+        },
+        {
+          "frame_index": 6123,
+          "source_pts": 244.92
+        },
+        {
+          "frame_index": 6126,
+          "source_pts": 245.04
+        },
+        {
+          "frame_index": 6129,
+          "source_pts": 245.16
+        },
+        {
+          "frame_index": 6132,
+          "source_pts": 245.28
+        },
+        {
+          "frame_index": 6135,
+          "source_pts": 245.4
+        },
+        {
+          "frame_index": 6138,
+          "source_pts": 245.52
+        },
+        {
+          "frame_index": 6141,
+          "source_pts": 245.64
+        },
+        {
+          "frame_index": 6144,
+          "source_pts": 245.76
+        },
+        {
+          "frame_index": 6147,
+          "source_pts": 245.88
+        },
+        {
+          "frame_index": 6150,
+          "source_pts": 246.0
+        },
+        {
+          "frame_index": 6153,
+          "source_pts": 246.12
+        },
+        {
+          "frame_index": 6156,
+          "source_pts": 246.24
+        },
+        {
+          "frame_index": 6159,
+          "source_pts": 246.36
+        },
+        {
+          "frame_index": 6162,
+          "source_pts": 246.48
+        },
+        {
+          "frame_index": 6165,
+          "source_pts": 246.6
+        },
+        {
+          "frame_index": 6168,
+          "source_pts": 246.72
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/04_outcome.jpg",
+      "sha256": "2d313d61a7fc9f199dcdcef7b6f903dc642ea9ebc74af267583fa103ded79825",
+      "reviewed_frames": [
+        {
+          "frame_index": 6050,
+          "source_pts": 242.0
+        },
+        {
+          "frame_index": 6063,
+          "source_pts": 242.52
+        },
+        {
+          "frame_index": 6075,
+          "source_pts": 243.0
+        },
+        {
+          "frame_index": 6088,
+          "source_pts": 243.52
+        },
+        {
+          "frame_index": 6100,
+          "source_pts": 244.0
+        },
+        {
+          "frame_index": 6113,
+          "source_pts": 244.52
+        },
+        {
+          "frame_index": 6125,
+          "source_pts": 245.0
+        },
+        {
+          "frame_index": 6138,
+          "source_pts": 245.52
+        },
+        {
+          "frame_index": 6150,
+          "source_pts": 246.0
+        },
+        {
+          "frame_index": 6163,
+          "source_pts": 246.52
+        },
+        {
+          "frame_index": 6175,
+          "source_pts": 247.0
+        },
+        {
+          "frame_index": 6188,
+          "source_pts": 247.52
+        },
+        {
+          "frame_index": 6200,
+          "source_pts": 248.0
+        },
+        {
+          "frame_index": 6213,
+          "source_pts": 248.52
+        },
+        {
+          "frame_index": 6225,
+          "source_pts": 249.0
+        },
+        {
+          "frame_index": 6238,
+          "source_pts": 249.52
+        },
+        {
+          "frame_index": 6250,
+          "source_pts": 250.0
+        },
+        {
+          "frame_index": 6263,
+          "source_pts": 250.52
+        },
+        {
+          "frame_index": 6275,
+          "source_pts": 251.0
+        },
+        {
+          "frame_index": 6288,
+          "source_pts": 251.52
+        },
+        {
+          "frame_index": 6300,
+          "source_pts": 252.0
+        },
+        {
+          "frame_index": 6313,
+          "source_pts": 252.52
+        },
+        {
+          "frame_index": 6325,
+          "source_pts": 253.0
+        },
+        {
+          "frame_index": 6338,
+          "source_pts": 253.52
+        },
+        {
+          "frame_index": 6350,
+          "source_pts": 254.0
+        },
+        {
+          "frame_index": 6363,
+          "source_pts": 254.52
+        },
+        {
+          "frame_index": 6375,
+          "source_pts": 255.0
+        },
+        {
+          "frame_index": 6388,
+          "source_pts": 255.52
+        },
+        {
+          "frame_index": 6400,
+          "source_pts": 256.0
+        },
+        {
+          "frame_index": 6413,
+          "source_pts": 256.52
+        },
+        {
+          "frame_index": 6425,
+          "source_pts": 257.0
+        },
+        {
+          "frame_index": 6438,
+          "source_pts": 257.52
+        },
+        {
+          "frame_index": 6450,
+          "source_pts": 258.0
+        },
+        {
+          "frame_index": 6463,
+          "source_pts": 258.52
+        },
+        {
+          "frame_index": 6475,
+          "source_pts": 259.0
+        },
+        {
+          "frame_index": 6488,
+          "source_pts": 259.52
+        },
+        {
+          "frame_index": 6500,
+          "source_pts": 260.0
+        },
+        {
+          "frame_index": 6513,
+          "source_pts": 260.52
+        },
+        {
+          "frame_index": 6525,
+          "source_pts": 261.0
+        },
+        {
+          "frame_index": 6538,
+          "source_pts": 261.52
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/05_contact.jpg",
+      "sha256": "7ee55e44f7f2670cf2924337d568df38c99d2b480b5ab962d5e9553d1c2cf1fa",
+      "reviewed_frames": [
+        {
+          "frame_index": 6571,
+          "source_pts": 262.84
+        },
+        {
+          "frame_index": 6574,
+          "source_pts": 262.96
+        },
+        {
+          "frame_index": 6577,
+          "source_pts": 263.08
+        },
+        {
+          "frame_index": 6580,
+          "source_pts": 263.2
+        },
+        {
+          "frame_index": 6583,
+          "source_pts": 263.32
+        },
+        {
+          "frame_index": 6586,
+          "source_pts": 263.44
+        },
+        {
+          "frame_index": 6589,
+          "source_pts": 263.56
+        },
+        {
+          "frame_index": 6592,
+          "source_pts": 263.68
+        },
+        {
+          "frame_index": 6595,
+          "source_pts": 263.8
+        },
+        {
+          "frame_index": 6598,
+          "source_pts": 263.92
+        },
+        {
+          "frame_index": 6601,
+          "source_pts": 264.04
+        },
+        {
+          "frame_index": 6604,
+          "source_pts": 264.16
+        },
+        {
+          "frame_index": 6607,
+          "source_pts": 264.28
+        },
+        {
+          "frame_index": 6610,
+          "source_pts": 264.4
+        },
+        {
+          "frame_index": 6613,
+          "source_pts": 264.52
+        },
+        {
+          "frame_index": 6616,
+          "source_pts": 264.64
+        },
+        {
+          "frame_index": 6619,
+          "source_pts": 264.76
+        },
+        {
+          "frame_index": 6622,
+          "source_pts": 264.88
+        },
+        {
+          "frame_index": 6625,
+          "source_pts": 265.0
+        },
+        {
+          "frame_index": 6628,
+          "source_pts": 265.12
+        },
+        {
+          "frame_index": 6631,
+          "source_pts": 265.24
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/05_outcome.jpg",
+      "sha256": "c52338e7288047cb9c82729148b87ed1f03b6b242edff91b8f34c85c701108b6",
+      "reviewed_frames": [
+        {
+          "frame_index": 6525,
+          "source_pts": 261.0
+        },
+        {
+          "frame_index": 6538,
+          "source_pts": 261.52
+        },
+        {
+          "frame_index": 6550,
+          "source_pts": 262.0
+        },
+        {
+          "frame_index": 6563,
+          "source_pts": 262.52
+        },
+        {
+          "frame_index": 6575,
+          "source_pts": 263.0
+        },
+        {
+          "frame_index": 6588,
+          "source_pts": 263.52
+        },
+        {
+          "frame_index": 6600,
+          "source_pts": 264.0
+        },
+        {
+          "frame_index": 6613,
+          "source_pts": 264.52
+        },
+        {
+          "frame_index": 6625,
+          "source_pts": 265.0
+        },
+        {
+          "frame_index": 6638,
+          "source_pts": 265.52
+        },
+        {
+          "frame_index": 6650,
+          "source_pts": 266.0
+        },
+        {
+          "frame_index": 6663,
+          "source_pts": 266.52
+        },
+        {
+          "frame_index": 6675,
+          "source_pts": 267.0
+        },
+        {
+          "frame_index": 6688,
+          "source_pts": 267.52
+        },
+        {
+          "frame_index": 6700,
+          "source_pts": 268.0
+        },
+        {
+          "frame_index": 6713,
+          "source_pts": 268.52
+        },
+        {
+          "frame_index": 6725,
+          "source_pts": 269.0
+        },
+        {
+          "frame_index": 6738,
+          "source_pts": 269.52
+        },
+        {
+          "frame_index": 6750,
+          "source_pts": 270.0
+        },
+        {
+          "frame_index": 6763,
+          "source_pts": 270.52
+        },
+        {
+          "frame_index": 6775,
+          "source_pts": 271.0
+        },
+        {
+          "frame_index": 6788,
+          "source_pts": 271.52
+        },
+        {
+          "frame_index": 6800,
+          "source_pts": 272.0
+        },
+        {
+          "frame_index": 6813,
+          "source_pts": 272.52
+        },
+        {
+          "frame_index": 6825,
+          "source_pts": 273.0
+        },
+        {
+          "frame_index": 6838,
+          "source_pts": 273.52
+        },
+        {
+          "frame_index": 6850,
+          "source_pts": 274.0
+        },
+        {
+          "frame_index": 6863,
+          "source_pts": 274.52
+        },
+        {
+          "frame_index": 6875,
+          "source_pts": 275.0
+        },
+        {
+          "frame_index": 6888,
+          "source_pts": 275.52
+        },
+        {
+          "frame_index": 6900,
+          "source_pts": 276.0
+        },
+        {
+          "frame_index": 6913,
+          "source_pts": 276.52
+        },
+        {
+          "frame_index": 6925,
+          "source_pts": 277.0
+        },
+        {
+          "frame_index": 6938,
+          "source_pts": 277.52
+        },
+        {
+          "frame_index": 6950,
+          "source_pts": 278.0
+        },
+        {
+          "frame_index": 6963,
+          "source_pts": 278.52
+        },
+        {
+          "frame_index": 6975,
+          "source_pts": 279.0
+        },
+        {
+          "frame_index": 6988,
+          "source_pts": 279.52
+        },
+        {
+          "frame_index": 7000,
+          "source_pts": 280.0
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/06_contact.jpg",
+      "sha256": "752c8c563a92b90520cc656787ac7fd2e6ede7ab94f900f3662fd33391c516b2",
+      "reviewed_frames": [
+        {
+          "frame_index": 6983,
+          "source_pts": 279.32
+        },
+        {
+          "frame_index": 6986,
+          "source_pts": 279.44
+        },
+        {
+          "frame_index": 6989,
+          "source_pts": 279.56
+        },
+        {
+          "frame_index": 6992,
+          "source_pts": 279.68
+        },
+        {
+          "frame_index": 6995,
+          "source_pts": 279.8
+        },
+        {
+          "frame_index": 6998,
+          "source_pts": 279.92
+        },
+        {
+          "frame_index": 7001,
+          "source_pts": 280.04
+        },
+        {
+          "frame_index": 7004,
+          "source_pts": 280.16
+        },
+        {
+          "frame_index": 7007,
+          "source_pts": 280.28
+        },
+        {
+          "frame_index": 7010,
+          "source_pts": 280.4
+        },
+        {
+          "frame_index": 7013,
+          "source_pts": 280.52
+        },
+        {
+          "frame_index": 7016,
+          "source_pts": 280.64
+        },
+        {
+          "frame_index": 7019,
+          "source_pts": 280.76
+        },
+        {
+          "frame_index": 7022,
+          "source_pts": 280.88
+        },
+        {
+          "frame_index": 7025,
+          "source_pts": 281.0
+        },
+        {
+          "frame_index": 7028,
+          "source_pts": 281.12
+        },
+        {
+          "frame_index": 7031,
+          "source_pts": 281.24
+        },
+        {
+          "frame_index": 7034,
+          "source_pts": 281.36
+        },
+        {
+          "frame_index": 7037,
+          "source_pts": 281.48
+        },
+        {
+          "frame_index": 7040,
+          "source_pts": 281.6
+        },
+        {
+          "frame_index": 7043,
+          "source_pts": 281.72
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/06_outcome.jpg",
+      "sha256": "b5b0e63b54cb3cba7cfb3dcc0eacc853f373f6429060cf0e3023383a929bc812",
+      "reviewed_frames": [
+        {
+          "frame_index": 6925,
+          "source_pts": 277.0
+        },
+        {
+          "frame_index": 6938,
+          "source_pts": 277.52
+        },
+        {
+          "frame_index": 6950,
+          "source_pts": 278.0
+        },
+        {
+          "frame_index": 6963,
+          "source_pts": 278.52
+        },
+        {
+          "frame_index": 6975,
+          "source_pts": 279.0
+        },
+        {
+          "frame_index": 6988,
+          "source_pts": 279.52
+        },
+        {
+          "frame_index": 7000,
+          "source_pts": 280.0
+        },
+        {
+          "frame_index": 7013,
+          "source_pts": 280.52
+        },
+        {
+          "frame_index": 7025,
+          "source_pts": 281.0
+        },
+        {
+          "frame_index": 7038,
+          "source_pts": 281.52
+        },
+        {
+          "frame_index": 7050,
+          "source_pts": 282.0
+        },
+        {
+          "frame_index": 7063,
+          "source_pts": 282.52
+        },
+        {
+          "frame_index": 7075,
+          "source_pts": 283.0
+        },
+        {
+          "frame_index": 7088,
+          "source_pts": 283.52
+        },
+        {
+          "frame_index": 7100,
+          "source_pts": 284.0
+        },
+        {
+          "frame_index": 7113,
+          "source_pts": 284.52
+        },
+        {
+          "frame_index": 7125,
+          "source_pts": 285.0
+        },
+        {
+          "frame_index": 7138,
+          "source_pts": 285.52
+        },
+        {
+          "frame_index": 7150,
+          "source_pts": 286.0
+        },
+        {
+          "frame_index": 7163,
+          "source_pts": 286.52
+        },
+        {
+          "frame_index": 7175,
+          "source_pts": 287.0
+        },
+        {
+          "frame_index": 7188,
+          "source_pts": 287.52
+        },
+        {
+          "frame_index": 7200,
+          "source_pts": 288.0
+        },
+        {
+          "frame_index": 7213,
+          "source_pts": 288.52
+        },
+        {
+          "frame_index": 7225,
+          "source_pts": 289.0
+        },
+        {
+          "frame_index": 7238,
+          "source_pts": 289.52
+        },
+        {
+          "frame_index": 7250,
+          "source_pts": 290.0
+        },
+        {
+          "frame_index": 7263,
+          "source_pts": 290.52
+        },
+        {
+          "frame_index": 7275,
+          "source_pts": 291.0
+        },
+        {
+          "frame_index": 7288,
+          "source_pts": 291.52
+        },
+        {
+          "frame_index": 7300,
+          "source_pts": 292.0
+        },
+        {
+          "frame_index": 7313,
+          "source_pts": 292.52
+        },
+        {
+          "frame_index": 7325,
+          "source_pts": 293.0
+        },
+        {
+          "frame_index": 7338,
+          "source_pts": 293.52
+        },
+        {
+          "frame_index": 7350,
+          "source_pts": 294.0
+        },
+        {
+          "frame_index": 7363,
+          "source_pts": 294.52
+        },
+        {
+          "frame_index": 7375,
+          "source_pts": 295.0
+        },
+        {
+          "frame_index": 7388,
+          "source_pts": 295.52
+        },
+        {
+          "frame_index": 7400,
+          "source_pts": 296.0
+        },
+        {
+          "frame_index": 7413,
+          "source_pts": 296.52
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/07_contact.jpg",
+      "sha256": "bfdd058b5a5ad0174650d69bdcd4bcc374012d0daba046d493d3c0989aa19004",
+      "reviewed_frames": [
+        {
+          "frame_index": 7854,
+          "source_pts": 314.16
+        },
+        {
+          "frame_index": 7857,
+          "source_pts": 314.28
+        },
+        {
+          "frame_index": 7860,
+          "source_pts": 314.4
+        },
+        {
+          "frame_index": 7863,
+          "source_pts": 314.52
+        },
+        {
+          "frame_index": 7866,
+          "source_pts": 314.64
+        },
+        {
+          "frame_index": 7869,
+          "source_pts": 314.76
+        },
+        {
+          "frame_index": 7872,
+          "source_pts": 314.88
+        },
+        {
+          "frame_index": 7875,
+          "source_pts": 315.0
+        },
+        {
+          "frame_index": 7878,
+          "source_pts": 315.12
+        },
+        {
+          "frame_index": 7881,
+          "source_pts": 315.24
+        },
+        {
+          "frame_index": 7884,
+          "source_pts": 315.36
+        },
+        {
+          "frame_index": 7887,
+          "source_pts": 315.48
+        },
+        {
+          "frame_index": 7890,
+          "source_pts": 315.6
+        },
+        {
+          "frame_index": 7893,
+          "source_pts": 315.72
+        },
+        {
+          "frame_index": 7896,
+          "source_pts": 315.84
+        },
+        {
+          "frame_index": 7899,
+          "source_pts": 315.96
+        },
+        {
+          "frame_index": 7902,
+          "source_pts": 316.08
+        },
+        {
+          "frame_index": 7905,
+          "source_pts": 316.2
+        },
+        {
+          "frame_index": 7908,
+          "source_pts": 316.32
+        },
+        {
+          "frame_index": 7911,
+          "source_pts": 316.44
+        },
+        {
+          "frame_index": 7914,
+          "source_pts": 316.56
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/07_outcome.jpg",
+      "sha256": "1f0c8cb18edee7cb425fb19e2e5049d71e6bfe6074389121998aa283d454ce8b",
+      "reviewed_frames": [
+        {
+          "frame_index": 7808,
+          "source_pts": 312.32
+        },
+        {
+          "frame_index": 7821,
+          "source_pts": 312.84
+        },
+        {
+          "frame_index": 7833,
+          "source_pts": 313.32
+        },
+        {
+          "frame_index": 7846,
+          "source_pts": 313.84
+        },
+        {
+          "frame_index": 7858,
+          "source_pts": 314.32
+        },
+        {
+          "frame_index": 7871,
+          "source_pts": 314.84
+        },
+        {
+          "frame_index": 7883,
+          "source_pts": 315.32
+        },
+        {
+          "frame_index": 7896,
+          "source_pts": 315.84
+        },
+        {
+          "frame_index": 7908,
+          "source_pts": 316.32
+        },
+        {
+          "frame_index": 7921,
+          "source_pts": 316.84
+        },
+        {
+          "frame_index": 7933,
+          "source_pts": 317.32
+        },
+        {
+          "frame_index": 7946,
+          "source_pts": 317.84
+        },
+        {
+          "frame_index": 7958,
+          "source_pts": 318.32
+        },
+        {
+          "frame_index": 7971,
+          "source_pts": 318.84
+        },
+        {
+          "frame_index": 7983,
+          "source_pts": 319.32
+        },
+        {
+          "frame_index": 7996,
+          "source_pts": 319.84
+        },
+        {
+          "frame_index": 8008,
+          "source_pts": 320.32
+        },
+        {
+          "frame_index": 8021,
+          "source_pts": 320.84
+        },
+        {
+          "frame_index": 8033,
+          "source_pts": 321.32
+        },
+        {
+          "frame_index": 8046,
+          "source_pts": 321.84
+        },
+        {
+          "frame_index": 8058,
+          "source_pts": 322.32
+        },
+        {
+          "frame_index": 8071,
+          "source_pts": 322.84
+        },
+        {
+          "frame_index": 8083,
+          "source_pts": 323.32
+        },
+        {
+          "frame_index": 8096,
+          "source_pts": 323.84
+        },
+        {
+          "frame_index": 8108,
+          "source_pts": 324.32
+        },
+        {
+          "frame_index": 8121,
+          "source_pts": 324.84
+        },
+        {
+          "frame_index": 8133,
+          "source_pts": 325.32
+        },
+        {
+          "frame_index": 8146,
+          "source_pts": 325.84
+        },
+        {
+          "frame_index": 8158,
+          "source_pts": 326.32
+        },
+        {
+          "frame_index": 8171,
+          "source_pts": 326.84
+        },
+        {
+          "frame_index": 8183,
+          "source_pts": 327.32
+        },
+        {
+          "frame_index": 8196,
+          "source_pts": 327.84
+        },
+        {
+          "frame_index": 8208,
+          "source_pts": 328.32
+        },
+        {
+          "frame_index": 8221,
+          "source_pts": 328.84
+        },
+        {
+          "frame_index": 8233,
+          "source_pts": 329.32
+        },
+        {
+          "frame_index": 8246,
+          "source_pts": 329.84
+        },
+        {
+          "frame_index": 8258,
+          "source_pts": 330.32
+        },
+        {
+          "frame_index": 8271,
+          "source_pts": 330.84
+        },
+        {
+          "frame_index": 8283,
+          "source_pts": 331.32
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/08_contact.jpg",
+      "sha256": "b269b00b9e4749bd060e71be0ad661fd12c32ab1a861ef9e356fbdbe076d1e2a",
+      "reviewed_frames": [
+        {
+          "frame_index": 8432,
+          "source_pts": 337.28
+        },
+        {
+          "frame_index": 8435,
+          "source_pts": 337.4
+        },
+        {
+          "frame_index": 8438,
+          "source_pts": 337.52
+        },
+        {
+          "frame_index": 8441,
+          "source_pts": 337.64
+        },
+        {
+          "frame_index": 8444,
+          "source_pts": 337.76
+        },
+        {
+          "frame_index": 8447,
+          "source_pts": 337.88
+        },
+        {
+          "frame_index": 8450,
+          "source_pts": 338.0
+        },
+        {
+          "frame_index": 8453,
+          "source_pts": 338.12
+        },
+        {
+          "frame_index": 8456,
+          "source_pts": 338.24
+        },
+        {
+          "frame_index": 8459,
+          "source_pts": 338.36
+        },
+        {
+          "frame_index": 8462,
+          "source_pts": 338.48
+        },
+        {
+          "frame_index": 8465,
+          "source_pts": 338.6
+        },
+        {
+          "frame_index": 8468,
+          "source_pts": 338.72
+        },
+        {
+          "frame_index": 8471,
+          "source_pts": 338.84
+        },
+        {
+          "frame_index": 8474,
+          "source_pts": 338.96
+        },
+        {
+          "frame_index": 8477,
+          "source_pts": 339.08
+        },
+        {
+          "frame_index": 8480,
+          "source_pts": 339.2
+        },
+        {
+          "frame_index": 8483,
+          "source_pts": 339.32
+        },
+        {
+          "frame_index": 8486,
+          "source_pts": 339.44
+        },
+        {
+          "frame_index": 8489,
+          "source_pts": 339.56
+        },
+        {
+          "frame_index": 8492,
+          "source_pts": 339.68
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/08_outcome.jpg",
+      "sha256": "ef8d8afc75cf560f0aad9409b4407683406289e08c518e3e8a93c1a2d92ec694",
+      "reviewed_frames": [
+        {
+          "frame_index": 8386,
+          "source_pts": 335.44
+        },
+        {
+          "frame_index": 8399,
+          "source_pts": 335.96
+        },
+        {
+          "frame_index": 8411,
+          "source_pts": 336.44
+        },
+        {
+          "frame_index": 8424,
+          "source_pts": 336.96
+        },
+        {
+          "frame_index": 8436,
+          "source_pts": 337.44
+        },
+        {
+          "frame_index": 8449,
+          "source_pts": 337.96
+        },
+        {
+          "frame_index": 8461,
+          "source_pts": 338.44
+        },
+        {
+          "frame_index": 8474,
+          "source_pts": 338.96
+        },
+        {
+          "frame_index": 8486,
+          "source_pts": 339.44
+        },
+        {
+          "frame_index": 8499,
+          "source_pts": 339.96
+        },
+        {
+          "frame_index": 8511,
+          "source_pts": 340.44
+        },
+        {
+          "frame_index": 8524,
+          "source_pts": 340.96
+        },
+        {
+          "frame_index": 8536,
+          "source_pts": 341.44
+        },
+        {
+          "frame_index": 8549,
+          "source_pts": 341.96
+        },
+        {
+          "frame_index": 8561,
+          "source_pts": 342.44
+        },
+        {
+          "frame_index": 8574,
+          "source_pts": 342.96
+        },
+        {
+          "frame_index": 8586,
+          "source_pts": 343.44
+        },
+        {
+          "frame_index": 8599,
+          "source_pts": 343.96
+        },
+        {
+          "frame_index": 8611,
+          "source_pts": 344.44
+        },
+        {
+          "frame_index": 8624,
+          "source_pts": 344.96
+        },
+        {
+          "frame_index": 8636,
+          "source_pts": 345.44
+        },
+        {
+          "frame_index": 8649,
+          "source_pts": 345.96
+        },
+        {
+          "frame_index": 8661,
+          "source_pts": 346.44
+        },
+        {
+          "frame_index": 8674,
+          "source_pts": 346.96
+        },
+        {
+          "frame_index": 8686,
+          "source_pts": 347.44
+        },
+        {
+          "frame_index": 8699,
+          "source_pts": 347.96
+        },
+        {
+          "frame_index": 8711,
+          "source_pts": 348.44
+        },
+        {
+          "frame_index": 8724,
+          "source_pts": 348.96
+        },
+        {
+          "frame_index": 8736,
+          "source_pts": 349.44
+        },
+        {
+          "frame_index": 8749,
+          "source_pts": 349.96
+        },
+        {
+          "frame_index": 8761,
+          "source_pts": 350.44
+        },
+        {
+          "frame_index": 8774,
+          "source_pts": 350.96
+        },
+        {
+          "frame_index": 8786,
+          "source_pts": 351.44
+        },
+        {
+          "frame_index": 8799,
+          "source_pts": 351.96
+        },
+        {
+          "frame_index": 8811,
+          "source_pts": 352.44
+        },
+        {
+          "frame_index": 8824,
+          "source_pts": 352.96
+        },
+        {
+          "frame_index": 8836,
+          "source_pts": 353.44
+        },
+        {
+          "frame_index": 8849,
+          "source_pts": 353.96
+        },
+        {
+          "frame_index": 8861,
+          "source_pts": 354.44
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/09_contact.jpg",
+      "sha256": "7cac8b052699cab420d1f2da3b678bb43cb119dea405fb43506596a15927b46f",
+      "reviewed_frames": [
+        {
+          "frame_index": 9472,
+          "source_pts": 378.88
+        },
+        {
+          "frame_index": 9475,
+          "source_pts": 379.0
+        },
+        {
+          "frame_index": 9478,
+          "source_pts": 379.12
+        },
+        {
+          "frame_index": 9481,
+          "source_pts": 379.24
+        },
+        {
+          "frame_index": 9484,
+          "source_pts": 379.36
+        },
+        {
+          "frame_index": 9487,
+          "source_pts": 379.48
+        },
+        {
+          "frame_index": 9490,
+          "source_pts": 379.6
+        },
+        {
+          "frame_index": 9493,
+          "source_pts": 379.72
+        },
+        {
+          "frame_index": 9496,
+          "source_pts": 379.84
+        },
+        {
+          "frame_index": 9499,
+          "source_pts": 379.96
+        },
+        {
+          "frame_index": 9502,
+          "source_pts": 380.08
+        },
+        {
+          "frame_index": 9505,
+          "source_pts": 380.2
+        },
+        {
+          "frame_index": 9508,
+          "source_pts": 380.32
+        },
+        {
+          "frame_index": 9511,
+          "source_pts": 380.44
+        },
+        {
+          "frame_index": 9514,
+          "source_pts": 380.56
+        },
+        {
+          "frame_index": 9517,
+          "source_pts": 380.68
+        },
+        {
+          "frame_index": 9520,
+          "source_pts": 380.8
+        },
+        {
+          "frame_index": 9523,
+          "source_pts": 380.92
+        },
+        {
+          "frame_index": 9526,
+          "source_pts": 381.04
+        },
+        {
+          "frame_index": 9529,
+          "source_pts": 381.16
+        },
+        {
+          "frame_index": 9532,
+          "source_pts": 381.28
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/09_outcome.jpg",
+      "sha256": "42ae9ac736decc9e1ca5b4f285a9834d5860e77e687d40ae2ee432522aa1110f",
+      "reviewed_frames": [
+        {
+          "frame_index": 9426,
+          "source_pts": 377.04
+        },
+        {
+          "frame_index": 9439,
+          "source_pts": 377.56
+        },
+        {
+          "frame_index": 9451,
+          "source_pts": 378.04
+        },
+        {
+          "frame_index": 9464,
+          "source_pts": 378.56
+        },
+        {
+          "frame_index": 9476,
+          "source_pts": 379.04
+        },
+        {
+          "frame_index": 9489,
+          "source_pts": 379.56
+        },
+        {
+          "frame_index": 9501,
+          "source_pts": 380.04
+        },
+        {
+          "frame_index": 9514,
+          "source_pts": 380.56
+        },
+        {
+          "frame_index": 9526,
+          "source_pts": 381.04
+        },
+        {
+          "frame_index": 9539,
+          "source_pts": 381.56
+        },
+        {
+          "frame_index": 9551,
+          "source_pts": 382.04
+        },
+        {
+          "frame_index": 9564,
+          "source_pts": 382.56
+        },
+        {
+          "frame_index": 9576,
+          "source_pts": 383.04
+        },
+        {
+          "frame_index": 9589,
+          "source_pts": 383.56
+        },
+        {
+          "frame_index": 9601,
+          "source_pts": 384.04
+        },
+        {
+          "frame_index": 9614,
+          "source_pts": 384.56
+        },
+        {
+          "frame_index": 9626,
+          "source_pts": 385.04
+        },
+        {
+          "frame_index": 9639,
+          "source_pts": 385.56
+        },
+        {
+          "frame_index": 9651,
+          "source_pts": 386.04
+        },
+        {
+          "frame_index": 9664,
+          "source_pts": 386.56
+        },
+        {
+          "frame_index": 9676,
+          "source_pts": 387.04
+        },
+        {
+          "frame_index": 9689,
+          "source_pts": 387.56
+        },
+        {
+          "frame_index": 9701,
+          "source_pts": 388.04
+        },
+        {
+          "frame_index": 9714,
+          "source_pts": 388.56
+        },
+        {
+          "frame_index": 9726,
+          "source_pts": 389.04
+        },
+        {
+          "frame_index": 9739,
+          "source_pts": 389.56
+        },
+        {
+          "frame_index": 9751,
+          "source_pts": 390.04
+        },
+        {
+          "frame_index": 9764,
+          "source_pts": 390.56
+        },
+        {
+          "frame_index": 9776,
+          "source_pts": 391.04
+        },
+        {
+          "frame_index": 9789,
+          "source_pts": 391.56
+        },
+        {
+          "frame_index": 9801,
+          "source_pts": 392.04
+        },
+        {
+          "frame_index": 9814,
+          "source_pts": 392.56
+        },
+        {
+          "frame_index": 9826,
+          "source_pts": 393.04
+        },
+        {
+          "frame_index": 9839,
+          "source_pts": 393.56
+        },
+        {
+          "frame_index": 9851,
+          "source_pts": 394.04
+        },
+        {
+          "frame_index": 9864,
+          "source_pts": 394.56
+        },
+        {
+          "frame_index": 9876,
+          "source_pts": 395.04
+        },
+        {
+          "frame_index": 9889,
+          "source_pts": 395.56
+        },
+        {
+          "frame_index": 9901,
+          "source_pts": 396.04
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/10_contact.jpg",
+      "sha256": "cf76252f2e2139845dda0bd13cdf568f821a5c5b697d9b7c13ba344e206abf22",
+      "reviewed_frames": [
+        {
+          "frame_index": 9883,
+          "source_pts": 395.32
+        },
+        {
+          "frame_index": 9886,
+          "source_pts": 395.44
+        },
+        {
+          "frame_index": 9889,
+          "source_pts": 395.56
+        },
+        {
+          "frame_index": 9892,
+          "source_pts": 395.68
+        },
+        {
+          "frame_index": 9895,
+          "source_pts": 395.8
+        },
+        {
+          "frame_index": 9898,
+          "source_pts": 395.92
+        },
+        {
+          "frame_index": 9901,
+          "source_pts": 396.04
+        },
+        {
+          "frame_index": 9904,
+          "source_pts": 396.16
+        },
+        {
+          "frame_index": 9907,
+          "source_pts": 396.28
+        },
+        {
+          "frame_index": 9910,
+          "source_pts": 396.4
+        },
+        {
+          "frame_index": 9913,
+          "source_pts": 396.52
+        },
+        {
+          "frame_index": 9916,
+          "source_pts": 396.64
+        },
+        {
+          "frame_index": 9919,
+          "source_pts": 396.76
+        },
+        {
+          "frame_index": 9922,
+          "source_pts": 396.88
+        },
+        {
+          "frame_index": 9925,
+          "source_pts": 397.0
+        },
+        {
+          "frame_index": 9928,
+          "source_pts": 397.12
+        },
+        {
+          "frame_index": 9931,
+          "source_pts": 397.24
+        },
+        {
+          "frame_index": 9934,
+          "source_pts": 397.36
+        },
+        {
+          "frame_index": 9937,
+          "source_pts": 397.48
+        },
+        {
+          "frame_index": 9940,
+          "source_pts": 397.6
+        },
+        {
+          "frame_index": 9943,
+          "source_pts": 397.72
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/10_outcome.jpg",
+      "sha256": "bab84b4b563054dcbc36134a01848190065799381c40190fef14238d895a3311",
+      "reviewed_frames": [
+        {
+          "frame_index": 9825,
+          "source_pts": 393.0
+        },
+        {
+          "frame_index": 9838,
+          "source_pts": 393.52
+        },
+        {
+          "frame_index": 9850,
+          "source_pts": 394.0
+        },
+        {
+          "frame_index": 9863,
+          "source_pts": 394.52
+        },
+        {
+          "frame_index": 9875,
+          "source_pts": 395.0
+        },
+        {
+          "frame_index": 9888,
+          "source_pts": 395.52
+        },
+        {
+          "frame_index": 9900,
+          "source_pts": 396.0
+        },
+        {
+          "frame_index": 9913,
+          "source_pts": 396.52
+        },
+        {
+          "frame_index": 9925,
+          "source_pts": 397.0
+        },
+        {
+          "frame_index": 9938,
+          "source_pts": 397.52
+        },
+        {
+          "frame_index": 9950,
+          "source_pts": 398.0
+        },
+        {
+          "frame_index": 9963,
+          "source_pts": 398.52
+        },
+        {
+          "frame_index": 9975,
+          "source_pts": 399.0
+        },
+        {
+          "frame_index": 9988,
+          "source_pts": 399.52
+        },
+        {
+          "frame_index": 10000,
+          "source_pts": 400.0
+        },
+        {
+          "frame_index": 10013,
+          "source_pts": 400.52
+        },
+        {
+          "frame_index": 10025,
+          "source_pts": 401.0
+        },
+        {
+          "frame_index": 10038,
+          "source_pts": 401.52
+        },
+        {
+          "frame_index": 10050,
+          "source_pts": 402.0
+        },
+        {
+          "frame_index": 10063,
+          "source_pts": 402.52
+        },
+        {
+          "frame_index": 10075,
+          "source_pts": 403.0
+        },
+        {
+          "frame_index": 10088,
+          "source_pts": 403.52
+        },
+        {
+          "frame_index": 10100,
+          "source_pts": 404.0
+        },
+        {
+          "frame_index": 10113,
+          "source_pts": 404.52
+        },
+        {
+          "frame_index": 10125,
+          "source_pts": 405.0
+        },
+        {
+          "frame_index": 10138,
+          "source_pts": 405.52
+        },
+        {
+          "frame_index": 10150,
+          "source_pts": 406.0
+        },
+        {
+          "frame_index": 10163,
+          "source_pts": 406.52
+        },
+        {
+          "frame_index": 10175,
+          "source_pts": 407.0
+        },
+        {
+          "frame_index": 10188,
+          "source_pts": 407.52
+        },
+        {
+          "frame_index": 10200,
+          "source_pts": 408.0
+        },
+        {
+          "frame_index": 10213,
+          "source_pts": 408.52
+        },
+        {
+          "frame_index": 10225,
+          "source_pts": 409.0
+        },
+        {
+          "frame_index": 10238,
+          "source_pts": 409.52
+        },
+        {
+          "frame_index": 10250,
+          "source_pts": 410.0
+        },
+        {
+          "frame_index": 10263,
+          "source_pts": 410.52
+        },
+        {
+          "frame_index": 10275,
+          "source_pts": 411.0
+        },
+        {
+          "frame_index": 10288,
+          "source_pts": 411.52
+        },
+        {
+          "frame_index": 10300,
+          "source_pts": 412.0
+        },
+        {
+          "frame_index": 10313,
+          "source_pts": 412.52
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/11_contact.jpg",
+      "sha256": "1538d92ad6926e00d774c732af6266856be9baaffb502dfcc2606227ca45e16c",
+      "reviewed_frames": [
+        {
+          "frame_index": 10376,
+          "source_pts": 415.04
+        },
+        {
+          "frame_index": 10379,
+          "source_pts": 415.16
+        },
+        {
+          "frame_index": 10382,
+          "source_pts": 415.28
+        },
+        {
+          "frame_index": 10385,
+          "source_pts": 415.4
+        },
+        {
+          "frame_index": 10388,
+          "source_pts": 415.52
+        },
+        {
+          "frame_index": 10391,
+          "source_pts": 415.64
+        },
+        {
+          "frame_index": 10394,
+          "source_pts": 415.76
+        },
+        {
+          "frame_index": 10397,
+          "source_pts": 415.88
+        },
+        {
+          "frame_index": 10400,
+          "source_pts": 416.0
+        },
+        {
+          "frame_index": 10403,
+          "source_pts": 416.12
+        },
+        {
+          "frame_index": 10406,
+          "source_pts": 416.24
+        },
+        {
+          "frame_index": 10409,
+          "source_pts": 416.36
+        },
+        {
+          "frame_index": 10412,
+          "source_pts": 416.48
+        },
+        {
+          "frame_index": 10415,
+          "source_pts": 416.6
+        },
+        {
+          "frame_index": 10418,
+          "source_pts": 416.72
+        },
+        {
+          "frame_index": 10421,
+          "source_pts": 416.84
+        },
+        {
+          "frame_index": 10424,
+          "source_pts": 416.96
+        },
+        {
+          "frame_index": 10427,
+          "source_pts": 417.08
+        },
+        {
+          "frame_index": 10430,
+          "source_pts": 417.2
+        },
+        {
+          "frame_index": 10433,
+          "source_pts": 417.32
+        },
+        {
+          "frame_index": 10436,
+          "source_pts": 417.44
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/11_outcome.jpg",
+      "sha256": "5255d191bd17259e5e81dcf663993ea8e2ec2a174a318456795ea089a8fd9f9e",
+      "reviewed_frames": [
+        {
+          "frame_index": 10330,
+          "source_pts": 413.2
+        },
+        {
+          "frame_index": 10343,
+          "source_pts": 413.72
+        },
+        {
+          "frame_index": 10355,
+          "source_pts": 414.2
+        },
+        {
+          "frame_index": 10368,
+          "source_pts": 414.72
+        },
+        {
+          "frame_index": 10380,
+          "source_pts": 415.2
+        },
+        {
+          "frame_index": 10393,
+          "source_pts": 415.72
+        },
+        {
+          "frame_index": 10405,
+          "source_pts": 416.2
+        },
+        {
+          "frame_index": 10418,
+          "source_pts": 416.72
+        },
+        {
+          "frame_index": 10430,
+          "source_pts": 417.2
+        },
+        {
+          "frame_index": 10443,
+          "source_pts": 417.72
+        },
+        {
+          "frame_index": 10455,
+          "source_pts": 418.2
+        },
+        {
+          "frame_index": 10468,
+          "source_pts": 418.72
+        },
+        {
+          "frame_index": 10480,
+          "source_pts": 419.2
+        },
+        {
+          "frame_index": 10493,
+          "source_pts": 419.72
+        },
+        {
+          "frame_index": 10505,
+          "source_pts": 420.2
+        },
+        {
+          "frame_index": 10518,
+          "source_pts": 420.72
+        },
+        {
+          "frame_index": 10530,
+          "source_pts": 421.2
+        },
+        {
+          "frame_index": 10543,
+          "source_pts": 421.72
+        },
+        {
+          "frame_index": 10555,
+          "source_pts": 422.2
+        },
+        {
+          "frame_index": 10568,
+          "source_pts": 422.72
+        },
+        {
+          "frame_index": 10580,
+          "source_pts": 423.2
+        },
+        {
+          "frame_index": 10593,
+          "source_pts": 423.72
+        },
+        {
+          "frame_index": 10605,
+          "source_pts": 424.2
+        },
+        {
+          "frame_index": 10618,
+          "source_pts": 424.72
+        },
+        {
+          "frame_index": 10630,
+          "source_pts": 425.2
+        },
+        {
+          "frame_index": 10643,
+          "source_pts": 425.72
+        },
+        {
+          "frame_index": 10655,
+          "source_pts": 426.2
+        },
+        {
+          "frame_index": 10668,
+          "source_pts": 426.72
+        },
+        {
+          "frame_index": 10680,
+          "source_pts": 427.2
+        },
+        {
+          "frame_index": 10693,
+          "source_pts": 427.72
+        },
+        {
+          "frame_index": 10705,
+          "source_pts": 428.2
+        },
+        {
+          "frame_index": 10718,
+          "source_pts": 428.72
+        },
+        {
+          "frame_index": 10730,
+          "source_pts": 429.2
+        },
+        {
+          "frame_index": 10743,
+          "source_pts": 429.72
+        },
+        {
+          "frame_index": 10755,
+          "source_pts": 430.2
+        },
+        {
+          "frame_index": 10768,
+          "source_pts": 430.72
+        },
+        {
+          "frame_index": 10780,
+          "source_pts": 431.2
+        },
+        {
+          "frame_index": 10793,
+          "source_pts": 431.72
+        },
+        {
+          "frame_index": 10805,
+          "source_pts": 432.2
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/12_contact.jpg",
+      "sha256": "2d5c1f303fbf52671188477b8fb121e9f616ec4272fee9ab747a994e152ed83c",
+      "reviewed_frames": [
+        {
+          "frame_index": 10996,
+          "source_pts": 439.84
+        },
+        {
+          "frame_index": 10999,
+          "source_pts": 439.96
+        },
+        {
+          "frame_index": 11002,
+          "source_pts": 440.08
+        },
+        {
+          "frame_index": 11005,
+          "source_pts": 440.2
+        },
+        {
+          "frame_index": 11008,
+          "source_pts": 440.32
+        },
+        {
+          "frame_index": 11011,
+          "source_pts": 440.44
+        },
+        {
+          "frame_index": 11014,
+          "source_pts": 440.56
+        },
+        {
+          "frame_index": 11017,
+          "source_pts": 440.68
+        },
+        {
+          "frame_index": 11020,
+          "source_pts": 440.8
+        },
+        {
+          "frame_index": 11023,
+          "source_pts": 440.92
+        },
+        {
+          "frame_index": 11026,
+          "source_pts": 441.04
+        },
+        {
+          "frame_index": 11029,
+          "source_pts": 441.16
+        },
+        {
+          "frame_index": 11032,
+          "source_pts": 441.28
+        },
+        {
+          "frame_index": 11035,
+          "source_pts": 441.4
+        },
+        {
+          "frame_index": 11038,
+          "source_pts": 441.52
+        },
+        {
+          "frame_index": 11041,
+          "source_pts": 441.64
+        },
+        {
+          "frame_index": 11044,
+          "source_pts": 441.76
+        },
+        {
+          "frame_index": 11047,
+          "source_pts": 441.88
+        },
+        {
+          "frame_index": 11050,
+          "source_pts": 442.0
+        },
+        {
+          "frame_index": 11053,
+          "source_pts": 442.12
+        },
+        {
+          "frame_index": 11056,
+          "source_pts": 442.24
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_opening/12_outcome.jpg",
+      "sha256": "ab3701808a8ff6475272f3ec20ad4cea14fe928eeacd8b5bfc962d6d4ba784d6",
+      "reviewed_frames": [
+        {
+          "frame_index": 10950,
+          "source_pts": 438.0
+        },
+        {
+          "frame_index": 10963,
+          "source_pts": 438.52
+        },
+        {
+          "frame_index": 10975,
+          "source_pts": 439.0
+        },
+        {
+          "frame_index": 10988,
+          "source_pts": 439.52
+        },
+        {
+          "frame_index": 11000,
+          "source_pts": 440.0
+        },
+        {
+          "frame_index": 11013,
+          "source_pts": 440.52
+        },
+        {
+          "frame_index": 11025,
+          "source_pts": 441.0
+        },
+        {
+          "frame_index": 11038,
+          "source_pts": 441.52
+        },
+        {
+          "frame_index": 11050,
+          "source_pts": 442.0
+        },
+        {
+          "frame_index": 11063,
+          "source_pts": 442.52
+        },
+        {
+          "frame_index": 11075,
+          "source_pts": 443.0
+        },
+        {
+          "frame_index": 11088,
+          "source_pts": 443.52
+        },
+        {
+          "frame_index": 11100,
+          "source_pts": 444.0
+        },
+        {
+          "frame_index": 11113,
+          "source_pts": 444.52
+        },
+        {
+          "frame_index": 11125,
+          "source_pts": 445.0
+        },
+        {
+          "frame_index": 11138,
+          "source_pts": 445.52
+        },
+        {
+          "frame_index": 11150,
+          "source_pts": 446.0
+        },
+        {
+          "frame_index": 11163,
+          "source_pts": 446.52
+        },
+        {
+          "frame_index": 11175,
+          "source_pts": 447.0
+        },
+        {
+          "frame_index": 11188,
+          "source_pts": 447.52
+        },
+        {
+          "frame_index": 11200,
+          "source_pts": 448.0
+        },
+        {
+          "frame_index": 11213,
+          "source_pts": 448.52
+        },
+        {
+          "frame_index": 11225,
+          "source_pts": 449.0
+        },
+        {
+          "frame_index": 11238,
+          "source_pts": 449.52
+        },
+        {
+          "frame_index": 11250,
+          "source_pts": 450.0
+        },
+        {
+          "frame_index": 11263,
+          "source_pts": 450.52
+        },
+        {
+          "frame_index": 11275,
+          "source_pts": 451.0
+        },
+        {
+          "frame_index": 11288,
+          "source_pts": 451.52
+        },
+        {
+          "frame_index": 11300,
+          "source_pts": 452.0
+        },
+        {
+          "frame_index": 11313,
+          "source_pts": 452.52
+        },
+        {
+          "frame_index": 11325,
+          "source_pts": 453.0
+        },
+        {
+          "frame_index": 11338,
+          "source_pts": 453.52
+        },
+        {
+          "frame_index": 11350,
+          "source_pts": 454.0
+        },
+        {
+          "frame_index": 11363,
+          "source_pts": 454.52
+        },
+        {
+          "frame_index": 11375,
+          "source_pts": 455.0
+        },
+        {
+          "frame_index": 11388,
+          "source_pts": 455.52
+        },
+        {
+          "frame_index": 11400,
+          "source_pts": 456.0
+        },
+        {
+          "frame_index": 11413,
+          "source_pts": 456.52
+        },
+        {
+          "frame_index": 11425,
+          "source_pts": 457.0
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/01_end.jpg",
+      "sha256": "8f06c8e66d2f8c2ac8c486b8daa6ab157e1142bb5b91a2f8cb7becd811e13d58",
+      "reviewed_frames": [
+        {
+          "frame_index": 3750,
+          "source_pts": 150.0
+        },
+        {
+          "frame_index": 3752,
+          "source_pts": 150.08
+        },
+        {
+          "frame_index": 3754,
+          "source_pts": 150.16
+        },
+        {
+          "frame_index": 3756,
+          "source_pts": 150.24
+        },
+        {
+          "frame_index": 3758,
+          "source_pts": 150.32
+        },
+        {
+          "frame_index": 3760,
+          "source_pts": 150.4
+        },
+        {
+          "frame_index": 3762,
+          "source_pts": 150.48
+        },
+        {
+          "frame_index": 3764,
+          "source_pts": 150.56
+        },
+        {
+          "frame_index": 3766,
+          "source_pts": 150.64
+        },
+        {
+          "frame_index": 3768,
+          "source_pts": 150.72
+        },
+        {
+          "frame_index": 3770,
+          "source_pts": 150.8
+        },
+        {
+          "frame_index": 3772,
+          "source_pts": 150.88
+        },
+        {
+          "frame_index": 3774,
+          "source_pts": 150.96
+        },
+        {
+          "frame_index": 3776,
+          "source_pts": 151.04
+        },
+        {
+          "frame_index": 3778,
+          "source_pts": 151.12
+        },
+        {
+          "frame_index": 3780,
+          "source_pts": 151.2
+        },
+        {
+          "frame_index": 3782,
+          "source_pts": 151.28
+        },
+        {
+          "frame_index": 3784,
+          "source_pts": 151.36
+        },
+        {
+          "frame_index": 3786,
+          "source_pts": 151.44
+        },
+        {
+          "frame_index": 3788,
+          "source_pts": 151.52
+        },
+        {
+          "frame_index": 3790,
+          "source_pts": 151.6
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/02_end.jpg",
+      "sha256": "3fd3d131ed0dbc8c1f9f303cb17586a20e43abe41d5a87d1d714509dd35a3146",
+      "reviewed_frames": [
+        {
+          "frame_index": 4830,
+          "source_pts": 193.2
+        },
+        {
+          "frame_index": 4832,
+          "source_pts": 193.28
+        },
+        {
+          "frame_index": 4834,
+          "source_pts": 193.36
+        },
+        {
+          "frame_index": 4836,
+          "source_pts": 193.44
+        },
+        {
+          "frame_index": 4838,
+          "source_pts": 193.52
+        },
+        {
+          "frame_index": 4840,
+          "source_pts": 193.6
+        },
+        {
+          "frame_index": 4842,
+          "source_pts": 193.68
+        },
+        {
+          "frame_index": 4844,
+          "source_pts": 193.76
+        },
+        {
+          "frame_index": 4846,
+          "source_pts": 193.84
+        },
+        {
+          "frame_index": 4848,
+          "source_pts": 193.92
+        },
+        {
+          "frame_index": 4850,
+          "source_pts": 194.0
+        },
+        {
+          "frame_index": 4852,
+          "source_pts": 194.08
+        },
+        {
+          "frame_index": 4854,
+          "source_pts": 194.16
+        },
+        {
+          "frame_index": 4856,
+          "source_pts": 194.24
+        },
+        {
+          "frame_index": 4858,
+          "source_pts": 194.32
+        },
+        {
+          "frame_index": 4860,
+          "source_pts": 194.4
+        },
+        {
+          "frame_index": 4862,
+          "source_pts": 194.48
+        },
+        {
+          "frame_index": 4864,
+          "source_pts": 194.56
+        },
+        {
+          "frame_index": 4866,
+          "source_pts": 194.64
+        },
+        {
+          "frame_index": 4868,
+          "source_pts": 194.72
+        },
+        {
+          "frame_index": 4870,
+          "source_pts": 194.8
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/03_end.jpg",
+      "sha256": "a09e2ad511df771edb1940a4830d3cb566f97088a852c83e2d895c9256326d49",
+      "reviewed_frames": [
+        {
+          "frame_index": 5393,
+          "source_pts": 215.72
+        },
+        {
+          "frame_index": 5395,
+          "source_pts": 215.8
+        },
+        {
+          "frame_index": 5397,
+          "source_pts": 215.88
+        },
+        {
+          "frame_index": 5399,
+          "source_pts": 215.96
+        },
+        {
+          "frame_index": 5401,
+          "source_pts": 216.04
+        },
+        {
+          "frame_index": 5403,
+          "source_pts": 216.12
+        },
+        {
+          "frame_index": 5405,
+          "source_pts": 216.2
+        },
+        {
+          "frame_index": 5407,
+          "source_pts": 216.28
+        },
+        {
+          "frame_index": 5409,
+          "source_pts": 216.36
+        },
+        {
+          "frame_index": 5411,
+          "source_pts": 216.44
+        },
+        {
+          "frame_index": 5413,
+          "source_pts": 216.52
+        },
+        {
+          "frame_index": 5415,
+          "source_pts": 216.6
+        },
+        {
+          "frame_index": 5417,
+          "source_pts": 216.68
+        },
+        {
+          "frame_index": 5419,
+          "source_pts": 216.76
+        },
+        {
+          "frame_index": 5421,
+          "source_pts": 216.84
+        },
+        {
+          "frame_index": 5423,
+          "source_pts": 216.92
+        },
+        {
+          "frame_index": 5425,
+          "source_pts": 217.0
+        },
+        {
+          "frame_index": 5427,
+          "source_pts": 217.08
+        },
+        {
+          "frame_index": 5429,
+          "source_pts": 217.16
+        },
+        {
+          "frame_index": 5431,
+          "source_pts": 217.24
+        },
+        {
+          "frame_index": 5433,
+          "source_pts": 217.32
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/04_end.jpg",
+      "sha256": "fff9384310b7aaf139dd1c29a023e77815a51b05575d74b141ad60af11a2088d",
+      "reviewed_frames": [
+        {
+          "frame_index": 6230,
+          "source_pts": 249.2
+        },
+        {
+          "frame_index": 6232,
+          "source_pts": 249.28
+        },
+        {
+          "frame_index": 6234,
+          "source_pts": 249.36
+        },
+        {
+          "frame_index": 6236,
+          "source_pts": 249.44
+        },
+        {
+          "frame_index": 6238,
+          "source_pts": 249.52
+        },
+        {
+          "frame_index": 6240,
+          "source_pts": 249.6
+        },
+        {
+          "frame_index": 6242,
+          "source_pts": 249.68
+        },
+        {
+          "frame_index": 6244,
+          "source_pts": 249.76
+        },
+        {
+          "frame_index": 6246,
+          "source_pts": 249.84
+        },
+        {
+          "frame_index": 6248,
+          "source_pts": 249.92
+        },
+        {
+          "frame_index": 6250,
+          "source_pts": 250.0
+        },
+        {
+          "frame_index": 6252,
+          "source_pts": 250.08
+        },
+        {
+          "frame_index": 6254,
+          "source_pts": 250.16
+        },
+        {
+          "frame_index": 6256,
+          "source_pts": 250.24
+        },
+        {
+          "frame_index": 6258,
+          "source_pts": 250.32
+        },
+        {
+          "frame_index": 6260,
+          "source_pts": 250.4
+        },
+        {
+          "frame_index": 6262,
+          "source_pts": 250.48
+        },
+        {
+          "frame_index": 6264,
+          "source_pts": 250.56
+        },
+        {
+          "frame_index": 6266,
+          "source_pts": 250.64
+        },
+        {
+          "frame_index": 6268,
+          "source_pts": 250.72
+        },
+        {
+          "frame_index": 6270,
+          "source_pts": 250.8
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/05_end.jpg",
+      "sha256": "31fcc49558c4643beab7372d3b854391f0d62238884e2583b7530c36cb9e327b",
+      "reviewed_frames": [
+        {
+          "frame_index": 6680,
+          "source_pts": 267.2
+        },
+        {
+          "frame_index": 6682,
+          "source_pts": 267.28
+        },
+        {
+          "frame_index": 6684,
+          "source_pts": 267.36
+        },
+        {
+          "frame_index": 6686,
+          "source_pts": 267.44
+        },
+        {
+          "frame_index": 6688,
+          "source_pts": 267.52
+        },
+        {
+          "frame_index": 6690,
+          "source_pts": 267.6
+        },
+        {
+          "frame_index": 6692,
+          "source_pts": 267.68
+        },
+        {
+          "frame_index": 6694,
+          "source_pts": 267.76
+        },
+        {
+          "frame_index": 6696,
+          "source_pts": 267.84
+        },
+        {
+          "frame_index": 6698,
+          "source_pts": 267.92
+        },
+        {
+          "frame_index": 6700,
+          "source_pts": 268.0
+        },
+        {
+          "frame_index": 6702,
+          "source_pts": 268.08
+        },
+        {
+          "frame_index": 6704,
+          "source_pts": 268.16
+        },
+        {
+          "frame_index": 6706,
+          "source_pts": 268.24
+        },
+        {
+          "frame_index": 6708,
+          "source_pts": 268.32
+        },
+        {
+          "frame_index": 6710,
+          "source_pts": 268.4
+        },
+        {
+          "frame_index": 6712,
+          "source_pts": 268.48
+        },
+        {
+          "frame_index": 6714,
+          "source_pts": 268.56
+        },
+        {
+          "frame_index": 6716,
+          "source_pts": 268.64
+        },
+        {
+          "frame_index": 6718,
+          "source_pts": 268.72
+        },
+        {
+          "frame_index": 6720,
+          "source_pts": 268.8
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/06_end.jpg",
+      "sha256": "bff4c8bed4c0b81841e26c37d7eb7d93d5a4f08e23d5f174fc30f247899425a2",
+      "reviewed_frames": [
+        {
+          "frame_index": 7130,
+          "source_pts": 285.2
+        },
+        {
+          "frame_index": 7132,
+          "source_pts": 285.28
+        },
+        {
+          "frame_index": 7134,
+          "source_pts": 285.36
+        },
+        {
+          "frame_index": 7136,
+          "source_pts": 285.44
+        },
+        {
+          "frame_index": 7138,
+          "source_pts": 285.52
+        },
+        {
+          "frame_index": 7140,
+          "source_pts": 285.6
+        },
+        {
+          "frame_index": 7142,
+          "source_pts": 285.68
+        },
+        {
+          "frame_index": 7144,
+          "source_pts": 285.76
+        },
+        {
+          "frame_index": 7146,
+          "source_pts": 285.84
+        },
+        {
+          "frame_index": 7148,
+          "source_pts": 285.92
+        },
+        {
+          "frame_index": 7150,
+          "source_pts": 286.0
+        },
+        {
+          "frame_index": 7152,
+          "source_pts": 286.08
+        },
+        {
+          "frame_index": 7154,
+          "source_pts": 286.16
+        },
+        {
+          "frame_index": 7156,
+          "source_pts": 286.24
+        },
+        {
+          "frame_index": 7158,
+          "source_pts": 286.32
+        },
+        {
+          "frame_index": 7160,
+          "source_pts": 286.4
+        },
+        {
+          "frame_index": 7162,
+          "source_pts": 286.48
+        },
+        {
+          "frame_index": 7164,
+          "source_pts": 286.56
+        },
+        {
+          "frame_index": 7166,
+          "source_pts": 286.64
+        },
+        {
+          "frame_index": 7168,
+          "source_pts": 286.72
+        },
+        {
+          "frame_index": 7170,
+          "source_pts": 286.8
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/07_end.jpg",
+      "sha256": "de5f612c1cf4e6e20c191866c53d110badd960dc586c7b0287e883eec179b79e",
+      "reviewed_frames": [
+        {
+          "frame_index": 8010,
+          "source_pts": 320.4
+        },
+        {
+          "frame_index": 8012,
+          "source_pts": 320.48
+        },
+        {
+          "frame_index": 8014,
+          "source_pts": 320.56
+        },
+        {
+          "frame_index": 8016,
+          "source_pts": 320.64
+        },
+        {
+          "frame_index": 8018,
+          "source_pts": 320.72
+        },
+        {
+          "frame_index": 8020,
+          "source_pts": 320.8
+        },
+        {
+          "frame_index": 8022,
+          "source_pts": 320.88
+        },
+        {
+          "frame_index": 8024,
+          "source_pts": 320.96
+        },
+        {
+          "frame_index": 8026,
+          "source_pts": 321.04
+        },
+        {
+          "frame_index": 8028,
+          "source_pts": 321.12
+        },
+        {
+          "frame_index": 8030,
+          "source_pts": 321.2
+        },
+        {
+          "frame_index": 8032,
+          "source_pts": 321.28
+        },
+        {
+          "frame_index": 8034,
+          "source_pts": 321.36
+        },
+        {
+          "frame_index": 8036,
+          "source_pts": 321.44
+        },
+        {
+          "frame_index": 8038,
+          "source_pts": 321.52
+        },
+        {
+          "frame_index": 8040,
+          "source_pts": 321.6
+        },
+        {
+          "frame_index": 8042,
+          "source_pts": 321.68
+        },
+        {
+          "frame_index": 8044,
+          "source_pts": 321.76
+        },
+        {
+          "frame_index": 8046,
+          "source_pts": 321.84
+        },
+        {
+          "frame_index": 8048,
+          "source_pts": 321.92
+        },
+        {
+          "frame_index": 8050,
+          "source_pts": 322.0
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/08_end.jpg",
+      "sha256": "2c160471e80250d22b9e941342aaac9bc97648e75f3ae9022aaee49885508e5a",
+      "reviewed_frames": [
+        {
+          "frame_index": 8585,
+          "source_pts": 343.4
+        },
+        {
+          "frame_index": 8587,
+          "source_pts": 343.48
+        },
+        {
+          "frame_index": 8589,
+          "source_pts": 343.56
+        },
+        {
+          "frame_index": 8591,
+          "source_pts": 343.64
+        },
+        {
+          "frame_index": 8593,
+          "source_pts": 343.72
+        },
+        {
+          "frame_index": 8595,
+          "source_pts": 343.8
+        },
+        {
+          "frame_index": 8597,
+          "source_pts": 343.88
+        },
+        {
+          "frame_index": 8599,
+          "source_pts": 343.96
+        },
+        {
+          "frame_index": 8601,
+          "source_pts": 344.04
+        },
+        {
+          "frame_index": 8603,
+          "source_pts": 344.12
+        },
+        {
+          "frame_index": 8605,
+          "source_pts": 344.2
+        },
+        {
+          "frame_index": 8607,
+          "source_pts": 344.28
+        },
+        {
+          "frame_index": 8609,
+          "source_pts": 344.36
+        },
+        {
+          "frame_index": 8611,
+          "source_pts": 344.44
+        },
+        {
+          "frame_index": 8613,
+          "source_pts": 344.52
+        },
+        {
+          "frame_index": 8615,
+          "source_pts": 344.6
+        },
+        {
+          "frame_index": 8617,
+          "source_pts": 344.68
+        },
+        {
+          "frame_index": 8619,
+          "source_pts": 344.76
+        },
+        {
+          "frame_index": 8621,
+          "source_pts": 344.84
+        },
+        {
+          "frame_index": 8623,
+          "source_pts": 344.92
+        },
+        {
+          "frame_index": 8625,
+          "source_pts": 345.0
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/09_end.jpg",
+      "sha256": "de81e1cbc6595625205639f09f48cad5e63b5e77ae4f1217b4221395a3ded070",
+      "reviewed_frames": [
+        {
+          "frame_index": 9640,
+          "source_pts": 385.6
+        },
+        {
+          "frame_index": 9642,
+          "source_pts": 385.68
+        },
+        {
+          "frame_index": 9644,
+          "source_pts": 385.76
+        },
+        {
+          "frame_index": 9646,
+          "source_pts": 385.84
+        },
+        {
+          "frame_index": 9648,
+          "source_pts": 385.92
+        },
+        {
+          "frame_index": 9650,
+          "source_pts": 386.0
+        },
+        {
+          "frame_index": 9652,
+          "source_pts": 386.08
+        },
+        {
+          "frame_index": 9654,
+          "source_pts": 386.16
+        },
+        {
+          "frame_index": 9656,
+          "source_pts": 386.24
+        },
+        {
+          "frame_index": 9658,
+          "source_pts": 386.32
+        },
+        {
+          "frame_index": 9660,
+          "source_pts": 386.4
+        },
+        {
+          "frame_index": 9662,
+          "source_pts": 386.48
+        },
+        {
+          "frame_index": 9664,
+          "source_pts": 386.56
+        },
+        {
+          "frame_index": 9666,
+          "source_pts": 386.64
+        },
+        {
+          "frame_index": 9668,
+          "source_pts": 386.72
+        },
+        {
+          "frame_index": 9670,
+          "source_pts": 386.8
+        },
+        {
+          "frame_index": 9672,
+          "source_pts": 386.88
+        },
+        {
+          "frame_index": 9674,
+          "source_pts": 386.96
+        },
+        {
+          "frame_index": 9676,
+          "source_pts": 387.04
+        },
+        {
+          "frame_index": 9678,
+          "source_pts": 387.12
+        },
+        {
+          "frame_index": 9680,
+          "source_pts": 387.2
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/10_end.jpg",
+      "sha256": "0a319f63381e4d39f68cc995b11b7f6f036f6439784502cc1c37e43448c600c9",
+      "reviewed_frames": [
+        {
+          "frame_index": 10015,
+          "source_pts": 400.6
+        },
+        {
+          "frame_index": 10017,
+          "source_pts": 400.68
+        },
+        {
+          "frame_index": 10019,
+          "source_pts": 400.76
+        },
+        {
+          "frame_index": 10021,
+          "source_pts": 400.84
+        },
+        {
+          "frame_index": 10023,
+          "source_pts": 400.92
+        },
+        {
+          "frame_index": 10025,
+          "source_pts": 401.0
+        },
+        {
+          "frame_index": 10027,
+          "source_pts": 401.08
+        },
+        {
+          "frame_index": 10029,
+          "source_pts": 401.16
+        },
+        {
+          "frame_index": 10031,
+          "source_pts": 401.24
+        },
+        {
+          "frame_index": 10033,
+          "source_pts": 401.32
+        },
+        {
+          "frame_index": 10035,
+          "source_pts": 401.4
+        },
+        {
+          "frame_index": 10037,
+          "source_pts": 401.48
+        },
+        {
+          "frame_index": 10039,
+          "source_pts": 401.56
+        },
+        {
+          "frame_index": 10041,
+          "source_pts": 401.64
+        },
+        {
+          "frame_index": 10043,
+          "source_pts": 401.72
+        },
+        {
+          "frame_index": 10045,
+          "source_pts": 401.8
+        },
+        {
+          "frame_index": 10047,
+          "source_pts": 401.88
+        },
+        {
+          "frame_index": 10049,
+          "source_pts": 401.96
+        },
+        {
+          "frame_index": 10051,
+          "source_pts": 402.04
+        },
+        {
+          "frame_index": 10053,
+          "source_pts": 402.12
+        },
+        {
+          "frame_index": 10055,
+          "source_pts": 402.2
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/11_end.jpg",
+      "sha256": "b331da3b43958983f148464574c881b13b79939c41100523177d50a1f4c72791",
+      "reviewed_frames": [
+        {
+          "frame_index": 10510,
+          "source_pts": 420.4
+        },
+        {
+          "frame_index": 10512,
+          "source_pts": 420.48
+        },
+        {
+          "frame_index": 10514,
+          "source_pts": 420.56
+        },
+        {
+          "frame_index": 10516,
+          "source_pts": 420.64
+        },
+        {
+          "frame_index": 10518,
+          "source_pts": 420.72
+        },
+        {
+          "frame_index": 10520,
+          "source_pts": 420.8
+        },
+        {
+          "frame_index": 10522,
+          "source_pts": 420.88
+        },
+        {
+          "frame_index": 10524,
+          "source_pts": 420.96
+        },
+        {
+          "frame_index": 10526,
+          "source_pts": 421.04
+        },
+        {
+          "frame_index": 10528,
+          "source_pts": 421.12
+        },
+        {
+          "frame_index": 10530,
+          "source_pts": 421.2
+        },
+        {
+          "frame_index": 10532,
+          "source_pts": 421.28
+        },
+        {
+          "frame_index": 10534,
+          "source_pts": 421.36
+        },
+        {
+          "frame_index": 10536,
+          "source_pts": 421.44
+        },
+        {
+          "frame_index": 10538,
+          "source_pts": 421.52
+        },
+        {
+          "frame_index": 10540,
+          "source_pts": 421.6
+        },
+        {
+          "frame_index": 10542,
+          "source_pts": 421.68
+        },
+        {
+          "frame_index": 10544,
+          "source_pts": 421.76
+        },
+        {
+          "frame_index": 10546,
+          "source_pts": 421.84
+        },
+        {
+          "frame_index": 10548,
+          "source_pts": 421.92
+        },
+        {
+          "frame_index": 10550,
+          "source_pts": 422.0
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/12_end.jpg",
+      "sha256": "25e3f467898d153be2416df5d37645ad4f2ec82be2ba9f34752a42337d48145e",
+      "reviewed_frames": [
+        {
+          "frame_index": 11125,
+          "source_pts": 445.0
+        },
+        {
+          "frame_index": 11127,
+          "source_pts": 445.08
+        },
+        {
+          "frame_index": 11129,
+          "source_pts": 445.16
+        },
+        {
+          "frame_index": 11131,
+          "source_pts": 445.24
+        },
+        {
+          "frame_index": 11133,
+          "source_pts": 445.32
+        },
+        {
+          "frame_index": 11135,
+          "source_pts": 445.4
+        },
+        {
+          "frame_index": 11137,
+          "source_pts": 445.48
+        },
+        {
+          "frame_index": 11139,
+          "source_pts": 445.56
+        },
+        {
+          "frame_index": 11141,
+          "source_pts": 445.64
+        },
+        {
+          "frame_index": 11143,
+          "source_pts": 445.72
+        },
+        {
+          "frame_index": 11145,
+          "source_pts": 445.8
+        },
+        {
+          "frame_index": 11147,
+          "source_pts": 445.88
+        },
+        {
+          "frame_index": 11149,
+          "source_pts": 445.96
+        },
+        {
+          "frame_index": 11151,
+          "source_pts": 446.04
+        },
+        {
+          "frame_index": 11153,
+          "source_pts": 446.12
+        },
+        {
+          "frame_index": 11155,
+          "source_pts": 446.2
+        },
+        {
+          "frame_index": 11157,
+          "source_pts": 446.28
+        },
+        {
+          "frame_index": 11159,
+          "source_pts": 446.36
+        },
+        {
+          "frame_index": 11161,
+          "source_pts": 446.44
+        },
+        {
+          "frame_index": 11163,
+          "source_pts": 446.52
+        },
+        {
+          "frame_index": 11165,
+          "source_pts": 446.6
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/blue_handling_245.jpg",
+      "sha256": "f6d01f758c9ca76da250f998d4f0053fccc60696eaf0843dea4efb5674db0a72",
+      "reviewed_frames": [
+        {
+          "frame_index": 6280,
+          "source_pts": 251.2
+        },
+        {
+          "frame_index": 6282,
+          "source_pts": 251.28
+        },
+        {
+          "frame_index": 6284,
+          "source_pts": 251.36
+        },
+        {
+          "frame_index": 6286,
+          "source_pts": 251.44
+        },
+        {
+          "frame_index": 6288,
+          "source_pts": 251.52
+        },
+        {
+          "frame_index": 6290,
+          "source_pts": 251.6
+        },
+        {
+          "frame_index": 6292,
+          "source_pts": 251.68
+        },
+        {
+          "frame_index": 6294,
+          "source_pts": 251.76
+        },
+        {
+          "frame_index": 6296,
+          "source_pts": 251.84
+        },
+        {
+          "frame_index": 6298,
+          "source_pts": 251.92
+        },
+        {
+          "frame_index": 6300,
+          "source_pts": 252.0
+        },
+        {
+          "frame_index": 6302,
+          "source_pts": 252.08
+        },
+        {
+          "frame_index": 6304,
+          "source_pts": 252.16
+        },
+        {
+          "frame_index": 6306,
+          "source_pts": 252.24
+        },
+        {
+          "frame_index": 6308,
+          "source_pts": 252.32
+        },
+        {
+          "frame_index": 6310,
+          "source_pts": 252.4
+        },
+        {
+          "frame_index": 6312,
+          "source_pts": 252.48
+        },
+        {
+          "frame_index": 6314,
+          "source_pts": 252.56
+        },
+        {
+          "frame_index": 6316,
+          "source_pts": 252.64
+        },
+        {
+          "frame_index": 6318,
+          "source_pts": 252.72
+        },
+        {
+          "frame_index": 6320,
+          "source_pts": 252.8
+        },
+        {
+          "frame_index": 6322,
+          "source_pts": 252.88
+        },
+        {
+          "frame_index": 6324,
+          "source_pts": 252.96
+        },
+        {
+          "frame_index": 6326,
+          "source_pts": 253.04
+        },
+        {
+          "frame_index": 6328,
+          "source_pts": 253.12
+        },
+        {
+          "frame_index": 6330,
+          "source_pts": 253.2
+        },
+        {
+          "frame_index": 6332,
+          "source_pts": 253.28
+        },
+        {
+          "frame_index": 6334,
+          "source_pts": 253.36
+        },
+        {
+          "frame_index": 6336,
+          "source_pts": 253.44
+        },
+        {
+          "frame_index": 6338,
+          "source_pts": 253.52
+        },
+        {
+          "frame_index": 6340,
+          "source_pts": 253.6
+        },
+        {
+          "frame_index": 6342,
+          "source_pts": 253.68
+        },
+        {
+          "frame_index": 6344,
+          "source_pts": 253.76
+        },
+        {
+          "frame_index": 6346,
+          "source_pts": 253.84
+        },
+        {
+          "frame_index": 6348,
+          "source_pts": 253.92
+        },
+        {
+          "frame_index": 6350,
+          "source_pts": 254.0
+        },
+        {
+          "frame_index": 6352,
+          "source_pts": 254.08
+        },
+        {
+          "frame_index": 6354,
+          "source_pts": 254.16
+        },
+        {
+          "frame_index": 6356,
+          "source_pts": 254.24
+        },
+        {
+          "frame_index": 6358,
+          "source_pts": 254.32
+        },
+        {
+          "frame_index": 6360,
+          "source_pts": 254.4
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/black_handling_280.jpg",
+      "sha256": "11fc0c8294822292aeffe448688c94351f776aa65f88e5ba42cd9ba1c7b2ff5d",
+      "reviewed_frames": [
+        {
+          "frame_index": 7160,
+          "source_pts": 286.4
+        },
+        {
+          "frame_index": 7162,
+          "source_pts": 286.48
+        },
+        {
+          "frame_index": 7164,
+          "source_pts": 286.56
+        },
+        {
+          "frame_index": 7166,
+          "source_pts": 286.64
+        },
+        {
+          "frame_index": 7168,
+          "source_pts": 286.72
+        },
+        {
+          "frame_index": 7170,
+          "source_pts": 286.8
+        },
+        {
+          "frame_index": 7172,
+          "source_pts": 286.88
+        },
+        {
+          "frame_index": 7174,
+          "source_pts": 286.96
+        },
+        {
+          "frame_index": 7176,
+          "source_pts": 287.04
+        },
+        {
+          "frame_index": 7178,
+          "source_pts": 287.12
+        },
+        {
+          "frame_index": 7180,
+          "source_pts": 287.2
+        },
+        {
+          "frame_index": 7182,
+          "source_pts": 287.28
+        },
+        {
+          "frame_index": 7184,
+          "source_pts": 287.36
+        },
+        {
+          "frame_index": 7186,
+          "source_pts": 287.44
+        },
+        {
+          "frame_index": 7188,
+          "source_pts": 287.52
+        },
+        {
+          "frame_index": 7190,
+          "source_pts": 287.6
+        },
+        {
+          "frame_index": 7192,
+          "source_pts": 287.68
+        },
+        {
+          "frame_index": 7194,
+          "source_pts": 287.76
+        },
+        {
+          "frame_index": 7196,
+          "source_pts": 287.84
+        },
+        {
+          "frame_index": 7198,
+          "source_pts": 287.92
+        },
+        {
+          "frame_index": 7200,
+          "source_pts": 288.0
+        },
+        {
+          "frame_index": 7202,
+          "source_pts": 288.08
+        },
+        {
+          "frame_index": 7204,
+          "source_pts": 288.16
+        },
+        {
+          "frame_index": 7206,
+          "source_pts": 288.24
+        },
+        {
+          "frame_index": 7208,
+          "source_pts": 288.32
+        },
+        {
+          "frame_index": 7210,
+          "source_pts": 288.4
+        },
+        {
+          "frame_index": 7212,
+          "source_pts": 288.48
+        },
+        {
+          "frame_index": 7214,
+          "source_pts": 288.56
+        },
+        {
+          "frame_index": 7216,
+          "source_pts": 288.64
+        },
+        {
+          "frame_index": 7218,
+          "source_pts": 288.72
+        },
+        {
+          "frame_index": 7220,
+          "source_pts": 288.8
+        },
+        {
+          "frame_index": 7222,
+          "source_pts": 288.88
+        },
+        {
+          "frame_index": 7224,
+          "source_pts": 288.96
+        },
+        {
+          "frame_index": 7226,
+          "source_pts": 289.04
+        },
+        {
+          "frame_index": 7228,
+          "source_pts": 289.12
+        },
+        {
+          "frame_index": 7230,
+          "source_pts": 289.2
+        },
+        {
+          "frame_index": 7232,
+          "source_pts": 289.28
+        },
+        {
+          "frame_index": 7234,
+          "source_pts": 289.36
+        },
+        {
+          "frame_index": 7236,
+          "source_pts": 289.44
+        },
+        {
+          "frame_index": 7238,
+          "source_pts": 289.52
+        },
+        {
+          "frame_index": 7240,
+          "source_pts": 289.6
+        },
+        {
+          "frame_index": 7242,
+          "source_pts": 289.68
+        },
+        {
+          "frame_index": 7244,
+          "source_pts": 289.76
+        },
+        {
+          "frame_index": 7246,
+          "source_pts": 289.84
+        },
+        {
+          "frame_index": 7248,
+          "source_pts": 289.92
+        },
+        {
+          "frame_index": 7250,
+          "source_pts": 290.0
+        },
+        {
+          "frame_index": 7252,
+          "source_pts": 290.08
+        },
+        {
+          "frame_index": 7254,
+          "source_pts": 290.16
+        },
+        {
+          "frame_index": 7256,
+          "source_pts": 290.24
+        },
+        {
+          "frame_index": 7258,
+          "source_pts": 290.32
+        },
+        {
+          "frame_index": 7260,
+          "source_pts": 290.4
+        },
+        {
+          "frame_index": 7262,
+          "source_pts": 290.48
+        },
+        {
+          "frame_index": 7264,
+          "source_pts": 290.56
+        },
+        {
+          "frame_index": 7266,
+          "source_pts": 290.64
+        },
+        {
+          "frame_index": 7268,
+          "source_pts": 290.72
+        },
+        {
+          "frame_index": 7270,
+          "source_pts": 290.8
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/blue_handling_396.jpg",
+      "sha256": "56f52296eaec9998eb0bd9e1db2c43b2e0703ac0bb7d0072c6b40b694d5bc063",
+      "reviewed_frames": [
+        {
+          "frame_index": 10070,
+          "source_pts": 402.8
+        },
+        {
+          "frame_index": 10072,
+          "source_pts": 402.88
+        },
+        {
+          "frame_index": 10074,
+          "source_pts": 402.96
+        },
+        {
+          "frame_index": 10076,
+          "source_pts": 403.04
+        },
+        {
+          "frame_index": 10078,
+          "source_pts": 403.12
+        },
+        {
+          "frame_index": 10080,
+          "source_pts": 403.2
+        },
+        {
+          "frame_index": 10082,
+          "source_pts": 403.28
+        },
+        {
+          "frame_index": 10084,
+          "source_pts": 403.36
+        },
+        {
+          "frame_index": 10086,
+          "source_pts": 403.44
+        },
+        {
+          "frame_index": 10088,
+          "source_pts": 403.52
+        },
+        {
+          "frame_index": 10090,
+          "source_pts": 403.6
+        },
+        {
+          "frame_index": 10092,
+          "source_pts": 403.68
+        },
+        {
+          "frame_index": 10094,
+          "source_pts": 403.76
+        },
+        {
+          "frame_index": 10096,
+          "source_pts": 403.84
+        },
+        {
+          "frame_index": 10098,
+          "source_pts": 403.92
+        },
+        {
+          "frame_index": 10100,
+          "source_pts": 404.0
+        },
+        {
+          "frame_index": 10102,
+          "source_pts": 404.08
+        },
+        {
+          "frame_index": 10104,
+          "source_pts": 404.16
+        },
+        {
+          "frame_index": 10106,
+          "source_pts": 404.24
+        },
+        {
+          "frame_index": 10108,
+          "source_pts": 404.32
+        },
+        {
+          "frame_index": 10110,
+          "source_pts": 404.4
+        },
+        {
+          "frame_index": 10112,
+          "source_pts": 404.48
+        },
+        {
+          "frame_index": 10114,
+          "source_pts": 404.56
+        },
+        {
+          "frame_index": 10116,
+          "source_pts": 404.64
+        },
+        {
+          "frame_index": 10118,
+          "source_pts": 404.72
+        },
+        {
+          "frame_index": 10120,
+          "source_pts": 404.8
+        },
+        {
+          "frame_index": 10122,
+          "source_pts": 404.88
+        },
+        {
+          "frame_index": 10124,
+          "source_pts": 404.96
+        },
+        {
+          "frame_index": 10126,
+          "source_pts": 405.04
+        },
+        {
+          "frame_index": 10128,
+          "source_pts": 405.12
+        },
+        {
+          "frame_index": 10130,
+          "source_pts": 405.2
+        },
+        {
+          "frame_index": 10132,
+          "source_pts": 405.28
+        },
+        {
+          "frame_index": 10134,
+          "source_pts": 405.36
+        },
+        {
+          "frame_index": 10136,
+          "source_pts": 405.44
+        },
+        {
+          "frame_index": 10138,
+          "source_pts": 405.52
+        },
+        {
+          "frame_index": 10140,
+          "source_pts": 405.6
+        },
+        {
+          "frame_index": 10142,
+          "source_pts": 405.68
+        },
+        {
+          "frame_index": 10144,
+          "source_pts": 405.76
+        },
+        {
+          "frame_index": 10146,
+          "source_pts": 405.84
+        },
+        {
+          "frame_index": 10148,
+          "source_pts": 405.92
+        },
+        {
+          "frame_index": 10150,
+          "source_pts": 406.0
+        },
+        {
+          "frame_index": 10152,
+          "source_pts": 406.08
+        },
+        {
+          "frame_index": 10154,
+          "source_pts": 406.16
+        },
+        {
+          "frame_index": 10156,
+          "source_pts": 406.24
+        },
+        {
+          "frame_index": 10158,
+          "source_pts": 406.32
+        },
+        {
+          "frame_index": 10160,
+          "source_pts": 406.4
+        },
+        {
+          "frame_index": 10162,
+          "source_pts": 406.48
+        },
+        {
+          "frame_index": 10164,
+          "source_pts": 406.56
+        },
+        {
+          "frame_index": 10166,
+          "source_pts": 406.64
+        },
+        {
+          "frame_index": 10168,
+          "source_pts": 406.72
+        },
+        {
+          "frame_index": 10170,
+          "source_pts": 406.8
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/pink_handling_441.jpg",
+      "sha256": "be495cf74ac2bbba5bd5281abcc40031df7ec237b0089804e12f396662a3298e",
+      "reviewed_frames": [
+        {
+          "frame_index": 11160,
+          "source_pts": 446.4
+        },
+        {
+          "frame_index": 11162,
+          "source_pts": 446.48
+        },
+        {
+          "frame_index": 11164,
+          "source_pts": 446.56
+        },
+        {
+          "frame_index": 11166,
+          "source_pts": 446.64
+        },
+        {
+          "frame_index": 11168,
+          "source_pts": 446.72
+        },
+        {
+          "frame_index": 11170,
+          "source_pts": 446.8
+        },
+        {
+          "frame_index": 11172,
+          "source_pts": 446.88
+        },
+        {
+          "frame_index": 11174,
+          "source_pts": 446.96
+        },
+        {
+          "frame_index": 11176,
+          "source_pts": 447.04
+        },
+        {
+          "frame_index": 11178,
+          "source_pts": 447.12
+        },
+        {
+          "frame_index": 11180,
+          "source_pts": 447.2
+        },
+        {
+          "frame_index": 11182,
+          "source_pts": 447.28
+        },
+        {
+          "frame_index": 11184,
+          "source_pts": 447.36
+        },
+        {
+          "frame_index": 11186,
+          "source_pts": 447.44
+        },
+        {
+          "frame_index": 11188,
+          "source_pts": 447.52
+        },
+        {
+          "frame_index": 11190,
+          "source_pts": 447.6
+        },
+        {
+          "frame_index": 11192,
+          "source_pts": 447.68
+        },
+        {
+          "frame_index": 11194,
+          "source_pts": 447.76
+        },
+        {
+          "frame_index": 11196,
+          "source_pts": 447.84
+        },
+        {
+          "frame_index": 11198,
+          "source_pts": 447.92
+        },
+        {
+          "frame_index": 11200,
+          "source_pts": 448.0
+        },
+        {
+          "frame_index": 11202,
+          "source_pts": 448.08
+        },
+        {
+          "frame_index": 11204,
+          "source_pts": 448.16
+        },
+        {
+          "frame_index": 11206,
+          "source_pts": 448.24
+        },
+        {
+          "frame_index": 11208,
+          "source_pts": 448.32
+        },
+        {
+          "frame_index": 11210,
+          "source_pts": 448.4
+        },
+        {
+          "frame_index": 11212,
+          "source_pts": 448.48
+        },
+        {
+          "frame_index": 11214,
+          "source_pts": 448.56
+        },
+        {
+          "frame_index": 11216,
+          "source_pts": 448.64
+        },
+        {
+          "frame_index": 11218,
+          "source_pts": 448.72
+        },
+        {
+          "frame_index": 11220,
+          "source_pts": 448.8
+        },
+        {
+          "frame_index": 11222,
+          "source_pts": 448.88
+        },
+        {
+          "frame_index": 11224,
+          "source_pts": 448.96
+        },
+        {
+          "frame_index": 11226,
+          "source_pts": 449.04
+        },
+        {
+          "frame_index": 11228,
+          "source_pts": 449.12
+        },
+        {
+          "frame_index": 11230,
+          "source_pts": 449.2
+        },
+        {
+          "frame_index": 11232,
+          "source_pts": 449.28
+        },
+        {
+          "frame_index": 11234,
+          "source_pts": 449.36
+        },
+        {
+          "frame_index": 11236,
+          "source_pts": 449.44
+        },
+        {
+          "frame_index": 11238,
+          "source_pts": 449.52
+        },
+        {
+          "frame_index": 11240,
+          "source_pts": 449.6
+        },
+        {
+          "frame_index": 11242,
+          "source_pts": 449.68
+        },
+        {
+          "frame_index": 11244,
+          "source_pts": 449.76
+        },
+        {
+          "frame_index": 11246,
+          "source_pts": 449.84
+        },
+        {
+          "frame_index": 11248,
+          "source_pts": 449.92
+        },
+        {
+          "frame_index": 11250,
+          "source_pts": 450.0
+        },
+        {
+          "frame_index": 11252,
+          "source_pts": 450.08
+        },
+        {
+          "frame_index": 11254,
+          "source_pts": 450.16
+        },
+        {
+          "frame_index": 11256,
+          "source_pts": 450.24
+        },
+        {
+          "frame_index": 11258,
+          "source_pts": 450.32
+        },
+        {
+          "frame_index": 11260,
+          "source_pts": 450.4
+        },
+        {
+          "frame_index": 11262,
+          "source_pts": 450.48
+        },
+        {
+          "frame_index": 11264,
+          "source_pts": 450.56
+        },
+        {
+          "frame_index": 11266,
+          "source_pts": 450.64
+        },
+        {
+          "frame_index": 11268,
+          "source_pts": 450.72
+        },
+        {
+          "frame_index": 11270,
+          "source_pts": 450.8
+        },
+        {
+          "frame_index": 11272,
+          "source_pts": 450.88
+        },
+        {
+          "frame_index": 11274,
+          "source_pts": 450.96
+        },
+        {
+          "frame_index": 11276,
+          "source_pts": 451.04
+        },
+        {
+          "frame_index": 11278,
+          "source_pts": 451.12
+        },
+        {
+          "frame_index": 11280,
+          "source_pts": 451.2
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/red_replay_315.jpg",
+      "sha256": "59e4d2f6e4f4b4dde5816edfb499fb30ebb4178f2eef14adb07e865baaebd385",
+      "reviewed_frames": [
+        {
+          "frame_index": 8125,
+          "source_pts": 325.0
+        },
+        {
+          "frame_index": 8128,
+          "source_pts": 325.12
+        },
+        {
+          "frame_index": 8131,
+          "source_pts": 325.24
+        },
+        {
+          "frame_index": 8134,
+          "source_pts": 325.36
+        },
+        {
+          "frame_index": 8137,
+          "source_pts": 325.48
+        },
+        {
+          "frame_index": 8140,
+          "source_pts": 325.6
+        },
+        {
+          "frame_index": 8143,
+          "source_pts": 325.72
+        },
+        {
+          "frame_index": 8146,
+          "source_pts": 325.84
+        },
+        {
+          "frame_index": 8149,
+          "source_pts": 325.96
+        },
+        {
+          "frame_index": 8152,
+          "source_pts": 326.08
+        },
+        {
+          "frame_index": 8155,
+          "source_pts": 326.2
+        },
+        {
+          "frame_index": 8158,
+          "source_pts": 326.32
+        },
+        {
+          "frame_index": 8161,
+          "source_pts": 326.44
+        },
+        {
+          "frame_index": 8164,
+          "source_pts": 326.56
+        },
+        {
+          "frame_index": 8167,
+          "source_pts": 326.68
+        },
+        {
+          "frame_index": 8170,
+          "source_pts": 326.8
+        },
+        {
+          "frame_index": 8173,
+          "source_pts": 326.92
+        },
+        {
+          "frame_index": 8176,
+          "source_pts": 327.04
+        },
+        {
+          "frame_index": 8179,
+          "source_pts": 327.16
+        },
+        {
+          "frame_index": 8182,
+          "source_pts": 327.28
+        },
+        {
+          "frame_index": 8185,
+          "source_pts": 327.4
+        },
+        {
+          "frame_index": 8188,
+          "source_pts": 327.52
+        },
+        {
+          "frame_index": 8191,
+          "source_pts": 327.64
+        },
+        {
+          "frame_index": 8194,
+          "source_pts": 327.76
+        },
+        {
+          "frame_index": 8197,
+          "source_pts": 327.88
+        },
+        {
+          "frame_index": 8200,
+          "source_pts": 328.0
+        },
+        {
+          "frame_index": 8203,
+          "source_pts": 328.12
+        },
+        {
+          "frame_index": 8206,
+          "source_pts": 328.24
+        },
+        {
+          "frame_index": 8209,
+          "source_pts": 328.36
+        },
+        {
+          "frame_index": 8212,
+          "source_pts": 328.48
+        },
+        {
+          "frame_index": 8215,
+          "source_pts": 328.6
+        },
+        {
+          "frame_index": 8218,
+          "source_pts": 328.72
+        },
+        {
+          "frame_index": 8221,
+          "source_pts": 328.84
+        },
+        {
+          "frame_index": 8224,
+          "source_pts": 328.96
+        },
+        {
+          "frame_index": 8227,
+          "source_pts": 329.08
+        },
+        {
+          "frame_index": 8230,
+          "source_pts": 329.2
+        },
+        {
+          "frame_index": 8233,
+          "source_pts": 329.32
+        },
+        {
+          "frame_index": 8236,
+          "source_pts": 329.44
+        },
+        {
+          "frame_index": 8239,
+          "source_pts": 329.56
+        },
+        {
+          "frame_index": 8242,
+          "source_pts": 329.68
+        },
+        {
+          "frame_index": 8245,
+          "source_pts": 329.8
+        },
+        {
+          "frame_index": 8248,
+          "source_pts": 329.92
+        },
+        {
+          "frame_index": 8251,
+          "source_pts": 330.04
+        },
+        {
+          "frame_index": 8254,
+          "source_pts": 330.16
+        },
+        {
+          "frame_index": 8257,
+          "source_pts": 330.28
+        },
+        {
+          "frame_index": 8260,
+          "source_pts": 330.4
+        },
+        {
+          "frame_index": 8263,
+          "source_pts": 330.52
+        },
+        {
+          "frame_index": 8266,
+          "source_pts": 330.64
+        },
+        {
+          "frame_index": 8269,
+          "source_pts": 330.76
+        },
+        {
+          "frame_index": 8272,
+          "source_pts": 330.88
+        },
+        {
+          "frame_index": 8275,
+          "source_pts": 331.0
+        },
+        {
+          "frame_index": 8278,
+          "source_pts": 331.12
+        },
+        {
+          "frame_index": 8281,
+          "source_pts": 331.24
+        },
+        {
+          "frame_index": 8284,
+          "source_pts": 331.36
+        },
+        {
+          "frame_index": 8287,
+          "source_pts": 331.48
+        },
+        {
+          "frame_index": 8290,
+          "source_pts": 331.6
+        },
+        {
+          "frame_index": 8293,
+          "source_pts": 331.72
+        },
+        {
+          "frame_index": 8296,
+          "source_pts": 331.84
+        },
+        {
+          "frame_index": 8299,
+          "source_pts": 331.96
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/black_replay_338.jpg",
+      "sha256": "4ef9599213114480daad87a7ec2a74d1cc5e8cf566ae821869234cae27ab25be",
+      "reviewed_frames": [
+        {
+          "frame_index": 8725,
+          "source_pts": 349.0
+        },
+        {
+          "frame_index": 8728,
+          "source_pts": 349.12
+        },
+        {
+          "frame_index": 8731,
+          "source_pts": 349.24
+        },
+        {
+          "frame_index": 8734,
+          "source_pts": 349.36
+        },
+        {
+          "frame_index": 8737,
+          "source_pts": 349.48
+        },
+        {
+          "frame_index": 8740,
+          "source_pts": 349.6
+        },
+        {
+          "frame_index": 8743,
+          "source_pts": 349.72
+        },
+        {
+          "frame_index": 8746,
+          "source_pts": 349.84
+        },
+        {
+          "frame_index": 8749,
+          "source_pts": 349.96
+        },
+        {
+          "frame_index": 8752,
+          "source_pts": 350.08
+        },
+        {
+          "frame_index": 8755,
+          "source_pts": 350.2
+        },
+        {
+          "frame_index": 8758,
+          "source_pts": 350.32
+        },
+        {
+          "frame_index": 8761,
+          "source_pts": 350.44
+        },
+        {
+          "frame_index": 8764,
+          "source_pts": 350.56
+        },
+        {
+          "frame_index": 8767,
+          "source_pts": 350.68
+        },
+        {
+          "frame_index": 8770,
+          "source_pts": 350.8
+        },
+        {
+          "frame_index": 8773,
+          "source_pts": 350.92
+        },
+        {
+          "frame_index": 8776,
+          "source_pts": 351.04
+        },
+        {
+          "frame_index": 8779,
+          "source_pts": 351.16
+        },
+        {
+          "frame_index": 8782,
+          "source_pts": 351.28
+        },
+        {
+          "frame_index": 8785,
+          "source_pts": 351.4
+        },
+        {
+          "frame_index": 8788,
+          "source_pts": 351.52
+        },
+        {
+          "frame_index": 8791,
+          "source_pts": 351.64
+        },
+        {
+          "frame_index": 8794,
+          "source_pts": 351.76
+        },
+        {
+          "frame_index": 8797,
+          "source_pts": 351.88
+        },
+        {
+          "frame_index": 8800,
+          "source_pts": 352.0
+        },
+        {
+          "frame_index": 8803,
+          "source_pts": 352.12
+        },
+        {
+          "frame_index": 8806,
+          "source_pts": 352.24
+        },
+        {
+          "frame_index": 8809,
+          "source_pts": 352.36
+        },
+        {
+          "frame_index": 8812,
+          "source_pts": 352.48
+        },
+        {
+          "frame_index": 8815,
+          "source_pts": 352.6
+        },
+        {
+          "frame_index": 8818,
+          "source_pts": 352.72
+        },
+        {
+          "frame_index": 8821,
+          "source_pts": 352.84
+        },
+        {
+          "frame_index": 8824,
+          "source_pts": 352.96
+        },
+        {
+          "frame_index": 8827,
+          "source_pts": 353.08
+        },
+        {
+          "frame_index": 8830,
+          "source_pts": 353.2
+        },
+        {
+          "frame_index": 8833,
+          "source_pts": 353.32
+        },
+        {
+          "frame_index": 8836,
+          "source_pts": 353.44
+        },
+        {
+          "frame_index": 8839,
+          "source_pts": 353.56
+        },
+        {
+          "frame_index": 8842,
+          "source_pts": 353.68
+        },
+        {
+          "frame_index": 8845,
+          "source_pts": 353.8
+        },
+        {
+          "frame_index": 8848,
+          "source_pts": 353.92
+        },
+        {
+          "frame_index": 8851,
+          "source_pts": 354.04
+        },
+        {
+          "frame_index": 8854,
+          "source_pts": 354.16
+        },
+        {
+          "frame_index": 8857,
+          "source_pts": 354.28
+        },
+        {
+          "frame_index": 8860,
+          "source_pts": 354.4
+        },
+        {
+          "frame_index": 8863,
+          "source_pts": 354.52
+        },
+        {
+          "frame_index": 8866,
+          "source_pts": 354.64
+        },
+        {
+          "frame_index": 8869,
+          "source_pts": 354.76
+        },
+        {
+          "frame_index": 8872,
+          "source_pts": 354.88
+        },
+        {
+          "frame_index": 8875,
+          "source_pts": 355.0
+        },
+        {
+          "frame_index": 8878,
+          "source_pts": 355.12
+        },
+        {
+          "frame_index": 8881,
+          "source_pts": 355.24
+        },
+        {
+          "frame_index": 8884,
+          "source_pts": 355.36
+        },
+        {
+          "frame_index": 8887,
+          "source_pts": 355.48
+        },
+        {
+          "frame_index": 8890,
+          "source_pts": 355.6
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_native/pink_departure_timing.jpg",
+      "sha256": "d578d3d5fb8e2c9d7dbe97c7f4187f1eeeb3d801d44251c79e4ec09b58d161a2",
+      "reviewed_frames": [
+        {
+          "frame_index": 11042,
+          "source_pts": 441.68
+        },
+        {
+          "frame_index": 11044,
+          "source_pts": 441.76
+        },
+        {
+          "frame_index": 11046,
+          "source_pts": 441.84
+        },
+        {
+          "frame_index": 11048,
+          "source_pts": 441.92
+        },
+        {
+          "frame_index": 11050,
+          "source_pts": 442.0
+        },
+        {
+          "frame_index": 11052,
+          "source_pts": 442.08
+        },
+        {
+          "frame_index": 11054,
+          "source_pts": 442.16
+        },
+        {
+          "frame_index": 11056,
+          "source_pts": 442.24
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_final/03_native_contact.jpg",
+      "sha256": "b5889218625d6fc9837e8dd9f05c52a33247fcd65606b9cf7b7d4b4b2e013137",
+      "reviewed_frames": [
+        {
+          "frame_index": 5270,
+          "source_pts": 210.8
+        },
+        {
+          "frame_index": 5271,
+          "source_pts": 210.84
+        },
+        {
+          "frame_index": 5272,
+          "source_pts": 210.88
+        },
+        {
+          "frame_index": 5273,
+          "source_pts": 210.92
+        },
+        {
+          "frame_index": 5274,
+          "source_pts": 210.96
+        },
+        {
+          "frame_index": 5275,
+          "source_pts": 211.0
+        },
+        {
+          "frame_index": 5276,
+          "source_pts": 211.04
+        },
+        {
+          "frame_index": 5277,
+          "source_pts": 211.08
+        },
+        {
+          "frame_index": 5278,
+          "source_pts": 211.12
+        },
+        {
+          "frame_index": 5279,
+          "source_pts": 211.16
+        },
+        {
+          "frame_index": 5280,
+          "source_pts": 211.2
+        },
+        {
+          "frame_index": 5281,
+          "source_pts": 211.24
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_final/07_native_contact.jpg",
+      "sha256": "0ff0db7216a5841088ea2a5f4718095673fce89297c47eb1aae3e6950e7def08",
+      "reviewed_frames": [
+        {
+          "frame_index": 7879,
+          "source_pts": 315.16
+        },
+        {
+          "frame_index": 7880,
+          "source_pts": 315.2
+        },
+        {
+          "frame_index": 7881,
+          "source_pts": 315.24
+        },
+        {
+          "frame_index": 7882,
+          "source_pts": 315.28
+        },
+        {
+          "frame_index": 7883,
+          "source_pts": 315.32
+        },
+        {
+          "frame_index": 7884,
+          "source_pts": 315.36
+        },
+        {
+          "frame_index": 7885,
+          "source_pts": 315.4
+        },
+        {
+          "frame_index": 7886,
+          "source_pts": 315.44
+        },
+        {
+          "frame_index": 7887,
+          "source_pts": 315.48
+        },
+        {
+          "frame_index": 7888,
+          "source_pts": 315.52
+        },
+        {
+          "frame_index": 7889,
+          "source_pts": 315.56
+        },
+        {
+          "frame_index": 7890,
+          "source_pts": 315.6
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_final/08_native_contact.jpg",
+      "sha256": "338dbad435d15df199e35e6014b44f50c024ba582a786481d8413ca648c4db06",
+      "reviewed_frames": [
+        {
+          "frame_index": 8457,
+          "source_pts": 338.28
+        },
+        {
+          "frame_index": 8458,
+          "source_pts": 338.32
+        },
+        {
+          "frame_index": 8459,
+          "source_pts": 338.36
+        },
+        {
+          "frame_index": 8460,
+          "source_pts": 338.4
+        },
+        {
+          "frame_index": 8461,
+          "source_pts": 338.44
+        },
+        {
+          "frame_index": 8462,
+          "source_pts": 338.48
+        },
+        {
+          "frame_index": 8463,
+          "source_pts": 338.52
+        },
+        {
+          "frame_index": 8464,
+          "source_pts": 338.56
+        },
+        {
+          "frame_index": 8465,
+          "source_pts": 338.6
+        },
+        {
+          "frame_index": 8466,
+          "source_pts": 338.64
+        },
+        {
+          "frame_index": 8467,
+          "source_pts": 338.68
+        },
+        {
+          "frame_index": 8468,
+          "source_pts": 338.72
+        },
+        {
+          "frame_index": 8469,
+          "source_pts": 338.76
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_final/11_native_contact.jpg",
+      "sha256": "6e0f6d35ef6f49cbf4096c58e78f39087dad674cebc2923be781ff3093f2c075",
+      "reviewed_frames": [
+        {
+          "frame_index": 10401,
+          "source_pts": 416.04
+        },
+        {
+          "frame_index": 10402,
+          "source_pts": 416.08
+        },
+        {
+          "frame_index": 10403,
+          "source_pts": 416.12
+        },
+        {
+          "frame_index": 10404,
+          "source_pts": 416.16
+        },
+        {
+          "frame_index": 10405,
+          "source_pts": 416.2
+        },
+        {
+          "frame_index": 10406,
+          "source_pts": 416.24
+        },
+        {
+          "frame_index": 10407,
+          "source_pts": 416.28
+        },
+        {
+          "frame_index": 10408,
+          "source_pts": 416.32
+        },
+        {
+          "frame_index": 10409,
+          "source_pts": 416.36
+        },
+        {
+          "frame_index": 10410,
+          "source_pts": 416.4
+        },
+        {
+          "frame_index": 10411,
+          "source_pts": 416.44
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_final/12_native_contact.jpg",
+      "sha256": "8966ead7d435099f354feacd92d15ca7877b7a706ed5d6f451be8400c9615721",
+      "reviewed_frames": [
+        {
+          "frame_index": 11045,
+          "source_pts": 441.8
+        },
+        {
+          "frame_index": 11046,
+          "source_pts": 441.84
+        },
+        {
+          "frame_index": 11047,
+          "source_pts": 441.88
+        },
+        {
+          "frame_index": 11048,
+          "source_pts": 441.92
+        },
+        {
+          "frame_index": 11049,
+          "source_pts": 441.96
+        },
+        {
+          "frame_index": 11050,
+          "source_pts": 442.0
+        },
+        {
+          "frame_index": 11051,
+          "source_pts": 442.04
+        },
+        {
+          "frame_index": 11052,
+          "source_pts": 442.08
+        },
+        {
+          "frame_index": 11053,
+          "source_pts": 442.12
+        },
+        {
+          "frame_index": 11054,
+          "source_pts": 442.16
+        },
+        {
+          "frame_index": 11055,
+          "source_pts": 442.2
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_final/06_pickup_boundary.jpg",
+      "sha256": "02c8b8a56415e936a735f135228b4953ad60d8bfe814ab771fb9ea41e31f847c",
+      "reviewed_frames": [
+        {
+          "frame_index": 7075,
+          "source_pts": 283.0
+        },
+        {
+          "frame_index": 7076,
+          "source_pts": 283.04
+        },
+        {
+          "frame_index": 7077,
+          "source_pts": 283.08
+        },
+        {
+          "frame_index": 7078,
+          "source_pts": 283.12
+        },
+        {
+          "frame_index": 7079,
+          "source_pts": 283.16
+        },
+        {
+          "frame_index": 7080,
+          "source_pts": 283.2
+        },
+        {
+          "frame_index": 7081,
+          "source_pts": 283.24
+        },
+        {
+          "frame_index": 7082,
+          "source_pts": 283.28
+        },
+        {
+          "frame_index": 7083,
+          "source_pts": 283.32
+        },
+        {
+          "frame_index": 7084,
+          "source_pts": 283.36
+        },
+        {
+          "frame_index": 7085,
+          "source_pts": 283.4
+        },
+        {
+          "frame_index": 7086,
+          "source_pts": 283.44
+        },
+        {
+          "frame_index": 7087,
+          "source_pts": 283.48
+        },
+        {
+          "frame_index": 7088,
+          "source_pts": 283.52
+        },
+        {
+          "frame_index": 7089,
+          "source_pts": 283.56
+        },
+        {
+          "frame_index": 7090,
+          "source_pts": 283.6
+        },
+        {
+          "frame_index": 7091,
+          "source_pts": 283.64
+        },
+        {
+          "frame_index": 7092,
+          "source_pts": 283.68
+        },
+        {
+          "frame_index": 7093,
+          "source_pts": 283.72
+        },
+        {
+          "frame_index": 7094,
+          "source_pts": 283.76
+        },
+        {
+          "frame_index": 7095,
+          "source_pts": 283.8
+        },
+        {
+          "frame_index": 7096,
+          "source_pts": 283.84
+        },
+        {
+          "frame_index": 7097,
+          "source_pts": 283.88
+        },
+        {
+          "frame_index": 7098,
+          "source_pts": 283.92
+        },
+        {
+          "frame_index": 7099,
+          "source_pts": 283.96
+        },
+        {
+          "frame_index": 7100,
+          "source_pts": 284.0
+        },
+        {
+          "frame_index": 7101,
+          "source_pts": 284.04
+        },
+        {
+          "frame_index": 7102,
+          "source_pts": 284.08
+        },
+        {
+          "frame_index": 7103,
+          "source_pts": 284.12
+        },
+        {
+          "frame_index": 7104,
+          "source_pts": 284.16
+        },
+        {
+          "frame_index": 7105,
+          "source_pts": 284.2
+        },
+        {
+          "frame_index": 7106,
+          "source_pts": 284.24
+        },
+        {
+          "frame_index": 7107,
+          "source_pts": 284.28
+        },
+        {
+          "frame_index": 7108,
+          "source_pts": 284.32
+        },
+        {
+          "frame_index": 7109,
+          "source_pts": 284.36
+        },
+        {
+          "frame_index": 7110,
+          "source_pts": 284.4
+        },
+        {
+          "frame_index": 7111,
+          "source_pts": 284.44
+        },
+        {
+          "frame_index": 7112,
+          "source_pts": 284.48
+        },
+        {
+          "frame_index": 7113,
+          "source_pts": 284.52
+        },
+        {
+          "frame_index": 7114,
+          "source_pts": 284.56
+        },
+        {
+          "frame_index": 7115,
+          "source_pts": 284.6
+        },
+        {
+          "frame_index": 7116,
+          "source_pts": 284.64
+        },
+        {
+          "frame_index": 7117,
+          "source_pts": 284.68
+        },
+        {
+          "frame_index": 7118,
+          "source_pts": 284.72
+        },
+        {
+          "frame_index": 7119,
+          "source_pts": 284.76
+        },
+        {
+          "frame_index": 7120,
+          "source_pts": 284.8
+        },
+        {
+          "frame_index": 7121,
+          "source_pts": 284.84
+        },
+        {
+          "frame_index": 7122,
+          "source_pts": 284.88
+        },
+        {
+          "frame_index": 7123,
+          "source_pts": 284.92
+        },
+        {
+          "frame_index": 7124,
+          "source_pts": 284.96
+        },
+        {
+          "frame_index": 7125,
+          "source_pts": 285.0
+        },
+        {
+          "frame_index": 7126,
+          "source_pts": 285.04
+        },
+        {
+          "frame_index": 7127,
+          "source_pts": 285.08
+        },
+        {
+          "frame_index": 7128,
+          "source_pts": 285.12
+        },
+        {
+          "frame_index": 7129,
+          "source_pts": 285.16
+        },
+        {
+          "frame_index": 7130,
+          "source_pts": 285.2
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_final/01_end_late.jpg",
+      "sha256": "4e6476f9f93f66e91a6fcb1a556d568196fb8345cfce59b39e79d8a076584985",
+      "reviewed_frames": [
+        {
+          "frame_index": 3835,
+          "source_pts": 153.4
+        },
+        {
+          "frame_index": 3836,
+          "source_pts": 153.44
+        },
+        {
+          "frame_index": 3837,
+          "source_pts": 153.48
+        },
+        {
+          "frame_index": 3838,
+          "source_pts": 153.52
+        },
+        {
+          "frame_index": 3839,
+          "source_pts": 153.56
+        },
+        {
+          "frame_index": 3840,
+          "source_pts": 153.6
+        },
+        {
+          "frame_index": 3841,
+          "source_pts": 153.64
+        },
+        {
+          "frame_index": 3842,
+          "source_pts": 153.68
+        },
+        {
+          "frame_index": 3843,
+          "source_pts": 153.72
+        },
+        {
+          "frame_index": 3844,
+          "source_pts": 153.76
+        },
+        {
+          "frame_index": 3845,
+          "source_pts": 153.8
+        },
+        {
+          "frame_index": 3846,
+          "source_pts": 153.84
+        },
+        {
+          "frame_index": 3847,
+          "source_pts": 153.88
+        },
+        {
+          "frame_index": 3848,
+          "source_pts": 153.92
+        },
+        {
+          "frame_index": 3849,
+          "source_pts": 153.96
+        },
+        {
+          "frame_index": 3850,
+          "source_pts": 154.0
+        },
+        {
+          "frame_index": 3851,
+          "source_pts": 154.04
+        },
+        {
+          "frame_index": 3852,
+          "source_pts": 154.08
+        },
+        {
+          "frame_index": 3853,
+          "source_pts": 154.12
+        },
+        {
+          "frame_index": 3854,
+          "source_pts": 154.16
+        },
+        {
+          "frame_index": 3855,
+          "source_pts": 154.2
+        },
+        {
+          "frame_index": 3856,
+          "source_pts": 154.24
+        },
+        {
+          "frame_index": 3857,
+          "source_pts": 154.28
+        },
+        {
+          "frame_index": 3858,
+          "source_pts": 154.32
+        },
+        {
+          "frame_index": 3859,
+          "source_pts": 154.36
+        },
+        {
+          "frame_index": 3860,
+          "source_pts": 154.4
+        },
+        {
+          "frame_index": 3861,
+          "source_pts": 154.44
+        },
+        {
+          "frame_index": 3862,
+          "source_pts": 154.48
+        },
+        {
+          "frame_index": 3863,
+          "source_pts": 154.52
+        },
+        {
+          "frame_index": 3864,
+          "source_pts": 154.56
+        },
+        {
+          "frame_index": 3865,
+          "source_pts": 154.6
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_final/02_end_late.jpg",
+      "sha256": "94926c23a29347d118d1d20f0b9c9029e60fb68c4fb1f2437c10b19fef4ea2c8",
+      "reviewed_frames": [
+        {
+          "frame_index": 4875,
+          "source_pts": 195.0
+        },
+        {
+          "frame_index": 4876,
+          "source_pts": 195.04
+        },
+        {
+          "frame_index": 4877,
+          "source_pts": 195.08
+        },
+        {
+          "frame_index": 4878,
+          "source_pts": 195.12
+        },
+        {
+          "frame_index": 4879,
+          "source_pts": 195.16
+        },
+        {
+          "frame_index": 4880,
+          "source_pts": 195.2
+        },
+        {
+          "frame_index": 4881,
+          "source_pts": 195.24
+        },
+        {
+          "frame_index": 4882,
+          "source_pts": 195.28
+        },
+        {
+          "frame_index": 4883,
+          "source_pts": 195.32
+        },
+        {
+          "frame_index": 4884,
+          "source_pts": 195.36
+        },
+        {
+          "frame_index": 4885,
+          "source_pts": 195.4
+        },
+        {
+          "frame_index": 4886,
+          "source_pts": 195.44
+        },
+        {
+          "frame_index": 4887,
+          "source_pts": 195.48
+        },
+        {
+          "frame_index": 4888,
+          "source_pts": 195.52
+        },
+        {
+          "frame_index": 4889,
+          "source_pts": 195.56
+        },
+        {
+          "frame_index": 4890,
+          "source_pts": 195.6
+        },
+        {
+          "frame_index": 4891,
+          "source_pts": 195.64
+        },
+        {
+          "frame_index": 4892,
+          "source_pts": 195.68
+        },
+        {
+          "frame_index": 4893,
+          "source_pts": 195.72
+        },
+        {
+          "frame_index": 4894,
+          "source_pts": 195.76
+        },
+        {
+          "frame_index": 4895,
+          "source_pts": 195.8
+        },
+        {
+          "frame_index": 4896,
+          "source_pts": 195.84
+        },
+        {
+          "frame_index": 4897,
+          "source_pts": 195.88
+        },
+        {
+          "frame_index": 4898,
+          "source_pts": 195.92
+        },
+        {
+          "frame_index": 4899,
+          "source_pts": 195.96
+        },
+        {
+          "frame_index": 4900,
+          "source_pts": 196.0
+        },
+        {
+          "frame_index": 4901,
+          "source_pts": 196.04
+        },
+        {
+          "frame_index": 4902,
+          "source_pts": 196.08
+        },
+        {
+          "frame_index": 4903,
+          "source_pts": 196.12
+        },
+        {
+          "frame_index": 4904,
+          "source_pts": 196.16
+        },
+        {
+          "frame_index": 4905,
+          "source_pts": 196.2
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_final/03_end_late.jpg",
+      "sha256": "5828c4ee788dd4f1c2e2ed58df6180382396b09542da16d1ceceb6c12043d107",
+      "reviewed_frames": [
+        {
+          "frame_index": 5465,
+          "source_pts": 218.6
+        },
+        {
+          "frame_index": 5466,
+          "source_pts": 218.64
+        },
+        {
+          "frame_index": 5467,
+          "source_pts": 218.68
+        },
+        {
+          "frame_index": 5468,
+          "source_pts": 218.72
+        },
+        {
+          "frame_index": 5469,
+          "source_pts": 218.76
+        },
+        {
+          "frame_index": 5470,
+          "source_pts": 218.8
+        },
+        {
+          "frame_index": 5471,
+          "source_pts": 218.84
+        },
+        {
+          "frame_index": 5472,
+          "source_pts": 218.88
+        },
+        {
+          "frame_index": 5473,
+          "source_pts": 218.92
+        },
+        {
+          "frame_index": 5474,
+          "source_pts": 218.96
+        },
+        {
+          "frame_index": 5475,
+          "source_pts": 219.0
+        },
+        {
+          "frame_index": 5476,
+          "source_pts": 219.04
+        },
+        {
+          "frame_index": 5477,
+          "source_pts": 219.08
+        },
+        {
+          "frame_index": 5478,
+          "source_pts": 219.12
+        },
+        {
+          "frame_index": 5479,
+          "source_pts": 219.16
+        },
+        {
+          "frame_index": 5480,
+          "source_pts": 219.2
+        },
+        {
+          "frame_index": 5481,
+          "source_pts": 219.24
+        },
+        {
+          "frame_index": 5482,
+          "source_pts": 219.28
+        },
+        {
+          "frame_index": 5483,
+          "source_pts": 219.32
+        },
+        {
+          "frame_index": 5484,
+          "source_pts": 219.36
+        },
+        {
+          "frame_index": 5485,
+          "source_pts": 219.4
+        },
+        {
+          "frame_index": 5486,
+          "source_pts": 219.44
+        },
+        {
+          "frame_index": 5487,
+          "source_pts": 219.48
+        },
+        {
+          "frame_index": 5488,
+          "source_pts": 219.52
+        },
+        {
+          "frame_index": 5489,
+          "source_pts": 219.56
+        },
+        {
+          "frame_index": 5490,
+          "source_pts": 219.6
+        },
+        {
+          "frame_index": 5491,
+          "source_pts": 219.64
+        },
+        {
+          "frame_index": 5492,
+          "source_pts": 219.68
+        },
+        {
+          "frame_index": 5493,
+          "source_pts": 219.72
+        },
+        {
+          "frame_index": 5494,
+          "source_pts": 219.76
+        },
+        {
+          "frame_index": 5495,
+          "source_pts": 219.8
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_final/04_end_late.jpg",
+      "sha256": "b8421dab94814bae6807ccfc0eff651074fa71582c6c0f6850a5a5e58833fdb0",
+      "reviewed_frames": [
+        {
+          "frame_index": 6262,
+          "source_pts": 250.48
+        },
+        {
+          "frame_index": 6263,
+          "source_pts": 250.52
+        },
+        {
+          "frame_index": 6264,
+          "source_pts": 250.56
+        },
+        {
+          "frame_index": 6265,
+          "source_pts": 250.6
+        },
+        {
+          "frame_index": 6266,
+          "source_pts": 250.64
+        },
+        {
+          "frame_index": 6267,
+          "source_pts": 250.68
+        },
+        {
+          "frame_index": 6268,
+          "source_pts": 250.72
+        },
+        {
+          "frame_index": 6269,
+          "source_pts": 250.76
+        },
+        {
+          "frame_index": 6270,
+          "source_pts": 250.8
+        },
+        {
+          "frame_index": 6271,
+          "source_pts": 250.84
+        },
+        {
+          "frame_index": 6272,
+          "source_pts": 250.88
+        },
+        {
+          "frame_index": 6273,
+          "source_pts": 250.92
+        },
+        {
+          "frame_index": 6274,
+          "source_pts": 250.96
+        },
+        {
+          "frame_index": 6275,
+          "source_pts": 251.0
+        },
+        {
+          "frame_index": 6276,
+          "source_pts": 251.04
+        },
+        {
+          "frame_index": 6277,
+          "source_pts": 251.08
+        },
+        {
+          "frame_index": 6278,
+          "source_pts": 251.12
+        },
+        {
+          "frame_index": 6279,
+          "source_pts": 251.16
+        },
+        {
+          "frame_index": 6280,
+          "source_pts": 251.2
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_final/05_end_late.jpg",
+      "sha256": "ddf186d12833c163e4fd0b951dde728063ea182c6a8416d16d4b341faa4c3d45",
+      "reviewed_frames": [
+        {
+          "frame_index": 6735,
+          "source_pts": 269.4
+        },
+        {
+          "frame_index": 6736,
+          "source_pts": 269.44
+        },
+        {
+          "frame_index": 6737,
+          "source_pts": 269.48
+        },
+        {
+          "frame_index": 6738,
+          "source_pts": 269.52
+        },
+        {
+          "frame_index": 6739,
+          "source_pts": 269.56
+        },
+        {
+          "frame_index": 6740,
+          "source_pts": 269.6
+        },
+        {
+          "frame_index": 6741,
+          "source_pts": 269.64
+        },
+        {
+          "frame_index": 6742,
+          "source_pts": 269.68
+        },
+        {
+          "frame_index": 6743,
+          "source_pts": 269.72
+        },
+        {
+          "frame_index": 6744,
+          "source_pts": 269.76
+        },
+        {
+          "frame_index": 6745,
+          "source_pts": 269.8
+        },
+        {
+          "frame_index": 6746,
+          "source_pts": 269.84
+        },
+        {
+          "frame_index": 6747,
+          "source_pts": 269.88
+        },
+        {
+          "frame_index": 6748,
+          "source_pts": 269.92
+        },
+        {
+          "frame_index": 6749,
+          "source_pts": 269.96
+        },
+        {
+          "frame_index": 6750,
+          "source_pts": 270.0
+        },
+        {
+          "frame_index": 6751,
+          "source_pts": 270.04
+        },
+        {
+          "frame_index": 6752,
+          "source_pts": 270.08
+        },
+        {
+          "frame_index": 6753,
+          "source_pts": 270.12
+        },
+        {
+          "frame_index": 6754,
+          "source_pts": 270.16
+        },
+        {
+          "frame_index": 6755,
+          "source_pts": 270.2
+        },
+        {
+          "frame_index": 6756,
+          "source_pts": 270.24
+        },
+        {
+          "frame_index": 6757,
+          "source_pts": 270.28
+        },
+        {
+          "frame_index": 6758,
+          "source_pts": 270.32
+        },
+        {
+          "frame_index": 6759,
+          "source_pts": 270.36
+        },
+        {
+          "frame_index": 6760,
+          "source_pts": 270.4
+        },
+        {
+          "frame_index": 6761,
+          "source_pts": 270.44
+        },
+        {
+          "frame_index": 6762,
+          "source_pts": 270.48
+        },
+        {
+          "frame_index": 6763,
+          "source_pts": 270.52
+        },
+        {
+          "frame_index": 6764,
+          "source_pts": 270.56
+        },
+        {
+          "frame_index": 6765,
+          "source_pts": 270.6
+        }
+      ]
+    },
+    {
+      "sheet": "data/dl/label_review/selby_final/07_end_late.jpg",
+      "sha256": "4fdd07337079a7a454653ed97c4b2491e52337549cf80e5285d0220222a75b90",
+      "reviewed_frames": [
+        {
+          "frame_index": 8075,
+          "source_pts": 323.0
+        },
+        {
+          "frame_index": 8076,
+          "source_pts": 323.04
+        },
+        {
+          "frame_index": 8077,
+          "source_pts": 323.08
+        },
+        {
+          "frame_index": 8078,
+          "source_pts": 323.12
+        },
+        {
+          "frame_index": 8079,
+          "source_pts": 323.16
+        },
+        {
+          "frame_index": 8080,
+          "source_pts": 323.2
+        },
+        {
+          "frame_index": 8081,
+          "source_pts": 323.24
+        },
+        {
+          "frame_index": 8082,
+          "source_pts": 323.28
+        },
+        {
+          "frame_index": 8083,
+          "source_pts": 323.32
+        },
+        {
+          "frame_index": 8084,
+          "source_pts": 323.36
+        },
+        {
+          "frame_index": 8085,
+          "source_pts": 323.4
+        },
+        {
+          "frame_index": 8086,
+          "source_pts": 323.44
+        },
+        {
+          "frame_index": 8087,
+          "source_pts": 323.48
+        },
+        {
+          "frame_index": 8088,
+          "source_pts": 323.52
+        },
+        {
+          "frame_index": 8089,
+          "source_pts": 323.56
+        },
+        {
+          "frame_index": 8090,
+          "source_pts": 323.6
+        },
+        {
+          "frame_index": 8091,
+          "source_pts": 323.64
+        },
+        {
+          "frame_index": 8092,
+          "source_pts": 323.68
+        },
+        {
+          "frame_index": 8093,
+          "source_pts": 323.72
+        },
+        {
+          "frame_index": 8094,
+          "source_pts": 323.76
+        },
+        {
+          "frame_index": 8095,
+          "source_pts": 323.8
+        },
+        {
+          "frame_index": 8096,
+          "source_pts": 323.84
+        },
+        {
+          "frame_index": 8097,
+          "source_pts": 323.88
+        },
+        {
+          "frame_index": 8098,
+          "source_pts": 323.92
+        },
+        {
+          "frame_index": 8099,
+          "source_pts": 323.96
+        },
+        {
+          "frame_index": 8100,
+          "source_pts": 324.0
+        },
+        {
+          "frame_index": 8101,
+          "source_pts": 324.04
+        },
+        {
+          "frame_index": 8102,
+          "source_pts": 324.08
+        },
+        {
+          "frame_index": 8103,
+          "source_pts": 324.12
+        },
+        {
+          "frame_index": 8104,
+          "source_pts": 324.16
+        },
+        {
+          "frame_index": 8105,
+          "source_pts": 324.2
+        }
+      ]
+    }
+  ],
+  "additional_full_resolution_frames": [
+    {
+      "path": "data/dl/label_review/source_315.40.png",
+      "frame_index": 7885,
+      "source_pts": 315.4
+    },
+    {
+      "path": "data/dl/label_review/source_338.44.png",
+      "frame_index": 8461,
+      "source_pts": 338.44
+    },
+    {
+      "path": "data/dl/label_review/source_416.20.png",
+      "frame_index": 10405,
+      "source_pts": 416.2
+    }
+  ]
+}

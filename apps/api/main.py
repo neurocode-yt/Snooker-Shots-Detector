@@ -21,7 +21,8 @@ from pydantic import BaseModel, Field
 from snooker_ai.config import Config, load_config
 from snooker_ai.ingestion.probe import probe_video
 from snooker_ai.jobs.store import JobStore
-from snooker_ai.pipeline.analyzer import Analyzer
+from snooker_ai.pipeline.analyzer import Analyzer as Analyzer
+from snooker_ai.pipeline.algorithms import Algorithm, algorithm_capabilities, create_analyzer
 from snooker_ai.rendering.exporter import Exporter
 from snooker_ai.rendering.preprocessor import KeepRange, VideoPreprocessor
 from snooker_ai.types import (
@@ -122,12 +123,14 @@ class AnalyzeBody(BaseModel):
     source_path: Optional[str] = None
     job_id: Optional[str] = None
     mode: str = "strict"
+    algorithm: Optional[Algorithm] = None
     resume: bool = True
     auto_export: bool = True
 
 
 class RestartBody(BaseModel):
     mode: Optional[str] = None
+    algorithm: Optional[Algorithm] = None
     force: bool = True
     auto_export: Optional[bool] = None
 
@@ -186,7 +189,8 @@ def _run_analysis(
         logger.warning("Job %s already running", job_id)
         return
     try:
-        analyzer = Analyzer(cfg, store.job_dir(job_id))
+        algorithm = Algorithm.parse(store.get_meta(job_id).get("algorithm"))
+        analyzer = create_analyzer(cfg, store.job_dir(job_id), algorithm)
 
         def prog(p: float, stage: str, msg: str) -> None:
             if auto_export:
@@ -298,15 +302,40 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                 out.write(chunk)
         return {"path": str(dest.resolve()), "filename": file.filename, "size": size}
 
+    @app.get("/api/algorithms")
+    async def get_algorithms() -> dict[str, Any]:
+        return {"algorithms": algorithm_capabilities(cfg)}
+
+    def require_algorithm(algorithm: Algorithm) -> None:
+        if algorithm is Algorithm.CLASSIC:
+            return
+        capability = next(
+            item for item in algorithm_capabilities(cfg) if item["id"] == algorithm.value
+        )
+        if not capability.get("available", False):
+            raise HTTPException(409, capability.get("reason") or "DL Algo is not ready")
+
     @app.post("/api/jobs")
     async def create_job(body: AnalyzeBody, background: BackgroundTasks) -> dict[str, Any]:
         if not body.source_path and not body.job_id:
             raise HTTPException(400, "source_path required")
-        source = body.source_path
+        existing_meta = None
+        if body.job_id:
+            try:
+                existing_meta = store.get_meta(body.job_id)
+            except FileNotFoundError:
+                pass
+        source = body.source_path or (existing_meta or {}).get("source_path")
         if not source or not Path(source).is_file():
             raise HTTPException(400, f"source not found: {source}")
         mode = EditMode.from_string(body.mode)
-        if body.job_id:
+        algorithm = body.algorithm or Algorithm.parse((existing_meta or {}).get("algorithm"))
+        require_algorithm(algorithm)
+        switched_algorithm = (
+            existing_meta is not None
+            and algorithm != Algorithm.parse(existing_meta.get("algorithm"))
+        )
+        if body.job_id and not switched_algorithm:
             job_id = body.job_id
             job_dir = store.job_dir(job_id)
             job_dir.mkdir(parents=True, exist_ok=True)
@@ -319,6 +348,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                         "job_id": job_id,
                         "source_path": str(Path(source).resolve()),
                         "mode": mode.value,
+                        "algorithm": algorithm.value,
                         "status": JobStatus.PENDING.value,
                         "progress": 0.0,
                         "stage": "pending",
@@ -326,14 +356,20 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                     },
                 )
         else:
-            job_id = store.create(source, mode=mode.value)
+            job_id = store.create(source, mode=mode.value, algorithm=algorithm)
         meta = store.get_meta(job_id)
+        if switched_algorithm:
+            meta["derived_from_job_id"] = body.job_id
         meta["auto_export"] = body.auto_export
         if body.auto_export:
             meta["auto_export_ready"] = False
         store._write_meta(job_id, meta)
         background.add_task(_run_analysis, job_id, source, mode, body.resume, False, cfg, body.auto_export)
-        return {"job_id": job_id, "status": "started", "mode": mode.value}
+        return {
+            "job_id": job_id, "status": "started", "mode": mode.value,
+            "algorithm": algorithm.value,
+            "derived_from_job_id": body.job_id if switched_algorithm else None,
+        }
 
     @app.post("/api/jobs/{job_id}/restart")
     async def restart_job(
@@ -350,17 +386,25 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         if not source or not Path(source).is_file():
             raise HTTPException(400, f"Source video not found: {source}")
 
-        lock = _locks.setdefault(job_id, threading.Lock())
-        if lock.locked():
-            raise HTTPException(409, f"Job {job_id} is already running")
-
         mode_str = (body.mode if body and body.mode else None) or meta.get("mode", "strict")
         mode = EditMode.from_string(mode_str)
+        algorithm = (body.algorithm if body else None) or Algorithm.parse(meta.get("algorithm"))
+        require_algorithm(algorithm)
+        switched_algorithm = algorithm != Algorithm.parse(meta.get("algorithm"))
+        previous_job_id = job_id
+        if not switched_algorithm:
+            lock = _locks.setdefault(job_id, threading.Lock())
+            if lock.locked():
+                raise HTTPException(409, f"Job {job_id} is already running")
         force = body.force if body is not None else True
         auto_export = (
             body.auto_export if body and body.auto_export is not None
             else bool(meta.get("auto_export", True))
         )
+        if switched_algorithm:
+            job_id = store.create(source, mode=mode.value, algorithm=algorithm)
+            meta = store.get_meta(job_id)
+            meta["derived_from_job_id"] = previous_job_id
         meta["auto_export"] = auto_export
         if auto_export:
             meta["auto_export_ready"] = False
@@ -370,7 +414,8 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             job_id,
             0.01,
             JobStatus.ANALYZING,
-            "Restarting analysis from last valid checkpoint...",
+            "Starting separate analysis..." if switched_algorithm
+            else "Restarting analysis from last valid checkpoint...",
             error=None,
         )
         background.add_task(
@@ -378,9 +423,12 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         )
         return {
             "job_id": job_id,
-            "status": "restarted",
+            "status": "started" if switched_algorithm else "restarted",
             "mode": mode.value,
-            "message": "Restarting analysis from last checkpoint",
+            "algorithm": algorithm.value,
+            "derived_from_job_id": previous_job_id if switched_algorithm else None,
+            "message": "Starting separate analysis" if switched_algorithm
+            else "Restarting analysis from last checkpoint",
         }
 
     @app.post("/api/preprocess")
@@ -561,7 +609,9 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                 # The editor sends its current mode with every export. Rebuilding
                 # in that case used to discard persisted include/exclude edits.
                 if requested_mode != result.mode:
-                    analyzer = Analyzer(cfg, store.job_dir(job_id))
+                    analyzer = create_analyzer(
+                        cfg, store.job_dir(job_id), store.get_meta(job_id).get("algorithm"),
+                    )
                     result = analyzer.resegment(result, requested_mode)
             out_dir = store.job_dir(job_id) / "export"
             req = ExportRequest(

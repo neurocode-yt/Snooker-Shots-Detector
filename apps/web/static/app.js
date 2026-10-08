@@ -10,24 +10,54 @@ const sectionList = document.getElementById("section-list");
 const zoomSlider = document.getElementById("timeline-zoom");
 const startBtn = document.getElementById("start-btn");
 const workflow = document.getElementById("workflow");
+let dlCapability = null;
+
+function updateStartAvailability() {
+  startBtn.disabled = !sourceDuration || workflow.disabled
+    || (workflow.value === "dl_algo" && !dlCapability?.available);
+}
+
+async function loadAlgorithms() {
+  try {
+    const response = await fetch("/api/algorithms");
+    if (!response.ok) throw new Error("Could not check DL Algo readiness.");
+    const metadata = await response.json();
+    dlCapability = metadata.algorithms.find((item) => item.id === "dl_algo")
+      || { available: false, reason: "DL Algo is not available yet." };
+  } catch (error) {
+    dlCapability = { available: false, reason: error.message || String(error) };
+  }
+  updateWorkflow();
+}
 
 function updateWorkflow() {
   const classic = workflow.value === "classic";
+  const dl = workflow.value === "dl_algo";
   document.getElementById("workflow-heading").textContent = classic
-    ? "Upload & analyze" : "Create snooker highlights";
+    ? "Upload & analyze" : dl ? "DL Algo" : "Create snooker highlights";
   document.getElementById("workflow-description").textContent = classic
     ? "Detect shots, then open the previous editor with preview, timeline, shot controls, and export buttons."
-    : "Upload the entire match. Remove waiting and setup footage, then export with mix transitions.";
+    : dl ? "Create highlights with DL Algo. Results are saved as a separate job."
+      : "Upload the entire match. Remove waiting and setup footage, then export with mix transitions.";
+  const status = document.getElementById("algorithm-status");
+  status.classList.toggle("hidden", !dl);
+  status.textContent = dlCapability?.available
+    ? "DL Algo is ready. Accuracy is still being evaluated."
+    : dlCapability?.reason || "Checking DL Algo readiness…";
   document.getElementById("pre-editor-heading").textContent = classic
     ? "Prepare match before analysis" : "Optional source trimming";
   document.getElementById("pre-editor-description").textContent = classic
     ? "Split around frame breaks and delete those sections, or keep the whole video. Your original video is never changed."
     : "Keep the whole video and start. Shot detection, cutting, and export run automatically.";
-  startBtn.textContent = classic ? "Prepare & start analysis" : "Create video automatically";
+  startBtn.textContent = classic ? "Prepare & start analysis"
+    : dl ? "Create with DL Algo" : "Create video automatically";
+  updateStartAvailability();
 }
 
-workflow.addEventListener("change", updateWorkflow);
-updateWorkflow();
+workflow.addEventListener("change", () => {
+  updateWorkflow();
+  if (workflow.value === "dl_algo") loadAlgorithms();
+});
 
 let sourceDuration = 0;
 let sections = [];
@@ -40,6 +70,13 @@ let localVideoUrl = null;
 let draggingPlayhead = false;
 let dragPointerClientX = 0;
 let dragScrollFrame = 0;
+updateWorkflow();
+loadAlgorithms();
+setInterval(() => {
+  if (workflow.value === "dl_algo" && !dlCapability?.available && !document.hidden) {
+    loadAlgorithms();
+  }
+}, 10000);
 
 function fmt(t) {
   if (!Number.isFinite(t)) return "00:00.000";
@@ -179,7 +216,7 @@ function initializeEditor(duration) {
   editHistory = [];
   redoHistory = [];
   preEditor.classList.remove("hidden");
-  startBtn.disabled = false;
+  updateStartAvailability();
   window.requestAnimationFrame(renderEditor);
 }
 
@@ -379,12 +416,12 @@ async function refreshJobs() {
       <div class="job-item">
         <div>
           <strong>${job.job_id}</strong>
-          <div class="meta">${job.status || ""} · ${(job.progress * 100 || 0).toFixed(0)}% · ${job.message || ""}</div>
+          <div class="meta">${job.algorithm === "dl_algo" ? "DL Algo · " : ""}${job.status || ""} · ${(job.progress * 100 || 0).toFixed(0)}% · ${job.message || ""}</div>
         </div>
         <div class="job-actions">
           <button type="button" class="btn-restart" data-job-id="${job.job_id}">Restart</button>
           ${job.download_url ? `<a href="${job.download_url}">Download video</a>` : ""}
-          <a href="/review/${job.job_id}?editor=classic">Open classic editor</a>
+          <a href="/review/${job.job_id}?editor=classic">${job.algorithm === "dl_algo" ? "Open DL Algo editor" : "Open classic editor"}</a>
         </div>
       </div>`,
       )
@@ -467,6 +504,15 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
   const text = document.getElementById("progress-text");
   const mode = "strict";
   const autoExport = workflow.value !== "classic";
+  const algorithm = workflow.value === "dl_algo" ? "dl_algo" : "classic";
+  if (algorithm === "dl_algo") {
+    await loadAlgorithms();
+    if (!dlCapability?.available) {
+      text.textContent = dlCapability?.reason || "DL Algo is not ready yet.";
+      wrap.classList.remove("hidden");
+      return;
+    }
+  }
   if (!keepRanges.length) {
     text.textContent = "Keep at least one section before starting analysis.";
     wrap.classList.remove("hidden");
@@ -508,7 +554,7 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
     const start = await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source_path: path, mode, resume: true, auto_export: autoExport }),
+      body: JSON.stringify({ source_path: path, mode, algorithm, resume: true, auto_export: autoExport }),
     });
     if (!start.ok) throw new Error(await start.text());
     const { job_id: jobId } = await start.json();
@@ -522,8 +568,8 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
       text.textContent = `${metadata.status}: ${metadata.message || ""}`;
       if (["ready_for_review", "completed", "failed"].includes(metadata.status)) {
         clearInterval(poll);
-        startBtn.disabled = false;
         workflow.disabled = false;
+        updateStartAvailability();
         refreshJobs();
         if (metadata.status === "failed") {
           text.textContent = `Failed: ${metadata.error || metadata.message}`;
@@ -542,8 +588,8 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
     }, 1500);
   } catch (error) {
     text.textContent = `Error: ${error.message || error}`;
-    startBtn.disabled = false;
     workflow.disabled = false;
+    updateStartAvailability();
   }
 });
 

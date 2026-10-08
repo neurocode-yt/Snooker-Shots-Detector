@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from snooker_ai.config import Config
+from snooker_ai.pipeline.algorithms import Algorithm
 from snooker_ai.types import AnalysisResult, JobProgress, JobStatus, ShotRecord, ShotUpdate
 from snooker_ai.utils.logging import get_logger
 
@@ -25,7 +26,11 @@ class JobStore:
         uploads.mkdir(parents=True, exist_ok=True)
         self.uploads = uploads
 
-    def create(self, source_path: str | Path, mode: str = "strict") -> str:
+    def create(
+        self, source_path: str | Path, mode: str = "strict",
+        algorithm: str | Algorithm = Algorithm.CLASSIC,
+    ) -> str:
+        selected_algorithm = Algorithm.parse(algorithm)
         job_id = time.strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8]
         job_dir = self.root / job_id
         job_dir.mkdir(parents=True, exist_ok=True)
@@ -33,6 +38,7 @@ class JobStore:
             "job_id": job_id,
             "source_path": str(Path(source_path).resolve()),
             "mode": mode,
+            "algorithm": selected_algorithm.value,
             "created_at": time.time(),
             "status": JobStatus.PENDING.value,
             "progress": 0.0,
@@ -80,7 +86,9 @@ class JobStore:
         path = self._meta_path(job_id)
         if not path.exists():
             raise FileNotFoundError(f"Job not found: {job_id}")
-        return json.loads(path.read_text(encoding="utf-8"))
+        meta = json.loads(path.read_text(encoding="utf-8"))
+        meta.setdefault("algorithm", Algorithm.CLASSIC.value)
+        return meta
 
     def update_progress(
         self,
@@ -325,7 +333,7 @@ class JobStore:
         for p in sorted(self.root.iterdir(), reverse=True):
             if (p / "job.json").exists():
                 try:
-                    jobs.append(json.loads((p / "job.json").read_text(encoding="utf-8")))
+                    jobs.append(self.get_meta(p.name))
                 except Exception:
                     continue
         return jobs

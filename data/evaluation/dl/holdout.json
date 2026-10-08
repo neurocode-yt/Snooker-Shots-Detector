@@ -1,0 +1,27 @@
+{
+  "manifest_version": 1,
+  "heads": [
+    "event",
+    "keep",
+    "end",
+    "replay",
+    "handling"
+  ],
+  "paths_relative_to": "../../..",
+  "feature_contract": {
+    "timestamps": "float64[T] source presentation seconds",
+    "features": "float32[T,D] frozen RGB+learned motion features",
+    "feature_spec": "JSON scalar; no classic detection features"
+  },
+  "label_policy": "Only explicitly reviewed intervals supervise negatives; contacts use uncertainty bags; non-replay is inferred only inside reviewed live-contact brackets",
+  "split_policy": "Underlying match group isolation, including different cleaned frames and replays",
+  "independent_holdout_available": false,
+  "limitations": [
+    "Only two independently sourced underlying matches have reviewed contacts",
+    "Zhao\u2013Trump trains; Selby\u2013Lisowski selects hyperparameters",
+    "A third unseen match with frozen independent source labels is required for a final holdout",
+    "Neural superiority over classic cannot be claimed from this dataset"
+  ],
+  "split": "holdout",
+  "videos": []
+}
