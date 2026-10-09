@@ -1,0 +1,31 @@
+{
+  "review_method": "Post-prediction visual inspection of decoded cue frames and original source continuation at 2 fps",
+  "labels_frozen_before_predictions": false,
+  "used_for_fitting_or_calibration": false,
+  "claim": "Separate output QA observations; these are not additional blind editorial labels",
+  "retained_cue_frames_compared": 6,
+  "all_retained_cues_visually_preserved": true,
+  "ffmpeg_complete_decode_passed": true,
+  "premature_end_examples": [
+    {
+      "video_id": "hawkins_un_nooh",
+      "contact_estimate": 500.4,
+      "selected_end": 503.82,
+      "moving_balls_observed_after_endpoint": true,
+      "source_observations": [504.0, 504.52, 505.0],
+      "description": "White and missed red continue moving after the selected endpoint; source continuation shows their later positions",
+      "sheet": "data/dl/independent_20261009/review/hawkins_un_nooh/endpoint_continuation.jpg"
+    },
+    {
+      "video_id": "nutcharut_dikme",
+      "contact_estimate": 608.52,
+      "selected_end": 613.82,
+      "moving_balls_observed_after_endpoint": true,
+      "source_observations": [614.0, 614.52, 615.0, 615.52, 616.0],
+      "description": "The cue ball continues to the right cushion and rolls back while the referee respots brown; the selected clip ends before this continuation",
+      "sheet": "data/dl/independent_20261009/review/nutcharut_dikme/endpoint_continuation.jpg"
+    }
+  ],
+  "physical_stop_timestamps_claimed": false,
+  "deployment_quality_verified": false
+}

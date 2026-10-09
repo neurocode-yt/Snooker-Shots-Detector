@@ -296,3 +296,62 @@ contact tolerance is 0.5 seconds; `--tolerance 0` checks strict uncertainty-boun
 coverage. Generated videos still need source-to-output inspection and a complete
 decode check. Freeze new source annotations before consulting either algorithm's
 predictions when adding the missing independent match.
+
+## Independent video test, 9 October 2026
+
+The deployed experimental checkpoint failed its first two unseen-match tests.
+Source-only visual labels were frozen before predictions; neither match was
+used for fitting, normalization, threshold calibration or model selection.
+Both complete cleaned clips were processed at 8 fps with the original model
+weights and deployment thresholds.
+
+| Unseen match | Source duration | Reviewed shots | Retained shots | Missed shots | Extra shots |
+|---|---:|---:|---:|---:|---:|
+| Hawkins–Un-Nooh | 8:34 | 32 | 1 | 31 | 0 |
+| Nutcharut–Dikme | 12:55.48 | 36 | 2 | 34 | 0 |
+
+Combined shot recall was **3/68 (4.41%)**. Both strict contact-bracket matching
+and a 0.25-second tolerance produced the same counts. The delivered source
+windows fully preserved only those three contact brackets. Event candidate
+counts were also one and two: the omitted strokes failed the frozen event
+threshold, before highlight boundary selection. The median event peak within
+reviewed contact brackets was 0.0182 and 0.00102 respectively, against the
+deployed event threshold of 0.95.
+
+The source labels are AI visual reviews at 1 fps, with uncertainty intervals;
+they are not human-approved or frame-exact ground truth. One Hawkins red uses a
+two-second bracket. Neither cleaned clip contains a replay. Zero extra clips
+and zero labelled handling overlap are insufficient evidence of good exclusion
+when 65 shots are omitted. The original 121/121 in-sample result therefore
+cannot be presented as accuracy on unseen footage.
+
+Both actual highlight exports passed complete FFmpeg decoding. Six decoded cue
+frames matched the expected source footage on visual inspection. A separate
+post-prediction source review found two retained clips ending while balls were
+still moving: Hawkins at source 503.82 seconds and Dikme's brown at 613.82
+seconds. These observations are output QA, not new blind training labels.
+
+Frozen source labels, every missed timestamp, model probabilities at labelled
+contacts, compact results and output QA are stored in
+[`data/evaluation/dl/independent_20261009`](../data/evaluation/dl/independent_20261009).
+Large feature archives, frozen weights, source sheets and MP4s stay local under
+`data/dl/independent_20261009`. The original/classic algorithm and existing jobs
+were not changed by this evaluation. The DL checkpoint was not retrained or
+retuned to improve this test's score.
+
+Reproduce the inference-only evaluation in the isolated DL environment:
+
+```powershell
+.venv-dl/Scripts/python.exe tools/dl_holdout.py `
+  --manifest data/evaluation/dl/independent_20261009/manifest.json `
+  --checkpoint data/dl/independent_20261009/frozen-model.pt `
+  --output-dir data/dl/independent_20261009/reproduced --device cpu
+```
+
+The command checks the planned checkpoint hash, fitting and model-selection
+groups across every ensemble member, feature specification, source identity
+and complete feature coverage. It refuses a reused output directory associated
+with different frozen inputs. It never fits model weights or thresholds, and
+keeps deployment quality unverified. If either test match is later used for
+improvement, that follow-up result must be labelled development data and a
+fresh unseen match must be reserved for the next independent test.
