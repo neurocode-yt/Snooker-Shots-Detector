@@ -1,0 +1,553 @@
+{
+  "manifest_version": 1,
+  "heads": [
+    "event",
+    "keep",
+    "end",
+    "replay",
+    "handling"
+  ],
+  "paths_relative_to": "../../../..",
+  "independent_holdout_available": true,
+  "frozen_at": "2026-10-09T09:01:43.961256+00:00",
+  "expected_checkpoint_sha256": "993fb272b6959a45e30eb03824e72e9a5e092c56127dd00494a7445a15b4f729",
+  "labels_human_approved": false,
+  "label_policy": "Chronological complete-source PyAV PTS sheets at 1 fps, before any Allen predictions; early safety refined at 4 fps; final four video frames inspected through native PTS EOF. No replay seen.",
+  "split_policy": "Allen-Un-Nooh excluded from all fitting, threshold calibration and model selection.",
+  "limitations": [
+    "AI source review; most contact brackets have one-second uncertainty.",
+    "No positive replay examples; editorial outcome endpoints are coarse review notes, not physical-stop truth.",
+    "One complete 18-minute source; this cannot establish accuracy for all future videos."
+  ],
+  "videos": [
+    {
+      "id": "allen_un_nooh",
+      "group_id": "allen_un_nooh",
+      "split": "holdout",
+      "duration": 1093.172245,
+      "source_fingerprint": {
+        "size_bytes": 1122902179,
+        "mtime_ns": 1787508453762838800
+      },
+      "source_path": "data/uploads/20260823-230731_61d3cb10_test_mark_allen_vs_thep.mp4",
+      "features_path": "data/dl/rescue_20261009/allen_un_nooh.npz",
+      "reviewed_intervals": [
+        {
+          "start": 0.0,
+          "end": 1093.172245,
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        }
+      ],
+      "contacts": [
+        {
+          "lower": 4,
+          "upper": 5,
+          "description": "Un-Nooh break-off",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 37,
+          "upper": 38,
+          "description": "Allen safety",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 61,
+          "upper": 62,
+          "description": "Un-Nooh safety",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 85,
+          "upper": 86,
+          "description": "Allen soft safety",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 110,
+          "upper": 110.266667,
+          "description": "Un-Nooh safety; refined at native PTS, 4 fps source review",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 130,
+          "upper": 131,
+          "description": "Allen red, score 1",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 156,
+          "upper": 157,
+          "description": "Allen green, score 4",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 181,
+          "upper": 182,
+          "description": "Allen red, score 5",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 200,
+          "upper": 201,
+          "description": "Allen black, score 12",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 220,
+          "upper": 221,
+          "description": "Allen red, score 13",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 238.266667,
+          "upper": 238.4,
+          "description": "Allen black, score 20",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved; additive 8 fps native-PTS source adjudication after first predictions",
+          "original_bounds": {
+            "lower": 237,
+            "upper": 238
+          }
+        },
+        {
+          "lower": 257,
+          "upper": 258,
+          "description": "Allen red opening pack, score 21",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 274,
+          "upper": 275,
+          "description": "Allen black, score 28",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 288,
+          "upper": 289,
+          "description": "Allen red, score 29",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 306,
+          "upper": 307,
+          "description": "Allen black, score 36",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 325,
+          "upper": 326,
+          "description": "Allen red, score 37",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 339,
+          "upper": 340,
+          "description": "Allen black, score 44",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 356,
+          "upper": 357,
+          "description": "Allen red, score 45",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 369,
+          "upper": 370,
+          "description": "Allen blue, score 50",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 382,
+          "upper": 383,
+          "description": "Allen red with rest, score 51",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 397,
+          "upper": 398,
+          "description": "Allen black, score 58",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 424,
+          "upper": 425,
+          "description": "Allen red, score 59",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 451,
+          "upper": 452,
+          "description": "Allen blue, score 64",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 469,
+          "upper": 470,
+          "description": "Allen red, score 65",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 486,
+          "upper": 487,
+          "description": "Allen black attempt, missed",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 510,
+          "upper": 511,
+          "description": "Un-Nooh red, score 1",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 521,
+          "upper": 522,
+          "description": "Un-Nooh black, score 8",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 534,
+          "upper": 535,
+          "description": "Un-Nooh red, score 9",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 544,
+          "upper": 545,
+          "description": "Un-Nooh black, score 16",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 557,
+          "upper": 558,
+          "description": "Un-Nooh red, score 17",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 571,
+          "upper": 572,
+          "description": "Un-Nooh black, score 24",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 583,
+          "upper": 584,
+          "description": "Un-Nooh red, score 25",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 590,
+          "upper": 591,
+          "description": "Un-Nooh pink, score 31",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 611,
+          "upper": 612,
+          "description": "Un-Nooh red attempt, missed",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 646,
+          "upper": 647,
+          "description": "Allen safety",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 665,
+          "upper": 666,
+          "description": "Un-Nooh safety",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 687,
+          "upper": 688,
+          "description": "Allen safety",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 704,
+          "upper": 705,
+          "description": "Un-Nooh safety",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 750,
+          "upper": 751,
+          "description": "Allen snooker escape, foul and miss",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 789,
+          "upper": 790,
+          "description": "Allen repeated snooker escape, foul and miss",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 820,
+          "upper": 821,
+          "description": "Allen repeated snooker escape, foul and miss",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 852,
+          "upper": 853,
+          "description": "Allen repeated snooker escape, foul and miss",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 892,
+          "upper": 893,
+          "description": "Allen repeated snooker escape, foul; Un-Nooh score 51",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 928,
+          "upper": 929,
+          "description": "Un-Nooh red attempt, missed",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 952,
+          "upper": 953,
+          "description": "Allen red attempt, missed",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 976,
+          "upper": 977,
+          "description": "Un-Nooh safety",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 996,
+          "upper": 997,
+          "description": "Allen last red, score 66",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 1007,
+          "upper": 1008,
+          "description": "Allen blue, score 71",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 1018,
+          "upper": 1019,
+          "description": "Allen yellow, score 73",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 1035,
+          "upper": 1036,
+          "description": "Allen green, score 76",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 1050.633333,
+          "upper": 1050.766667,
+          "description": "Allen brown, score 80",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved; additive 8 fps native-PTS source adjudication after first predictions",
+          "original_bounds": {
+            "lower": 1051,
+            "upper": 1052
+          }
+        },
+        {
+          "lower": 1066,
+          "upper": 1067,
+          "description": "Allen blue, score 85",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        },
+        {
+          "lower": 1082,
+          "upper": 1083,
+          "description": "Allen pink with rest, missed; no later stroke before EOF",
+          "provenance": "Codex complete chronological source-only blind_allen.json sha256=b33d172f6580b1d57a28eee1775f82319216f780441d3114487b74eb039196a6; not human approved"
+        }
+      ],
+      "clips": [],
+      "labels": [
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 163,
+          "end": 165,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 208,
+          "end": 209,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 244,
+          "end": 246,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 281,
+          "end": 282,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 313,
+          "end": 314,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 346,
+          "end": 347,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 375,
+          "end": 376,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 405,
+          "end": 406,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 457,
+          "end": 460,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 528,
+          "end": 529,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 550,
+          "end": 551,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 577,
+          "end": 578,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 597,
+          "end": 598,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 776,
+          "end": 782,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 804,
+          "end": 813,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 836,
+          "end": 844,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 874,
+          "end": 885,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "head": "handling",
+          "value": 1.0,
+          "start": 1013,
+          "end": 1014,
+          "weight": 1.0,
+          "provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        }
+      ]
+    }
+  ],
+  "label_schema_correction": "Handling notes were frozen before predictions under handling; evaluator requires labels. Contacts unchanged.",
+  "source_adjudications": {
+    "created_at": "2026-10-09T09:15:34.566891+00:00",
+    "blind": false,
+    "method": "Native-PTS source-only check at 8 fps, following timing-mismatch investigation.",
+    "changes": [
+      {
+        "reference_index": 10,
+        "original_bounds": {
+          "lower": 237,
+          "upper": 238
+        },
+        "adjudicated_bounds": {
+          "lower": 238.266667,
+          "upper": 238.4
+        },
+        "source_sheet_sha256": "735c915874cc9107d4df0fa2eed95835a6977c8090516082d9b38d2261336f0b",
+        "reason": "Original one-second bracket did not contain actual stroke; bounds now bracket stationary and first-moving white in source video. No shot added or removed."
+      },
+      {
+        "reference_index": 50,
+        "original_bounds": {
+          "lower": 1051,
+          "upper": 1052
+        },
+        "adjudicated_bounds": {
+          "lower": 1050.633333,
+          "upper": 1050.766667
+        },
+        "source_sheet_sha256": "981793654b88c0b3047bb6fb9728d6479b3d3bbe7b5b41ddded5f817bd004fd5",
+        "reason": "Original one-second bracket did not contain actual stroke; bounds now bracket stationary and first-moving white in source video. No shot added or removed."
+      }
+    ],
+    "original_results_preserved": true
+  }
+}

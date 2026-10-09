@@ -49,6 +49,11 @@ class TrainingConfig:
     target_event_recall: float = 0.98
     hard_negative_fraction: float = 0.1
     spatial_flow: bool = True
+    use_rgb: bool = True
+    rgb_dropout: float = 0.0
+    rgb_clip: float = 0.0
+    motion_translate_cells: int = 0
+    motion_scale_jitter: float = 0.0
 
     def __post_init__(self) -> None:
         continuous = (
@@ -57,6 +62,7 @@ class TrainingConfig:
             self.event_uncertainty_ratio, self.max_event_uncertainty_seconds,
             self.event_tolerance_seconds, self.target_event_recall,
             self.hard_negative_fraction,
+            self.rgb_dropout, self.rgb_clip, self.motion_scale_jitter,
         )
         if not np.isfinite(continuous).all():
             raise ValueError("Training and event decoding settings must be finite.")
@@ -74,6 +80,15 @@ class TrainingConfig:
             raise ValueError("Event NMS spacing and evaluation tolerance must be nonnegative.")
         if not 0 < self.hard_negative_fraction <= 1:
             raise ValueError('Hard negative fraction must be in (0,1].')
+        if (not isinstance(self.use_rgb, bool) or not isinstance(self.spatial_flow, bool)
+                or not 0 <= self.rgb_dropout < 1 or self.rgb_clip < 0
+                or not 0 <= self.motion_scale_jitter <= 2
+                or isinstance(self.motion_translate_cells, bool)
+                or not isinstance(self.motion_translate_cells, int) or self.motion_translate_cells < 0):
+            raise ValueError('Invalid neural modality/augmentation settings.')
+        if not self.spatial_flow and (not self.use_rgb or self.rgb_dropout or self.rgb_clip
+                                     or self.motion_translate_cells or self.motion_scale_jitter):
+            raise ValueError('Modality and motion augmentation require spatial motion geometry.')
 
     @property
     def event_candidate_settings(self) -> dict[str, float]:
@@ -518,6 +533,9 @@ def train_temporal(
             hidden_dim=config.hidden_dim,
             dropout=config.dropout,
             flow_grid=tuple(feature_spec.get('flow_grid', ())) if config.spatial_flow else (),
+            use_rgb=config.use_rgb, rgb_dropout=config.rgb_dropout, rgb_clip=config.rgb_clip,
+            motion_translate_cells=config.motion_translate_cells,
+            motion_scale_jitter=config.motion_scale_jitter,
         )
     ).to(device)
     # The holdout never contributes even unsupervised normalization statistics.
@@ -681,6 +699,13 @@ def main() -> None:
     parser.add_argument("--window-frames", type=int, default=512)
     parser.add_argument("--hidden-dim", type=int, default=96)
     parser.add_argument("--learning-rate", type=float, default=.0003)
+    parser.add_argument("--dropout", type=float, default=.15)
+    parser.add_argument("--target-event-recall", type=float, default=.98)
+    parser.add_argument("--use-rgb", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--rgb-dropout", type=float, default=0.)
+    parser.add_argument("--rgb-clip", type=float, default=0.)
+    parser.add_argument("--motion-translate-cells", type=int, default=0)
+    parser.add_argument("--motion-scale-jitter", type=float, default=0.)
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--event-nms-seconds", type=float, default=1.0)
     parser.add_argument("--event-uncertainty-ratio", type=float, default=.5)
@@ -694,6 +719,9 @@ def main() -> None:
         epochs=args.epochs, patience=args.patience, batch_size=args.batch_size,
         window_frames=args.window_frames, stride_frames=max(1, args.window_frames // 2),
         hidden_dim=args.hidden_dim, learning_rate=args.learning_rate, seed=args.seed,
+        dropout=args.dropout, target_event_recall=args.target_event_recall,
+        use_rgb=args.use_rgb, rgb_dropout=args.rgb_dropout, rgb_clip=args.rgb_clip,
+        motion_translate_cells=args.motion_translate_cells, motion_scale_jitter=args.motion_scale_jitter,
         min_event_gap_seconds=args.event_nms_seconds,
         event_uncertainty_ratio=args.event_uncertainty_ratio,
         max_event_uncertainty_seconds=args.max_event_uncertainty_seconds,

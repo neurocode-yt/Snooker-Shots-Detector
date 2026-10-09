@@ -1,0 +1,77 @@
+{
+  "scope": "Model selection on development data; Allen test not inspected",
+  "models": [
+    {
+      "variant": "motion_only",
+      "model": "G:\\2026 AI START\\Grok\\snooker\\data\\dl\\rescue_20261009\\motion_only.pt",
+      "development_metrics": {
+        "true_positive": 24,
+        "false_positive": 63,
+        "false_negative": 12,
+        "precision": 0.27586206896551724,
+        "recall": 0.6666666666666666,
+        "false_handling_clips": 8
+      },
+      "best_epoch": 11,
+      "calibration": {
+        "true_positive": 25,
+        "false_positive": 62,
+        "false_negative": 11,
+        "unlabelled_predictions_ignored": 0,
+        "precision": 0.28735632183908044,
+        "recall": 0.6944444444444444,
+        "f2": 0.5411255411255411,
+        "threshold": 0.25,
+        "scope": "raw_event_candidates_before_replay_handling_veto_and_clip_boundaries"
+      }
+    },
+    {
+      "variant": "appearance_dropout",
+      "model": "G:\\2026 AI START\\Grok\\snooker\\data\\dl\\rescue_20261009\\appearance_dropout.pt",
+      "development_metrics": {
+        "true_positive": 23,
+        "false_positive": 17,
+        "false_negative": 13,
+        "precision": 0.575,
+        "recall": 0.6388888888888888,
+        "false_handling_clips": 7
+      },
+      "best_epoch": 9,
+      "calibration": {
+        "true_positive": 23,
+        "false_positive": 17,
+        "false_negative": 13,
+        "unlabelled_predictions_ignored": 0,
+        "precision": 0.575,
+        "recall": 0.6388888888888888,
+        "f2": 0.625,
+        "threshold": 0.55,
+        "scope": "raw_event_candidates_before_replay_handling_veto_and_clip_boundaries"
+      }
+    },
+    {
+      "variant": "expanded_control",
+      "model": "G:\\2026 AI START\\Grok\\snooker\\data\\dl\\rescue_20261009\\expanded_control.pt",
+      "development_metrics": {
+        "true_positive": 25,
+        "false_positive": 51,
+        "false_negative": 11,
+        "precision": 0.32894736842105265,
+        "recall": 0.6944444444444444,
+        "false_handling_clips": 10
+      },
+      "best_epoch": 4,
+      "calibration": {
+        "true_positive": 25,
+        "false_positive": 51,
+        "false_negative": 11,
+        "unlabelled_predictions_ignored": 0,
+        "precision": 0.32894736842105265,
+        "recall": 0.6944444444444444,
+        "f2": 0.5681818181818181,
+        "threshold": 0.25,
+        "scope": "raw_event_candidates_before_replay_handling_veto_and_clip_boundaries"
+      }
+    }
+  ]
+}

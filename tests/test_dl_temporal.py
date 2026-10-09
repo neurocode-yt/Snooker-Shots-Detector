@@ -280,3 +280,90 @@ def test_train_cli_saves_real_weights_and_frozen_test_threshold(tmp_path) -> Non
     torch.manual_seed(2026)
     initial = TemporalHighlightNet(TemporalModelConfig(input_dim=4, hidden_dim=8, dropout=0))
     assert not torch.allclose(restored.fusion[-1].weight, initial.fusion[-1].weight)
+
+
+def test_motion_only_model_predictions_do_not_change_with_camera_appearance():
+    torch = pytest.importorskip('torch')
+    from snooker_ai.dl.temporal import TemporalHighlightNet
+    torch.set_num_threads(1)
+    model = TemporalHighlightNet(TemporalModelConfig(input_dim=58, hidden_dim=8,
+        flow_grid=(3,3), use_rgb=False, dropout=0)).eval()
+    original = torch.randn((1,20,58))
+    different_camera = original.clone()
+    different_camera[...,:4] = torch.randn((1,20,4))*100
+    with torch.inference_mode():
+        torch.testing.assert_close(model(original), model(different_camera), rtol=0, atol=0)
+
+
+def test_training_augmentation_is_disabled_during_chunked_inference():
+    torch = pytest.importorskip('torch')
+    from snooker_ai.dl.temporal import TemporalHighlightNet, predict_probabilities
+    torch.set_num_threads(1)
+    model = TemporalHighlightNet(TemporalModelConfig(input_dim=58, hidden_dim=8,
+        flow_grid=(3,3), rgb_dropout=.6, rgb_clip=4., motion_translate_cells=2,
+        motion_scale_jitter=.3, dropout=0)).eval()
+    features=np.random.default_rng(12).normal(size=(180,58)).astype(np.float32)
+    short=predict_probabilities(model, features, chunk_frames=40)
+    long=predict_probabilities(model, features, chunk_frames=512)
+    np.testing.assert_allclose(short,long,atol=1e-6)
+    np.testing.assert_array_equal(short,predict_probabilities(model,features,chunk_frames=40))
+
+
+def test_legacy_checkpoint_config_preserves_modality_behavior():
+    config=TemporalModelConfig.from_dict({'input_dim':58,'hidden_dim':8,'flow_grid':[3,3]})
+    assert config.use_rgb and config.rgb_dropout==0 and config.rgb_clip==0
+    assert config.motion_translate_cells==0 and config.motion_scale_jitter==0
+
+
+@pytest.mark.parametrize('options', [
+    {'rgb_dropout':float('nan')}, {'rgb_dropout':1.}, {'rgb_clip':-1.},
+    {'motion_translate_cells':True}, {'motion_translate_cells':.5},
+    {'motion_scale_jitter':float('inf')}, {'use_rgb':1},
+    {'spatial_flow':False,'rgb_dropout':.5},
+])
+def test_invalid_modality_settings_fail_before_training(options):
+    with pytest.raises(ValueError):
+        TrainingConfig(**options)
+
+
+def test_robust_checkpoint_preserves_deterministic_inference(tmp_path):
+    torch=pytest.importorskip('torch')
+    from snooker_ai.dl.temporal import (
+        TemporalHighlightNet,checkpoint_payload,load_temporal_checkpoint,predict_probabilities,
+    )
+    config=TemporalModelConfig(input_dim=58,hidden_dim=8,flow_grid=(3,3),rgb_dropout=.6,
+        rgb_clip=4.,motion_translate_cells=2,motion_scale_jitter=.3)
+    model=TemporalHighlightNet(config)
+    path=tmp_path/'robust.pt'
+    torch.save(checkpoint_payload(model,feature_spec={'dimension':58},dataset_fingerprint='fixture',
+        training={},calibration={}),path)
+    restored,_=load_temporal_checkpoint(path)
+    assert restored.config==config
+    features=np.random.default_rng(8).normal(size=(35,58)).astype(np.float32)
+    np.testing.assert_array_equal(predict_probabilities(model,features),predict_probabilities(restored,features))
+
+
+def test_max_event_ensemble_recovers_expert_contacts_without_vetoing_other_heads(tmp_path):
+    torch=pytest.importorskip('torch')
+    from snooker_ai.dl.temporal import (
+        TemporalHighlightNet,TemporalHighlightEnsemble,checkpoint_payload,load_temporal_checkpoint,
+    )
+    members=[TemporalHighlightNet(TemporalModelConfig(input_dim=4,hidden_dim=8,dropout=0)) for _ in range(2)]
+    for member,bias in zip(members,[[-5.,-2.,1.,-1.,3.],[5.,2.,-1.,1.,-3.]]):
+        with torch.no_grad():
+            member.fusion[-1].weight.zero_()
+            member.fusion[-1].bias.copy_(torch.tensor(bias))
+    features=torch.zeros((1,12,4))
+    model=TemporalHighlightEnsemble(members,[.8,.2],aggregation='max_event').eval()
+    probability=torch.sigmoid(model(features))
+    torch.testing.assert_close(probability[...,0],torch.full((1,12),torch.sigmoid(torch.tensor(5.)).item()))
+    expected=.8*torch.sigmoid(torch.tensor([-2.,1.,-1.,3.]))+.2*torch.sigmoid(torch.tensor([2.,-1.,1.,-3.]))
+    torch.testing.assert_close(probability[...,1:],expected.expand(1,12,4))
+    disabled=TemporalHighlightEnsemble(members,[1.,0.],aggregation='max_event').eval()
+    torch.testing.assert_close(torch.sigmoid(disabled(features)),torch.sigmoid(members[0](features)))
+    path=tmp_path/'ensemble.pt'
+    torch.save(checkpoint_payload(model,feature_spec={'dimension':4},dataset_fingerprint='fixture',
+                                 training={},calibration={}),path)
+    restored,_=load_temporal_checkpoint(path)
+    assert restored.aggregation=='max_event'
+    torch.testing.assert_close(restored(features),model(features))
