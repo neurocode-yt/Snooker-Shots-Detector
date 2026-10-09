@@ -39,6 +39,9 @@ def validate_holdout(manifest: dict, training: dict) -> set[str]:
     if not manifest.get('independent_holdout_available') or not manifest.get('videos'):
         raise ValueError('An explicitly declared nonempty independent holdout is required.')
     for video in manifest['videos']:
+        for name in ('event', 'keep', 'end', 'replay', 'replays', 'handling'):
+            if video.get(name):
+                raise ValueError(f'{name} annotations must use the evaluated labels schema, not an ignored key.')
         if video.get('split') != 'holdout' or video['group_id'] in groups:
             raise ValueError(f'{video["id"]} overlaps fitting/model selection or is not a holdout.')
         if not re.fullmatch(r'[A-Za-z0-9_-]+', str(video['id'])):

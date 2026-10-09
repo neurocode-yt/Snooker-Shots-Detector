@@ -1,0 +1,472 @@
+{
+  "video_id": "allen_un_nooh",
+  "selection_report_sha256": "8f52eccc497bc83f59b642b52950ec7c997d9eb30379018ce2a2c356124a413b",
+  "checkpoint_sha256": "06c0a214ce60f374887a257ea14b118f992c53e3bd641b04fb095f0e33eed574",
+  "output_path": "data\\dl\\rescue_20261009\\ensemble-render\\highlights.mp4",
+  "ffmpeg_decode_exit_code": 0,
+  "decode_errors": "",
+  "output_duration": 408.33,
+  "output_fps": 30.000244899958368,
+  "compared_contact_frames": 76,
+  "minimum_psnr_db": 28.950835964645183,
+  "contact_frame_comparisons": [
+    {
+      "prediction_index": 0,
+      "source_pts": 4.633333333333334,
+      "output_pts": 2.0,
+      "psnr_db": 48.05562616143969
+    },
+    {
+      "prediction_index": 0,
+      "source_pts": 5.033333333333333,
+      "output_pts": 2.4,
+      "psnr_db": 48.20309318701241
+    },
+    {
+      "prediction_index": 1,
+      "source_pts": 37.13333333333333,
+      "output_pts": 18.567,
+      "psnr_db": 40.28289257624057
+    },
+    {
+      "prediction_index": 1,
+      "source_pts": 37.53333333333333,
+      "output_pts": 18.967,
+      "psnr_db": 40.741788562446246
+    },
+    {
+      "prediction_index": 2,
+      "source_pts": 110.13333333333334,
+      "output_pts": 37.3,
+      "psnr_db": 48.20315707404757
+    },
+    {
+      "prediction_index": 2,
+      "source_pts": 110.53333333333333,
+      "output_pts": 37.7,
+      "psnr_db": 47.75915645554243
+    },
+    {
+      "prediction_index": 3,
+      "source_pts": 130.4,
+      "output_pts": 47.067,
+      "psnr_db": 47.807383119599436
+    },
+    {
+      "prediction_index": 3,
+      "source_pts": 130.8,
+      "output_pts": 47.467,
+      "psnr_db": 47.784075818371235
+    },
+    {
+      "prediction_index": 4,
+      "source_pts": 201.0,
+      "output_pts": 60.866,
+      "psnr_db": 30.58038120756922
+    },
+    {
+      "prediction_index": 4,
+      "source_pts": 201.4,
+      "output_pts": 61.266,
+      "psnr_db": 42.51049059385113
+    },
+    {
+      "prediction_index": 5,
+      "source_pts": 220.0,
+      "output_pts": 68.766,
+      "psnr_db": 43.211699436063554
+    },
+    {
+      "prediction_index": 5,
+      "source_pts": 220.4,
+      "output_pts": 69.166,
+      "psnr_db": 45.14253175784824
+    },
+    {
+      "prediction_index": 6,
+      "source_pts": 238.63333333333333,
+      "output_pts": 76.666,
+      "psnr_db": 31.14288144521992
+    },
+    {
+      "prediction_index": 6,
+      "source_pts": 239.03333333333333,
+      "output_pts": 77.066,
+      "psnr_db": 36.2282686512109
+    },
+    {
+      "prediction_index": 7,
+      "source_pts": 257.5,
+      "output_pts": 84.433,
+      "psnr_db": 34.58720166447673
+    },
+    {
+      "prediction_index": 7,
+      "source_pts": 257.9,
+      "output_pts": 84.833,
+      "psnr_db": 35.225937880043794
+    },
+    {
+      "prediction_index": 8,
+      "source_pts": 274.5,
+      "output_pts": 93.599,
+      "psnr_db": 32.521484666925694
+    },
+    {
+      "prediction_index": 8,
+      "source_pts": 274.9,
+      "output_pts": 93.999,
+      "psnr_db": 36.97417949728608
+    },
+    {
+      "prediction_index": 9,
+      "source_pts": 288.4,
+      "output_pts": 102.266,
+      "psnr_db": 38.4901889096603
+    },
+    {
+      "prediction_index": 9,
+      "source_pts": 288.8,
+      "output_pts": 102.666,
+      "psnr_db": 40.192962392146796
+    },
+    {
+      "prediction_index": 10,
+      "source_pts": 324.5,
+      "output_pts": 110.899,
+      "psnr_db": 37.40401491953565
+    },
+    {
+      "prediction_index": 10,
+      "source_pts": 324.9,
+      "output_pts": 111.299,
+      "psnr_db": 29.81226271725719
+    },
+    {
+      "prediction_index": 11,
+      "source_pts": 339.6333333333333,
+      "output_pts": 120.166,
+      "psnr_db": 32.53165375627172
+    },
+    {
+      "prediction_index": 11,
+      "source_pts": 340.03333333333336,
+      "output_pts": 120.566,
+      "psnr_db": 36.32984823725201
+    },
+    {
+      "prediction_index": 12,
+      "source_pts": 356.4,
+      "output_pts": 127.199,
+      "psnr_db": 47.72055112446101
+    },
+    {
+      "prediction_index": 12,
+      "source_pts": 356.8,
+      "output_pts": 127.599,
+      "psnr_db": 41.902052313403395
+    },
+    {
+      "prediction_index": 13,
+      "source_pts": 368.5,
+      "output_pts": 136.966,
+      "psnr_db": 42.146788900544145
+    },
+    {
+      "prediction_index": 13,
+      "source_pts": 368.9,
+      "output_pts": 137.366,
+      "psnr_db": 32.97086099550385
+    },
+    {
+      "prediction_index": 14,
+      "source_pts": 382.26666666666665,
+      "output_pts": 143.999,
+      "psnr_db": 36.99568443336351
+    },
+    {
+      "prediction_index": 14,
+      "source_pts": 382.6666666666667,
+      "output_pts": 144.399,
+      "psnr_db": 40.61781204595494
+    },
+    {
+      "prediction_index": 15,
+      "source_pts": 397.76666666666665,
+      "output_pts": 154.399,
+      "psnr_db": 47.82116916345579
+    },
+    {
+      "prediction_index": 15,
+      "source_pts": 398.1666666666667,
+      "output_pts": 154.799,
+      "psnr_db": 47.992797654203315
+    },
+    {
+      "prediction_index": 16,
+      "source_pts": 424.5,
+      "output_pts": 162.799,
+      "psnr_db": 36.038429428317414
+    },
+    {
+      "prediction_index": 16,
+      "source_pts": 424.9,
+      "output_pts": 163.199,
+      "psnr_db": 35.957188610281186
+    },
+    {
+      "prediction_index": 17,
+      "source_pts": 451.1333333333333,
+      "output_pts": 174.966,
+      "psnr_db": 48.11330877774538
+    },
+    {
+      "prediction_index": 17,
+      "source_pts": 451.53333333333336,
+      "output_pts": 175.366,
+      "psnr_db": 47.25661404685948
+    },
+    {
+      "prediction_index": 18,
+      "source_pts": 470.0,
+      "output_pts": 182.366,
+      "psnr_db": 47.68912534337785
+    },
+    {
+      "prediction_index": 18,
+      "source_pts": 470.4,
+      "output_pts": 182.766,
+      "psnr_db": 47.72441170058788
+    },
+    {
+      "prediction_index": 19,
+      "source_pts": 486.76666666666665,
+      "output_pts": 191.399,
+      "psnr_db": 47.92780595541771
+    },
+    {
+      "prediction_index": 19,
+      "source_pts": 487.1666666666667,
+      "output_pts": 191.799,
+      "psnr_db": 47.76277441997435
+    },
+    {
+      "prediction_index": 20,
+      "source_pts": 510.1333333333333,
+      "output_pts": 206.532,
+      "psnr_db": 47.65649427789594
+    },
+    {
+      "prediction_index": 20,
+      "source_pts": 510.53333333333336,
+      "output_pts": 206.932,
+      "psnr_db": 47.81400196882109
+    },
+    {
+      "prediction_index": 21,
+      "source_pts": 521.9,
+      "output_pts": 215.665,
+      "psnr_db": 33.117225611921214
+    },
+    {
+      "prediction_index": 21,
+      "source_pts": 522.3,
+      "output_pts": 216.065,
+      "psnr_db": 36.64608387630353
+    },
+    {
+      "prediction_index": 22,
+      "source_pts": 534.9,
+      "output_pts": 223.665,
+      "psnr_db": 28.950835964645183
+    },
+    {
+      "prediction_index": 22,
+      "source_pts": 535.3,
+      "output_pts": 224.065,
+      "psnr_db": 36.07503943582873
+    },
+    {
+      "prediction_index": 23,
+      "source_pts": 544.2666666666667,
+      "output_pts": 230.799,
+      "psnr_db": 38.409279651442596
+    },
+    {
+      "prediction_index": 23,
+      "source_pts": 544.6666666666666,
+      "output_pts": 231.199,
+      "psnr_db": 42.68535235307301
+    },
+    {
+      "prediction_index": 24,
+      "source_pts": 557.1333333333333,
+      "output_pts": 240.298,
+      "psnr_db": 47.40377522050939
+    },
+    {
+      "prediction_index": 24,
+      "source_pts": 557.5333333333333,
+      "output_pts": 240.698,
+      "psnr_db": 41.39204793471527
+    },
+    {
+      "prediction_index": 25,
+      "source_pts": 583.7666666666667,
+      "output_pts": 249.931,
+      "psnr_db": 48.056725516060006
+    },
+    {
+      "prediction_index": 25,
+      "source_pts": 584.1666666666666,
+      "output_pts": 250.331,
+      "psnr_db": 48.46225307381503
+    },
+    {
+      "prediction_index": 26,
+      "source_pts": 665.4,
+      "output_pts": 265.565,
+      "psnr_db": 47.76221450587822
+    },
+    {
+      "prediction_index": 26,
+      "source_pts": 665.8,
+      "output_pts": 265.965,
+      "psnr_db": 48.075506877849904
+    },
+    {
+      "prediction_index": 27,
+      "source_pts": 687.5,
+      "output_pts": 277.831,
+      "psnr_db": 34.010084272913204
+    },
+    {
+      "prediction_index": 27,
+      "source_pts": 687.9,
+      "output_pts": 278.231,
+      "psnr_db": 32.953520927656655
+    },
+    {
+      "prediction_index": 28,
+      "source_pts": 750.9,
+      "output_pts": 292.864,
+      "psnr_db": 33.52931799250863
+    },
+    {
+      "prediction_index": 28,
+      "source_pts": 751.3,
+      "output_pts": 293.264,
+      "psnr_db": 37.33527518099453
+    },
+    {
+      "prediction_index": 29,
+      "source_pts": 789.1333333333333,
+      "output_pts": 311.231,
+      "psnr_db": 36.322182663642984
+    },
+    {
+      "prediction_index": 29,
+      "source_pts": 789.5333333333333,
+      "output_pts": 311.631,
+      "psnr_db": 39.732730025203466
+    },
+    {
+      "prediction_index": 30,
+      "source_pts": 820.7666666666667,
+      "output_pts": 328.364,
+      "psnr_db": 47.8653917592564
+    },
+    {
+      "prediction_index": 30,
+      "source_pts": 821.1666666666666,
+      "output_pts": 328.764,
+      "psnr_db": 47.97822628397262
+    },
+    {
+      "prediction_index": 31,
+      "source_pts": 852.9,
+      "output_pts": 343.497,
+      "psnr_db": 35.36378830858892
+    },
+    {
+      "prediction_index": 31,
+      "source_pts": 853.3,
+      "output_pts": 343.897,
+      "psnr_db": 34.67073779546081
+    },
+    {
+      "prediction_index": 32,
+      "source_pts": 976.4,
+      "output_pts": 357.764,
+      "psnr_db": 37.58250994414488
+    },
+    {
+      "prediction_index": 32,
+      "source_pts": 976.8,
+      "output_pts": 358.164,
+      "psnr_db": 39.134159376396994
+    },
+    {
+      "prediction_index": 33,
+      "source_pts": 996.6333333333333,
+      "output_pts": 367.531,
+      "psnr_db": 37.782233210661495
+    },
+    {
+      "prediction_index": 33,
+      "source_pts": 997.0333333333333,
+      "output_pts": 367.931,
+      "psnr_db": 39.45534702427154
+    },
+    {
+      "prediction_index": 34,
+      "source_pts": 1018.6333333333333,
+      "output_pts": 375.664,
+      "psnr_db": 32.08028025711248
+    },
+    {
+      "prediction_index": 34,
+      "source_pts": 1019.0333333333333,
+      "output_pts": 376.064,
+      "psnr_db": 39.12848954635516
+    },
+    {
+      "prediction_index": 35,
+      "source_pts": 1035.4,
+      "output_pts": 383.197,
+      "psnr_db": 35.58212332791631
+    },
+    {
+      "prediction_index": 35,
+      "source_pts": 1035.8,
+      "output_pts": 383.597,
+      "psnr_db": 41.97764568574263
+    },
+    {
+      "prediction_index": 36,
+      "source_pts": 1050.6333333333334,
+      "output_pts": 391.697,
+      "psnr_db": 34.1922599420123
+    },
+    {
+      "prediction_index": 36,
+      "source_pts": 1051.0333333333333,
+      "output_pts": 392.097,
+      "psnr_db": 42.68356308039296
+    },
+    {
+      "prediction_index": 37,
+      "source_pts": 1065.6333333333334,
+      "output_pts": 400.73,
+      "psnr_db": 41.283444496652805
+    },
+    {
+      "prediction_index": 37,
+      "source_pts": 1066.0333333333333,
+      "output_pts": 401.13,
+      "psnr_db": 47.09701334257336
+    }
+  ],
+  "complete_shot_outcomes_verified": false,
+  "deployment_quality_verified": false
+}

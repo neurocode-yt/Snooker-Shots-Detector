@@ -1,0 +1,2731 @@
+{
+  "video_id": "allen_un_nooh",
+  "group_id": "allen_un_nooh",
+  "split": "dev",
+  "source_path": "data/uploads/20260823-230731_61d3cb10_test_mark_allen_vs_thep.mp4",
+  "features_path": "G:\\2026 AI START\\Grok\\snooker\\data\\dl\\rescue_20261009\\allen_un_nooh.npz",
+  "feature_samples": 8745,
+  "selected_clip_count": 20,
+  "selected_seconds": 200.4666666666667,
+  "dl": {
+    "true_positive": 16,
+    "false_positive": 4,
+    "false_negative": 37,
+    "precision": 0.8,
+    "recall": 0.3018867924528302,
+    "matches": [
+      {
+        "prediction_index": 0,
+        "reference_index": 1,
+        "timestamp": 37.13333333333333,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 1,
+        "reference_index": 9,
+        "timestamp": 220.0,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 3,
+        "reference_index": 11,
+        "timestamp": 257.5,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 4,
+        "reference_index": 13,
+        "timestamp": 288.5,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 6,
+        "reference_index": 16,
+        "timestamp": 339.76666666666665,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 8,
+        "reference_index": 20,
+        "timestamp": 397.76666666666665,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 9,
+        "reference_index": 22,
+        "timestamp": 450.76666666666665,
+        "error_outside_bounds": 0.2333333333333485
+      },
+      {
+        "prediction_index": 10,
+        "reference_index": 23,
+        "timestamp": 470.0,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 11,
+        "reference_index": 24,
+        "timestamp": 485.9,
+        "error_outside_bounds": 0.10000000000002274
+      },
+      {
+        "prediction_index": 12,
+        "reference_index": 28,
+        "timestamp": 544.2666666666667,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 13,
+        "reference_index": 36,
+        "timestamp": 687.5,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 14,
+        "reference_index": 39,
+        "timestamp": 789.1333333333333,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 15,
+        "reference_index": 45,
+        "timestamp": 976.4,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 16,
+        "reference_index": 48,
+        "timestamp": 1018.6333333333333,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 17,
+        "reference_index": 49,
+        "timestamp": 1035.5,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 18,
+        "reference_index": 50,
+        "timestamp": 1050.6333333333334,
+        "error_outside_bounds": 0.0
+      }
+    ],
+    "missed_reference_indexes": [
+      0,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      10,
+      12,
+      14,
+      15,
+      17,
+      18,
+      19,
+      21,
+      25,
+      26,
+      27,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      37,
+      38,
+      40,
+      41,
+      42,
+      43,
+      44,
+      46,
+      47,
+      51,
+      52
+    ],
+    "false_prediction_indexes": [
+      2,
+      5,
+      7,
+      19
+    ],
+    "unreviewed_predictions_ignored": 0,
+    "tolerance_seconds": 0.25,
+    "scope": "Exhaustively reviewed source intervals only",
+    "source_contact_coverage": {
+      "fully_covered_brackets": 21,
+      "partial_brackets": 0,
+      "missing_brackets": 32,
+      "fully_covered_recall": 0.39622641509433965,
+      "fully_covered_reference_indexes": [
+        1,
+        9,
+        10,
+        11,
+        13,
+        15,
+        16,
+        18,
+        20,
+        22,
+        23,
+        24,
+        28,
+        36,
+        39,
+        45,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "partial_reference_indexes": [],
+      "missing_reference_indexes": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        12,
+        14,
+        17,
+        19,
+        21,
+        25,
+        26,
+        27,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        37,
+        38,
+        40,
+        41,
+        42,
+        43,
+        44,
+        46,
+        47
+      ],
+      "scope": "Single source clip contains the complete contact uncertainty interval; clip ends are exclusive. This checks clipping records, not decoded frames or complete shot outcomes."
+    },
+    "boundary_errors": [],
+    "boundary_reference_kind": "Reviewed editorial preferences; not physical-stop truth",
+    "labelled_contaminants": {
+      "replay": [],
+      "handling": [
+        {
+          "prediction_index": 2,
+          "overlap_seconds": 0.13333333333332575,
+          "label_provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "prediction_index": 7,
+          "overlap_seconds": 0.6333333333333258,
+          "label_provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "prediction_index": 9,
+          "overlap_seconds": 0.5,
+          "label_provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        }
+      ]
+    },
+    "false_replay_clips": 0,
+    "false_handling_clips": 3,
+    "original_contact_metrics": {
+      "true_positive": 15,
+      "false_positive": 5,
+      "false_negative": 38,
+      "precision": 0.75,
+      "recall": 0.2830188679245283,
+      "matches": [
+        {
+          "prediction_index": 0,
+          "reference_index": 1,
+          "timestamp": 37.13333333333333,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 1,
+          "reference_index": 9,
+          "timestamp": 220.0,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 3,
+          "reference_index": 11,
+          "timestamp": 257.5,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 4,
+          "reference_index": 13,
+          "timestamp": 288.5,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 6,
+          "reference_index": 16,
+          "timestamp": 339.76666666666665,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 8,
+          "reference_index": 20,
+          "timestamp": 397.76666666666665,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 9,
+          "reference_index": 22,
+          "timestamp": 450.76666666666665,
+          "error_outside_bounds": 0.2333333333333485
+        },
+        {
+          "prediction_index": 10,
+          "reference_index": 23,
+          "timestamp": 470.0,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 11,
+          "reference_index": 24,
+          "timestamp": 485.9,
+          "error_outside_bounds": 0.10000000000002274
+        },
+        {
+          "prediction_index": 12,
+          "reference_index": 28,
+          "timestamp": 544.2666666666667,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 13,
+          "reference_index": 36,
+          "timestamp": 687.5,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 14,
+          "reference_index": 39,
+          "timestamp": 789.1333333333333,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 15,
+          "reference_index": 45,
+          "timestamp": 976.4,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 16,
+          "reference_index": 48,
+          "timestamp": 1018.6333333333333,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 17,
+          "reference_index": 49,
+          "timestamp": 1035.5,
+          "error_outside_bounds": 0.0
+        }
+      ],
+      "missed_reference_indexes": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        10,
+        12,
+        14,
+        15,
+        17,
+        18,
+        19,
+        21,
+        25,
+        26,
+        27,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        37,
+        38,
+        40,
+        41,
+        42,
+        43,
+        44,
+        46,
+        47,
+        50,
+        51,
+        52
+      ],
+      "false_prediction_indexes": [
+        2,
+        5,
+        7,
+        18,
+        19
+      ],
+      "unreviewed_predictions_ignored": 0,
+      "tolerance_seconds": 0.25,
+      "scope": "Exhaustively reviewed source intervals only"
+    },
+    "adjudicated_contact_count": 2,
+    "contact_annotation_note": "Primary results use additive source adjudications; original labels also reported"
+  },
+  "dl_strict": {
+    "true_positive": 14,
+    "false_positive": 6,
+    "false_negative": 39,
+    "precision": 0.7,
+    "recall": 0.2641509433962264,
+    "matches": [
+      {
+        "prediction_index": 0,
+        "reference_index": 1,
+        "timestamp": 37.13333333333333,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 1,
+        "reference_index": 9,
+        "timestamp": 220.0,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 3,
+        "reference_index": 11,
+        "timestamp": 257.5,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 4,
+        "reference_index": 13,
+        "timestamp": 288.5,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 6,
+        "reference_index": 16,
+        "timestamp": 339.76666666666665,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 8,
+        "reference_index": 20,
+        "timestamp": 397.76666666666665,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 10,
+        "reference_index": 23,
+        "timestamp": 470.0,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 12,
+        "reference_index": 28,
+        "timestamp": 544.2666666666667,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 13,
+        "reference_index": 36,
+        "timestamp": 687.5,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 14,
+        "reference_index": 39,
+        "timestamp": 789.1333333333333,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 15,
+        "reference_index": 45,
+        "timestamp": 976.4,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 16,
+        "reference_index": 48,
+        "timestamp": 1018.6333333333333,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 17,
+        "reference_index": 49,
+        "timestamp": 1035.5,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 18,
+        "reference_index": 50,
+        "timestamp": 1050.6333333333334,
+        "error_outside_bounds": 0.0
+      }
+    ],
+    "missed_reference_indexes": [
+      0,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      10,
+      12,
+      14,
+      15,
+      17,
+      18,
+      19,
+      21,
+      22,
+      24,
+      25,
+      26,
+      27,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      37,
+      38,
+      40,
+      41,
+      42,
+      43,
+      44,
+      46,
+      47,
+      51,
+      52
+    ],
+    "false_prediction_indexes": [
+      2,
+      5,
+      7,
+      9,
+      11,
+      19
+    ],
+    "unreviewed_predictions_ignored": 0,
+    "tolerance_seconds": 0,
+    "scope": "Exhaustively reviewed source intervals only",
+    "source_contact_coverage": {
+      "fully_covered_brackets": 21,
+      "partial_brackets": 0,
+      "missing_brackets": 32,
+      "fully_covered_recall": 0.39622641509433965,
+      "fully_covered_reference_indexes": [
+        1,
+        9,
+        10,
+        11,
+        13,
+        15,
+        16,
+        18,
+        20,
+        22,
+        23,
+        24,
+        28,
+        36,
+        39,
+        45,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "partial_reference_indexes": [],
+      "missing_reference_indexes": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        12,
+        14,
+        17,
+        19,
+        21,
+        25,
+        26,
+        27,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        37,
+        38,
+        40,
+        41,
+        42,
+        43,
+        44,
+        46,
+        47
+      ],
+      "scope": "Single source clip contains the complete contact uncertainty interval; clip ends are exclusive. This checks clipping records, not decoded frames or complete shot outcomes."
+    },
+    "boundary_errors": [],
+    "boundary_reference_kind": "Reviewed editorial preferences; not physical-stop truth",
+    "labelled_contaminants": {
+      "replay": [],
+      "handling": [
+        {
+          "prediction_index": 2,
+          "overlap_seconds": 0.13333333333332575,
+          "label_provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "prediction_index": 7,
+          "overlap_seconds": 0.6333333333333258,
+          "label_provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        },
+        {
+          "prediction_index": 9,
+          "overlap_seconds": 0.5,
+          "label_provenance": "Same source-only handling notes frozen before predictions; converted to evaluated label schema"
+        }
+      ]
+    },
+    "false_replay_clips": 0,
+    "false_handling_clips": 3,
+    "original_contact_metrics": {
+      "true_positive": 13,
+      "false_positive": 7,
+      "false_negative": 40,
+      "precision": 0.65,
+      "recall": 0.24528301886792453,
+      "matches": [
+        {
+          "prediction_index": 0,
+          "reference_index": 1,
+          "timestamp": 37.13333333333333,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 1,
+          "reference_index": 9,
+          "timestamp": 220.0,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 3,
+          "reference_index": 11,
+          "timestamp": 257.5,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 4,
+          "reference_index": 13,
+          "timestamp": 288.5,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 6,
+          "reference_index": 16,
+          "timestamp": 339.76666666666665,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 8,
+          "reference_index": 20,
+          "timestamp": 397.76666666666665,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 10,
+          "reference_index": 23,
+          "timestamp": 470.0,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 12,
+          "reference_index": 28,
+          "timestamp": 544.2666666666667,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 13,
+          "reference_index": 36,
+          "timestamp": 687.5,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 14,
+          "reference_index": 39,
+          "timestamp": 789.1333333333333,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 15,
+          "reference_index": 45,
+          "timestamp": 976.4,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 16,
+          "reference_index": 48,
+          "timestamp": 1018.6333333333333,
+          "error_outside_bounds": 0.0
+        },
+        {
+          "prediction_index": 17,
+          "reference_index": 49,
+          "timestamp": 1035.5,
+          "error_outside_bounds": 0.0
+        }
+      ],
+      "missed_reference_indexes": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        10,
+        12,
+        14,
+        15,
+        17,
+        18,
+        19,
+        21,
+        22,
+        24,
+        25,
+        26,
+        27,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        37,
+        38,
+        40,
+        41,
+        42,
+        43,
+        44,
+        46,
+        47,
+        50,
+        51,
+        52
+      ],
+      "false_prediction_indexes": [
+        2,
+        5,
+        7,
+        9,
+        11,
+        18,
+        19
+      ],
+      "unreviewed_predictions_ignored": 0,
+      "tolerance_seconds": 0,
+      "scope": "Exhaustively reviewed source intervals only"
+    },
+    "adjudicated_contact_count": 2,
+    "contact_annotation_note": "Primary results use additive source adjudications; original labels also reported"
+  },
+  "diagnostics": {
+    "algorithm": "dl_algo",
+    "boundary_kind": "neural_edit_estimate",
+    "stop_confirmed": false,
+    "validated_heads": {
+      "keep": true,
+      "end": true,
+      "replay": true,
+      "handling": true
+    },
+    "unvalidated_heads": [],
+    "predictions": 8745,
+    "event_threshold": 0.9500000000000001,
+    "candidates": 20,
+    "included_shots": 20,
+    "excluded_replays": 0,
+    "excluded_handling": 0,
+    "review_required": 6,
+    "replay_spans": [
+      [
+        26.433333333333337,
+        26.83333333333333
+      ],
+      [
+        29.56666666666667,
+        30.33333333333333
+      ],
+      [
+        32.43333333333334,
+        32.83333333333333
+      ],
+      [
+        73.43333333333334,
+        81.56666666666666
+      ],
+      [
+        98.83333333333334,
+        104.2
+      ],
+      [
+        121.7,
+        122.56666666666666
+      ],
+      [
+        122.83333333333334,
+        124.2
+      ],
+      [
+        124.83333333333334,
+        125.33333333333333
+      ],
+      [
+        146.83333333333334,
+        150.2
+      ],
+      [
+        150.33333333333334,
+        151.2
+      ],
+      [
+        167.70000000000002,
+        168.7
+      ],
+      [
+        170.33333333333334,
+        170.83333333333334
+      ],
+      [
+        170.93333333333334,
+        176.2
+      ],
+      [
+        192.83333333333334,
+        194.83333333333334
+      ],
+      [
+        210.20000000000002,
+        211.06666666666666
+      ],
+      [
+        211.20000000000002,
+        212.06666666666666
+      ],
+      [
+        212.20000000000002,
+        214.06666666666666
+      ],
+      [
+        214.20000000000002,
+        214.7
+      ],
+      [
+        215.43333333333334,
+        216.33333333333334
+      ],
+      [
+        229.33333333333334,
+        233.46666666666667
+      ],
+      [
+        233.56666666666666,
+        233.96666666666667
+      ],
+      [
+        246.56666666666666,
+        252.33333333333334
+      ],
+      [
+        266.3333333333333,
+        268.2
+      ],
+      [
+        268.3333333333333,
+        268.96666666666664
+      ],
+      [
+        269.06666666666666,
+        269.46666666666664
+      ],
+      [
+        296.2,
+        296.7
+      ],
+      [
+        296.8333333333333,
+        300.3333333333333
+      ],
+      [
+        316.93333333333334,
+        317.46666666666664
+      ],
+      [
+        318.56666666666666,
+        319.2
+      ],
+      [
+        332.43333333333334,
+        335.06666666666666
+      ],
+      [
+        348.06666666666666,
+        348.96666666666664
+      ],
+      [
+        349.56666666666666,
+        350.46666666666664
+      ],
+      [
+        350.8333333333333,
+        351.46666666666664
+      ],
+      [
+        415.56666666666666,
+        415.96666666666664
+      ],
+      [
+        459.2,
+        460.56666666666666
+      ],
+      [
+        463.3333333333333,
+        463.8333333333333
+      ],
+      [
+        478.7,
+        481.8333333333333
+      ],
+      [
+        504.43333333333334,
+        504.8333333333333
+      ],
+      [
+        531.0666666666666,
+        531.4666666666667
+      ],
+      [
+        531.5666666666666,
+        531.9666666666667
+      ],
+      [
+        566.5666666666666,
+        567.2
+      ],
+      [
+        604.8333333333333,
+        605.7
+      ],
+      [
+        605.8333333333333,
+        606.5666666666666
+      ],
+      [
+        626.4333333333334,
+        631.4666666666667
+      ],
+      [
+        634.8333333333333,
+        635.3333333333333
+      ],
+      [
+        638.3333333333333,
+        640.9666666666667
+      ],
+      [
+        641.3333333333333,
+        641.8333333333333
+      ],
+      [
+        655.9333333333334,
+        656.3333333333333
+      ],
+      [
+        656.9333333333334,
+        657.5666666666666
+      ],
+      [
+        657.7,
+        661.3333333333333
+      ],
+      [
+        744.0666666666666,
+        744.5666666666666
+      ],
+      [
+        773.4333333333334,
+        774.9666666666667
+      ],
+      [
+        776.2,
+        776.9666666666667
+      ],
+      [
+        777.4333333333334,
+        779.3333333333333
+      ],
+      [
+        781.0666666666666,
+        782.2
+      ],
+      [
+        806.9333333333334,
+        807.4666666666667
+      ],
+      [
+        809.2,
+        810.0666666666666
+      ],
+      [
+        810.2,
+        810.9666666666667
+      ],
+      [
+        811.2,
+        812.2
+      ],
+      [
+        813.2,
+        813.7
+      ],
+      [
+        842.0666666666666,
+        842.7
+      ],
+      [
+        844.8333333333333,
+        846.3333333333333
+      ],
+      [
+        920.4333333333334,
+        922.3333333333333
+      ],
+      [
+        922.4333333333334,
+        924.2
+      ],
+      [
+        924.3333333333333,
+        924.9666666666667
+      ],
+      [
+        942.4333333333334,
+        943.0666666666666
+      ],
+      [
+        943.3333333333333,
+        944.4666666666667
+      ],
+      [
+        962.3333333333333,
+        965.2
+      ],
+      [
+        965.7,
+        966.4666666666667
+      ],
+      [
+        985.2,
+        990.7
+      ],
+      [
+        1025.3333333333335,
+        1029.8333333333333
+      ],
+      [
+        1029.9333333333334,
+        1030.3333333333333
+      ],
+      [
+        1044.9333333333334,
+        1045.5666666666666
+      ]
+    ],
+    "cadence_seconds": 0.13333333333332575,
+    "boundary_reasons": {
+      "learned_end_and_keep": 20
+    }
+  },
+  "candidates": [
+    {
+      "timestamp": 37.13333333333333,
+      "confidence": 0.9639171957969666,
+      "evidence": {
+        "neural_event_probability": 0.9639171957969666,
+        "neural_keep_probability": 0.9488526582717896,
+        "neural_end_probability": 0.09446384012699127,
+        "neural_replay_probability": 0.005415258463472128,
+        "neural_handling_probability": 0.009964571334421635
+      },
+      "uncertainty_start": 37.06666666666667,
+      "uncertainty_end": 37.199999999999996,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 220.0,
+      "confidence": 0.9999921321868896,
+      "evidence": {
+        "neural_event_probability": 0.9999921321868896,
+        "neural_keep_probability": 0.915142297744751,
+        "neural_end_probability": 0.1777685284614563,
+        "neural_replay_probability": 0.011288287118077278,
+        "neural_handling_probability": 0.04696252569556236
+      },
+      "uncertainty_start": 219.93333333333334,
+      "uncertainty_end": 220.06666666666666,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 238.76666666666668,
+      "confidence": 0.999990701675415,
+      "evidence": {
+        "neural_event_probability": 0.999990701675415,
+        "neural_keep_probability": 0.902773380279541,
+        "neural_end_probability": 0.2281540185213089,
+        "neural_replay_probability": 0.013879099860787392,
+        "neural_handling_probability": 0.046822596341371536
+      },
+      "uncertainty_start": 238.56666666666666,
+      "uncertainty_end": 238.83333333333334,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 257.5,
+      "confidence": 0.9995285272598267,
+      "evidence": {
+        "neural_event_probability": 0.9995285272598267,
+        "neural_keep_probability": 0.8841055035591125,
+        "neural_end_probability": 0.2000935822725296,
+        "neural_replay_probability": 0.014869187027215958,
+        "neural_handling_probability": 0.02586653083562851
+      },
+      "uncertainty_start": 257.43333333333334,
+      "uncertainty_end": 257.56666666666666,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 288.5,
+      "confidence": 0.9996514320373535,
+      "evidence": {
+        "neural_event_probability": 0.9996514320373535,
+        "neural_keep_probability": 0.9404299855232239,
+        "neural_end_probability": 0.2012433409690857,
+        "neural_replay_probability": 0.007997927255928516,
+        "neural_handling_probability": 0.02163689397275448
+      },
+      "uncertainty_start": 288.43333333333334,
+      "uncertainty_end": 288.56666666666666,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 324.5,
+      "confidence": 0.999985933303833,
+      "evidence": {
+        "neural_event_probability": 0.999985933303833,
+        "neural_keep_probability": 0.8819484114646912,
+        "neural_end_probability": 0.19790078699588776,
+        "neural_replay_probability": 0.016491839662194252,
+        "neural_handling_probability": 0.06591425836086273
+      },
+      "uncertainty_start": 324.43333333333334,
+      "uncertainty_end": 324.56666666666666,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 339.76666666666665,
+      "confidence": 0.9999867677688599,
+      "evidence": {
+        "neural_event_probability": 0.9999867677688599,
+        "neural_keep_probability": 0.9071831107139587,
+        "neural_end_probability": 0.20099017024040222,
+        "neural_replay_probability": 0.011617904528975487,
+        "neural_handling_probability": 0.046814847737550735
+      },
+      "uncertainty_start": 339.7,
+      "uncertainty_end": 339.8333333333333,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 368.5,
+      "confidence": 0.999982476234436,
+      "evidence": {
+        "neural_event_probability": 0.999982476234436,
+        "neural_keep_probability": 0.9079331755638123,
+        "neural_end_probability": 0.2364274114370346,
+        "neural_replay_probability": 0.016572773456573486,
+        "neural_handling_probability": 0.08363473415374756
+      },
+      "uncertainty_start": 368.43333333333334,
+      "uncertainty_end": 368.56666666666666,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 397.76666666666665,
+      "confidence": 0.9964326620101929,
+      "evidence": {
+        "neural_event_probability": 0.9964326620101929,
+        "neural_keep_probability": 0.8924469947814941,
+        "neural_end_probability": 0.21373382210731506,
+        "neural_replay_probability": 0.009730937890708447,
+        "neural_handling_probability": 0.03155050799250603
+      },
+      "uncertainty_start": 397.7,
+      "uncertainty_end": 397.8333333333333,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 450.76666666666665,
+      "confidence": 0.9999533891677856,
+      "evidence": {
+        "neural_event_probability": 0.9999533891677856,
+        "neural_keep_probability": 0.9087416529655457,
+        "neural_end_probability": 0.19724661111831665,
+        "neural_replay_probability": 0.018678730353713036,
+        "neural_handling_probability": 0.04822983220219612
+      },
+      "uncertainty_start": 450.7,
+      "uncertainty_end": 450.8333333333333,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 470.0,
+      "confidence": 0.9995344877243042,
+      "evidence": {
+        "neural_event_probability": 0.9995344877243042,
+        "neural_keep_probability": 0.9371931552886963,
+        "neural_end_probability": 0.11116113513708115,
+        "neural_replay_probability": 0.00853535532951355,
+        "neural_handling_probability": 0.02670498751103878
+      },
+      "uncertainty_start": 469.93333333333334,
+      "uncertainty_end": 470.06666666666666,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 485.9,
+      "confidence": 0.998963475227356,
+      "evidence": {
+        "neural_event_probability": 0.998963475227356,
+        "neural_keep_probability": 0.9262263774871826,
+        "neural_end_probability": 0.1164761409163475,
+        "neural_replay_probability": 0.007870329543948174,
+        "neural_handling_probability": 0.023263270035386086
+      },
+      "uncertainty_start": 485.8333333333333,
+      "uncertainty_end": 485.96666666666664,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 544.2666666666667,
+      "confidence": 0.999771773815155,
+      "evidence": {
+        "neural_event_probability": 0.999771773815155,
+        "neural_keep_probability": 0.9189237952232361,
+        "neural_end_probability": 0.1790286898612976,
+        "neural_replay_probability": 0.007031923159956932,
+        "neural_handling_probability": 0.024679265916347504
+      },
+      "uncertainty_start": 544.2,
+      "uncertainty_end": 544.3333333333333,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 687.5,
+      "confidence": 0.999305248260498,
+      "evidence": {
+        "neural_event_probability": 0.999305248260498,
+        "neural_keep_probability": 0.901999294757843,
+        "neural_end_probability": 0.20532433688640594,
+        "neural_replay_probability": 0.017112204805016518,
+        "neural_handling_probability": 0.04989258199930191
+      },
+      "uncertainty_start": 687.4333333333334,
+      "uncertainty_end": 687.5666666666666,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 789.1333333333333,
+      "confidence": 0.99998939037323,
+      "evidence": {
+        "neural_event_probability": 0.99998939037323,
+        "neural_keep_probability": 0.892597496509552,
+        "neural_end_probability": 0.23498448729515076,
+        "neural_replay_probability": 0.0184527225792408,
+        "neural_handling_probability": 0.08464633673429489
+      },
+      "uncertainty_start": 789.0666666666666,
+      "uncertainty_end": 789.2,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 976.4,
+      "confidence": 0.9999802112579346,
+      "evidence": {
+        "neural_event_probability": 0.9999802112579346,
+        "neural_keep_probability": 0.8920518755912781,
+        "neural_end_probability": 0.24172207713127136,
+        "neural_replay_probability": 0.01978953368961811,
+        "neural_handling_probability": 0.07153833657503128
+      },
+      "uncertainty_start": 976.3333333333333,
+      "uncertainty_end": 976.4666666666667,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 1018.6333333333333,
+      "confidence": 0.999937891960144,
+      "evidence": {
+        "neural_event_probability": 0.999937891960144,
+        "neural_keep_probability": 0.8743683695793152,
+        "neural_end_probability": 0.2418087273836136,
+        "neural_replay_probability": 0.027289094403386116,
+        "neural_handling_probability": 0.15615025162696838
+      },
+      "uncertainty_start": 1018.5666666666666,
+      "uncertainty_end": 1018.7,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 1035.5,
+      "confidence": 0.9999600648880005,
+      "evidence": {
+        "neural_event_probability": 0.9999600648880005,
+        "neural_keep_probability": 0.9080513119697571,
+        "neural_end_probability": 0.22985953092575073,
+        "neural_replay_probability": 0.012030180543661118,
+        "neural_handling_probability": 0.042402707040309906
+      },
+      "uncertainty_start": 1035.4333333333334,
+      "uncertainty_end": 1035.5666666666666,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 1050.6333333333334,
+      "confidence": 0.9984843134880066,
+      "evidence": {
+        "neural_event_probability": 0.9984843134880066,
+        "neural_keep_probability": 0.9549770355224609,
+        "neural_end_probability": 0.17706215381622314,
+        "neural_replay_probability": 0.004949244670569897,
+        "neural_handling_probability": 0.012148217298090458
+      },
+      "uncertainty_start": 1050.5666666666668,
+      "uncertainty_end": 1050.7,
+      "camera_view": "other",
+      "possible_replay": false
+    },
+    {
+      "timestamp": 1065.6333333333334,
+      "confidence": 0.9999597072601318,
+      "evidence": {
+        "neural_event_probability": 0.9999597072601318,
+        "neural_keep_probability": 0.8711347579956055,
+        "neural_end_probability": 0.2259819507598877,
+        "neural_replay_probability": 0.015524826943874359,
+        "neural_handling_probability": 0.05675697326660156
+      },
+      "uncertainty_start": 1065.5666666666668,
+      "uncertainty_end": 1065.7,
+      "camera_view": "other",
+      "possible_replay": false
+    }
+  ],
+  "shots": [
+    {
+      "shot_id": 1,
+      "preparation_start": 35.13333333333333,
+      "cue_strike": 37.13333333333333,
+      "cue_strike_timestamp": 37.13333333333333,
+      "ball_motion_start": 37.13333333333333,
+      "ball_motion_end": 52.266666666666666,
+      "clip_start": 35.13333333333333,
+      "clip_end": 52.266666666666666,
+      "clip_start_timestamp": 35.13333333333333,
+      "clip_end_timestamp": 52.266666666666666,
+      "shot_confidence": 0.9639171957969666,
+      "start_confidence": 0.9639171957969666,
+      "end_confidence": 0.5835701823234558,
+      "last_ball_motion_timestamp": 52.266666666666666,
+      "physical_stop_timestamp": 52.266666666666666,
+      "stop_confirmation_timestamp": 52.266666666666666,
+      "strike_confidence": 0.9639171957969666,
+      "stop_confidence": 0.5835701823234558,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": true,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 37.06666666666667,
+        "event_uncertainty_end": 37.199999999999996,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666663,
+        "minimum_clip_end_timestamp": 39.199999999999996,
+        "usable_source_start_timestamp": 32.83333333333333,
+        "usable_source_end_timestamp": 73.43333333333334,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 52.266666666666666,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.9639171957969666,
+        "neural_keep_probability": 0.9488526582717896,
+        "neural_end_probability": 0.09446384012699127,
+        "neural_replay_probability": 0.005415258463472128,
+        "neural_handling_probability": 0.009964571334421635
+      },
+      "importance": 0.9639171957969666,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "low"
+    },
+    {
+      "shot_id": 2,
+      "preparation_start": 218.0,
+      "cue_strike": 220.0,
+      "cue_strike_timestamp": 220.0,
+      "ball_motion_start": 220.0,
+      "ball_motion_end": 226.26666666666668,
+      "clip_start": 218.0,
+      "clip_end": 226.26666666666668,
+      "clip_start_timestamp": 218.0,
+      "clip_end_timestamp": 226.26666666666668,
+      "shot_confidence": 0.9999921321868896,
+      "start_confidence": 0.9999921321868896,
+      "end_confidence": 0.6016803979873657,
+      "last_ball_motion_timestamp": 226.26666666666668,
+      "physical_stop_timestamp": 226.26666666666668,
+      "stop_confirmation_timestamp": 226.26666666666668,
+      "strike_confidence": 0.9999921321868896,
+      "stop_confidence": 0.6016803979873657,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": false,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 219.93333333333334,
+        "event_uncertainty_end": 220.06666666666666,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666663,
+        "minimum_clip_end_timestamp": 222.06666666666666,
+        "usable_source_start_timestamp": 216.33333333333334,
+        "usable_source_end_timestamp": 229.33333333333334,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 226.26666666666668,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.9999921321868896,
+        "neural_keep_probability": 0.915142297744751,
+        "neural_end_probability": 0.1777685284614563,
+        "neural_replay_probability": 0.011288287118077278,
+        "neural_handling_probability": 0.04696252569556236
+      },
+      "importance": 0.9999921321868896,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "high"
+    },
+    {
+      "shot_id": 3,
+      "preparation_start": 236.76666666666668,
+      "cue_strike": 238.76666666666668,
+      "cue_strike_timestamp": 238.76666666666668,
+      "ball_motion_start": 238.76666666666668,
+      "ball_motion_end": 244.13333333333333,
+      "clip_start": 236.76666666666668,
+      "clip_end": 244.13333333333333,
+      "clip_start_timestamp": 236.76666666666668,
+      "clip_end_timestamp": 244.13333333333333,
+      "shot_confidence": 0.999990701675415,
+      "start_confidence": 0.999990701675415,
+      "end_confidence": 0.7684612274169922,
+      "last_ball_motion_timestamp": 244.13333333333333,
+      "physical_stop_timestamp": 244.13333333333333,
+      "stop_confirmation_timestamp": 244.13333333333333,
+      "strike_confidence": 0.999990701675415,
+      "stop_confidence": 0.7684612274169922,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": false,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 238.56666666666666,
+        "event_uncertainty_end": 238.83333333333334,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666663,
+        "minimum_clip_end_timestamp": 240.83333333333334,
+        "usable_source_start_timestamp": 233.96666666666667,
+        "usable_source_end_timestamp": 246.56666666666666,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 244.13333333333333,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.999990701675415,
+        "neural_keep_probability": 0.902773380279541,
+        "neural_end_probability": 0.2281540185213089,
+        "neural_replay_probability": 0.013879099860787392,
+        "neural_handling_probability": 0.046822596341371536
+      },
+      "importance": 0.999990701675415,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "high"
+    },
+    {
+      "shot_id": 4,
+      "preparation_start": 255.5,
+      "cue_strike": 257.5,
+      "cue_strike_timestamp": 257.5,
+      "ball_motion_start": 257.5,
+      "ball_motion_end": 264.76666666666665,
+      "clip_start": 255.5,
+      "clip_end": 264.76666666666665,
+      "clip_start_timestamp": 255.5,
+      "clip_end_timestamp": 264.76666666666665,
+      "shot_confidence": 0.9995285272598267,
+      "start_confidence": 0.9995285272598267,
+      "end_confidence": 0.6143953204154968,
+      "last_ball_motion_timestamp": 264.76666666666665,
+      "physical_stop_timestamp": 264.76666666666665,
+      "stop_confirmation_timestamp": 264.76666666666665,
+      "strike_confidence": 0.9995285272598267,
+      "stop_confidence": 0.6143953204154968,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": false,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 257.43333333333334,
+        "event_uncertainty_end": 257.56666666666666,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666663,
+        "minimum_clip_end_timestamp": 259.56666666666666,
+        "usable_source_start_timestamp": 252.33333333333334,
+        "usable_source_end_timestamp": 266.3333333333333,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 264.76666666666665,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.9995285272598267,
+        "neural_keep_probability": 0.8841055035591125,
+        "neural_end_probability": 0.2000935822725296,
+        "neural_replay_probability": 0.014869187027215958,
+        "neural_handling_probability": 0.02586653083562851
+      },
+      "importance": 0.9995285272598267,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "high"
+    },
+    {
+      "shot_id": 5,
+      "preparation_start": 286.5,
+      "cue_strike": 288.5,
+      "cue_strike_timestamp": 288.5,
+      "ball_motion_start": 288.5,
+      "ball_motion_end": 293.5,
+      "clip_start": 286.5,
+      "clip_end": 293.5,
+      "clip_start_timestamp": 286.5,
+      "clip_end_timestamp": 293.5,
+      "shot_confidence": 0.9996514320373535,
+      "start_confidence": 0.9996514320373535,
+      "end_confidence": 0.7003891468048096,
+      "last_ball_motion_timestamp": 293.5,
+      "physical_stop_timestamp": 293.5,
+      "stop_confirmation_timestamp": 293.5,
+      "strike_confidence": 0.9996514320373535,
+      "stop_confidence": 0.7003891468048096,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": false,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 288.43333333333334,
+        "event_uncertainty_end": 288.56666666666666,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666663,
+        "minimum_clip_end_timestamp": 290.56666666666666,
+        "usable_source_start_timestamp": 269.46666666666664,
+        "usable_source_end_timestamp": 296.2,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 293.5,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.9996514320373535,
+        "neural_keep_probability": 0.9404299855232239,
+        "neural_end_probability": 0.2012433409690857,
+        "neural_replay_probability": 0.007997927255928516,
+        "neural_handling_probability": 0.02163689397275448
+      },
+      "importance": 0.9996514320373535,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "high"
+    },
+    {
+      "shot_id": 6,
+      "preparation_start": 322.5,
+      "cue_strike": 324.5,
+      "cue_strike_timestamp": 324.5,
+      "ball_motion_start": 324.5,
+      "ball_motion_end": 330.1333333333333,
+      "clip_start": 322.5,
+      "clip_end": 330.1333333333333,
+      "clip_start_timestamp": 322.5,
+      "clip_end_timestamp": 330.1333333333333,
+      "shot_confidence": 0.999985933303833,
+      "start_confidence": 0.999985933303833,
+      "end_confidence": 0.5953985452651978,
+      "last_ball_motion_timestamp": 330.1333333333333,
+      "physical_stop_timestamp": 330.1333333333333,
+      "stop_confirmation_timestamp": 330.1333333333333,
+      "strike_confidence": 0.999985933303833,
+      "stop_confidence": 0.5953985452651978,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": false,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 324.43333333333334,
+        "event_uncertainty_end": 324.56666666666666,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666663,
+        "minimum_clip_end_timestamp": 326.56666666666666,
+        "usable_source_start_timestamp": 319.2,
+        "usable_source_end_timestamp": 332.43333333333334,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 330.1333333333333,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.999985933303833,
+        "neural_keep_probability": 0.8819484114646912,
+        "neural_end_probability": 0.19790078699588776,
+        "neural_replay_probability": 0.016491839662194252,
+        "neural_handling_probability": 0.06591425836086273
+      },
+      "importance": 0.999985933303833,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "high"
+    },
+    {
+      "shot_id": 7,
+      "preparation_start": 337.76666666666665,
+      "cue_strike": 339.76666666666665,
+      "cue_strike_timestamp": 339.76666666666665,
+      "ball_motion_start": 339.76666666666665,
+      "ball_motion_end": 345.5,
+      "clip_start": 337.76666666666665,
+      "clip_end": 345.5,
+      "clip_start_timestamp": 337.76666666666665,
+      "clip_end_timestamp": 345.5,
+      "shot_confidence": 0.9999867677688599,
+      "start_confidence": 0.9999867677688599,
+      "end_confidence": 0.584962010383606,
+      "last_ball_motion_timestamp": 345.5,
+      "physical_stop_timestamp": 345.5,
+      "stop_confirmation_timestamp": 345.5,
+      "strike_confidence": 0.9999867677688599,
+      "stop_confidence": 0.584962010383606,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": false,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 339.7,
+        "event_uncertainty_end": 339.8333333333333,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666663,
+        "minimum_clip_end_timestamp": 341.8333333333333,
+        "usable_source_start_timestamp": 335.06666666666666,
+        "usable_source_end_timestamp": 348.06666666666666,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 345.5,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.9999867677688599,
+        "neural_keep_probability": 0.9071831107139587,
+        "neural_end_probability": 0.20099017024040222,
+        "neural_replay_probability": 0.011617904528975487,
+        "neural_handling_probability": 0.046814847737550735
+      },
+      "importance": 0.9999867677688599,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "high"
+    },
+    {
+      "shot_id": 8,
+      "preparation_start": 366.5,
+      "cue_strike": 368.5,
+      "cue_strike_timestamp": 368.5,
+      "ball_motion_start": 368.5,
+      "ball_motion_end": 375.6333333333333,
+      "clip_start": 366.5,
+      "clip_end": 375.6333333333333,
+      "clip_start_timestamp": 366.5,
+      "clip_end_timestamp": 375.6333333333333,
+      "shot_confidence": 0.999982476234436,
+      "start_confidence": 0.999982476234436,
+      "end_confidence": 0.5637536644935608,
+      "last_ball_motion_timestamp": 375.6333333333333,
+      "physical_stop_timestamp": 375.6333333333333,
+      "stop_confirmation_timestamp": 375.6333333333333,
+      "strike_confidence": 0.999982476234436,
+      "stop_confidence": 0.5637536644935608,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": true,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 368.43333333333334,
+        "event_uncertainty_end": 368.56666666666666,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666663,
+        "minimum_clip_end_timestamp": 370.56666666666666,
+        "usable_source_start_timestamp": 351.46666666666664,
+        "usable_source_end_timestamp": 397.7,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 375.6333333333333,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.999982476234436,
+        "neural_keep_probability": 0.9079331755638123,
+        "neural_end_probability": 0.2364274114370346,
+        "neural_replay_probability": 0.016572773456573486,
+        "neural_handling_probability": 0.08363473415374756
+      },
+      "importance": 0.999982476234436,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "low"
+    },
+    {
+      "shot_id": 9,
+      "preparation_start": 395.76666666666665,
+      "cue_strike": 397.76666666666665,
+      "cue_strike_timestamp": 397.76666666666665,
+      "ball_motion_start": 397.76666666666665,
+      "ball_motion_end": 404.76666666666665,
+      "clip_start": 395.76666666666665,
+      "clip_end": 404.76666666666665,
+      "clip_start_timestamp": 395.76666666666665,
+      "clip_end_timestamp": 404.76666666666665,
+      "shot_confidence": 0.9964326620101929,
+      "start_confidence": 0.9964326620101929,
+      "end_confidence": 0.551995575428009,
+      "last_ball_motion_timestamp": 404.76666666666665,
+      "physical_stop_timestamp": 404.76666666666665,
+      "stop_confirmation_timestamp": 404.76666666666665,
+      "strike_confidence": 0.9964326620101929,
+      "stop_confidence": 0.551995575428009,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": false,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 397.7,
+        "event_uncertainty_end": 397.8333333333333,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666663,
+        "minimum_clip_end_timestamp": 399.8333333333333,
+        "usable_source_start_timestamp": 351.46666666666664,
+        "usable_source_end_timestamp": 415.56666666666666,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 404.76666666666665,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.9964326620101929,
+        "neural_keep_probability": 0.8924469947814941,
+        "neural_end_probability": 0.21373382210731506,
+        "neural_replay_probability": 0.009730937890708447,
+        "neural_handling_probability": 0.03155050799250603
+      },
+      "importance": 0.9964326620101929,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "high"
+    },
+    {
+      "shot_id": 10,
+      "preparation_start": 448.76666666666665,
+      "cue_strike": 450.76666666666665,
+      "cue_strike_timestamp": 450.76666666666665,
+      "ball_motion_start": 450.76666666666665,
+      "ball_motion_end": 457.5,
+      "clip_start": 448.76666666666665,
+      "clip_end": 457.5,
+      "clip_start_timestamp": 448.76666666666665,
+      "clip_end_timestamp": 457.5,
+      "shot_confidence": 0.9999533891677856,
+      "start_confidence": 0.9999533891677856,
+      "end_confidence": 0.6245526075363159,
+      "last_ball_motion_timestamp": 457.5,
+      "physical_stop_timestamp": 457.5,
+      "stop_confirmation_timestamp": 457.5,
+      "strike_confidence": 0.9999533891677856,
+      "stop_confidence": 0.6245526075363159,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": true,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 450.7,
+        "event_uncertainty_end": 450.8333333333333,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666663,
+        "minimum_clip_end_timestamp": 452.8333333333333,
+        "usable_source_start_timestamp": 415.96666666666664,
+        "usable_source_end_timestamp": 459.2,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 457.5,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.9999533891677856,
+        "neural_keep_probability": 0.9087416529655457,
+        "neural_end_probability": 0.19724661111831665,
+        "neural_replay_probability": 0.018678730353713036,
+        "neural_handling_probability": 0.04822983220219612
+      },
+      "importance": 0.9999533891677856,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "low"
+    },
+    {
+      "shot_id": 11,
+      "preparation_start": 468.0,
+      "cue_strike": 470.0,
+      "cue_strike_timestamp": 470.0,
+      "ball_motion_start": 470.0,
+      "ball_motion_end": 477.0,
+      "clip_start": 468.0,
+      "clip_end": 477.0,
+      "clip_start_timestamp": 468.0,
+      "clip_end_timestamp": 477.0,
+      "shot_confidence": 0.9995344877243042,
+      "start_confidence": 0.9995344877243042,
+      "end_confidence": 0.6118901968002319,
+      "last_ball_motion_timestamp": 477.0,
+      "physical_stop_timestamp": 477.0,
+      "stop_confirmation_timestamp": 477.0,
+      "strike_confidence": 0.9995344877243042,
+      "stop_confidence": 0.6118901968002319,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": false,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 469.93333333333334,
+        "event_uncertainty_end": 470.06666666666666,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666663,
+        "minimum_clip_end_timestamp": 472.06666666666666,
+        "usable_source_start_timestamp": 463.8333333333333,
+        "usable_source_end_timestamp": 478.7,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 477.0,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.9995344877243042,
+        "neural_keep_probability": 0.9371931552886963,
+        "neural_end_probability": 0.11116113513708115,
+        "neural_replay_probability": 0.00853535532951355,
+        "neural_handling_probability": 0.02670498751103878
+      },
+      "importance": 0.9995344877243042,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "high"
+    },
+    {
+      "shot_id": 12,
+      "preparation_start": 483.9,
+      "cue_strike": 485.9,
+      "cue_strike_timestamp": 485.9,
+      "ball_motion_start": 485.9,
+      "ball_motion_end": 495.0,
+      "clip_start": 483.9,
+      "clip_end": 495.0,
+      "clip_start_timestamp": 483.9,
+      "clip_end_timestamp": 495.0,
+      "shot_confidence": 0.998963475227356,
+      "start_confidence": 0.998963475227356,
+      "end_confidence": 0.5603814721107483,
+      "last_ball_motion_timestamp": 495.0,
+      "physical_stop_timestamp": 495.0,
+      "stop_confirmation_timestamp": 495.0,
+      "strike_confidence": 0.998963475227356,
+      "stop_confidence": 0.5603814721107483,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": false,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 485.8333333333333,
+        "event_uncertainty_end": 485.96666666666664,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666663,
+        "minimum_clip_end_timestamp": 487.96666666666664,
+        "usable_source_start_timestamp": 481.8333333333333,
+        "usable_source_end_timestamp": 504.43333333333334,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 495.0,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.998963475227356,
+        "neural_keep_probability": 0.9262263774871826,
+        "neural_end_probability": 0.1164761409163475,
+        "neural_replay_probability": 0.007870329543948174,
+        "neural_handling_probability": 0.023263270035386086
+      },
+      "importance": 0.998963475227356,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "high"
+    },
+    {
+      "shot_id": 13,
+      "preparation_start": 542.2666666666667,
+      "cue_strike": 544.2666666666667,
+      "cue_strike_timestamp": 544.2666666666667,
+      "ball_motion_start": 544.2666666666667,
+      "ball_motion_end": 549.5,
+      "clip_start": 542.2666666666667,
+      "clip_end": 549.5,
+      "clip_start_timestamp": 542.2666666666667,
+      "clip_end_timestamp": 549.5,
+      "shot_confidence": 0.999771773815155,
+      "start_confidence": 0.999771773815155,
+      "end_confidence": 0.5773179531097412,
+      "last_ball_motion_timestamp": 549.5,
+      "physical_stop_timestamp": 549.5,
+      "stop_confirmation_timestamp": 549.5,
+      "strike_confidence": 0.999771773815155,
+      "stop_confidence": 0.5773179531097412,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": false,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 544.2,
+        "event_uncertainty_end": 544.3333333333333,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666606,
+        "minimum_clip_end_timestamp": 546.3333333333333,
+        "usable_source_start_timestamp": 531.9666666666667,
+        "usable_source_end_timestamp": 566.5666666666666,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 549.5,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.999771773815155,
+        "neural_keep_probability": 0.9189237952232361,
+        "neural_end_probability": 0.1790286898612976,
+        "neural_replay_probability": 0.007031923159956932,
+        "neural_handling_probability": 0.024679265916347504
+      },
+      "importance": 0.999771773815155,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "high"
+    },
+    {
+      "shot_id": 14,
+      "preparation_start": 685.5,
+      "cue_strike": 687.5,
+      "cue_strike_timestamp": 687.5,
+      "ball_motion_start": 687.5,
+      "ball_motion_end": 695.5,
+      "clip_start": 685.5,
+      "clip_end": 695.5,
+      "clip_start_timestamp": 685.5,
+      "clip_end_timestamp": 695.5,
+      "shot_confidence": 0.999305248260498,
+      "start_confidence": 0.999305248260498,
+      "end_confidence": 0.5819928646087646,
+      "last_ball_motion_timestamp": 695.5,
+      "physical_stop_timestamp": 695.5,
+      "stop_confirmation_timestamp": 695.5,
+      "strike_confidence": 0.999305248260498,
+      "stop_confidence": 0.5819928646087646,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": true,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 687.4333333333334,
+        "event_uncertainty_end": 687.5666666666666,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666606,
+        "minimum_clip_end_timestamp": 689.5666666666666,
+        "usable_source_start_timestamp": 661.3333333333333,
+        "usable_source_end_timestamp": 744.0666666666666,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 695.5,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.999305248260498,
+        "neural_keep_probability": 0.901999294757843,
+        "neural_end_probability": 0.20532433688640594,
+        "neural_replay_probability": 0.017112204805016518,
+        "neural_handling_probability": 0.04989258199930191
+      },
+      "importance": 0.999305248260498,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "low"
+    },
+    {
+      "shot_id": 15,
+      "preparation_start": 787.1333333333333,
+      "cue_strike": 789.1333333333333,
+      "cue_strike_timestamp": 789.1333333333333,
+      "ball_motion_start": 789.1333333333333,
+      "ball_motion_end": 802.5,
+      "clip_start": 787.1333333333333,
+      "clip_end": 802.5,
+      "clip_start_timestamp": 787.1333333333333,
+      "clip_end_timestamp": 802.5,
+      "shot_confidence": 0.99998939037323,
+      "start_confidence": 0.99998939037323,
+      "end_confidence": 0.6126728653907776,
+      "last_ball_motion_timestamp": 802.5,
+      "physical_stop_timestamp": 802.5,
+      "stop_confirmation_timestamp": 802.5,
+      "strike_confidence": 0.99998939037323,
+      "stop_confidence": 0.6126728653907776,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": true,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 789.0666666666666,
+        "event_uncertainty_end": 789.2,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.0666666666667197,
+        "minimum_clip_end_timestamp": 791.2,
+        "usable_source_start_timestamp": 782.2,
+        "usable_source_end_timestamp": 806.9333333333334,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 802.5,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.99998939037323,
+        "neural_keep_probability": 0.892597496509552,
+        "neural_end_probability": 0.23498448729515076,
+        "neural_replay_probability": 0.0184527225792408,
+        "neural_handling_probability": 0.08464633673429489
+      },
+      "importance": 0.99998939037323,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "low"
+    },
+    {
+      "shot_id": 16,
+      "preparation_start": 974.4,
+      "cue_strike": 976.4,
+      "cue_strike_timestamp": 976.4,
+      "ball_motion_start": 976.4,
+      "ball_motion_end": 980.7666666666667,
+      "clip_start": 974.4,
+      "clip_end": 980.7666666666667,
+      "clip_start_timestamp": 974.4,
+      "clip_end_timestamp": 980.7666666666667,
+      "shot_confidence": 0.9999802112579346,
+      "start_confidence": 0.9999802112579346,
+      "end_confidence": 0.6084519624710083,
+      "last_ball_motion_timestamp": 980.7666666666667,
+      "physical_stop_timestamp": 980.7666666666667,
+      "stop_confirmation_timestamp": 980.7666666666667,
+      "strike_confidence": 0.9999802112579346,
+      "stop_confidence": 0.6084519624710083,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": false,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 976.3333333333333,
+        "event_uncertainty_end": 976.4666666666667,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.0666666666667197,
+        "minimum_clip_end_timestamp": 978.4666666666667,
+        "usable_source_start_timestamp": 966.4666666666667,
+        "usable_source_end_timestamp": 985.2,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 980.7666666666667,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.9999802112579346,
+        "neural_keep_probability": 0.8920518755912781,
+        "neural_end_probability": 0.24172207713127136,
+        "neural_replay_probability": 0.01978953368961811,
+        "neural_handling_probability": 0.07153833657503128
+      },
+      "importance": 0.9999802112579346,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "high"
+    },
+    {
+      "shot_id": 17,
+      "preparation_start": 1016.6333333333333,
+      "cue_strike": 1018.6333333333333,
+      "cue_strike_timestamp": 1018.6333333333333,
+      "ball_motion_start": 1018.6333333333333,
+      "ball_motion_end": 1023.7666666666667,
+      "clip_start": 1016.6333333333333,
+      "clip_end": 1023.7666666666667,
+      "clip_start_timestamp": 1016.6333333333333,
+      "clip_end_timestamp": 1023.7666666666667,
+      "shot_confidence": 0.999937891960144,
+      "start_confidence": 0.999937891960144,
+      "end_confidence": 0.6082079410552979,
+      "last_ball_motion_timestamp": 1023.7666666666667,
+      "physical_stop_timestamp": 1023.7666666666667,
+      "stop_confirmation_timestamp": 1023.7666666666667,
+      "strike_confidence": 0.999937891960144,
+      "stop_confidence": 0.6082079410552979,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": false,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 1018.5666666666666,
+        "event_uncertainty_end": 1018.7,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.0666666666667197,
+        "minimum_clip_end_timestamp": 1020.7,
+        "usable_source_start_timestamp": 990.7,
+        "usable_source_end_timestamp": 1025.3333333333335,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 1023.7666666666667,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.999937891960144,
+        "neural_keep_probability": 0.8743683695793152,
+        "neural_end_probability": 0.2418087273836136,
+        "neural_replay_probability": 0.027289094403386116,
+        "neural_handling_probability": 0.15615025162696838
+      },
+      "importance": 0.999937891960144,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "high"
+    },
+    {
+      "shot_id": 18,
+      "preparation_start": 1033.5,
+      "cue_strike": 1035.5,
+      "cue_strike_timestamp": 1035.5,
+      "ball_motion_start": 1035.5,
+      "ball_motion_end": 1041.1333333333334,
+      "clip_start": 1033.5,
+      "clip_end": 1041.1333333333334,
+      "clip_start_timestamp": 1033.5,
+      "clip_end_timestamp": 1041.1333333333334,
+      "shot_confidence": 0.9999600648880005,
+      "start_confidence": 0.9999600648880005,
+      "end_confidence": 0.5731396079063416,
+      "last_ball_motion_timestamp": 1041.1333333333334,
+      "physical_stop_timestamp": 1041.1333333333334,
+      "stop_confirmation_timestamp": 1041.1333333333334,
+      "strike_confidence": 0.9999600648880005,
+      "stop_confidence": 0.5731396079063416,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": false,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 1035.4333333333334,
+        "event_uncertainty_end": 1035.5666666666666,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666606,
+        "minimum_clip_end_timestamp": 1037.5666666666666,
+        "usable_source_start_timestamp": 1030.3333333333333,
+        "usable_source_end_timestamp": 1044.9333333333334,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 1041.1333333333334,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.9999600648880005,
+        "neural_keep_probability": 0.9080513119697571,
+        "neural_end_probability": 0.22985953092575073,
+        "neural_replay_probability": 0.012030180543661118,
+        "neural_handling_probability": 0.042402707040309906
+      },
+      "importance": 0.9999600648880005,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "high"
+    },
+    {
+      "shot_id": 19,
+      "preparation_start": 1048.6333333333334,
+      "cue_strike": 1050.6333333333334,
+      "cue_strike_timestamp": 1050.6333333333334,
+      "ball_motion_start": 1050.6333333333334,
+      "ball_motion_end": 1057.6333333333334,
+      "clip_start": 1048.6333333333334,
+      "clip_end": 1057.6333333333334,
+      "clip_start_timestamp": 1048.6333333333334,
+      "clip_end_timestamp": 1057.6333333333334,
+      "shot_confidence": 0.9984843134880066,
+      "start_confidence": 0.9984843134880066,
+      "end_confidence": 0.5504088401794434,
+      "last_ball_motion_timestamp": 1057.6333333333334,
+      "physical_stop_timestamp": 1057.6333333333334,
+      "stop_confirmation_timestamp": 1057.6333333333334,
+      "strike_confidence": 0.9984843134880066,
+      "stop_confidence": 0.5504088401794434,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": false,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 1050.5666666666668,
+        "event_uncertainty_end": 1050.7,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666606,
+        "minimum_clip_end_timestamp": 1052.7,
+        "usable_source_start_timestamp": 1045.5666666666666,
+        "usable_source_end_timestamp": 1065.5666666666668,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 1057.6333333333334,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.9984843134880066,
+        "neural_keep_probability": 0.9549770355224609,
+        "neural_end_probability": 0.17706215381622314,
+        "neural_replay_probability": 0.004949244670569897,
+        "neural_handling_probability": 0.012148217298090458
+      },
+      "importance": 0.9984843134880066,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "high"
+    },
+    {
+      "shot_id": 20,
+      "preparation_start": 1063.6333333333334,
+      "cue_strike": 1065.6333333333334,
+      "cue_strike_timestamp": 1065.6333333333334,
+      "ball_motion_start": 1065.6333333333334,
+      "ball_motion_end": 1090.0,
+      "clip_start": 1063.6333333333334,
+      "clip_end": 1090.0,
+      "clip_start_timestamp": 1063.6333333333334,
+      "clip_end_timestamp": 1090.0,
+      "shot_confidence": 0.9999597072601318,
+      "start_confidence": 0.9999597072601318,
+      "end_confidence": 0.616191029548645,
+      "last_ball_motion_timestamp": 1090.0,
+      "physical_stop_timestamp": 1090.0,
+      "stop_confirmation_timestamp": 1090.0,
+      "strike_confidence": 0.9999597072601318,
+      "stop_confidence": 0.616191029548645,
+      "camera_views": [],
+      "possible_replay": false,
+      "manual_review_required": true,
+      "evidence": {
+        "algorithm": "dl_algo",
+        "boundary_kind": "neural_edit_estimate",
+        "stop_confirmed": false,
+        "physical_stop_observed": false,
+        "boundary_reason": "learned_end_and_keep",
+        "extraction_gap": false,
+        "event_uncertainty_start": 1065.5666666666668,
+        "event_uncertainty_end": 1065.7,
+        "event_support_censored": false,
+        "validated_heads": {
+          "keep": true,
+          "end": true,
+          "replay": true,
+          "handling": true
+        },
+        "end_before_ball_stop_seconds": 0.0,
+        "minimum_clip_seconds": 4.0,
+        "minimum_strike_visibility_seconds": 2.066666666666606,
+        "minimum_clip_end_timestamp": 1067.7,
+        "usable_source_start_timestamp": 1045.5666666666666,
+        "usable_source_end_timestamp": 1093.172245,
+        "pre_roll_trimmed_seconds": 0.0,
+        "estimated_editorial_end_timestamp": 1090.0,
+        "handling_event_conflict": false,
+        "replay_uncertain": false,
+        "handling_uncertain": false,
+        "neural_event_probability": 0.9999597072601318,
+        "neural_keep_probability": 0.8711347579956055,
+        "neural_end_probability": 0.2259819507598877,
+        "neural_replay_probability": 0.015524826943874359,
+        "neural_handling_probability": 0.05675697326660156
+      },
+      "importance": 0.9999597072601318,
+      "included": true,
+      "user_modified": false,
+      "linked_live_shot_id": null,
+      "confidence_level": "low"
+    }
+  ],
+  "clips": [
+    {
+      "contact": 37.13333333333333,
+      "start": 35.13333333333333,
+      "end": 52.266666666666666
+    },
+    {
+      "contact": 220.0,
+      "start": 218.0,
+      "end": 226.26666666666668
+    },
+    {
+      "contact": 238.76666666666668,
+      "start": 236.76666666666668,
+      "end": 244.13333333333333
+    },
+    {
+      "contact": 257.5,
+      "start": 255.5,
+      "end": 264.76666666666665
+    },
+    {
+      "contact": 288.5,
+      "start": 286.5,
+      "end": 293.5
+    },
+    {
+      "contact": 324.5,
+      "start": 322.5,
+      "end": 330.1333333333333
+    },
+    {
+      "contact": 339.76666666666665,
+      "start": 337.76666666666665,
+      "end": 345.5
+    },
+    {
+      "contact": 368.5,
+      "start": 366.5,
+      "end": 375.6333333333333
+    },
+    {
+      "contact": 397.76666666666665,
+      "start": 395.76666666666665,
+      "end": 404.76666666666665
+    },
+    {
+      "contact": 450.76666666666665,
+      "start": 448.76666666666665,
+      "end": 457.5
+    },
+    {
+      "contact": 470.0,
+      "start": 468.0,
+      "end": 477.0
+    },
+    {
+      "contact": 485.9,
+      "start": 483.9,
+      "end": 495.0
+    },
+    {
+      "contact": 544.2666666666667,
+      "start": 542.2666666666667,
+      "end": 549.5
+    },
+    {
+      "contact": 687.5,
+      "start": 685.5,
+      "end": 695.5
+    },
+    {
+      "contact": 789.1333333333333,
+      "start": 787.1333333333333,
+      "end": 802.5
+    },
+    {
+      "contact": 976.4,
+      "start": 974.4,
+      "end": 980.7666666666667
+    },
+    {
+      "contact": 1018.6333333333333,
+      "start": 1016.6333333333333,
+      "end": 1023.7666666666667
+    },
+    {
+      "contact": 1035.5,
+      "start": 1033.5,
+      "end": 1041.1333333333334
+    },
+    {
+      "contact": 1050.6333333333334,
+      "start": 1048.6333333333334,
+      "end": 1057.6333333333334
+    },
+    {
+      "contact": 1065.6333333333334,
+      "start": 1063.6333333333334,
+      "end": 1090.0
+    }
+  ],
+  "independent_holdout": false,
+  "boundary_reference_kind": "Reviewed editorial preferences; no physical-stop observation claimed",
+  "deployment_quality_verified": false,
+  "limitations": [],
+  "probabilities_path": "G:\\2026 AI START\\Grok\\snooker\\data\\dl\\rescue_20261009\\motion-refit-allen-comparison\\allen_un_nooh.probabilities.npz",
+  "checkpoint_sha256": "40edcc1b7cb9a296a8065270c1b919010e3d77f988496466ca4ecdd441ae8cf1",
+  "manifest_sha256": "9d5cb99c3e8815377f0e0c584ac18f89278b7b0fe669854695297f5e1b0dac9b",
+  "scope": "Post-test model-selection comparison; no Allen examples used to fit weights, but this source selects among the model variants."
+}

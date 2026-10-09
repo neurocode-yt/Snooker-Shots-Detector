@@ -273,6 +273,11 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--batch-size", type=int, default=4)
     result.add_argument("--window-frames", type=int, default=512)
     result.add_argument("--hidden-dim", type=int, default=96)
+    result.add_argument("--use-rgb", action=argparse.BooleanOptionalAction, default=True)
+    result.add_argument("--rgb-dropout", type=float, default=0.)
+    result.add_argument("--rgb-clip", type=float, default=0.)
+    result.add_argument("--motion-translate-cells", type=int, default=0)
+    result.add_argument("--motion-scale-jitter", type=float, default=0.)
     result.add_argument("--seed", type=int, default=2026)
     result.add_argument("--tolerance", type=float,
                         help="Decoded contact tolerance; defaults to the checkpoint calibration tolerance")
@@ -304,6 +309,8 @@ def run(args: argparse.Namespace) -> int:
             epochs=args.epochs, patience=args.patience, batch_size=args.batch_size,
             window_frames=args.window_frames, stride_frames=max(1, args.window_frames // 2),
             hidden_dim=args.hidden_dim, seed=args.seed,
+            use_rgb=args.use_rgb, rgb_dropout=args.rgb_dropout, rgb_clip=args.rgb_clip,
+            motion_translate_cells=args.motion_translate_cells, motion_scale_jitter=args.motion_scale_jitter,
             min_event_gap_seconds=float(selection.get("nms_seconds", 1)),
             event_uncertainty_ratio=float(selection.get("uncertainty_ratio", .5)),
             max_event_uncertainty_seconds=float(selection.get("max_uncertainty_seconds", 2)),

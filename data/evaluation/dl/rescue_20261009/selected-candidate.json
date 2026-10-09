@@ -1,0 +1,27 @@
+{
+  "selected_model": "G:\\2026 AI START\\Grok\\snooker\\models\\dl_algo\\temporal-v2.pt",
+  "checkpoint_sha256": "06c0a214ce60f374887a257ea14b118f992c53e3bd641b04fb095f0e33eed574",
+  "previous_model_preserved_sha256": "2b059ce6cb9ace1cb0a768bab710015781f93d57a22723379829b9f6f1a62325",
+  "classic_mode_unchanged": true,
+  "selection_groups": [
+    "allen_un_nooh",
+    "hawkins_un_nooh",
+    "lisowski_selby_2026_quarter_final",
+    "nutcharut_dikme",
+    "zhao_trump_2026_quarter_final"
+  ],
+  "deployment_quality_verified": false,
+  "model_status": "Experimental candidate, awaiting a fresh independent match after selection",
+  "quality": {
+    "scope": "Post-test development comparison, not independent deployment accuracy",
+    "complete_contact_brackets_covered": 39,
+    "reviewed_contacts": 53,
+    "missing_contact_brackets": 14,
+    "matched_contacts": 35,
+    "unmatched_predictions": 3,
+    "handling_overlap_clips": 6,
+    "complete_outcomes_verified": false,
+    "exact_frame_delivery_verified": false,
+    "report": "data/evaluation/dl/rescue_20261009/event-ensemble-allen-comparison.json"
+  }
+}

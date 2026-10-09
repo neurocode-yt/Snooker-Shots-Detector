@@ -1,7 +1,7 @@
 # Settings for the independent neural mode. Classic defaults are untouched.
 dl_algo:
   python: .venv-dl/Scripts/python.exe
-  checkpoint: models/dl_algo/temporal-v1.pt
+  checkpoint: models/dl_algo/temporal-v2.pt
   assets: models/dl_algo/backbones
   feature_cache: data/dl/features
   device: auto

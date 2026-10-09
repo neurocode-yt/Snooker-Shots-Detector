@@ -29,6 +29,14 @@ def test_missing_group_provenance_cannot_be_reported_as_independent():
         validate_holdout(manifest, {})
 
 
+@pytest.mark.parametrize('name', ['handling','replay','replays','event','keep','end'])
+def test_holdout_rejects_annotations_that_evaluation_would_silently_ignore(name):
+    manifest={'independent_holdout_available':True,'videos':[
+        {'id':'unseen','group_id':'match_b','split':'holdout',name:[{'start':1.,'end':2.}]}]}
+    with pytest.raises(ValueError,match='evaluated labels schema'):
+        validate_holdout(manifest,{'split_groups':{'train':['match_a']}})
+
+
 def make_archive(tmp_path, intervals=None, times=None):
     source = tmp_path/'source.mp4'
     source.write_bytes(b'source identity fixture')

@@ -42,6 +42,11 @@ class TemporalModelConfig:
     dropout: float = 0.15
     flow_grid: tuple[int, ...] = ()
     flow_channels: int = 6
+    use_rgb: bool = True
+    rgb_dropout: float = 0.0
+    rgb_clip: float = 0.0
+    motion_translate_cells: int = 0
+    motion_scale_jitter: float = 0.0
 
     def __post_init__(self) -> None:
         if self.input_dim < 1 or self.hidden_dim < 4:
@@ -55,6 +60,16 @@ class TemporalModelConfig:
         if self.flow_grid and (len(self.flow_grid) != 2 or min(self.flow_grid) < 3
                                or self.flow_channels < 1 or self.rgb_dim < 1):
             raise ValueError('Spatial motion geometry must leave a positive RGB feature dimension.')
+        if (not np.isfinite([self.rgb_dropout, self.rgb_clip, self.motion_scale_jitter]).all()
+                or not 0 <= self.rgb_dropout < 1 or self.rgb_clip < 0
+                or not 0 <= self.motion_scale_jitter <= 2
+                or not isinstance(self.use_rgb, bool)
+                or isinstance(self.motion_translate_cells, bool)
+                or not isinstance(self.motion_translate_cells, int) or self.motion_translate_cells < 0):
+            raise ValueError('Invalid neural modality/augmentation settings.')
+        if not self.flow_grid and (not self.use_rgb or self.rgb_dropout or self.rgb_clip
+                                   or self.motion_translate_cells or self.motion_scale_jitter):
+            raise ValueError('Modality and motion augmentation require spatial motion geometry.')
 
     @property
     def rgb_dim(self) -> int:
@@ -148,9 +163,34 @@ class TemporalHighlightNet(nn.Module if nn is not None else object):
         normalized = (features - self.feature_mean) / self.feature_std
         if self.config.flow_grid:
             batch, frames = features.shape[:2]
-            rgb = self.rgb_projection(normalized[..., :self.config.rgb_dim])
-            spatial = normalized[..., self.config.rgb_dim:].reshape(
-                batch*frames, self.config.flow_channels, *self.config.flow_grid)
+            appearance = normalized[..., :self.config.rgb_dim]
+            if self.config.rgb_clip:
+                appearance = appearance.clamp(-self.config.rgb_clip, self.config.rgb_clip)
+            if not self.config.use_rgb:
+                appearance = torch.zeros_like(appearance)
+            elif self.training and self.config.rgb_dropout:
+                # One decision for the entire sequence: avoid inventing frame cuts.
+                retained = (torch.rand((batch,1,1), device=features.device) >= self.config.rgb_dropout)
+                appearance = appearance * retained / (1-self.config.rgb_dropout)
+            rgb = self.rgb_projection(appearance)
+            motion_features = features[..., self.config.rgb_dim:]
+            if self.training and self.config.motion_scale_jitter:
+                gain = torch.exp(torch.empty((batch,1,1), device=features.device).uniform_(
+                    -self.config.motion_scale_jitter, self.config.motion_scale_jitter))
+                motion_features = motion_features * gain
+            spatial = ((motion_features-self.feature_mean[self.config.rgb_dim:]) /
+                       self.feature_std[self.config.rgb_dim:]).reshape(
+                batch, frames, self.config.flow_channels, *self.config.flow_grid)
+            if self.training and self.config.motion_translate_cells:
+                # Apply the same translation throughout each source sequence.
+                # This preserves event timing and local velocity semantics.
+                radius = self.config.motion_translate_cells
+                shifted=[]
+                for sequence in spatial:
+                    shifts=torch.randint(-radius,radius+1,(2,),device=features.device).tolist()
+                    shifted.append(torch.roll(sequence, shifts=shifts, dims=(-2,-1)))
+                spatial=torch.stack(shifted)
+            spatial=spatial.reshape(batch*frames,self.config.flow_channels,*self.config.flow_grid)
             spatial = self.motion_encoder(spatial)
             pooled = torch.cat((spatial.mean(dim=(2, 3)), spatial.amax(dim=(2, 3))), dim=1)
             motion = self.motion_projection(pooled).reshape(batch, frames, -1)
@@ -164,7 +204,8 @@ class TemporalHighlightNet(nn.Module if nn is not None else object):
 
 class TemporalHighlightEnsemble(nn.Module if nn is not None else object):
     """Combine separately fitted neural models without another detector."""
-    def __init__(self, members: list[TemporalHighlightNet], weights: list[float]):
+    def __init__(self, members: list[TemporalHighlightNet], weights: list[float],
+                 aggregation: str = 'mean'):
         require_torch()
         super().__init__()
         values = np.asarray(weights, dtype=np.float32)
@@ -172,6 +213,9 @@ class TemporalHighlightEnsemble(nn.Module if nn is not None else object):
                 or (values < 0).any() or values.sum() <= 0
                 or len({member.config.input_dim for member in members}) != 1):
             raise ValueError('Neural ensemble members and weights are invalid.')
+        if aggregation not in ('mean', 'max_event'):
+            raise ValueError('Unknown neural ensemble aggregation.')
+        self.aggregation = aggregation
         self.members = nn.ModuleList(members)
         self.config = max((member.config for member in members), key=lambda item: item.receptive_field)
         self.register_buffer('ensemble_weights', torch.from_numpy(values/values.sum()))
@@ -181,8 +225,14 @@ class TemporalHighlightEnsemble(nn.Module if nn is not None else object):
         return torch.stack([member.feature_std for member in self.members])
 
     def forward(self, features):
-        probability = sum(weight*torch.sigmoid(member(features))
-                          for weight, member in zip(self.ensemble_weights, self.members))
+        outputs = [torch.sigmoid(member(features)) for member in self.members]
+        probability = sum(weight*output for weight, output in zip(self.ensemble_weights, outputs))
+        if self.aggregation == 'max_event':
+            # An enabled neural expert can recover a contact missed by another.
+            # Other heads retain their probability-weighted ensemble behavior.
+            event = torch.stack([output[..., :1] for weight, output in zip(self.ensemble_weights, outputs)
+                                 if weight > 0]).amax(dim=0)
+            probability = torch.cat((event, probability[..., 1:]), dim=-1)
         return torch.logit(probability.clamp(1e-6, 1-1e-6))
 
 
@@ -275,7 +325,8 @@ def load_temporal_checkpoint(
     if payload.get('model_type') == 'probability_ensemble':
         members = [TemporalHighlightNet(TemporalModelConfig.from_dict(config))
                    for config in payload['ensemble_configs']]
-        model = TemporalHighlightEnsemble(members, payload['ensemble_weights'])
+        model = TemporalHighlightEnsemble(members, payload['ensemble_weights'],
+                                          payload.get('ensemble_aggregation', 'mean'))
     else:
         model = TemporalHighlightNet(TemporalModelConfig.from_dict(payload["model_config"]))
     model.load_state_dict(payload["model_state"], strict=True)
@@ -314,5 +365,6 @@ def checkpoint_payload(
     if isinstance(model, TemporalHighlightEnsemble):
         payload.update(model_type='probability_ensemble',
                        ensemble_configs=[asdict(member.config) for member in model.members],
+                       ensemble_aggregation=model.aggregation,
                        ensemble_weights=model.ensemble_weights.detach().cpu().tolist())
     return payload

@@ -1,0 +1,16 @@
+{
+  "id": "allen_un_nooh",
+  "group_id": "allen_un_nooh",
+  "source_path": "G:\\2026 AI START\\Grok\\snooker\\data\\uploads\\20260823-230731_61d3cb10_test_mark_allen_vs_thep.mp4",
+  "duration": 1093.172245,
+  "fps": 30.0,
+  "source_fingerprint": {
+    "size_bytes": 1122902179,
+    "mtime_ns": 1787508453762838800
+  },
+  "source_review_started_at": "2026-10-09T07:55:02.630732+00:00",
+  "split": "holdout",
+  "used_for_model_selection": false,
+  "labels_human_approved": false,
+  "original_checkpoint_sha256": "2b059ce6cb9ace1cb0a768bab710015781f93d57a22723379829b9f6f1a62325"
+}

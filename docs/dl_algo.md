@@ -355,3 +355,117 @@ with different frozen inputs. It never fits model weights or thresholds, and
 keeps deployment quality unverified. If either test match is later used for
 improvement, that follow-up result must be labelled development data and a
 fresh unseen match must be reserved for the next independent test.
+
+## Robustness experiments, 9 October 2026
+
+The failed Hawkins and Nutcharut clips were moved into development data for this
+follow-up. Their original independent results remain unchanged. Development
+now contains 189 annotated contact examples across four underlying matches. Three model
+variants were compared with Nutcharut reserved for model selection: learned
+motion alone, RGB with sequence-level modality dropout, and an expanded-data
+control. The RGB-dropout variant had the highest development F2 and precision;
+it was selected before the next unseen-match predictions and refitted on all
+four development matches.
+
+The optional temporal settings now support dropping RGB for entire training
+sequences, clipping normalized RGB features, translating the learned motion
+grid, and jittering motion magnitude. Motion transformations are shared across
+each sequence so they preserve event timing. Stochastic augmentation is disabled
+at inference; checkpoint settings preserve the chosen RGB behavior. Old
+checkpoints retain their original defaults. These are experiments to improve
+camera robustness, not a claim of a perfect detector.
+
+Allen–Un-Nooh was excluded from fitting and initial model selection. Its complete
+18:13.17 source was reviewed chronologically before predictions: 53 strokes,
+including red/color sequences, aborted addresses, repeated snooker escapes and
+referee ball replacements. Most labels use one-second contact brackets. An early
+safety was refined at native PTS before predictions. All labels are AI source
+reviews, not human-approved ground truth.
+
+| Frozen candidate on Allen | Original blind contact matches | Extra contact predictions | Missing complete contact brackets in delivered windows |
+|---|---:|---:|---:|
+| Previous DL model | 9/53 | 1 | 43 |
+| Robust RGB-dropout refit | 30/53 | 3 | 19 |
+
+After the first test, two source annotations were corrected using 8 fps native-PTS
+review. The original blind results are preserved. With the additive corrections,
+the old model has 10 matches and no extras; the robust candidate has 32 matches
+and one extra. Neither correction adds or removes a shot. Full contact-bracket
+coverage remains **10/53 versus 34/53**. A contact timing error can coexist with
+the correct stroke footage being delivered; these two measurements are reported
+separately.
+
+The robust candidate still fails the requested quality target. Seven delivered
+windows overlap labelled referee-handling cores. Source continuation review
+confirms truncated ball motion at 118.4 seconds (moving red) and 1057.9 seconds
+(moving white). The actual 6:06.73 export passes complete FFmpeg decoding. All 66
+source/output comparison frames were visually inspected and belong to the
+intended source strokes; some mapped moving-ball positions differ, so exact-frame
+delivery is not verified. Complete outcomes and deployment quality remain
+unverified.
+
+Lowering the event threshold was investigated after the first test. It recovered
+few additional events and introduced extra detections. A further motion-only
+refit found only 16/53 events with four extras in the post-test comparison. Allen
+is development data for subsequent model selection; those later comparisons
+must not be reported as fresh independent accuracy.
+
+A stronger RGB-dropout refit performed worse (7/53 matches, five extras). A neural
+ensemble of the robust RGB expert and motion-only expert performed best in the
+post-test comparison: **35/53 contact matches, three unmatched predictions, and
+39/53 complete contact brackets covered**. Fourteen contact brackets remain
+absent; six delivered windows overlap handling labels. `max_event` aggregation
+takes the maximum contact probability from enabled neural experts, while other
+heads retain the configured weighted probabilities. Its calibration uses only
+the four fitted matches. Allen is explicitly recorded as a model-selection
+group, so evaluating that selected ensemble on Allen cannot be described as an
+independent holdout. Legacy ensemble checkpoints keep weighted-mean aggregation.
+
+DL Algo now points to the experimental `models/dl_algo/temporal-v2.pt` ensemble.
+The previous `temporal-v1.pt` remains on disk. The classic/default mode, classic
+pipeline files and existing jobs are unchanged. Weights remain local, as with the
+previous DL model; code, reviewed annotations and reproducible settings are
+tracked. The new candidate remains experimental and requires a fresh independent
+match after this model selection. Its measured results do not establish 100%
+accuracy.
+
+The frozen plans, original and corrected labels, candidate results and output
+review are stored in
+[`data/evaluation/dl/rescue_20261009`](../data/evaluation/dl/rescue_20261009).
+Original source sheets, feature caches, checkpoints and rendered videos remain
+local in `data/dl/rescue_20261009`. The evaluator now rejects head annotations
+under ignored keys; handling and replay supervision must use `labels` entries.
+The corrected manifest converts the same pre-prediction handling notes into that
+schema, without changing contact annotations.
+
+Reproduce the initial refit from compatible cached features:
+
+```powershell
+.venv-dl/Scripts/python.exe -m snooker_ai.dl.training `
+  data/evaluation/dl/rescue_20261009/all-reviewed-manifest.json `
+  --output data/dl/rescue_20261009/reproduced-robust.pt `
+  --epochs 150 --patience 150 --batch-size 2 --hidden-dim 96 `
+  --dropout .15 --target-event-recall 1 --rgb-dropout .6 --rgb-clip 4 `
+  --motion-translate-cells 2 --motion-scale-jitter .3 `
+  --development-only --device cuda
+```
+
+The resulting training metrics are in-sample. The source-reviewed independent
+test uses the original frozen candidate hash and weights:
+
+```powershell
+.venv-dl/Scripts/python.exe tools/dl_holdout.py `
+  --manifest data/evaluation/dl/rescue_20261009/holdout-adjudicated-manifest.json `
+  --checkpoint data/dl/rescue_20261009/robust-refit.pt `
+  --output-dir data/dl/rescue_20261009/reproduced-holdout --device cpu
+
+.venv-dl/Scripts/python.exe tools/dl_render_audit.py `
+  --report data/dl/rescue_20261009/reproduced-holdout/allen_un_nooh.json `
+  --output-dir data/dl/rescue_20261009/reproduced-render
+```
+
+The render audit checks every saved contact against decoded output and performs
+a full decode. It does not certify missing strokes, complete ball motion or
+referee exclusion. A reproduced training run is a new checkpoint and requires
+its own separately frozen test plan; it cannot replace the planned checkpoint
+hash in an existing test.
