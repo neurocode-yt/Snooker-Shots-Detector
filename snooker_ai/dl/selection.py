@@ -184,7 +184,8 @@ def predict_event_times(
     """Decode events identically for threshold calibration and live selection.
 
     This returns all decoded event candidates before the validated replay and
-    handling heads decide clip inclusion. Supply the actual source duration
+    replay head decides clip inclusion. Handling remains advisory because it
+    can coexist with a live stroke. Supply the actual source duration
     when available; otherwise the final sample's half-cadence cell is used.
     """
     times = np.asarray(timestamps, dtype=np.float64)
@@ -225,18 +226,23 @@ def _learned_end(
         # Require positive keep support after the event, then a sustained fall.
         supported = False
         low_start = None
+        last_supported_time = None
         for index, (time, value) in enumerate(zip(local_times, keep)):
             if index and local_times[index] - local_times[index - 1] > max_gap:
                 supported = False
                 low_start = None
             if value >= thresholds["keep"]:
                 supported = True
+                last_supported_time = float(time)
                 low_start = None
             elif supported and time >= minimum_end:
                 if low_start is None or (index and local_times[index] - local_times[index - 1] > max_gap):
                     low_start = index
                 if time - local_times[low_start] + cadence + 1e-9 >= hold:
-                    keep_end = float(local_times[low_start])
+                    # The first low observation already shows unwanted footage.
+                    # End at the last supported observation instead of including
+                    # that first referee/cutaway frame in an exclusive clip end.
+                    keep_end = max(minimum_end, last_supported_time)
                     break
     end_peak = None
     if validated["end"]:
@@ -248,7 +254,10 @@ def _learned_end(
     if end_peak is not None and keep_end is not None:
         agreement = _number(settings, "end_agreement_seconds", 2.0)
         disagreement = abs(end_peak[0] - keep_end) > agreement
-        boundary = max(end_peak[0], keep_end) if disagreement else end_peak[0]
+        # Agreeing heads define an uncertainty range. Choose its earlier edge
+        # while preserving the minimum outcome window, so one optimistic head
+        # cannot extend an otherwise finished highlight into handling footage.
+        boundary = max(end_peak[0], keep_end) if disagreement else min(end_peak[0], keep_end)
         return min(horizon, max(minimum_end, boundary)), end_peak[1], "learned_end_and_keep", unknown or disagreement
     if end_peak is not None:
         return max(minimum_end, end_peak[0]), end_peak[1], "learned_end", True
@@ -297,15 +306,15 @@ def select_highlights(
     pre_roll = max(2.0, _number(settings, "pre_roll", 2.0))
     min_clip = max(4.0, _number(settings, "min_clip_seconds", 4.0))
     min_post = max(2.0, _number(settings, "min_post_seconds", 2.0))
-    strong_margin = _number(settings, "strong_event_margin", .2)
-    strong_event = max(limits["event"], min(.95, limits["event"] + strong_margin))
     candidates = []
     records: list[dict[str, Any]] = []
     for peak in peaks:
         strike = float(times[peak.index])
         replay_span = next((span for span in spans["replay"] if span[0] <= strike <= span[1]), None)
         handling = any(left <= strike <= right for left, right in spans["handling"])
-        excluded_handling = handling and peak.probability < strong_event
+        # Two independently learned sigmoid heads may both be true. Referee
+        # presence cannot disprove an event that passes the cue-event threshold.
+        excluded_handling = False
         candidate = StrikeCandidate(
             timestamp=strike, confidence=peak.probability,
             uncertainty_start=peak.lower, uncertainty_end=peak.upper,

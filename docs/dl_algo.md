@@ -29,7 +29,10 @@ its weight transforms normalize image values appropriately.
 
 The snooker-specific component is a new multi-scale residual temporal
 convolutional network. A shorter branch captures the immediate stroke; a longer
-branch supplies preparation and follow-through context. Its five heads are:
+branch supplies preparation and follow-through context. A spatial convolution
+head learns local flow patterns with shared filters across table positions.
+Channel normalization also shares statistics across positions. RGB and motion
+embeddings are fused before temporal prediction. Its five heads are:
 
 | Head | Learned decision |
 |---|---|
@@ -83,6 +86,14 @@ live-contact brackets only, with `derived_from_reviewed_live_contact` provenance
 No adjacent footage or handling-negative label is inferred from a live stroke.
 Every annotation weight must be a finite number in `[0,1]`.
 
+There are also 44 **weak timing preferences** from source-reviewed classic
+contact estimates, clipped inside the existing contact brackets at 0.35 weight.
+They supply approximate timing anchors, rather than new exact contact truth.
+They are training labels only; inference does not call the classic detector.
+Their positive loss is averaged separately so easy negative frames do not
+dilute it. Online hard-negative mining emphasizes the hardest 10% of reviewed
+negative event frames. Unknown frames remain masked.
+
 The separate referee-followup examples supervise handling and the reviewed weak
 clips only. Referee presence supplies neither a negative contact label nor a
 negative useful-footage label: a live stroke may occur at the same time.
@@ -95,8 +106,10 @@ explicitly inspected handling-free spans and two replay spans at **0.70 weight**
 Start/end uncertainty is retained. These AI judgments have not been human
 approved; all other boundaries and unreviewed behavior remain masked. Validation
 replay negatives include reviewed replay-free clips and live-contact brackets.
-The selector uses automatic suppression only when a head's report has both
-positive and negative validation labels; other behavior scores remain advisory.
+The selector uses automatic replay suppression only when the report has both
+positive and negative labels. Handling is always advisory: it cannot veto a cue
+event that passes the event threshold, including a weaker occluded contact.
+Label availability is distinct from independently verified accuracy.
 The training report records each head's label availability.
 
 The current dataset supports development and group-separated validation. It
@@ -209,6 +222,19 @@ The default output is the deployment checkpoint configured above; a custom
 checkpoint requires a matching runtime configuration before the app can use it.
 Completing the command does not establish accuracy on unseen matches or a
 guarantee that every shot is preserved.
+
+After recording match-separated development results, an explicit final refit
+can use both training and development groups:
+
+```powershell
+.venv-dl/Scripts/python.exe tools/dl_refit.py --all-reviewed --device auto
+```
+
+This fits flat-motion and spatial-motion neural variants, selects their
+probability mixture, and writes a deployment checkpoint. Any declared holdout
+group remains excluded from fitting and calibration. Refitting the current
+two-match dataset leaves no independent test; calibration and known-source
+benchmarks are explicitly reported as in-sample.
 
 Rebuild source-label manifests from the original local review files:
 

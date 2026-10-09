@@ -777,6 +777,402 @@
       ],
       "labels": [
         {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 77.58000000000001,
+          "end": 77.78,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 99.02000000000001,
+          "end": 99.22,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 126.34,
+          "end": 126.53999999999999,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 145.06,
+          "end": 145.26,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 165.62,
+          "end": 165.82,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 200.0,
+          "end": 200.1,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 228.82,
+          "end": 229.01999999999998,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 273.0,
+          "end": 273.18,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 298.17999999999995,
+          "end": 298.38,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 317.92,
+          "end": 317.96,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 337.6,
+          "end": 337.78000000000003,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 372.94,
+          "end": 373.04,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 412.34,
+          "end": 412.54,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 454.02,
+          "end": 454.22,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 477.02,
+          "end": 477.22,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 517.66,
+          "end": 517.86,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 551.74,
+          "end": 551.94,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 595.9399999999999,
+          "end": 596.14,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 609.96,
+          "end": 610.08,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 631.06,
+          "end": 631.26,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 658.8199999999999,
+          "end": 659.02,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 675.72,
+          "end": 675.8,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 696.74,
+          "end": 696.94,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 724.0,
+          "end": 724.1800000000001,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 739.66,
+          "end": 739.86,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 756.62,
+          "end": 756.82,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 776.0,
+          "end": 776.1800000000001,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 792.84,
+          "end": 792.96,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 809.3,
+          "end": 809.5,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 825.28,
+          "end": 825.44,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 839.4599999999999,
+          "end": 839.66,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 857.0,
+          "end": 857.12,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 871.26,
+          "end": 871.46,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 890.84,
+          "end": 890.96,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 908.42,
+          "end": 908.62,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 942.5,
+          "end": 942.7,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 988.38,
+          "end": 988.58,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 1024.3400000000001,
+          "end": 1024.54,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 1064.3000000000002,
+          "end": 1064.5,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 1113.3000000000002,
+          "end": 1113.5,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 1128.74,
+          "end": 1128.84,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 1152.28,
+          "end": 1152.4199999999998,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 1178.22,
+          "end": 1178.4199999999998,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
+          "head": "event",
+          "value": 1,
+          "weight": 0.35,
+          "start": 1198.8600000000001,
+          "end": 1199.06,
+          "provenance": "weak_source_reviewed_classic_timing_preference:data/editor_audit/full_frame_2026_10_07/final_verification.json#sha256=564df2b133dbafc14c2cdaa8b1ca3081b4a88def7c26896d62006f44dea697b1",
+          "description": "Weak contact timing preference within the source-reviewed bracket; not exact contact truth"
+        },
+        {
           "head": "replay",
           "start": 309,
           "end": 313.6,
