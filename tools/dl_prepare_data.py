@@ -142,7 +142,14 @@ def build_manifest(root: Path, selby_source: Path) -> dict[str, Any]:
                      for contact in latest["contacts"]],
         "clips": [preferred_clip(row, final_provenance, row, clean=True)
                   for row in final["contacts"]],
-        "labels": [], "annotation_method": latest["method"],
+        "labels": [{
+            "head": "event", "value": 1, "weight": 0.35,
+            "start": max(row['lower'], row['cue_strike']-.1),
+            "end": min(row['upper'], row['cue_strike']+.1),
+            "provenance": 'weak_source_reviewed_classic_timing_preference:'+final_provenance,
+            "description": 'Weak contact timing preference within the source-reviewed bracket; not exact contact truth',
+        } for row in final['contacts'] if row['lower'] <= row['cue_strike'] <= row['upper']],
+        "annotation_method": latest["method"],
         "classic_baseline_job": final["summary"]["corrected_job"],
         "limitations": ["Development footage; failures and predictions informed timing revisions",
                         "Many contact brackets are broad overview bounds",

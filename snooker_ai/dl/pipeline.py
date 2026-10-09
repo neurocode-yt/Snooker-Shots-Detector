@@ -14,7 +14,7 @@ from snooker_ai.config import Config
 from snooker_ai.dl.settings import ROOT, dl_settings, expected_feature_spec, resolved_path
 from snooker_ai.types import AnalysisResult, EditMode
 
-PIPELINE_VERSION = 2
+PIPELINE_VERSION = 5
 HEAD_NAMES = ('event', 'keep', 'end', 'replay', 'handling')
 
 
@@ -156,7 +156,10 @@ class DLAnalyzer:
                 **status, 'available': True, 'reason': 'Experimental trained model ready for comparison.',
                 'model': spec['rgb_model'], 'flow_model': spec['flow_model'],
                 'trained_model': checkpoint.name,
-                'validation': calibration.get('event', {}),
+                'validation': calibration.get('event', {}) if calibration.get('scope') == 'group_disjoint_validation' else {},
+                'calibration_metrics': calibration.get('event', {}),
+                'calibration_scope': calibration.get('scope'),
+                'metric_scope': report.get('metric_scope', calibration.get('scope')),
                 'independent_test_available': bool(report.get('independent_test_available', False)),
                 'deployment_quality_verified': bool(report.get('deployment_quality_verified', False)),
             }

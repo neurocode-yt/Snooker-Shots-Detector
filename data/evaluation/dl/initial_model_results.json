@@ -1,0 +1,153 @@
+{
+  "scope": "Experimental first ML mode; no independent final test or unseen-video guarantee",
+  "early_group_disjoint_baseline": [
+    {
+      "video_id": "zhao_trump_full_frame_oct07",
+      "selected_clip_count": 136,
+      "true_positive": 41,
+      "false_positive": 95,
+      "false_negative": 4,
+      "precision": 0.3014705882352941,
+      "recall": 0.9111111111111111,
+      "false_replay_clips": 8,
+      "false_handling_clips": 0,
+      "source_contact_coverage": {
+        "fully_covered_brackets": 25,
+        "partial_brackets": 18,
+        "missing_brackets": 2
+      }
+    },
+    {
+      "video_id": "zhao_trump_partial_frame_oct05",
+      "selected_clip_count": 86,
+      "true_positive": 18,
+      "false_positive": 37,
+      "false_negative": 3,
+      "precision": 0.32727272727272727,
+      "recall": 0.8571428571428571,
+      "false_replay_clips": 0,
+      "false_handling_clips": 0,
+      "source_contact_coverage": {
+        "fully_covered_brackets": 19,
+        "partial_brackets": 1,
+        "missing_brackets": 1
+      }
+    },
+    {
+      "video_id": "zhao_trump_referee_oct07",
+      "selected_clip_count": 23,
+      "true_positive": 0,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": null,
+      "recall": null,
+      "false_replay_clips": 0,
+      "false_handling_clips": 3,
+      "source_contact_coverage": {
+        "fully_covered_brackets": 0,
+        "partial_brackets": 0,
+        "missing_brackets": 0
+      }
+    },
+    {
+      "video_id": "selby_lisowski_benchmark",
+      "selected_clip_count": 239,
+      "true_positive": 20,
+      "false_positive": 194,
+      "false_negative": 35,
+      "precision": 0.09345794392523364,
+      "recall": 0.36363636363636365,
+      "false_replay_clips": 36,
+      "false_handling_clips": 3,
+      "source_contact_coverage": {
+        "fully_covered_brackets": 44,
+        "partial_brackets": 4,
+        "missing_brackets": 7
+      }
+    }
+  ],
+  "final_development_refit_in_sample": [
+    {
+      "video_id": "zhao_trump_full_frame_oct07",
+      "selected_clip_count": 45,
+      "true_positive": 45,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "false_replay_clips": 0,
+      "false_handling_clips": 0,
+      "source_contact_coverage": {
+        "fully_covered_brackets": 45,
+        "partial_brackets": 0,
+        "missing_brackets": 0
+      }
+    },
+    {
+      "video_id": "zhao_trump_partial_frame_oct05",
+      "selected_clip_count": 27,
+      "true_positive": 21,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "false_replay_clips": 0,
+      "false_handling_clips": 0,
+      "source_contact_coverage": {
+        "fully_covered_brackets": 21,
+        "partial_brackets": 0,
+        "missing_brackets": 0
+      }
+    },
+    {
+      "video_id": "zhao_trump_referee_oct07",
+      "selected_clip_count": 4,
+      "true_positive": 0,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": null,
+      "recall": null,
+      "false_replay_clips": 0,
+      "false_handling_clips": 0,
+      "source_contact_coverage": {
+        "fully_covered_brackets": 0,
+        "partial_brackets": 0,
+        "missing_brackets": 0
+      }
+    },
+    {
+      "video_id": "selby_lisowski_benchmark",
+      "selected_clip_count": 57,
+      "true_positive": 55,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "false_replay_clips": 0,
+      "false_handling_clips": 0,
+      "source_contact_coverage": {
+        "fully_covered_brackets": 55,
+        "partial_brackets": 0,
+        "missing_brackets": 0
+      }
+    }
+  ],
+  "final_model_weights": [
+    0.0,
+    1.0
+  ],
+  "independent_holdout_available": false,
+  "deployment_quality_verified": false,
+  "source_annotation_contacts": 121,
+  "weak_timing_preference_count": 44,
+  "demo_job_id": "20261009-061043-474555fb",
+  "demo_verification": {
+    "job_id": "20261009-061043-474555fb",
+    "scope": "Known training footage; no independent accuracy or physical-stop guarantee",
+    "decode_exit_code": 0,
+    "decoded_duration": 297.28,
+    "crossed_audited_source_boundaries": [],
+    "minimum_source_output_ssim": 0.9883402873299234,
+    "reviewed_contacts_included": 45
+  }
+}

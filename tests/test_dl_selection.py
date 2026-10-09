@@ -213,14 +213,25 @@ def test_strong_event_is_kept_while_referee_handling_coexists():
     assert shots[0].evidence["handling_event_conflict"]
 
 
-def test_weak_handling_event_is_an_excluded_review_record():
+def test_referee_presence_does_not_veto_a_weaker_independent_contact():
     times, output = sequence()
     set_event(times, output, 5, .6)
     output[(times >= 4) & (times <= 6), 4] = .99
     _, shots, diagnostics = select_highlights(times, output, 30, validated(), {})
-    assert not shots[0].included
+    assert shots[0].included
     assert shots[0].manual_review_required
-    assert diagnostics["excluded_handling"] == 1
+    assert diagnostics["excluded_handling"] == 0
+    assert shots[0].evidence['handling_event_conflict']
+
+
+def test_learned_ending_excludes_the_first_unwanted_observation():
+    times, output = sequence()
+    set_event(times, output, 5, .99)
+    output[(times >= 3) & (times < 9.5), 1] = .99
+    output[np.argmin(np.abs(times-9.5)), 2] = .99
+    _, shots, _ = select_highlights(times, output, 30, validated(), {})
+    assert shots[0].clip_end < 9.5
+    assert shots[0].clip_end > 7  # Retain the protected post-contact footage.
 
 
 def test_positive_only_handling_labels_never_veto_a_contact():

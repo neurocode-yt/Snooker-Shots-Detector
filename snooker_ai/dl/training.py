@@ -47,6 +47,8 @@ class TrainingConfig:
     max_event_uncertainty_seconds: float = 2.0
     event_tolerance_seconds: float = 0.25
     target_event_recall: float = 0.98
+    hard_negative_fraction: float = 0.1
+    spatial_flow: bool = True
 
     def __post_init__(self) -> None:
         continuous = (
@@ -54,6 +56,7 @@ class TrainingConfig:
             self.validation_fraction, self.min_event_gap_seconds,
             self.event_uncertainty_ratio, self.max_event_uncertainty_seconds,
             self.event_tolerance_seconds, self.target_event_recall,
+            self.hard_negative_fraction,
         )
         if not np.isfinite(continuous).all():
             raise ValueError("Training and event decoding settings must be finite.")
@@ -69,6 +72,8 @@ class TrainingConfig:
             raise ValueError("Event uncertainty settings are out of range.")
         if self.min_event_gap_seconds < 0 or self.event_tolerance_seconds < 0:
             raise ValueError("Event NMS spacing and evaluation tolerance must be nonnegative.")
+        if not 0 < self.hard_negative_fraction <= 1:
+            raise ValueError('Hard negative fraction must be in (0,1].')
 
     @property
     def event_candidate_settings(self) -> dict[str, float]:
@@ -140,6 +145,7 @@ def masked_multitask_loss(
     contact_weights: list[list[float]],
     *,
     positive_weights: Any | None = None,
+    hard_negative_fraction: float = .1,
 ) -> tuple[Any, dict[str, float]]:
     """Weighted focal losses plus interval-censored multiple-instance events.
 
@@ -171,7 +177,20 @@ def masked_multitask_loss(
     auxiliary = (per_head[1:] * active_heads[1:]).sum() / active_heads[1:].sum().clamp_min(1)
     # Event-positive bags and event-negative frames keep equal scale even when
     # a validation match has contact labels but no editorial boundary labels.
-    frame_loss = per_head[0] * active_heads[0] + auxiliary
+    # Sparse weak timing preferences must not disappear among thousands of
+    # reviewed negative frames. Keep their absolute provenance strength while
+    # averaging over timing-labelled samples, separately from interval bags.
+    point_weights = weights[..., 0] * (clean_targets[..., 0] > .5)
+    point_loss = (functional.softplus(-logits[..., 0]) * point_weights).sum() / (
+        (point_weights > 0).sum().clamp_min(1))
+    if not 0 < hard_negative_fraction <= 1:
+        raise ValueError('Hard negative fraction must be in (0,1].')
+    negative = focal[..., 0][(weights[..., 0] > 0) & (clean_targets[..., 0] <= .5)]
+    negative_loss = logits.sum() * 0
+    if negative.numel():
+        count = min(negative.numel(), max(16, math.ceil(negative.numel()*hard_negative_fraction)))
+        negative_loss = torch.topk(negative, count).values.mean()
+    frame_loss = negative_loss + auxiliary + point_loss
     bag_losses, bag_masses = [], []
     for batch_index, bags in enumerate(contact_bags):
         if len(bags) != len(contact_weights[batch_index]):
@@ -194,6 +213,8 @@ def masked_multitask_loss(
     total = frame_loss + event_loss
     details = {head: float(per_head[index].detach()) for index, head in enumerate(HEAD_NAMES)}
     details["interval_event"] = float(event_loss.detach())
+    details["weak_event_timing"] = float(point_loss.detach())
+    details['hard_negative_event'] = float(negative_loss.detach())
     details["total"] = float(total.detach())
     return total, details
 
@@ -496,6 +517,7 @@ def train_temporal(
             input_dim=train_videos[0].features.shape[1],
             hidden_dim=config.hidden_dim,
             dropout=config.dropout,
+            flow_grid=tuple(feature_spec.get('flow_grid', ())) if config.spatial_flow else (),
         )
     ).to(device)
     # The holdout never contributes even unsupervised normalization statistics.
@@ -503,6 +525,16 @@ def train_temporal(
     mean = sum(video.features.sum(axis=0, dtype=np.float64) for video in train_videos) / total
     second = sum((video.features.astype(np.float64) ** 2).sum(axis=0) for video in train_videos)
     std = np.sqrt(np.maximum(second / total - mean ** 2, 0)).clip(.001)
+    if model.config.flow_grid:
+        # A shared spatial filter also needs location-independent scaling.
+        # Validation does not contribute to these channel statistics.
+        start = model.config.rgb_dim
+        channel_mean = mean[start:].reshape(model.config.flow_channels, -1).mean(axis=1)
+        channel_second = (second[start:]/total).reshape(model.config.flow_channels, -1).mean(axis=1)
+        channel_std = np.sqrt(np.maximum(channel_second-channel_mean**2, 0)).clip(.001)
+        cells = int(np.prod(model.config.flow_grid))
+        mean[start:] = np.repeat(channel_mean, cells)
+        std[start:] = np.repeat(channel_std, cells)
     model.set_feature_normalization(mean, std)
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay
@@ -529,6 +561,7 @@ def train_temporal(
             loss, _ = masked_multitask_loss(
                 model(features), targets, masks, bags, bag_weights,
                 positive_weights=positive_weights,
+                hard_negative_fraction=config.hard_negative_fraction,
             )
             if not bool(torch.isfinite(loss)):
                 raise RuntimeError("Temporal training produced a non-finite loss.")
@@ -545,6 +578,7 @@ def train_temporal(
                 loss, _ = masked_multitask_loss(
                     model(features), targets, masks, bags, bag_weights,
                     positive_weights=positive_weights,
+                    hard_negative_fraction=config.hard_negative_fraction,
                 )
                 if not bool(torch.isfinite(loss)):
                     raise RuntimeError("Temporal validation produced a non-finite loss.")

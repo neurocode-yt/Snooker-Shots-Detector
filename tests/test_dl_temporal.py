@@ -42,6 +42,47 @@ def test_model_configuration_has_full_long_context() -> None:
         TemporalModelConfig(input_dim=0)
 
 
+def test_spatial_motion_model_recognizes_a_translated_local_pattern_and_preserves_halo():
+    torch = pytest.importorskip('torch')
+    torch.set_num_threads(1)
+    from snooker_ai.dl.temporal import TemporalHighlightNet, predict_probabilities
+    torch.manual_seed(21)
+    model = TemporalHighlightNet(TemporalModelConfig(input_dim=676, hidden_dim=8,
+                                                    flow_grid=(8, 14), dropout=0)).eval()
+    first, second = np.zeros((80, 676), np.float32), np.zeros((80, 676), np.float32)
+    first_flow = first[:, 4:].reshape(80, 6, 8, 14)
+    second_flow = second[:, 4:].reshape(80, 6, 8, 14)
+    first_flow[20:35, 4:, 3, 4] = 3
+    second_flow[20:35, 4:, 3, 8] = 3
+    a = predict_probabilities(model, first, chunk_frames=80)
+    b = predict_probabilities(model, second, chunk_frames=13)
+    np.testing.assert_allclose(a, b, atol=2e-6, rtol=2e-6)
+    loss = model(torch.from_numpy(first)[None]).square().mean()
+    loss.backward()
+    assert all(torch.isfinite(p.grad).all() for p in model.parameters() if p.grad is not None)
+
+
+def test_neural_ensemble_checkpoint_preserves_its_members_and_chunk_predictions(tmp_path):
+    torch = pytest.importorskip('torch')
+    torch.set_num_threads(1)
+    from snooker_ai.dl.temporal import (TemporalHighlightNet, TemporalHighlightEnsemble,
+        checkpoint_payload, load_temporal_checkpoint, predict_probabilities)
+    torch.manual_seed(8)
+    members = [TemporalHighlightNet(TemporalModelConfig(input_dim=4, hidden_dim=8, dropout=0))
+               for _ in range(2)]
+    model = TemporalHighlightEnsemble(members, [.25, .75]).eval()
+    x = np.random.default_rng(8).normal(size=(60, 4)).astype(np.float32)
+    expected = sum(w*predict_probabilities(member.eval(), x) for w, member in zip([.25,.75], members))
+    np.testing.assert_allclose(predict_probabilities(model, x, chunk_frames=11), expected, atol=2e-6)
+    path = tmp_path/'ensemble.pt'
+    torch.save(checkpoint_payload(model, feature_spec={'dimension':4}, dataset_fingerprint='test',
+                                  training={}, calibration={}), path)
+    restored, _ = load_temporal_checkpoint(path, expected_feature_spec={'dimension':4})
+    np.testing.assert_allclose(predict_probabilities(restored, x), expected, atol=2e-6)
+    with pytest.raises(ValueError):
+        TemporalHighlightEnsemble(members, [1, -1])
+
+
 def test_event_probability_nms_uses_seconds_and_resolves_plateau_once() -> None:
     timestamps = np.array([0, .1, .2, .3, .8, 1.0])
     probability = np.array([.1, .8, .8, .2, .7, .1])
@@ -98,6 +139,25 @@ def test_contact_interval_teaches_one_event_and_ignores_unlabelled_heads() -> No
     assert torch.count_nonzero(logits.grad[:, :2, :]) == 0
     # A broad interval is not four positive event labels.
     assert int((logits.grad[0, 2:6, 0] < 0).sum()) == 1
+
+
+def test_rare_timing_preferences_and_hard_negatives_do_not_disappear_in_easy_frames():
+    torch = pytest.importorskip('torch')
+    from snooker_ai.dl.training import masked_multitask_loss
+    logits = torch.full((1, 1000, len(HEAD_NAMES)), -10., requires_grad=True)
+    with torch.no_grad():
+        logits[0, 0, 0] = 0  # Weak timing preference.
+        logits[0, 1, 0] = 3  # A confident false contact in reviewed footage.
+    targets, weights = torch.zeros_like(logits), torch.zeros_like(logits)
+    targets[0, 0, 0] = 1
+    weights[..., 0] = 1
+    weights[0, 0, 0] = .35
+    loss, metrics = masked_multitask_loss(logits, targets, weights, [[]], [[]])
+    assert metrics['weak_event_timing'] == pytest.approx(.35*np.log(2))
+    loss.backward()
+    assert logits.grad[0, 0, 0] < -.17
+    assert logits.grad[0, 1, 0] > .01
+    assert abs(float(logits.grad[0, 2, 0])) < 1e-7
 
 
 def test_context_resets_between_disjoint_extracted_source_windows() -> None:

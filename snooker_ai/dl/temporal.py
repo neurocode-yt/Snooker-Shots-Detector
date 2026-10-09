@@ -40,6 +40,8 @@ class TemporalModelConfig:
     local_dilations: tuple[int, ...] = (1, 2, 4)
     context_dilations: tuple[int, ...] = (1, 2, 4, 8, 16, 32)
     dropout: float = 0.15
+    flow_grid: tuple[int, ...] = ()
+    flow_channels: int = 6
 
     def __post_init__(self) -> None:
         if self.input_dim < 1 or self.hidden_dim < 4:
@@ -50,6 +52,13 @@ class TemporalModelConfig:
             raise ValueError("Both temporal branches need at least one dilation.")
         if any(d < 1 for d in self.local_dilations + self.context_dilations):
             raise ValueError("Temporal dilations must be positive.")
+        if self.flow_grid and (len(self.flow_grid) != 2 or min(self.flow_grid) < 3
+                               or self.flow_channels < 1 or self.rgb_dim < 1):
+            raise ValueError('Spatial motion geometry must leave a positive RGB feature dimension.')
+
+    @property
+    def rgb_dim(self) -> int:
+        return self.input_dim - int(np.prod(self.flow_grid))*self.flow_channels if self.flow_grid else self.input_dim
 
     @property
     def receptive_field(self) -> int:
@@ -59,7 +68,7 @@ class TemporalModelConfig:
     @classmethod
     def from_dict(cls, values: dict[str, Any]) -> "TemporalModelConfig":
         values = dict(values)
-        for key in ("local_dilations", "context_dilations"):
+        for key in ("local_dilations", "context_dilations", "flow_grid"):
             if key in values:
                 values[key] = tuple(values[key])
         return cls(**values)
@@ -95,8 +104,17 @@ class TemporalHighlightNet(nn.Module if nn is not None else object):
         self.config = config
         self.register_buffer("feature_mean", torch.zeros(config.input_dim))
         self.register_buffer("feature_std", torch.ones(config.input_dim))
+        if config.flow_grid:
+            # Shared spatial filters recognize the same local motion pattern
+            # anywhere on the table, rather than memorizing flattened cells.
+            self.rgb_projection = nn.Sequential(nn.Linear(config.rgb_dim, config.hidden_dim),
+                                                nn.LayerNorm(config.hidden_dim), nn.GELU())
+            self.motion_encoder = nn.Sequential(nn.Conv2d(config.flow_channels, 32, 3, padding=1),
+                                                nn.GELU(), nn.Conv2d(32, 32, 3, padding=1), nn.GELU())
+            self.motion_projection = nn.Sequential(nn.Linear(64, config.hidden_dim),
+                                                   nn.LayerNorm(config.hidden_dim), nn.GELU())
         self.projection = nn.Sequential(
-            nn.Linear(config.input_dim, config.hidden_dim),
+            nn.Linear(config.hidden_dim*2 if config.flow_grid else config.input_dim, config.hidden_dim),
             nn.LayerNorm(config.hidden_dim),
             nn.GELU(),
         )
@@ -127,11 +145,45 @@ class TemporalHighlightNet(nn.Module if nn is not None else object):
     def forward(self, features: Any) -> Any:
         if features.ndim != 3 or features.shape[-1] != self.config.input_dim:
             raise ValueError("Expected features [batch, samples, input_dim].")
-        value = self.projection((features - self.feature_mean) / self.feature_std)
+        normalized = (features - self.feature_mean) / self.feature_std
+        if self.config.flow_grid:
+            batch, frames = features.shape[:2]
+            rgb = self.rgb_projection(normalized[..., :self.config.rgb_dim])
+            spatial = normalized[..., self.config.rgb_dim:].reshape(
+                batch*frames, self.config.flow_channels, *self.config.flow_grid)
+            spatial = self.motion_encoder(spatial)
+            pooled = torch.cat((spatial.mean(dim=(2, 3)), spatial.amax(dim=(2, 3))), dim=1)
+            motion = self.motion_projection(pooled).reshape(batch, frames, -1)
+            normalized = torch.cat((rgb, motion), dim=-1)
+        value = self.projection(normalized)
         value = value.transpose(1, 2)
         local = self.local(value).transpose(1, 2)
         context = self.context(value).transpose(1, 2)
         return self.fusion(torch.cat((local, context), dim=-1))
+
+
+class TemporalHighlightEnsemble(nn.Module if nn is not None else object):
+    """Combine separately fitted neural models without another detector."""
+    def __init__(self, members: list[TemporalHighlightNet], weights: list[float]):
+        require_torch()
+        super().__init__()
+        values = np.asarray(weights, dtype=np.float32)
+        if (not members or values.shape != (len(members),) or not np.isfinite(values).all()
+                or (values < 0).any() or values.sum() <= 0
+                or len({member.config.input_dim for member in members}) != 1):
+            raise ValueError('Neural ensemble members and weights are invalid.')
+        self.members = nn.ModuleList(members)
+        self.config = max((member.config for member in members), key=lambda item: item.receptive_field)
+        self.register_buffer('ensemble_weights', torch.from_numpy(values/values.sum()))
+
+    @property
+    def feature_std(self):
+        return torch.stack([member.feature_std for member in self.members])
+
+    def forward(self, features):
+        probability = sum(weight*torch.sigmoid(member(features))
+                          for weight, member in zip(self.ensemble_weights, self.members))
+        return torch.logit(probability.clamp(1e-6, 1-1e-6))
 
 
 def contiguous_feature_spans(timestamps: np.ndarray) -> list[tuple[int, int]]:
@@ -220,12 +272,21 @@ def load_temporal_checkpoint(
         raise ValueError("Temporal checkpoint has incompatible output heads.")
     if expected_feature_spec is not None and payload.get("feature_spec") != expected_feature_spec:
         raise ValueError("Feature extraction specification differs from the trained checkpoint.")
-    model = TemporalHighlightNet(TemporalModelConfig.from_dict(payload["model_config"]))
+    if payload.get('model_type') == 'probability_ensemble':
+        members = [TemporalHighlightNet(TemporalModelConfig.from_dict(config))
+                   for config in payload['ensemble_configs']]
+        model = TemporalHighlightEnsemble(members, payload['ensemble_weights'])
+    else:
+        model = TemporalHighlightNet(TemporalModelConfig.from_dict(payload["model_config"]))
     model.load_state_dict(payload["model_state"], strict=True)
     if any(not bool(torch.isfinite(value).all()) for value in model.state_dict().values()):
         raise ValueError("Temporal checkpoint contains non-finite model parameters.")
     if not bool((model.feature_std > 0).all()):
         raise ValueError("Temporal checkpoint contains invalid feature normalization.")
+    if isinstance(model, TemporalHighlightEnsemble) and (
+            bool((model.ensemble_weights < 0).any()) or
+            not torch.isclose(model.ensemble_weights.sum(), torch.tensor(1.)).item()):
+        raise ValueError('Temporal checkpoint contains invalid ensemble weights.')
     model.to(device).eval()
     metadata = {key: value for key, value in payload.items() if key != "model_state"}
     return model, metadata
@@ -240,7 +301,7 @@ def checkpoint_payload(
     calibration: dict[str, Any],
 ) -> dict[str, Any]:
     require_torch()
-    return {
+    payload = {
         "checkpoint_version": CHECKPOINT_VERSION,
         "head_names": list(HEAD_NAMES),
         "model_config": asdict(model.config),
@@ -250,3 +311,8 @@ def checkpoint_payload(
         "training": training,
         "calibration": calibration,
     }
+    if isinstance(model, TemporalHighlightEnsemble):
+        payload.update(model_type='probability_ensemble',
+                       ensemble_configs=[asdict(member.config) for member in model.members],
+                       ensemble_weights=model.ensemble_weights.detach().cpu().tolist())
+    return payload

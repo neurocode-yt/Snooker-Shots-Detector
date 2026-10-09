@@ -251,7 +251,11 @@ def benchmark(args: argparse.Namespace, settings: dict, device: str, state: RunS
             summary["classic"] = report["classic"]
         index["videos"].append(summary)
         state.update(benchmark_videos_completed=len(index["videos"]), latest_benchmark=summary)
-        print(json.dumps({"type": "decoded_benchmark", **summary}, allow_nan=False), flush=True)
+        print(json.dumps({"type": "decoded_benchmark", "video_id": video_id,
+                          "selected_clips": len(clips), "report_path": str(report_path),
+                          "metrics": {key: report['dl'][key] for key in (
+                              'true_positive', 'false_positive', 'false_negative', 'precision', 'recall',
+                              'false_replay_clips', 'false_handling_clips')}}, allow_nan=False), flush=True)
         atomic_json(args.benchmarks / "summary.json", index)
     return args.benchmarks / "summary.json"
 

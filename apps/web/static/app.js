@@ -42,7 +42,7 @@ function updateWorkflow() {
   const status = document.getElementById("algorithm-status");
   status.classList.toggle("hidden", !dl);
   status.textContent = dlCapability?.available
-    ? "DL Algo is ready. Accuracy is still being evaluated."
+    ? "Experimental DL Algo is ready for comparison. Accuracy on new matches has not been verified."
     : dlCapability?.reason || "Checking DL Algo readiness…";
   document.getElementById("pre-editor-heading").textContent = classic
     ? "Prepare match before analysis" : "Optional source trimming";
