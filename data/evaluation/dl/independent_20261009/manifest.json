@@ -1,0 +1,652 @@
+{
+  "manifest_version": 1,
+  "heads": [
+    "event",
+    "keep",
+    "end",
+    "replay",
+    "handling"
+  ],
+  "paths_relative_to": "../../../..",
+  "independent_holdout_available": true,
+  "expected_checkpoint_sha256": "2b059ce6cb9ace1cb0a768bab710015781f93d57a22723379829b9f6f1a62325",
+  "frozen_at": "2026-10-09T02:24:53.843457+00:00",
+  "labels_human_approved": false,
+  "label_policy": "Complete chronological source-only review at 1 fps before inspecting predictions; uncertain contacts bracket stationary and first-moving observations.",
+  "split_policy": "Two previously unseen underlying matches, excluded from both training and calibration.",
+  "limitations": [
+    "AI visual review, not human-approved ground truth",
+    "One-second contact brackets, one two-second bracket; no frame-exact accuracy claim",
+    "This is a selected complete-source test of two cleaned clips, not all videos or all future frames",
+    "No independently annotated editorial endpoints and no positive replay examples"
+  ],
+  "videos": [
+    {
+      "id": "hawkins_un_nooh",
+      "group_id": "hawkins_un_nooh",
+      "split": "holdout",
+      "source_path": "data/uploads/20260727-142107_44916deb_Barry_Hawkins_vs_Thepchaiya_Un-Nooh_-_2025_Round_3_cleaned_a086f20d.mp4",
+      "source_fingerprint": {
+        "size_bytes": 164551054,
+        "mtime_ns": 1785144484450082400
+      },
+      "duration": 514.0,
+      "features_path": "data/dl/independent_20261009/hawkins_un_nooh.npz",
+      "reviewed_intervals": [
+        {
+          "start": 0.0,
+          "end": 514.0,
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        }
+      ],
+      "contacts": [
+        {
+          "lower": 6,
+          "upper": 7,
+          "description": "Hawkins break-off",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 24,
+          "upper": 25,
+          "description": "Un-Nooh red pot",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 42,
+          "upper": 43,
+          "description": "Un-Nooh green attempt",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 58,
+          "upper": 59,
+          "description": "Hawkins escape/safety",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 79,
+          "upper": 80,
+          "description": "Un-Nooh safety opening reds",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 107,
+          "upper": 108,
+          "description": "Hawkins red, score 1",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 131,
+          "upper": 132,
+          "description": "Hawkins green, score 4",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 146,
+          "upper": 147,
+          "description": "Hawkins red, score 5",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 162,
+          "upper": 163,
+          "description": "Hawkins blue, score 10",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 178,
+          "upper": 179,
+          "description": "Hawkins red, score 11",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 202,
+          "upper": 203,
+          "description": "Hawkins black, score 18; abandoned address at 194 is not a stroke",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 221,
+          "upper": 222,
+          "description": "Hawkins red, score 19",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 235,
+          "upper": 236,
+          "description": "Hawkins blue, score 24",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 252,
+          "upper": 253,
+          "description": "Hawkins red with rest, score 25",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 267,
+          "upper": 268,
+          "description": "Hawkins black, score 32",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 286,
+          "upper": 287,
+          "description": "Hawkins red opening pack, score 33",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 304,
+          "upper": 305,
+          "description": "Hawkins black, score 40",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 322,
+          "upper": 323,
+          "description": "Hawkins red, score 41",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 340,
+          "upper": 341,
+          "description": "Hawkins black, score 48",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 353,
+          "upper": 354,
+          "description": "Hawkins red just after referee respot, score 49",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 363,
+          "upper": 364,
+          "description": "Hawkins black, score 56",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 374,
+          "upper": 375,
+          "description": "Hawkins red just after referee respot, score 57",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 386,
+          "upper": 387,
+          "description": "Hawkins black, score 64",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 399,
+          "upper": 400,
+          "description": "Hawkins red, score 65",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 413,
+          "upper": 414,
+          "description": "Hawkins black, score 72",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 425,
+          "upper": 426,
+          "description": "Hawkins red, score 73",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 435,
+          "upper": 436,
+          "description": "Hawkins blue, score 78",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 448,
+          "upper": 449,
+          "description": "Hawkins red, score 79",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 460,
+          "upper": 461,
+          "description": "Hawkins black, score 86",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 473,
+          "upper": 475,
+          "description": "Hawkins red, score 87; near-stationary contact needs denser refinement",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 486,
+          "upper": 487,
+          "description": "Hawkins black, score 94",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "lower": 500,
+          "upper": 501,
+          "description": "Hawkins last red attempt, missed; no subsequent stroke before EOF",
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        }
+      ],
+      "labels": [
+        {
+          "head": "handling",
+          "start": 140,
+          "end": 141,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 169,
+          "end": 171,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 210,
+          "end": 211,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 242,
+          "end": 243,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 275,
+          "end": 276,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 311,
+          "end": 313,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 349,
+          "end": 350,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 370,
+          "end": 372,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 393,
+          "end": 394,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 420,
+          "end": 421,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 442,
+          "end": 443,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 468,
+          "end": 469,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 493,
+          "end": 494,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_hawkins.json sha256=8a31dad021b243cd47e3f21ea0611ab9a100197065aef090150d448a9301ecb7; not human approved"
+        }
+      ],
+      "clips": [],
+      "limitations": [
+        "Contact precision initially 1 second; one near-stationary red bracket 2 seconds",
+        "No replay appears in this complete cleaned clip; replay exclusion cannot be positively tested here",
+        "Editorial clip endpoints have not been independently annotated"
+      ]
+    },
+    {
+      "id": "nutcharut_dikme",
+      "group_id": "nutcharut_dikme",
+      "split": "holdout",
+      "source_path": "data/uploads/20260719-203821_77b1a5eb_Mink_Nutcharut_vs_Umut_Dikme_-_2025_Round_1_cleaned_9f69f700.mp4",
+      "source_fingerprint": {
+        "size_bytes": 327084936,
+        "mtime_ns": 1784475661005334200
+      },
+      "duration": 775.48,
+      "features_path": "data/dl/independent_20261009/nutcharut_dikme.npz",
+      "reviewed_intervals": [
+        {
+          "start": 0.0,
+          "end": 775.48,
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        }
+      ],
+      "contacts": [
+        {
+          "lower": 7,
+          "upper": 8,
+          "description": "Nutcharut break-off",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 32,
+          "upper": 33,
+          "description": "Dikme red pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 56,
+          "upper": 57,
+          "description": "Dikme black pot opening reds",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 78,
+          "upper": 79,
+          "description": "Dikme red pot displacing black",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 105,
+          "upper": 106,
+          "description": "Dikme black pot from cushion",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 124,
+          "upper": 125,
+          "description": "Dikme red attempt, missed",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 151,
+          "upper": 152,
+          "description": "Nutcharut safety",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 178,
+          "upper": 179,
+          "description": "Dikme safety",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 205,
+          "upper": 206,
+          "description": "Nutcharut safety",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 225,
+          "upper": 226,
+          "description": "Dikme safety opening pack",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 253,
+          "upper": 254,
+          "description": "Nutcharut safety",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 273,
+          "upper": 274,
+          "description": "Dikme red pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 291,
+          "upper": 292,
+          "description": "Dikme black pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 306,
+          "upper": 307,
+          "description": "Dikme red pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 322,
+          "upper": 323,
+          "description": "Dikme black pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 337,
+          "upper": 338,
+          "description": "Dikme red pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 349,
+          "upper": 350,
+          "description": "Dikme black pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 364,
+          "upper": 365,
+          "description": "Dikme red pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 375,
+          "upper": 376,
+          "description": "Dikme blue pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 389,
+          "upper": 390,
+          "description": "Dikme red with rest",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 412,
+          "upper": 413,
+          "description": "Dikme black pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 443,
+          "upper": 444,
+          "description": "Dikme red pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 465,
+          "upper": 466,
+          "description": "Dikme black pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 483,
+          "upper": 484,
+          "description": "Dikme red pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 500,
+          "upper": 501,
+          "description": "Dikme blue pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 520,
+          "upper": 521,
+          "description": "Dikme red attempt, missed",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 570,
+          "upper": 571,
+          "description": "Nutcharut red attempt with rest, missed; abandoned addresses at 554 and 558 are not strokes",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 588,
+          "upper": 589,
+          "description": "Dikme red pot, white subsequently moves blue",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 608,
+          "upper": 609,
+          "description": "Dikme brown pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 624,
+          "upper": 625,
+          "description": "Dikme red attempt, missed",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 649,
+          "upper": 650,
+          "description": "Nutcharut red pot with rest",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 675,
+          "upper": 676,
+          "description": "Nutcharut pink attempt, missed",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 689,
+          "upper": 690,
+          "description": "Dikme red attempt, missed",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 726,
+          "upper": 727,
+          "description": "Nutcharut safety",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 748,
+          "upper": 749,
+          "description": "Dikme red pot",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "lower": 759,
+          "upper": 760,
+          "description": "Dikme black attempt, missed; black remains on table until EOF",
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        }
+      ],
+      "labels": [
+        {
+          "head": "handling",
+          "start": 65,
+          "end": 66,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 112,
+          "end": 114,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 298,
+          "end": 300,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 330,
+          "end": 331,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 356,
+          "end": 357,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 382,
+          "end": 383,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 420,
+          "end": 421,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 473,
+          "end": 474,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 507,
+          "end": 509,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        },
+        {
+          "head": "handling",
+          "start": 615,
+          "end": 617,
+          "value": 1,
+          "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved"
+        }
+      ],
+      "clips": [],
+      "limitations": [
+        "Contact precision initially 1 second",
+        "No replay appears in this complete cleaned clip; replay exclusion cannot be positively tested here",
+        "Editorial clip endpoints have not been independently annotated"
+      ]
+    }
+  ]
+}
