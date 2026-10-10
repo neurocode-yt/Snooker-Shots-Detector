@@ -80,9 +80,11 @@ def nested(overrides: dict) -> dict:
     return result
 
 
-def evaluate_cases(cases: list[dict], config, root: Path, *, tolerance: float) -> dict:
+def evaluate_cases(cases: list[dict], config, root: Path, *, tolerance: float,
+                   apply_replay_filter: bool = False) -> dict:
     from snooker_ai.evaluation.recall import evaluate_broadcast_recall
     from snooker_ai.event_fusion.strike import StrikeDetector
+    from snooker_ai.replay_detection.detector import ReplayDetector
     from snooker_ai.types import FrameFeatures
 
     details = []
@@ -106,11 +108,15 @@ def evaluate_cases(cases: list[dict], config, root: Path, *, tolerance: float) -
         detector = StrikeDetector(config)
         detector.score_frames(features)
         candidates = detector.detect_candidates(features)
+        if apply_replay_filter:
+            ReplayDetector(config).mark_candidates(candidates, features)
         window = {'name': case['id'], **case['window'], 'contacts': case['contacts']}
         result = evaluate_broadcast_recall(
             [{'cue_strike': c.timestamp, 'possible_replay': c.possible_replay} for c in candidates],
             {'windows': [window]}, tolerance=tolerance,
         )
+        result['prediction_scope'] = ('native_contact_candidates_after_replay_filter'
+                                      if apply_replay_filter else 'native_contact_candidates')
         details.append({'id': case['id'], 'source_group': case['source_group'], **result})
     tp = sum(c['matched'] for c in details)
     fp = sum(c['false_positive'] for c in details)

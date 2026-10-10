@@ -1,0 +1,330 @@
+{
+  "algorithm": "classic",
+  "uses_deep_learning": false,
+  "labels_human_approved": false,
+  "contact_tolerance_seconds": 0.25,
+  "feature_cache_version": 37,
+  "result_policy_version": 51,
+  "native_candidate_stage": {
+    "regression": {
+      "matched": 14,
+      "missed": 0,
+      "false_positive": 0
+    },
+    "more": {
+      "matched": 11,
+      "missed": 0,
+      "false_positive": 0
+    },
+    "holdout": {
+      "matched": 4,
+      "missed": 0,
+      "false_positive": 0
+    }
+  },
+  "native_total": {
+    "matched": 29,
+    "missed": 0,
+    "false_positive": 0
+  },
+  "native_labelled_minutes": 13,
+  "fresh_source_groups": [
+    "marco_fu_vs_onyee_ng",
+    "zhang_anda_vs_thepchaiya_un_nooh_2025_qualifying_round_4"
+  ],
+  "fresh_first_test": {
+    "matched": 4,
+    "missed": 0,
+    "false_positive": 0
+  },
+  "full_pipeline": {
+    "trump120": {
+      "matched": 5,
+      "missed": 0,
+      "false_positive": 0
+    },
+    "robertson160": {
+      "matched": 10,
+      "missed": 0,
+      "false_positive": 0
+    }
+  },
+  "rendered": {
+    "trump120": {
+      "selected_live_clips": 5,
+      "complete_contact_brackets_covered": 5,
+      "decode_pass": true,
+      "path": "G:\\2026 AI START\\Grok\\snooker\\data\\editor_audit\\original_2026_10_11\\trump-export-v45\\highlights.mp4",
+      "duration_seconds": 36.56,
+      "contacts": [
+        {
+          "lower": 9.800000000000011,
+          "upper": 9.840000000000003,
+          "covered": true
+        },
+        {
+          "lower": 40.120000000000005,
+          "upper": 40.16,
+          "covered": true
+        },
+        {
+          "lower": 74.24000000000001,
+          "upper": 74.28,
+          "covered": true
+        },
+        {
+          "lower": 93.75999999999999,
+          "upper": 93.80000000000001,
+          "covered": true
+        },
+        {
+          "lower": 106.83999999999997,
+          "upper": 106.88,
+          "covered": true
+        }
+      ],
+      "manual_review_shots": [
+        1,
+        2,
+        4,
+        5
+      ],
+      "exact_stop_ground_truth_independently_verified": false
+    },
+    "robertson160": {
+      "selected_live_clips": 10,
+      "complete_contact_brackets_covered": 10,
+      "decode_pass": true,
+      "path": "G:\\2026 AI START\\Grok\\snooker\\data\\editor_audit\\original_2026_10_11\\prefix-export-v37\\highlights.mp4",
+      "duration_seconds": 84.24,
+      "contacts": [
+        {
+          "lower": 1.76,
+          "upper": 1.8,
+          "description": "Robertson break-off",
+          "covered": true
+        },
+        {
+          "lower": 24.28,
+          "upper": 24.4,
+          "description": "Un-Nooh red, score1",
+          "covered": true
+        },
+        {
+          "lower": 44.0,
+          "upper": 44.16,
+          "description": "Un-Nooh blue, score6",
+          "covered": true
+        },
+        {
+          "lower": 55.88,
+          "upper": 56.0,
+          "description": "Un-Nooh red, score7, close side camera",
+          "covered": true
+        },
+        {
+          "lower": 67.16,
+          "upper": 67.4,
+          "description": "Un-Nooh black, score14",
+          "covered": true
+        },
+        {
+          "lower": 79.4,
+          "upper": 79.52,
+          "description": "Un-Nooh red, score15",
+          "covered": true
+        },
+        {
+          "lower": 89.76,
+          "upper": 89.88,
+          "description": "Un-Nooh blue, score20",
+          "covered": true
+        },
+        {
+          "lower": 102.0,
+          "upper": 102.28,
+          "description": "Un-Nooh red, score21",
+          "covered": true
+        },
+        {
+          "lower": 117.28,
+          "upper": 117.4,
+          "description": "Un-Nooh blue opening reds, score26",
+          "covered": true
+        },
+        {
+          "lower": 144.76,
+          "upper": 144.88,
+          "description": "Un-Nooh red miss",
+          "covered": true
+        }
+      ],
+      "clips": [
+        {
+          "shot_id": 1,
+          "cue_strike": 1.84,
+          "clip_start": 0.0,
+          "clip_end": 13.16,
+          "manual_review_required": true,
+          "referee_cap": null
+        },
+        {
+          "shot_id": 2,
+          "cue_strike": 24.4,
+          "clip_start": 22.4,
+          "clip_end": 30.119999999999997,
+          "manual_review_required": true,
+          "referee_cap": null
+        },
+        {
+          "shot_id": 3,
+          "cue_strike": 44.08,
+          "clip_start": 42.32,
+          "clip_end": 49.440000000000005,
+          "manual_review_required": true,
+          "referee_cap": 49.440000000000005
+        },
+        {
+          "shot_id": 4,
+          "cue_strike": 55.92,
+          "clip_start": 53.92,
+          "clip_end": 59.92,
+          "manual_review_required": true,
+          "referee_cap": null
+        },
+        {
+          "shot_id": 5,
+          "cue_strike": 67.32,
+          "clip_start": 65.32,
+          "clip_end": 69.32,
+          "manual_review_required": true,
+          "referee_cap": 69.32
+        },
+        {
+          "shot_id": 6,
+          "cue_strike": 79.44,
+          "clip_start": 77.44,
+          "clip_end": 84.24,
+          "manual_review_required": true,
+          "referee_cap": null
+        },
+        {
+          "shot_id": 7,
+          "cue_strike": 89.84,
+          "clip_start": 87.84,
+          "clip_end": 95.39999999999999,
+          "manual_review_required": true,
+          "referee_cap": 95.39999999999999
+        },
+        {
+          "shot_id": 8,
+          "cue_strike": 102.36,
+          "clip_start": 100.36,
+          "clip_end": 108.72,
+          "manual_review_required": true,
+          "referee_cap": null
+        },
+        {
+          "shot_id": 9,
+          "cue_strike": 117.32,
+          "clip_start": 115.32,
+          "clip_end": 123.28,
+          "manual_review_required": true,
+          "referee_cap": null
+        },
+        {
+          "shot_id": 10,
+          "cue_strike": 144.8,
+          "clip_start": 142.8,
+          "clip_end": 160.04,
+          "manual_review_required": true,
+          "referee_cap": null
+        }
+      ],
+      "exact_stop_ground_truth_independently_verified": false
+    }
+  },
+  "native_label_sha256": {
+    "regression": "d317199079d3d8b74421d98ac45101e5532c7918fd2354fa2441d265fa904eb2",
+    "more": "3afd2066ed01bc8951c26b9a2d03e1297c053802aededd2df28c14cb2b72cef7",
+    "holdout": "5fb798c6b5c2f0f191a74ac82d8f1698f10ef8928f186dd35f6254ab3f9c7db3"
+  },
+  "original_tests_passed": 907,
+  "ruff_pass": true,
+  "whitespace_pass": true,
+  "package_assets": {
+    "championship_title.png": 972,
+    "red_replay_sphere.png": 36216
+  },
+  "rule_sha256": {
+    "snooker_ai/object_detection/detector.py": "81c2a9f6d03dcecb8f3566880419b50714d0fa151d9171c774fc9fedb743fd17",
+    "snooker_ai/event_fusion/strike.py": "4a9c70f11cf08f77d3b58ced8f41f7367564d042781790b71abd9da6c6885a9e",
+    "snooker_ai/pipeline/analyzer.py": "5de9427dcf1a2485447ea489c83891710c0203c4641b9906afe37e4216a35975",
+    "snooker_ai/segmentation/visual_tail.py": "bd4ab50fa438ba6e42fa0c04ddb4cec4631b1acb8e4da1b6a9f98a5ba278bef3",
+    "snooker_ai/segmentation/builder.py": "e18e583993de3b3080945d75288631a5b1872140697b775e48fd1865e02f7df2",
+    "snooker_ai/replay_detection/detector.py": "7ebe7e9c76ecb830b71ebc002fae35f23cdaf091ad60a5ffe34e094c1658b5d1",
+    "snooker_ai/scene_detection/view_classifier.py": "901f760fe0c87b696209adcb99f7a85b982c4f3ea9c22b80547fd0117b86b120",
+    "snooker_ai/scene_detection/assets/red_replay_sphere.png": "025ee66e57f9902d7b23ae8d6c49efd771374d54d68ac75dde3d39deb5aa5cde"
+  },
+  "source_copy_pixel_verification": [
+    {
+      "copy_time": 0.0,
+      "source_pts": 180.0,
+      "copy_pts": 0.0,
+      "raw_frame_sha256": "629d51b05041d380f7f0fb4f8194f7f629be9f44721ec3a792d9e5eb68f54796",
+      "copy_frame_sha256": "629d51b05041d380f7f0fb4f8194f7f629be9f44721ec3a792d9e5eb68f54796",
+      "pixels_identical": true
+    },
+    {
+      "copy_time": 9.8,
+      "source_pts": 189.8,
+      "copy_pts": 9.8,
+      "raw_frame_sha256": "e44c98c48d616a204376af33bdf8b4c734b0ed620001075c10ee99f50c5470af",
+      "copy_frame_sha256": "e44c98c48d616a204376af33bdf8b4c734b0ed620001075c10ee99f50c5470af",
+      "pixels_identical": true
+    },
+    {
+      "copy_time": 40.16,
+      "source_pts": 220.16,
+      "copy_pts": 40.16000000000001,
+      "raw_frame_sha256": "983bac1a504db99ae23ada682e45d6325abd453e35f221fd419302d2d460d8fa",
+      "copy_frame_sha256": "983bac1a504db99ae23ada682e45d6325abd453e35f221fd419302d2d460d8fa",
+      "pixels_identical": true
+    },
+    {
+      "copy_time": 93.8,
+      "source_pts": 273.8,
+      "copy_pts": 93.8,
+      "raw_frame_sha256": "f3dba75205d90e564acf8013fcc1cfcaf2302e577413f59c759a0be749fbb8d3",
+      "copy_frame_sha256": "f3dba75205d90e564acf8013fcc1cfcaf2302e577413f59c759a0be749fbb8d3",
+      "pixels_identical": true
+    },
+    {
+      "copy_time": 106.88,
+      "source_pts": 286.88,
+      "copy_pts": 106.88,
+      "raw_frame_sha256": "b4ec575ef0fab554aead515b1e16c2887e91508a725eeb8e3d8b44e1c2b16204",
+      "copy_frame_sha256": "b4ec575ef0fab554aead515b1e16c2887e91508a725eeb8e3d8b44e1c2b16204",
+      "pixels_identical": true
+    }
+  ],
+  "source_geometry_development_bound": {
+    "1.8": {
+      "motion_start": 2.4,
+      "last_ball_motion_timestamp": 13.120000000000001,
+      "physical_stop_timestamp": 13.16,
+      "stop_confirmation_timestamp": 13.680000000000001,
+      "end_confidence": 0.9308,
+      "start_confidence": 0.92,
+      "confirmed": true,
+      "manual_review_required": true,
+      "reason": "confirmed_after_unknown_gap"
+    }
+  },
+  "limitations": [
+    "Native candidate counts and full-pipeline counts overlap and are not additive.",
+    "Exact physical stop times and all referee appearances are not independently established.",
+    "The remaining full match library, different replay graphics, and future videos are unmeasured.",
+    "Source labels are AI reviewed, not human-approved ground truth."
+  ]
+}

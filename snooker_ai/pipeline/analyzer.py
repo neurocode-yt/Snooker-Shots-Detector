@@ -59,7 +59,7 @@ from snooker_ai.utils.video import open_capture, sampled_frames
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 35
+_CACHE_VERSION = 37
 
 
 class Analyzer:
@@ -310,8 +310,26 @@ class Analyzer:
 
         report(0.92, JobStatus.SEGMENTING.value, "Building shot segments")
         shots = self.segmenter.build(candidates, features, metadata.duration, mode)
+        tail_detector = VisualTailDetector(self.config)
+        report(0.93, JobStatus.SEGMENTING.value, "Verifying table coverage at uncertain shot endings")
+        stops = tail_detector.revalidated_stops(source, proxy.mapper, shots, features)
+        for candidate in candidates:
+            stop = stops.get(candidate.timestamp)
+            if stop is not None:
+                candidate.evidence.update({
+                    "refined_stop_timestamp": stop.physical_stop_timestamp,
+                    "refined_stop_confirmation_timestamp": stop.stop_confirmation_timestamp,
+                    "refined_last_motion_timestamp": stop.last_ball_motion_timestamp,
+                    "refined_stop_confidence": stop.end_confidence,
+                    "refined_ball_motion_start": stop.motion_start,
+                    "refined_stop_review_required": float(stop.manual_review_required),
+                    "refined_stop_upper_bound": float("upper_bound" in stop.reason),
+                    "native_table_coverage_stop_revalidated": 1.,
+                })
+        if stops:
+            shots = self.segmenter.build(candidates, features, metadata.duration, mode)
         report(0.94, JobStatus.SEGMENTING.value, "Checking shot endings for referee entry")
-        entries = VisualTailDetector(self.config).detect(
+        entries = tail_detector.detect(
             source, proxy.proxy_path, proxy.mapper, shots, features,
         )
         if self._record_visual_tail_boundaries(
@@ -1836,7 +1854,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 40,
+            "result_policy_version": 51,
             "visual_tail": self.config.get("visual_tail", {}),
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")

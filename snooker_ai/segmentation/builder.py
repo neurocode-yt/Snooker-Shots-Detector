@@ -222,6 +222,11 @@ class SegmentBuilder:
                 max(0.0, float(mode_cfg.get("end_before_ball_stop_seconds", 0.0)))
                 if stop_confirmed else 0.0
             )
+            if cand.evidence.get("native_table_coverage_stop_revalidated", 0.) >= .5:
+                # A recovered view proves observed stillness, while its timing
+                # remains under review. Keep that source boundary visible;
+                # early padding removal cannot substitute for a measured end.
+                end_trim = 0.
             if end_trim > 0:
                 # Duration is cue contact to physical stop, excluding pre-roll
                 # and confirmation look-ahead. Unresolved caps are not stops.

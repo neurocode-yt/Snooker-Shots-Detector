@@ -531,7 +531,9 @@ class ObjectDetector:
                     best = (score, radius * 2)
         return best[1]
 
-    def _warm_cue_spheres(self, hsv: np.ndarray, mask: np.ndarray) -> list[_Proposal]:
+    def _warm_cue_spheres(
+        self, hsv: np.ndarray, mask: np.ndarray, *, green_cast_only: bool = False,
+    ) -> list[_Proposal]:
         """Separate shaded ivory spheres from a pink bridge in low views.
 
         A neutral mask alone joins the ball to the player's hand and cue. Warm
@@ -539,7 +541,10 @@ class ObjectDetector:
         skin. The compact outline, neutral highlight area and cloth support are
         independent requirements; hue or brightness alone never identifies it.
         """
-        warm = cv2.inRange(hsv, (15, 0, 125), (44, 140, 255))
+        # A green-graded white can touch a warm bridge in the broad ivory
+        # mask. An independent cooler outline separates those measured pixels;
+        # it retains every sphere, highlight and cloth gate below.
+        warm = cv2.inRange(hsv, (25 if green_cast_only else 15, 0, 125), (44, 140, 255))
         # The sphere's ivory mask can include achromatic highlights. Pink skin
         # under the arena lighting has a near-neutral magenta cast; including
         # that cast joins the white ball to the bridge instead of its outline.
@@ -657,6 +662,8 @@ class ObjectDetector:
                 cue_sphere_black_occlusion=black_occlusion,
                 cue_sphere_colour_occlusion=colour_occlusion,
             ))
+        if not green_cast_only:
+            proposals.extend(self._warm_cue_spheres(hsv, mask, green_cast_only=True))
         return proposals
 
     def _occluded_cue_sphere(
