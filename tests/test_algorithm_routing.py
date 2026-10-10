@@ -242,11 +242,15 @@ def test_cli_rejects_output_directory_owned_by_other_algorithm(routing, monkeypa
     assert store._meta_path(old_id).read_bytes() == before
 
 
-def test_workflow_adds_dl_algo_without_removing_existing_options():
+def test_workflow_hides_dl_algo_and_preserves_existing_options():
     root = Path(__file__).resolve().parents[1]
     html = (root / "apps/web/index.html").read_text(encoding="utf-8")
-    for option in ('value="automatic">Automatic video', 'value="classic">Classic editor', 'value="dl_algo">DL Algo'):
-        assert option in html
+    selector = html.split('<select id="workflow"', 1)[1].split('</select>', 1)[0]
+    for option in ('value="automatic">Automatic video', 'value="classic">Classic editor'):
+        assert option in selector
+    assert 'value="dl_algo"' not in selector
+    assert '<template id="dl-workflow-option">' in html
+    assert 'value="dl_algo">DL Algo' in html
     script = (root / "apps/web/static/app.js").read_text(encoding="utf-8")
     assert 'fetch("/api/algorithms")' in script
     assert 'workflow.value === "dl_algo" ? "dl_algo" : "classic"' in script
