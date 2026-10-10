@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from typing import Any
+from functools import lru_cache
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -123,6 +125,9 @@ class ViewClassifier:
         this graphic by itself does not label any following play a replay.
         """
         small = cv2.resize(frame, (320, 180))
+        blue = ViewClassifier._blue_title_stinger(small)
+        if blue:
+            return blue
         hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV)
         if np.mean(hsv[:, :, 2] < 115) < .55:
             return []
@@ -150,6 +155,33 @@ class ViewClassifier:
             return []
         title = cv2.cvtColor(small[58:128, 106:214], cv2.COLOR_BGR2GRAY)
         return (cv2.resize(title, (16, 12)).astype(np.float32).ravel()/255).tolist()
+
+    @staticmethod
+    @lru_cache(maxsize=1)
+    def _blue_title_template() -> np.ndarray | None:
+        return cv2.imread(str(Path(__file__).parent/'assets/championship_title.png'), cv2.IMREAD_GRAYSCALE)
+
+    @staticmethod
+    def _blue_title_stinger(small: np.ndarray) -> list[float]:
+        """Recognize a source-verified title wipe, rather than blue banners.
+
+        A fullscreen cyan field must contain the measured Championship League
+        lettering. The binary title template ignores video grading; paired
+        opening and closing graphics still establish replay ownership elsewhere.
+        A different vector length keeps this family separate from neon rings.
+        """
+        hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV)
+        cyan = cv2.inRange(hsv, (85, 75, 145), (105, 220, 255))
+        if np.mean(cyan > 0) < .60:
+            return []
+        title = (((hsv[60:126,64:256,1] < 80)
+                  & (hsv[60:126,64:256,2] > 185))*255).astype(np.uint8)
+        template = ViewClassifier._blue_title_template()
+        if template is None or template.shape != title.shape or np.std(title) < 10:
+            return []
+        if float(cv2.matchTemplate(title, template, cv2.TM_CCOEFF_NORMED)[0,0]) < .90:
+            return []
+        return [2.]+(cv2.resize(title, (16,12)).astype(np.float32).ravel()/255).tolist()
 
     @staticmethod
     def _cloth_geometry(mask: np.ndarray) -> dict[str, Any]:

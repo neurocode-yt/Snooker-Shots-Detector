@@ -55,6 +55,7 @@ def extract(annotations: Path, output: Path, config, *, source_root: Path | None
         if not 0 <= start < end <= metadata.duration:
             raise ValueError('The reviewed interval must lie inside its source video.')
         identity = {'source_sha256': section['source_sha256'], 'window': section['window'],
+                    'context_start': max(0., start-1.),
                     'config_sha256': signature, 'feature_cache_version': _CACHE_VERSION}
         existing = json.loads(evidence.read_text(encoding='utf-8')) if evidence.exists() else None
         if existing is None or existing.get('identity') != identity:
@@ -75,7 +76,7 @@ def extract(annotations: Path, output: Path, config, *, source_root: Path | None
             print(f'{identifier}: extracting [{start}, {end}) at {metadata.fps:.3f} fps', flush=True)
             features, _, _ = analyzer._extract_features(
                 proxy, None, mapper, metadata.duration, sample_fps=metadata.fps,
-                start_time=start, end_time=end,
+                start_time=identity['context_start'], end_time=end,
             )
             evidence.write_text(json.dumps({'identity': identity,
                                            'features': [f.model_dump() for f in features]}), encoding='utf-8')

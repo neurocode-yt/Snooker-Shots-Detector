@@ -137,9 +137,10 @@ class ReplayDetector:
     ) -> list[tuple[float, float]]:
         groups: list[list[FrameFeatures]] = []
         for feature in features:
-            if len(feature.appearance_signature) != 192:
+            if len(feature.appearance_signature) not in (192, 193):
                 continue
-            if groups and feature.t-groups[-1][-1].t <= .8:
+            if (groups and feature.t-groups[-1][-1].t <= .8
+                    and len(feature.appearance_signature) == len(groups[-1][-1].appearance_signature)):
                 groups[-1].append(feature)
             else:
                 groups.append([feature])
@@ -219,7 +220,7 @@ class ReplayDetector:
             # the first retained image of its closing graphic for the uncertainty
             # interval, without treating a graphic as an observed contact.
             graphics = [f for f in ordered_features[bisect_left(times, opening_start):bisect_right(times, closing_end)]
-                        if len(f.appearance_signature) == 192]
+                        if len(f.appearance_signature) in (192, 193)]
             closing_start = closing_end
             for graphic in reversed(graphics):
                 if closing_start-graphic.t > .8:
@@ -326,6 +327,8 @@ class ReplayDetector:
 
     @staticmethod
     def _cosine(first: np.ndarray, second: np.ndarray) -> float:
+        if first.shape != second.shape:
+            return 0.0
         denom = float(np.linalg.norm(first)*np.linalg.norm(second))
         return float(np.dot(first, second)/denom) if denom > 1e-9 else 0.0
 

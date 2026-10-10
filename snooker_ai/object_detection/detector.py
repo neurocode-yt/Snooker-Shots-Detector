@@ -126,11 +126,13 @@ class ObjectDetector:
         partial_view: bool = False,
         table_bounds: tuple[int, int, int, int] | None = None,
         allow_closeup_scale: bool = True,
+        main_table_view: bool = False,
     ) -> list[Detection]:
         if self.model is not None:
             return self._detect_model(frame_bgr, table_mask)
         return self._detect_blobs(frame_bgr, table_mask, use_hough=use_hough, partial_view=partial_view,
-                                  table_bounds=table_bounds, allow_closeup_scale=allow_closeup_scale)
+                                  table_bounds=table_bounds, allow_closeup_scale=allow_closeup_scale,
+                                  main_table_view=main_table_view)
 
     def estimated_ball_diameter(self) -> float:
         """Return the temporally smoothed image-space ball diameter in pixels."""
@@ -175,6 +177,7 @@ class ObjectDetector:
         partial_view: bool = False,
         table_bounds: tuple[int, int, int, int] | None = None,
         allow_closeup_scale: bool = True,
+        main_table_view: bool = False,
     ) -> list[Detection]:
         """Find ball-scale cloth deviations and circular candidates.
 
@@ -396,6 +399,16 @@ class ObjectDetector:
             color_conf, deviation_conf, surround_conf = self._colour_scores(
                 hsv, cloth, proposal.cx, proposal.cy, proposal.radius
             )
+            # In a main camera, a rounded wrist can fit the ivory recovery mask
+            # while remaining attached to broad foreground. A real overlapping
+            # colour provides separate occlusion proof; close-up recovery retains
+            # its weaker cloth requirement for balls beside the bridge.
+            colour_occluded = (proposal.cue_sphere_red_occlusion
+                               or proposal.cue_sphere_black_occlusion
+                               or proposal.cue_sphere_colour_occlusion)
+            if (main_table_view and in_foreground and proposal.cue_sphere_supported
+                    and surround_conf < .65 and not colour_occluded):
+                continue
             if in_foreground and not proposal.cue_sphere_supported:
                 continue
             if deviation_conf < 0.08:

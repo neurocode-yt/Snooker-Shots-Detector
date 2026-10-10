@@ -1,0 +1,188 @@
+{
+  "algorithm": "classic",
+  "uses_deep_learning": false,
+  "labels_human_approved": false,
+  "contact_tolerance_seconds": 0.25,
+  "additional_match_minutes": 4,
+  "additional_contacts": 11,
+  "first_test_unadjudicated": {
+    "matched": 9,
+    "missed": 2,
+    "false_positive": 4
+  },
+  "label_adjudications": [
+    {
+      "source_group": "trump_un_nooh_2019",
+      "before": [
+        288.08,
+        288.12
+      ],
+      "after": [
+        286.84,
+        286.88
+      ],
+      "reason": "Original native frames prove impact before the assumed rolling/collision timing."
+    },
+    {
+      "source_group": "robertson_ursenbacher",
+      "before": [
+        817.16,
+        817.28
+      ],
+      "after": [
+        817.52,
+        817.6
+      ],
+      "reason": "The camera cut preceded impact; the newly visible white remained stationary."
+    }
+  ],
+  "additional_current_development_and_regression": {
+    "matched": 11,
+    "missed": 0,
+    "false_positive": 1,
+    "cases": [
+      {
+        "id": "source-19",
+        "split": "development",
+        "source_group": "judd_trump_vs_thepchaiya_un_nooh___2019_champion_of_champions",
+        "matched": 5,
+        "missed": 0,
+        "false_positive": 1,
+        "false_contacts": [
+          230.92
+        ],
+        "label_sha256": "3afd2066ed01bc8951c26b9a2d03e1297c053802aededd2df28c14cb2b72cef7"
+      },
+      {
+        "id": "source-27",
+        "split": "development",
+        "source_group": "neil_robertson_vs_alexander_ursenbacher",
+        "matched": 4,
+        "missed": 0,
+        "false_positive": 0,
+        "false_contacts": [],
+        "label_sha256": "3afd2066ed01bc8951c26b9a2d03e1297c053802aededd2df28c14cb2b72cef7"
+      },
+      {
+        "id": "source-00",
+        "split": "test",
+        "source_group": "aaron_hill_vs_panchaya_channoi",
+        "matched": 2,
+        "missed": 0,
+        "false_positive": 0,
+        "false_contacts": [],
+        "label_sha256": "3afd2066ed01bc8951c26b9a2d03e1297c053802aededd2df28c14cb2b72cef7"
+      }
+    ]
+  },
+  "previous_14_contact_regression": {
+    "matched": 14,
+    "missed": 0,
+    "false_positive": 0,
+    "cases": [
+      {
+        "id": "source-15",
+        "split": "development",
+        "source_group": "bai_yulu_vs_liam_graham",
+        "matched": 1,
+        "missed": 0,
+        "false_positive": 0,
+        "false_contacts": [],
+        "label_sha256": "d317199079d3d8b74421d98ac45101e5532c7918fd2354fa2441d265fa904eb2"
+      },
+      {
+        "id": "source-17",
+        "split": "selection",
+        "source_group": "jiang_jun_vs_thepchaiya_un_nooh",
+        "matched": 5,
+        "missed": 0,
+        "false_positive": 0,
+        "false_contacts": [],
+        "label_sha256": "d317199079d3d8b74421d98ac45101e5532c7918fd2354fa2441d265fa904eb2"
+      },
+      {
+        "id": "source-25",
+        "split": "development",
+        "source_group": "mark_williams_vs_andrew_higginson",
+        "matched": 0,
+        "missed": 0,
+        "false_positive": 0,
+        "false_contacts": [],
+        "label_sha256": "d317199079d3d8b74421d98ac45101e5532c7918fd2354fa2441d265fa904eb2"
+      },
+      {
+        "id": "source-30",
+        "split": "development",
+        "source_group": "reanne_evans_vs_mink_nutcharut",
+        "matched": 2,
+        "missed": 0,
+        "false_positive": 0,
+        "false_contacts": [],
+        "label_sha256": "d317199079d3d8b74421d98ac45101e5532c7918fd2354fa2441d265fa904eb2"
+      },
+      {
+        "id": "source-20",
+        "split": "test",
+        "source_group": "kyren_wilson_vs_thepchaiya_un_nooh___2019_champion_of_champions",
+        "matched": 4,
+        "missed": 0,
+        "false_positive": 0,
+        "false_contacts": [],
+        "label_sha256": "d317199079d3d8b74421d98ac45101e5532c7918fd2354fa2441d265fa904eb2"
+      },
+      {
+        "id": "source-33",
+        "split": "test",
+        "source_group": "thanawat_tirapongpaiboon_vs_paul_norris",
+        "matched": 2,
+        "missed": 0,
+        "false_positive": 0,
+        "false_contacts": [],
+        "label_sha256": "d317199079d3d8b74421d98ac45101e5532c7918fd2354fa2441d265fa904eb2"
+      }
+    ]
+  },
+  "full_pipeline_prefix160": {
+    "before": {
+      "matched": 9,
+      "missed": 1,
+      "false_positive": 4
+    },
+    "after": {
+      "matched": 10,
+      "missed": 0,
+      "false_positive": 0
+    }
+  },
+  "remaining_known_failure": "The different red-ball ITV replay graphic at source 230.92 is still selected as an extra contact in the new development case.",
+  "scope": "Source-reviewed contact cases and one 160-second full pipeline; full library and future accuracy are unmeasured.",
+  "feature_cache_version": 35,
+  "result_policy_version": 40,
+  "rule_sha256": {
+    "snooker_ai/object_detection/detector.py": "4f303bbc3f990acd39027d8ae24e22b8be7129c027cfb6eea236858f99866697",
+    "snooker_ai/event_fusion/strike.py": "a70418e0cb59f3ed5fa8c48a5c71b10ff28bd2e3814acdf0782b09b370d84dce",
+    "snooker_ai/segmentation/builder.py": "acc6d430dca4e2253ff2b1044dc67039dfc748f32977291e1affbe18aafbce3a",
+    "snooker_ai/replay_detection/detector.py": "fd3a7396d07cabb5a1874f979c3184938ab61f7a3bf05e324b6b5fefec32e213",
+    "snooker_ai/scene_detection/view_classifier.py": "0f035e610e209768564f9011016c3b291d3dac5dd916967bc5371774d2a4f197"
+  },
+  "rendered_prefix_verification": {
+    "included_live_clips": 10,
+    "complete_contact_brackets_covered": 10,
+    "decode_pass": true,
+    "rendered_path": "G:\\2026 AI START\\Grok\\snooker\\data\\editor_audit\\original_2026_10_10\\more-tests\\prefix-export\\highlights.mp4",
+    "duration_seconds": 102.96,
+    "manual_review_shots": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "exact_stop_ground_truth_independently_verified": false
+  }
+}

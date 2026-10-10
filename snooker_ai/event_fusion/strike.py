@@ -808,8 +808,11 @@ class StrikeDetector:
         # contact geometry explain a white that stops abruptly after impact.
         collision = (metrics.get("independent_object_motion_count", 0) >= 3
                      and metrics.get("cue_contact_score", 0) >= .65)
+        weak_address = max(metrics.get("cue_contact_score", 0),
+                           metrics.get("pre_cue_address_score", 0)) < .65
+        fraction = .25 if largest >= 3. and weak_address else .10
         return bool(metrics.get("observation_fps", 0) >= 10 and not collision
-                    and largest >= .75 and remaining < max(.50, .10 * largest))
+                    and largest >= .75 and remaining < max(.50, fraction * largest))
 
     @staticmethod
     def _identity_return(metrics: dict[str, float]) -> bool:
@@ -868,7 +871,17 @@ class StrikeDetector:
                     and metrics.get("pre_cue_address_score", 0) >= .20)
 
     def _transition_confirmed(self, metrics: dict[str, float]) -> bool:
-        if metrics.get("quiet_anchor_contradiction", 0) >= .5 or self._single_step_identity_jump(metrics):
+        # A cue touching a finger highlight can score as strong geometry. A
+        # multi-ball-diameter out-and-back identity jump still needs a measured
+        # initial launch or independent collision evidence to be physical motion.
+        unmeasured_return = bool(
+            metrics.get("observation_fps", 0) >= 10
+            and metrics.get("largest_cue_step_diameters", 0) >= 3.
+            and metrics.get("anchor_direction_consistency", 1) < .10
+            and metrics.get("initial_launch_displacement", 0) < .50
+            and metrics.get("independent_object_motion_count", 0) < 3)
+        if (metrics.get("quiet_anchor_contradiction", 0) >= .5
+                or self._single_step_identity_jump(metrics) or unmeasured_return):
             return False
         if max(metrics.get("gradual_launch_confirmed", 0),
                metrics.get("addressed_departure_confirmed", 0),
