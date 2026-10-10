@@ -880,8 +880,16 @@ class StrikeDetector:
             and metrics.get("anchor_direction_consistency", 1) < .10
             and metrics.get("initial_launch_displacement", 0) < .50
             and metrics.get("independent_object_motion_count", 0) < 3)
+        unmeasured_swaps = bool(
+            metrics.get("observation_fps", 0) >= 10
+            and metrics.get("largest_cue_step_diameters", 0) >= 10.
+            and metrics.get("cue_direction_consistency", 1) < .80
+            and metrics.get("anchor_direction_consistency", 1) < .80
+            and metrics.get("pre_cue_spatial_quiet_ratio", 1) < .20
+            and metrics.get("pre_measured_cue_quiet_ratio", 1) < .20
+            and metrics.get("independent_object_motion_count", 0) < 3)
         if (metrics.get("quiet_anchor_contradiction", 0) >= .5
-                or self._single_step_identity_jump(metrics) or unmeasured_return):
+                or self._single_step_identity_jump(metrics) or unmeasured_return or unmeasured_swaps):
             return False
         if max(metrics.get("gradual_launch_confirmed", 0),
                metrics.get("addressed_departure_confirmed", 0),

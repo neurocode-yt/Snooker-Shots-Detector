@@ -1,22 +1,23 @@
-"""Conservative foreground-entry boundaries for automatic live-shot endings.
+"""Native geometry and foreground checks for automatic live-shot endings.
 
-This optional second pass measures an obstruction, never an all-ball stop.
-It reads source pixels without changing the raw feature cache or shot records.
+Foreground pixels supply obstruction and table-coverage evidence. Existing ball
+kinematics and the ordinary stop detector supply stillness; raw caches stay intact.
 """
 
 from __future__ import annotations
 
-from bisect import bisect_left
-from dataclasses import dataclass, field
+from bisect import bisect_left, bisect_right
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import cv2
 import numpy as np
 
 from snooker_ai.config import Config
+from snooker_ai.event_fusion.ball_stop import BallStopDetector, StopDetection
 from snooker_ai.scene_detection.table_context import ViewGeometry, view_geometry
 from snooker_ai.table_detection.localizer import TableLocalizer
-from snooker_ai.types import FrameFeatures, ShotRecord
+from snooker_ai.types import CameraViewType, FrameFeatures, ShotRecord, StrikeCandidate
 from snooker_ai.utils.timebase import TimeMapper
 from snooker_ai.utils.video import open_capture
 
@@ -66,6 +67,7 @@ class _TailPixels:
         data = config.as_dict()
         data.setdefault("table_detection", {})["temporal_smooth_frames"] = 1
         self.localizer = TableLocalizer(Config(data))
+        self.precise_localizer = TableLocalizer(Config(data))
         self.cut_threshold = float(config.get("scene_detection.hard_cut_threshold", .42))
         self.last_t: float | None = None
         self.scene_id: int | None = None
@@ -73,12 +75,15 @@ class _TailPixels:
         self.geometry: ViewGeometry | None = None
         self.geometry_t = float("-inf")
         self.green_history: list[tuple[float, np.ndarray]] = []
+        self.surface_history: list[tuple[float, np.ndarray]] = []
 
     def reset(self) -> None:
         self.localizer.reset()
+        self.precise_localizer.reset()
         self.geometry = None
         self.geometry_t = float("-inf")
         self.green_history.clear()
+        self.surface_history.clear()
 
     def observe(self, frame: np.ndarray, t: float,
                 context: FrameFeatures | None) -> TailObservation:
@@ -109,6 +114,31 @@ class _TailPixels:
 
         table = self.localizer.detect(small)
         geometry = view_geometry(table, small.shape)
+        if not geometry.full_table and frame.shape[1] >= 960:
+            # Rounding a shallow cushion to 640px can turn a measured four-
+            # corner hull into five vertices. Retry calibration at the same
+            # spatial resolution used by native shot analysis; all component
+            # histories and boundaries stay in the original 640px coordinates.
+            precise = cv2.resize(frame, (960, 540))
+            precise_table = self.precise_localizer.detect(precise)
+            measured = view_geometry(precise_table, precise.shape)
+            if measured.full_table and measured.homography is not None:
+                scale = np.diag([1.5, 1.5, 1.]).astype(np.float64)
+                geometry = ViewGeometry(True, measured.homography @ scale)
+        # Corner fitting can fail while a player/referee covers a small piece
+        # of an otherwise unchanged main view. Revalidate the last measured
+        # playing-surface polygon against current cloth pixels instead of
+        # expiring its calibration solely because that corner is obscured.
+        if (not geometry.full_table and self.geometry is not None
+                and context is not None and context.view_type == CameraViewType.MAIN_TABLE
+                and context.table_confidence >= .60):
+            polygon = self._polygon(self.geometry, small.shape[:2]) > 0
+            observed = table.mask > 0
+            intersection = np.count_nonzero(polygon & observed)
+            union = np.count_nonzero(polygon | observed)
+            if (intersection/max(1, np.count_nonzero(polygon)) >= .85
+                    and intersection/max(1, union) >= .80):
+                self.geometry_t = t
         if geometry.full_table:
             polygon = self._polygon(geometry, small.shape[:2])
             coverage = np.count_nonzero((polygon > 0) & (table.mask > 0)) / max(
@@ -119,6 +149,15 @@ class _TailPixels:
             return result
         result.full_table = True
         cloth = self._polygon(self.geometry, small.shape[:2])
+        # A fitted corner can clip a real patch beside the cushion. Foreground
+        # clearance must also include cloth actually observed in this stable
+        # view before the hand, rather than depend only on that fitted outline.
+        self.surface_history = [(seen, mask) for seen, mask in self.surface_history
+                                if 0 < t-seen <= .5]
+        for _, measured_surface in self.surface_history:
+            cloth = cv2.bitwise_or(cloth, measured_surface)
+        cloth = cv2.bitwise_or(cloth, table.mask)
+        self.surface_history.append((t, table.mask.copy()))
         hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV)
         green = cv2.inRange(hsv, (35, 80, 40), (95, 255, 255))
         self.green_history = [(seen, mask) for seen, mask in self.green_history
@@ -229,6 +268,14 @@ def _matching_component(row: TailObservation, previous: HandComponent,
     return min(options, key=lambda item: np.linalg.norm(item.centre-previous.centre)) if options else None
 
 
+def _footprint_overlap(first: HandComponent, second: HandComponent) -> float:
+    x, y, width, height = first.box
+    other_x, other_y, other_width, other_height = second.box
+    intersection = (max(0, min(x+width, other_x+other_width)-max(x, other_x))
+                    * max(0, min(y+height, other_y+other_height)-max(y, other_y)))
+    return intersection / max(1, width*height+other_width*other_height-intersection)
+
+
 def _confirmed_entries(rows: list[TailObservation], strike: float,
                        cut_threshold: float) -> list[VisualHandEntry]:
     entries = []
@@ -256,15 +303,29 @@ def _confirmed_entries(rows: list[TailObservation], strike: float,
                     break
                 match = _matching_component(rows[preceding], initial, dt, broad=False)
                 if match is not None:
+                    # An edge-touching fragment may overlap the cushion and
+                    # have no measured cloth clearance. Keep the earliest
+                    # verified footprint instead of erasing the following,
+                    # continuously observed entry with that uncertain fragment.
+                    earlier_clear = [seen for seen in match.prior_clear_times
+                                     if rows[preceding].t-.5 <= seen < rows[preceding].t]
+                    if len(earlier_clear) < 2 or max(earlier_clear)-min(earlier_clear) < .079:
+                        break
                     first, initial = preceding, match
             onset = rows[first].t
-            if onset < strike+2 or min(*initial.canonical, *(1-v for v in initial.canonical)) > .08:
+            # A broad arm can have its centre deep inside the table while its
+            # measured outline still crosses the rail. Foreground proposals
+            # already require that rail intersection; detached gloves must
+            # independently start near the measured edge.
+            if (onset < strike+2 or initial.kind != "foreground"
+                    and min(*initial.canonical, *(1-v for v in initial.canonical)) > .08):
                 continue
             clear = [seen for seen in initial.prior_clear_times if onset-.5 <= seen < onset]
             if len(clear) < 2 or max(clear)-min(clear) < .079:
                 continue
             earlier = [r for r in rows if onset-.6 <= r.t < onset-.13]
             if any(c.entry and np.linalg.norm(c.centre-initial.centre) <= 2*c.diameter
+                   and _footprint_overlap(c, initial) >= .50
                    and c.kind == initial.kind
                    for r in earlier for c in r.components):
                 continue
@@ -355,6 +416,71 @@ class VisualTailDetector:
             rows.append(pixels.observe(frame, t, context))
         return rows
 
+    def revalidated_stops(
+        self, source: str | Path, time_mapper: TimeMapper, shots: list[ShotRecord],
+        features: list[FrameFeatures],
+    ) -> dict[float, StopDetection]:
+        """Recheck uncertain ends against native, measured table coverage.
+
+        A rounded cushion can defeat the raw four-corner fit after movement.
+        Revalidated geometry permits existing ball kinematics to be evaluated
+        by the ordinary stop detector. It supplies no motion or stillness by
+        itself, and neither cached features nor contact candidates are changed.
+        """
+        if not bool(self.config.get("visual_tail.enabled", True)) or not features:
+            return {}
+        ordered = sorted(features, key=lambda f: f.t)
+        times = [f.t for f in ordered]
+        eligible = [shot for shot in shots if self.eligible(shot)
+                    and (not shot.evidence.get("stop_confirmed") or shot.manual_review_required)]
+        if not eligible:
+            return {}
+        capture = open_capture(source)
+        stops = {}
+        detector = BallStopDetector(self.config)
+        try:
+            if not capture.isOpened():
+                return {}
+            for shot in eligible:
+                start = max(shot.cue_strike, shot.clip_end-20)
+                end = min(time_mapper.source_duration, shot.clip_end+.6)
+                context_window = ordered[bisect_left(times, start):bisect_right(times, end)]
+                if not any(not f.table_full_view and f.observation_fps >= 10
+                           and f.view_type == CameraViewType.MAIN_TABLE
+                           and f.table_confidence >= .80 for f in context_window):
+                    continue
+                rows = self._observe_window(capture, start, end, time_mapper,
+                                            ordered, times, native=True)
+                measured = []
+                recovered = False
+                for row in rows:
+                    context = row.context
+                    # A nearby sparse or differently timed frame cannot prove
+                    # native stillness. Missing evidence stays explicitly unknown.
+                    exact = (context is not None and context.observation_fps >= 10
+                             and abs(context.t-row.t) <= .001)
+                    if not exact:
+                        measured.append(FrameFeatures(t=row.t, observation_valid=False,
+                            table_observable=False, table_full_view=False))
+                        continue
+                    full = bool(row.full_table and not row.reset
+                                and context.view_type == CameraViewType.MAIN_TABLE
+                                and context.table_confidence >= .80)
+                    recovered |= full and not context.table_full_view
+                    measured.append(context.model_copy(update={'t': row.t, 'table_full_view': full}))
+                if not recovered:
+                    continue
+                candidate = StrikeCandidate(timestamp=shot.cue_strike, confidence=shot.strike_confidence)
+                stop = detector.detect_stop(candidate, measured, time_mapper.source_duration)
+                # Only shorten an unresolved edit using a confirmed ordinary
+                # stop. Unknown gaps retain the detector's timing review flag.
+                if (stop.confirmed and stop.physical_stop_timestamp < shot.clip_end
+                        and stop.physical_stop_timestamp >= shot.cue_strike+.2):
+                    stops[shot.cue_strike] = replace(stop, manual_review_required=True)
+        finally:
+            capture.release()
+        return stops
+
     def detect(self, source: str | Path, proxy: str | Path, time_mapper: TimeMapper,
                shots: list[ShotRecord], features: list[FrameFeatures]) -> list[VisualHandEntry]:
         if not bool(self.config.get("visual_tail.enabled", True)) or not features:
@@ -390,7 +516,10 @@ class VisualTailDetector:
                 for trigger in triggers:
                     if trigger < last_window_end:
                         continue
-                    window_start = max(shot.cue_strike, trigger-1.4)
+                    # Measure the clear table before a person hides a corner.
+                    # The extra lead-in supplies geometry and clearance; the
+                    # native entry, continuity and cue vetoes still decide.
+                    window_start = max(shot.cue_strike, trigger-3.4)
                     last_window_end = min(end, trigger+.6)
                     native = self._observe_window(native_capture, window_start, last_window_end,
                                                   time_mapper, ordered, times, native=True)

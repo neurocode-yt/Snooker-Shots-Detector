@@ -81,6 +81,16 @@ def test_confident_stop_does_not_keep_referee_entry(config, tmp_path, monkeypatc
     assert revised[0].physical_stop_timestamp == 8.
 
 
+def test_revalidated_native_stop_keeps_its_measured_boundary_visible(config,tmp_path,monkeypatch):
+    analyzer,candidate,shots,entry=setup_shot(config,tmp_path,monkeypatch)
+    config._data['modes']['strict']['end_before_ball_stop_seconds']=2.
+    baseline=analyzer.segmenter.build([candidate],[],12.)
+    assert baseline[0].clip_end < baseline[0].physical_stop_timestamp
+    candidate.evidence['native_table_coverage_stop_revalidated']=1.
+    revised=analyzer.segmenter.build([candidate],[],12.)
+    assert revised[0].clip_end==revised[0].physical_stop_timestamp==8.
+
+
 def test_verified_entry_reduces_dissolve_padding_instead_of_showing_referee(config, tmp_path, monkeypatch):
     analyzer, candidate, shots, entry = setup_shot(config, tmp_path, monkeypatch)
     entry.entry_timestamp = entry.source_entry_pts = 5.04

@@ -18,6 +18,7 @@ from snooker_ai.utils.logging import get_logger
 
 logger = get_logger("replay")
 _REPLAY_VIEWS = (CameraViewType.REPLAY, CameraViewType.SLOW_MOTION_REPLAY)
+_STINGER_LENGTHS = (192, 193, 194)
 
 
 class ReplayDetector:
@@ -137,7 +138,7 @@ class ReplayDetector:
     ) -> list[tuple[float, float]]:
         groups: list[list[FrameFeatures]] = []
         for feature in features:
-            if len(feature.appearance_signature) not in (192, 193):
+            if len(feature.appearance_signature) not in _STINGER_LENGTHS:
                 continue
             if (groups and feature.t-groups[-1][-1].t <= .8
                     and len(feature.appearance_signature) == len(groups[-1][-1].appearance_signature)):
@@ -220,7 +221,7 @@ class ReplayDetector:
             # the first retained image of its closing graphic for the uncertainty
             # interval, without treating a graphic as an observed contact.
             graphics = [f for f in ordered_features[bisect_left(times, opening_start):bisect_right(times, closing_end)]
-                        if len(f.appearance_signature) in (192, 193)]
+                        if len(f.appearance_signature) in _STINGER_LENGTHS]
             closing_start = closing_end
             for graphic in reversed(graphics):
                 if closing_start-graphic.t > .8:

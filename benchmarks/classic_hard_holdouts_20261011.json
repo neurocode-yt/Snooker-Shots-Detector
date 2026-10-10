@@ -1,0 +1,88 @@
+{
+  "algorithm": "classic",
+  "uses_deep_learning": false,
+  "labels_human_approved": false,
+  "predictions_consulted": false,
+  "frozen_at": "2026-10-10T19:58:53.523814+00:00",
+  "annotation_method": "Source-only chronological one-second overview of each entire 90-second interval, then native presentation-time consecutive frames around every visible contact and each interval end. No predictions read before freezing. Bounds bracket last stationary and first moving cue-ball frames. AI reviewed; not human approved.",
+  "sections": [
+    {
+      "library_index": 24,
+      "source_relative_path": "Marco Fu vs Onyee Ng.mp4",
+      "source_sha256": "b58e2dffb6a1ad2fd77f2d223902ab095287ac5da4a45123799fcaba702ab22d",
+      "source_group": "marco_fu_vs_onyee_ng",
+      "split": "test",
+      "source_reviewed": true,
+      "predictions_consulted": false,
+      "window": {
+        "start": 540,
+        "end": 630
+      },
+      "contacts": [
+        {
+          "lower": 571.72,
+          "upper": 571.76,
+          "description": "Ng safety, low camera; score unchanged",
+          "source_evidence": "original_2026_10_11/crop-contact-24-571.6.jpg"
+        },
+        {
+          "lower": 595.64,
+          "upper": 595.68,
+          "description": "Fu safety, main camera; score unchanged",
+          "source_evidence": "original_2026_10_11/crop-contact-24-595.52.jpg"
+        }
+      ],
+      "negative_intervals": [
+        {
+          "start": 540,
+          "end": 570,
+          "description": "Walking and repeated addressing; no contact"
+        },
+        {
+          "start": 621,
+          "end": 630,
+          "description": "Referee inspection and next address; no contact"
+        }
+      ]
+    },
+    {
+      "library_index": 49,
+      "source_relative_path": "Zhang Anda vs Thepchaiya Un-Nooh - 2025 Qualifying Round 4.mp4",
+      "source_sha256": "a4bc68dacb447b2f22f1c9c9ca7420df99c1b6d1ad54b57472fd32977cb9b6f8",
+      "source_group": "zhang_anda_vs_thepchaiya_un_nooh_2025_qualifying_round_4",
+      "split": "test",
+      "source_reviewed": true,
+      "predictions_consulted": false,
+      "window": {
+        "start": 480,
+        "end": 570
+      },
+      "contacts": [
+        {
+          "lower": 520.52,
+          "upper": 520.56,
+          "description": "Zhang safety; score unchanged",
+          "source_evidence": "original_2026_10_11/crop-contact-49-520.4.jpg"
+        },
+        {
+          "lower": 553.04,
+          "upper": 553.08,
+          "description": "Un-Nooh safety; score unchanged",
+          "source_evidence": "original_2026_10_11/crop-contact-49-552.68.jpg"
+        }
+      ],
+      "negative_intervals": [
+        {
+          "start": 480,
+          "end": 492,
+          "description": "Balls rolling from preceding out-of-window shot"
+        },
+        {
+          "start": 548,
+          "end": 553,
+          "description": "Repeated feathering with stationary white"
+        }
+      ]
+    }
+  ]
+}
