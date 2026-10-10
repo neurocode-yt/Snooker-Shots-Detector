@@ -1,0 +1,26 @@
+{
+  "source": "Jiang Jun vs Thepchaiya Un-Nooh.mp4",
+  "purpose": "Referee temporarily hides a main-table corner; camera scale stays fixed.",
+  "samples": [
+    {
+      "source_pts": 620.96,
+      "path": "frame-620.96.png",
+      "sha256": "ac00cda896732570ccfeddac2e4dfe4e118f645e92d950e89b0fa5e8124187b9"
+    },
+    {
+      "source_pts": 621.24,
+      "path": "frame-621.24.png",
+      "sha256": "55b8c29ae1abada114368c64d3bf094db4e923437f96486ba2a1b9132df822e9"
+    },
+    {
+      "source_pts": 621.72,
+      "path": "frame-621.72.png",
+      "sha256": "e733fdd40f39fb9111469fdf0f4d189d83b0bf67e880cf6df214656a82db00cf"
+    },
+    {
+      "source_pts": 630.08,
+      "path": "frame-630.08.png",
+      "sha256": "e58eeb1901d48a2e6679c3caa976e1fd497cace13d8b2fd502ee1d0f7531351c"
+    }
+  ]
+}

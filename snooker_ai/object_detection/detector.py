@@ -125,11 +125,12 @@ class ObjectDetector:
         use_hough: bool = True,
         partial_view: bool = False,
         table_bounds: tuple[int, int, int, int] | None = None,
+        allow_closeup_scale: bool = True,
     ) -> list[Detection]:
         if self.model is not None:
             return self._detect_model(frame_bgr, table_mask)
         return self._detect_blobs(frame_bgr, table_mask, use_hough=use_hough, partial_view=partial_view,
-                                  table_bounds=table_bounds)
+                                  table_bounds=table_bounds, allow_closeup_scale=allow_closeup_scale)
 
     def estimated_ball_diameter(self) -> float:
         """Return the temporally smoothed image-space ball diameter in pixels."""
@@ -173,6 +174,7 @@ class ObjectDetector:
         use_hough: bool = True,
         partial_view: bool = False,
         table_bounds: tuple[int, int, int, int] | None = None,
+        allow_closeup_scale: bool = True,
     ) -> list[Detection]:
         """Find ball-scale cloth deviations and circular candidates.
 
@@ -225,7 +227,7 @@ class ObjectDetector:
         else:
             warm_spheres = []
         diameter_prior = self._diameter_prior(table_w, table_h)
-        if partial_view:
+        if partial_view and allow_closeup_scale:
             # A close-up can show a 50px white ball on only a fraction of the
             # playing surface. Table-length scale is meaningless there. Seed
             # from an enclosed, circular white component with a cloth annulus.

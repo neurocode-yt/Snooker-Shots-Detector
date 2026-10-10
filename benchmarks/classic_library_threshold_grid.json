@@ -1,0 +1,16 @@
+{
+  "strike_fusion.cue_ball_motion_start_normalized_speed": [
+    0.8,
+    1.0,
+    1.2
+  ],
+  "strike_fusion.cue_ball_min_track_confidence": [
+    0.35,
+    0.45
+  ],
+  "strike_fusion.cue_ball_stationary_normalized_speed": [
+    0.5,
+    0.65,
+    0.8
+  ]
+}

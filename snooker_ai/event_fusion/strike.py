@@ -69,6 +69,7 @@ class StrikeDetector:
         )
         self.local_norm_window = int(cfg.get("local_norm_window_frames", 40))
         self.hard_cut_threshold = float(config.get("scene_detection.hard_cut_threshold", .42))
+        self.fade_threshold = float(config.get("scene_detection.fade_threshold", .18))
         self.allow_legacy_fallback = bool(cfg.get("allow_legacy_motion_fallback", True))
         self.sparse_pre_quiet_s = float(
             cfg.get("sparse_candidate_pre_quiet_seconds", 1.5)
@@ -161,15 +162,17 @@ class StrikeDetector:
     def _track_conf(self, f: FrameFeatures) -> float:
         return self._value(f, "cue_ball_track_confidence")
 
-    @staticmethod
-    def _valid(f: FrameFeatures) -> bool:
+    def _valid(self, f: FrameFeatures) -> bool:
         if not f.match_context_valid or f.broadcast_replay or f.table_handling:
             return False
         if not bool(getattr(f, "observation_valid", True)):
             return False
         if not bool(getattr(f, "table_observable", True)):
             return False
-        if f.scene_cut_score >= 0.5:
+        # A gradual camera dissolve moves the apparent white centre before
+        # the hard-cut/geometry detector switches views. It supplies no cue
+        # motion evidence, even when the white tracker remains confident.
+        if f.scene_cut_score >= min(self.hard_cut_threshold, self.fade_threshold):
             return False
         if f.view_type in (CameraViewType.REPLAY, CameraViewType.SLOW_MOTION_REPLAY):
             return False
@@ -1452,6 +1455,7 @@ class StrikeDetector:
                          + self._cut_launch_candidates(features)
                          + self._reacquired_roll_candidates(features)
                          + self._micro_contact_candidates(features)
+                         + self._pack_occlusion_candidates(features)
                          + self._occluded_launch_candidates(features)
                          + self._interrupted_departure_candidates(features)):
             if not any(abs(c.timestamp-inferred.timestamp) < self.min_dist for c in candidates):
@@ -1684,6 +1688,9 @@ class StrikeDetector:
                                stabilized_launch: bool = False) -> tuple[float, float]:
         """Bound short impact occlusion by the final still and first rolling white."""
         current = features[index]
+        hidden_contact = self._pack_occlusion_contact_time(features, index, times, confirmed_contact)
+        if hidden_contact is not None:
+            return hidden_contact
         lo = bisect_left(times, current.t-(.35 if stabilized_launch else .20))
         recent = features[lo:index+1]
         if not recent or any(not self._same_view(f, current) or not self._valid(f) for f in recent):
@@ -1703,6 +1710,108 @@ class StrikeDetector:
                     return onset.t, anchor.t
                 break
         return current.t, current.t
+
+    def _pack_occlusion_contact_time(self, features, index, times, confirmed_contact):
+        """Locate an already confirmed launch hidden briefly in a ball pack.
+
+        The white may return only after its first collision. A late cue-address
+        detection cannot date that impact. Require a measured stationary white,
+        an immediate sustained object-ball departure during its disappearance,
+        and a continuous ball-quality roll afterwards in the same camera.
+        """
+        current = features[index]
+        if (current.cue_ball_detected or current.observation_fps < 10
+                or confirmed_contact < .40 or not current.table_full_view):
+            return None
+        history = features[bisect_left(times, current.t-.95):index]
+        anchors = [f for f in history if f.cue_ball_detected and f.cue_ball_quality
+                   and self._track_conf(f) >= .75 and f.cue_ball_x is not None
+                   and f.cue_ball_y is not None
+                   and f.cue_ball_stable_normalized_speed is not None
+                   and f.cue_ball_stable_normalized_speed <= self.stationary_speed]
+        if not anchors:
+            return None
+        anchor = anchors[-1]
+        quiet = [f for f in history if anchor.t-.30 <= f.t <= anchor.t]
+        # A returned camera can need several frames to settle its colour tracks.
+        # Require a continuous quiet interval after that motion, rather than
+        # importing those warmup speeds into the pre-impact rest interval.
+        noisy = [j for j, f in enumerate(quiet)
+                 if f.max_ball_normalized_speed > self.pre_quiet_max_ball_speed]
+        if noisy:
+            quiet = quiet[noisy[-1]+1:]
+        post = features[bisect_right(times, anchor.t):bisect_right(times, current.t+.65)]
+        rows = quiet+post
+        if (len(quiet) < 5 or quiet[-1].t-quiet[0].t < .20-1e-5 or not post
+                or any(not self._valid(f) or not self._same_view(f, current)
+                       or not f.table_full_view or f.observation_fps < 10
+                       or f.camera_motion_magnitude > 3. for f in rows)
+                or any(not 0 < b.t-a.t <= 2/min(a.observation_fps, b.observation_fps)+.005
+                       for a, b in zip(rows, rows[1:]))
+                or any(not f.cue_ball_detected or not f.cue_ball_quality
+                       or self._track_conf(f) < .75 or f.cue_ball_x is None
+                       or f.cue_ball_y is None for f in quiet)
+                or self._stationary_ratio(quiet) < .90):
+            return None
+        diameter = max(1., float(np.median([f.ball_diameter_px for f in quiet])))
+        if not any(f.cue_tip_visible and 0 < f.cue_tip_distance_to_ball <= 2*self._image_diameter(f)
+                   for f in quiet):
+            return None
+        xy = np.asarray([(f.cue_ball_x, f.cue_ball_y) for f in quiet])
+        if np.max(np.linalg.norm(xy-np.median(xy, axis=0), axis=1))/diameter > .15:
+            return None
+        return_index = next((j for j, f in enumerate(post) if f.cue_ball_detected), None)
+        if return_index is None or return_index < 2 or not .15 <= post[return_index].t-post[0].t <= .65:
+            return None
+        hidden = post[:return_index]
+        launches = [f for f in hidden if f.moving_ball_count > 0
+                    and f.max_ball_normalized_speed >= 1.5]
+        if (len(launches) < 3 or launches[0].t-hidden[0].t > .20
+                or any(f.max_ball_normalized_speed > self.pre_quiet_max_ball_speed for f in quiet)):
+            return None
+        rolling = post[return_index:]
+        if (len(rolling) < 8 or rolling[-1].t-rolling[0].t < .30
+                or any(not f.cue_ball_detected or not f.cue_ball_quality
+                       or self._track_conf(f) < .75 or f.cue_ball_x is None
+                       or f.cue_ball_y is None
+                       or not .70 <= f.ball_diameter_px/diameter <= 1.40 for f in rolling)
+                or sum((f.cue_ball_stable_normalized_speed or 0.) >= 1.5
+                       for f in rolling[1:]) < .80*(len(rolling)-1)):
+            return None
+        xy = np.asarray([(f.cue_ball_x, f.cue_ball_y) for f in rolling])
+        steps = np.linalg.norm(np.diff(xy, axis=0), axis=1)
+        net = float(np.linalg.norm(xy[-1]-xy[0]))
+        if net/diameter < .75 or net/max(float(np.sum(steps)), 1e-6) < .95 or max(steps)/diameter > 1.5:
+            return None
+        return hidden[0].t, anchor.t
+
+    def _pack_occlusion_candidates(self, features):
+        """Recover a measured pack impact even when the proposal tracker is new."""
+        times = [f.t for f in features]
+        recovered = []
+        for i in range(1, len(features)):
+            current = features[i]
+            previous = features[i-1]
+            if (not current.cue_ball_detected or not current.cue_ball_quality
+                    or previous.cue_ball_detected or current.observation_fps < 10
+                    or not self._valid(current)
+                    or (recovered and current.t-recovered[-1].timestamp < self.min_dist)):
+                continue
+            after = features[i:bisect_right(times, current.t+.55)]
+            address = max((f.cue_contact_score for f in after if f.cue_tip_visible), default=0.)
+            contact = self._pack_occlusion_contact_time(features, i-1, times, address)
+            if contact is None:
+                continue
+            timestamp, anchor = contact
+            recovered.append(StrikeCandidate(
+                timestamp=timestamp, confidence=.78, camera_view=current.view_type,
+                uncertainty_start=anchor, uncertainty_end=current.t,
+                evidence={"occlusion_inferred": 1., "pack_impact_confirmed": 1.,
+                          "impact_occlusion_contact": 1., "ball_onset_run": float(len(after)),
+                          "dense_transition_confirmed": 1., "cue_ball_motion_confirmed": 1.,
+                          "cue_geometry_confirmed": 1.},
+            ))
+        return recovered
 
     def _micro_contact_candidates(self, features: list[FrameFeatures]) -> list[StrikeCandidate]:
         """A touching-ball pot can launch the colour with minimal white travel."""
