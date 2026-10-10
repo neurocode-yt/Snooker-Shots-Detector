@@ -77,6 +77,9 @@ Repository = "https://github.com/example/snooker-ai"
 where = ["."]
 include = ["snooker_ai*", "apps*"]
 
+[tool.setuptools.package-data]
+"snooker_ai.scene_detection" = ["assets/*.png"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]

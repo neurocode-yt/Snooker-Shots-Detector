@@ -542,6 +542,21 @@ class SegmentBuilder:
         that fails this bar while colliding with another shot's window is a
         preparation/collision artefact and enters conflict resolution instead.
         """
+        evidence = shot.evidence
+        confirmed_return = bool(
+            shot.shot_confidence >= self.medium
+            and evidence.get("reacquired_ball_roll", 0) >= .5
+            and evidence.get("native_occlusion_confirmed", 0) >= .5
+            and evidence.get("dense_transition_confirmed", 0) >= .5
+            and evidence.get("cue_ball_motion_confirmed", 0) >= .5
+            and evidence.get("ball_onset_run", 0) >= 8
+            and evidence.get("cue_direction_consistency", 0) >= .90
+            and evidence.get("cue_displacement_diameters", 0) >= .65)
+        # A hidden contact has uncertain timing even when its returned roll is
+        # independently measured. That timing confidence must not erase the
+        # genuine next shot when the previous stop is still unresolved.
+        if confirmed_return:
+            return True
         if shot.shot_confidence < self.high:
             return False
         quiet = shot.evidence.get("pre_ball_quiet_ratio")
