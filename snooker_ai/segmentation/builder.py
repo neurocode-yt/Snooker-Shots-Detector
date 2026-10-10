@@ -201,10 +201,19 @@ class SegmentBuilder:
                     and visual_cap < clip_cap):
                 clip_cap = visual_cap
                 availability_reason = "visual_hand_entry_clip_boundary"
+            portrait_cap = float(cand.evidence.get("portrait_clip_cap_timestamp", 0.))
+            portrait_start = float(cand.evidence.get("portrait_start_timestamp", 0.))
+            portrait_confirmation = float(cand.evidence.get("portrait_confirmation_timestamp", 0.))
+            if (cand.evidence.get("portrait_confidence", 0.) >= .8
+                    and visual_floor-1e-6 <= portrait_cap < portrait_start < portrait_confirmation <= duration
+                    and portrait_cap < clip_cap):
+                clip_cap = portrait_cap
+                availability_reason = "portrait_cutaway_clip_boundary"
             # A sustained broadcast cutaway limits usable edit footage. It is
             # not a measurement of where the balls physically stopped.
             cutaway_boundary = availability_reason in {
                 "non_table_cutaway_clip_boundary", "visual_hand_entry_clip_boundary",
+                "portrait_cutaway_clip_boundary",
             }
             if physical_stop > clip_cap + 1e-9 and not cutaway_boundary:
                 physical_stop = clip_cap
@@ -615,6 +624,7 @@ class SegmentBuilder:
                 usable_end = float(prev.evidence.get("usable_source_end_timestamp", float("inf")))
                 if prev_stop > usable_end+1e-6 and prev.evidence.get("usable_source_end_reason") in {
                     "non_table_cutaway_clip_boundary", "visual_hand_entry_clip_boundary", "replay_clip_boundary",
+                    "portrait_cutaway_clip_boundary",
                 }:
                     # A stop reacquired after unusable footage is an upper
                     # bound. It cannot erase the next independently proven

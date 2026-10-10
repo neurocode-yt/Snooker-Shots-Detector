@@ -1280,6 +1280,8 @@ class StrikeDetector:
             "ball_onset_local_residual": float(max(post_local or [0.0])),
             "onset_camera_motion_median": float(np.median([x.camera_motion_magnitude for x in post])) if post else 0.,
             "onset_cue_address_score": max((x.cue_contact_score for x in pre+post if x.cue_tip_visible),default=0.),
+            "onset_native_classified": float(f.view_classified and f.observation_fps >= 10),
+            "onset_object_launch_observations": float(sum(x.object_ball_launch_count > 0 for x in post)),
             "pre_cue_sample_count": float(len(reliable_pre)),
             "pre_cue_stationary_ratio": float(pre_cue_stationary_ratio),
             "cue_missing_after_onset": float(missing_after_onset),
@@ -1305,6 +1307,13 @@ class StrikeDetector:
             and metrics["ball_onset_run"] >= 2
             and metrics["ball_onset_raw"] >= 0.22
             and metrics["ball_onset_normalized_speed"] >= 1.0
+            # A missing white and residual table movement also occur when a
+            # referee picks it up. Native classified footage needs a cue
+            # address or separately measured object-ball departures; motion
+            # elsewhere on the cloth cannot establish a hidden contact alone.
+            and (metrics.get("onset_native_classified", 0) < .5
+                 or metrics.get("onset_cue_address_score", 0) >= .40
+                 or metrics.get("onset_object_launch_observations", 0) >= 3)
             and (metrics.get("onset_camera_motion_median",0)<=3.
                  or (metrics.get("onset_cue_address_score",0)>=.65
                      and metrics["ball_onset_normalized_speed"]>=6.))
@@ -1414,9 +1423,14 @@ class StrikeDetector:
         # Temporal non-maximum suppression without changing the selected time.
         kept: list[tuple[int, dict[str, float]]] = []
         for item in proposals:
-            i, _ = item
+            i, metrics = item
             if not kept or features[i].t - features[kept[-1][0]].t >= self.min_dist:
                 kept.append(item)
+            elif (metrics.get("occlusion_inferred", 0) >= .5
+                  and kept[-1][1].get("occlusion_inferred", 0) >= .5):
+                # Residual peaks after impact can grow while the white is
+                # hidden. Keep the first proved onset of that same event.
+                continue
             elif features[i].strike_score > features[kept[-1][0]].strike_score:
                 kept[-1] = item
 
@@ -1454,7 +1468,8 @@ class StrikeDetector:
             }
             contact_t, contact_start = self._occluded_contact_time(
                 features, idx, times, max(metrics.get("cue_contact_score", 0.0),
-                                         metrics.get("pre_cue_address_score", 0.0)),
+                                         metrics.get("pre_cue_address_score", 0.0),
+                                         metrics.get("onset_cue_address_score", 0.0)),
                 stabilized_launch=(self._stabilized_launch_confirmed(metrics)
                                    or self._anchored_launch_confirmed(metrics)))
             if contact_t < f.t:

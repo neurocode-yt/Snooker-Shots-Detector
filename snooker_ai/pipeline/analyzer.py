@@ -36,6 +36,7 @@ from snooker_ai.scene_detection.table_context import (
 )
 from snooker_ai.segmentation.builder import SegmentBuilder
 from snooker_ai.segmentation.visual_tail import VisualTailDetector
+from snooker_ai.segmentation.portrait import PortraitCutawayDetector
 from snooker_ai.table_detection.localizer import TableLocalizer, TableObservation
 from snooker_ai.temporal_model.state_machine import ShotStateMachine
 from snooker_ai.tracking.tracker import BallTracker
@@ -336,6 +337,10 @@ class Analyzer:
             candidates, shots, entries, metadata.duration, metadata.fps,
         ):
             shots = self.segmenter.build(candidates, features, metadata.duration, mode)
+        report(0.95, JobStatus.SEGMENTING.value, "Checking uncertain endings for player cutaways")
+        portraits = PortraitCutawayDetector(self.config).detect(source, shots, features)
+        if self._record_portrait_boundaries(candidates, shots, portraits, metadata.duration, metadata.fps):
+            shots = self.segmenter.build(candidates, features, metadata.duration, mode)
         shots = self._preserve_user_edits(shots, job_id)
         shots = self._score_importance(shots, features)
         self._record_detection_stage("segmentation", candidates, extra={
@@ -445,6 +450,35 @@ class Analyzer:
                 "visual_hand_entry_source_pts": entry.source_entry_pts,
                 "visual_hand_entry_confidence": entry.confidence,
                 "visual_hand_entry_clip_cap_timestamp": cap,
+            })
+            changed = True
+        return changed
+
+    def _record_portrait_boundaries(self, candidates, shots, entries, duration, source_fps) -> bool:
+        """Limit unusable portrait footage while retaining physical-stop evidence."""
+        settings = self.config.mode_settings(EditMode.STRICT)
+        minimum_clip = max(0., float(settings.get("minimum_clip_seconds", 0.)))
+        minimum_after = max(0., float(settings.get("minimum_strike_visibility_seconds", .1)))
+        changed = False
+        for entry in entries:
+            if (not all(np.isfinite(v) for v in (entry.strike_timestamp, entry.start_timestamp,
+                                                entry.confirmation_timestamp))
+                    or not entry.strike_timestamp < entry.start_timestamp < entry.confirmation_timestamp <= duration):
+                continue
+            shot = next((s for s in shots if abs(s.cue_strike-entry.strike_timestamp) < 1e-4), None)
+            candidate = next((c for c in candidates if abs(c.timestamp-entry.strike_timestamp) < 1e-4), None)
+            if (shot is None or candidate is None or not shot.included
+                    or shot.possible_replay or shot.user_modified):
+                continue
+            cap = entry.start_timestamp - 1/max(source_fps, 1.)
+            floor = max(shot.clip_start+minimum_clip, shot.cue_strike+minimum_after)
+            if not floor-1e-6 <= cap < shot.clip_end:
+                continue
+            candidate.evidence.update({
+                "portrait_start_timestamp": entry.start_timestamp,
+                "portrait_confirmation_timestamp": entry.confirmation_timestamp,
+                "portrait_clip_cap_timestamp": cap,
+                "portrait_confidence": .85,
             })
             changed = True
         return changed
@@ -1854,7 +1888,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 51,
+            "result_policy_version": 53,
             "visual_tail": self.config.get("visual_tail", {}),
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")
