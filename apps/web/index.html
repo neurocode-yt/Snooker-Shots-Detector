@@ -20,9 +20,11 @@
           <select id="workflow" aria-describedby="workflow-description">
             <option value="automatic">Automatic video</option>
             <option value="classic">Classic editor (previous interface)</option>
-            <option value="dl_algo">DL Algo</option>
           </select>
         </label>
+        <template id="dl-workflow-option">
+          <option value="dl_algo">DL Algo</option>
+        </template>
         <p id="workflow-description" class="muted">Upload the entire match. Remove waiting and setup footage, then export with mix transitions.</p>
         <p id="algorithm-status" class="muted hidden" role="status" aria-live="polite"></p>
         <label class="file-label">
@@ -93,6 +95,6 @@
     </section>
   </main>
 
-  <script src="/static/app.js?v=20261008dlalgo"></script>
+  <script src="/static/app.js?v=20261010hide-dl"></script>
 </body>
 </html>

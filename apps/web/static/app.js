@@ -10,6 +10,11 @@ const sectionList = document.getElementById("section-list");
 const zoomSlider = document.getElementById("timeline-zoom");
 const startBtn = document.getElementById("start-btn");
 const workflow = document.getElementById("workflow");
+// Keep DL available in the backend while its interface is temporarily hidden.
+const DL_ALGO_VISIBLE = false;
+if (DL_ALGO_VISIBLE) {
+  workflow.appendChild(document.getElementById("dl-workflow-option").content.cloneNode(true));
+}
 let dlCapability = null;
 
 function updateStartAvailability() {
@@ -18,6 +23,7 @@ function updateStartAvailability() {
 }
 
 async function loadAlgorithms() {
+  if (!DL_ALGO_VISIBLE) return;
   try {
     const response = await fetch("/api/algorithms");
     if (!response.ok) throw new Error("Could not check DL Algo readiness.");
@@ -32,7 +38,7 @@ async function loadAlgorithms() {
 
 function updateWorkflow() {
   const classic = workflow.value === "classic";
-  const dl = workflow.value === "dl_algo";
+  const dl = DL_ALGO_VISIBLE && workflow.value === "dl_algo";
   document.getElementById("workflow-heading").textContent = classic
     ? "Upload & analyze" : dl ? "DL Algo" : "Create snooker highlights";
   document.getElementById("workflow-description").textContent = classic
@@ -404,7 +410,9 @@ async function refreshJobs() {
   const el = document.getElementById("jobs");
   try {
     const res = await fetch("/api/jobs");
-    const jobs = await res.json();
+    const jobs = (await res.json()).filter(
+      (job) => DL_ALGO_VISIBLE || job.algorithm !== "dl_algo",
+    );
     if (!jobs.length) {
       el.innerHTML = "<p class='meta'>No jobs yet.</p>";
       return;
@@ -504,7 +512,7 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
   const text = document.getElementById("progress-text");
   const mode = "strict";
   const autoExport = workflow.value !== "classic";
-  const algorithm = workflow.value === "dl_algo" ? "dl_algo" : "classic";
+  const algorithm = DL_ALGO_VISIBLE && workflow.value === "dl_algo" ? "dl_algo" : "classic";
   if (algorithm === "dl_algo") {
     await loadAlgorithms();
     if (!dlCapability?.available) {
