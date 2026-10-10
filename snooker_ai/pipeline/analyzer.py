@@ -59,7 +59,7 @@ from snooker_ai.utils.video import open_capture, sampled_frames
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 32
+_CACHE_VERSION = 33
 
 
 class Analyzer:
@@ -929,6 +929,10 @@ class Analyzer:
                     table_obs.mask,
                     use_hough=idx % hough_step == 0,
                     partial_view=not geometry.full_table,
+                    # A referee can temporarily hide a main-table corner.
+                    # That occlusion does not change the camera's ball scale.
+                    allow_closeup_scale=current_view not in (
+                        CameraViewType.MAIN_TABLE, CameraViewType.WIDE_ARENA),
                     table_bounds=((table_obs.bbox[0], table_obs.bbox[1],
                                    table_obs.bbox[0]+table_obs.bbox[2], table_obs.bbox[1]+table_obs.bbox[3])
                                   if table_obs.bbox is not None else None),
@@ -1830,7 +1834,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 34,
+            "result_policy_version": 36,
             "visual_tail": self.config.get("visual_tail", {}),
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")
