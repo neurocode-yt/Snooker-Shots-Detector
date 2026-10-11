@@ -1,0 +1,135 @@
+{
+  "algorithm": "classic",
+  "uses_deep_learning": false,
+  "labels_human_approved": false,
+  "predictions_consulted": false,
+  "frozen_at": "2026-10-11T11:35:17.752408+00:00",
+  "annotation_method": "Source-only chronological 1fps review of two complete 120-second intervals, followed by consecutive native 25fps frames around each visible contact and interval end. Slight zoom on Selby safety yields a two-frame conservative contact bracket. Predictions not consulted before labels frozen. AI reviewed; not human approved.",
+  "sections": [
+    {
+      "library_index": 16,
+      "source_relative_path": "Jack Lisowski vs Mark Selby - 2026 Quarter-Final.mp4",
+      "source_sha256": "8224e2774c1ff376b32c7c7bc48bc2d552d986a6c39765c9c2e8b4dee37fd6e2",
+      "source_group": "jack_lisowski_vs_mark_selby_2026_quarter_final",
+      "split": "test",
+      "source_reviewed": true,
+      "predictions_consulted": false,
+      "window": {
+        "start": 600.0,
+        "end": 720.0
+      },
+      "contacts": [
+        {
+          "lower": 619.92,
+          "upper": 619.96,
+          "description": "Selby safety using rest; low camera; score unchanged",
+          "source_evidence": "further_2026_10_11/source-16/exact-0.jpg"
+        },
+        {
+          "lower": 640.24,
+          "upper": 640.28,
+          "description": "Lisowski safety into reds; main camera; score unchanged",
+          "source_evidence": "further_2026_10_11/source-16/exact-1.jpg"
+        },
+        {
+          "lower": 691.8,
+          "upper": 691.88,
+          "description": "Selby safety; low camera with slight zoom; score unchanged",
+          "source_evidence": "further_2026_10_11/source-16/exact-2.jpg"
+        }
+      ],
+      "replay_intervals": [],
+      "negative_intervals": [
+        {
+          "start": 706.0,
+          "end": 720.0,
+          "description": "Walking, feathering and no contact before interval end"
+        }
+      ]
+    },
+    {
+      "library_index": 31,
+      "source_relative_path": "Ronnie OSullivan vs Judd Trump.mp4",
+      "source_sha256": "3e099990d15b35d14e6bb73dc15b6e3d2a4941eeae9eac123da492da6fad953c",
+      "source_group": "ronnie_osullivan_vs_judd_trump",
+      "split": "development",
+      "source_reviewed": true,
+      "predictions_consulted": false,
+      "window": {
+        "start": 600.0,
+        "end": 720.0
+      },
+      "contacts": [
+        {
+          "lower": 605.32,
+          "upper": 605.36,
+          "description": "Trump safety; main camera; score 58 unchanged",
+          "source_evidence": "further_2026_10_11/source-31/exact-0.jpg"
+        },
+        {
+          "lower": 630.56,
+          "upper": 630.6,
+          "description": "O Sullivan red from close camera; 8 to 9",
+          "source_evidence": "further_2026_10_11/source-31/exact-1.jpg"
+        },
+        {
+          "lower": 650.44,
+          "upper": 650.48,
+          "description": "O Sullivan blue; main camera; 9 to 14",
+          "source_evidence": "further_2026_10_11/source-31/exact-2.jpg"
+        },
+        {
+          "lower": 662.8,
+          "upper": 662.84,
+          "description": "O Sullivan red from close camera; 14 to 15",
+          "source_evidence": "further_2026_10_11/source-31/exact-3.jpg"
+        },
+        {
+          "lower": 673.28,
+          "upper": 673.32,
+          "description": "O Sullivan black from close camera; 15 to 22",
+          "source_evidence": "further_2026_10_11/source-31/exact-4.jpg"
+        },
+        {
+          "lower": 701.6,
+          "upper": 701.64,
+          "description": "O Sullivan red from close camera; 22 to 23",
+          "source_evidence": "further_2026_10_11/source-31/exact-5.jpg"
+        },
+        {
+          "lower": 711.08,
+          "upper": 711.12,
+          "description": "O Sullivan pink from close camera; 23 to 29",
+          "source_evidence": "further_2026_10_11/source-31/exact-6.jpg"
+        }
+      ],
+      "replay_intervals": [
+        {
+          "start": 615.0,
+          "end": 628.5,
+          "description": "Paired gold-arrow wipe and overhead replay of the Trump safety"
+        }
+      ],
+      "negative_intervals": [
+        {
+          "start": 654.0,
+          "end": 658.5,
+          "description": "Referee respots blue"
+        },
+        {
+          "start": 676.0,
+          "end": 683.0,
+          "description": "Referee respots black"
+        },
+        {
+          "start": 714.0,
+          "end": 719.5,
+          "description": "Referee respots pink"
+        }
+      ],
+      "used_to_develop_detector": true,
+      "first_test_contact_report": "further_2026_10_11/31-baseline56-contact-report.json"
+    }
+  ],
+  "first_annotation_sha256": "5b3133157a4d34bbbe509041ee622416f74a45789f9b210403e4ca32995de674"
+}

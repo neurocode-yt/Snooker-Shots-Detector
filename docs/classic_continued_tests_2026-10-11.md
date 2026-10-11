@@ -74,7 +74,7 @@ Trump contacts and 32/32 contacts across the full Robertson–Un-Nooh source,
 with no extra contacts in any report. The prefix is also part of the full match,
 so these are 53 report-level matches across three distinct source videos, with
 overlap. Every labelled contact bracket was covered by an included export clip;
-all four joined exports decoded successfully. The original-mode test suite
+all four joined exports decoded successfully. The repository test suite
 passed 1,138 tests, with 16 skipped; Ruff lint and whitespace checks passed.
 Source regressions cover the real occluded contact and promo, the referee
 negative, portrait and actual ball closeup images, continuity/motion/replay

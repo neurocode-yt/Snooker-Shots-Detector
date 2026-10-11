@@ -28,3 +28,13 @@ score strip at 590.20, the white title card at 608.00 and 608.50, and countdown
 footage at 614.20, 616.20 and 618.20. These stills check that the promotional
 countdown is excluded while the real match scoreboard prevents that context
 rule from suppressing an ordinary live contact.
+
+`classic_hard/saudi/` records source frames from O'Sullivan–Trump under green
+arena lighting. The four addressing frames locate the actual white ball, the
+referee frame checks that a head above the table stays outside its mask, and
+the opening/closing gold chevrons establish a bounded replay package. Ordinary
+gold cushions and live close-ups supply no wipe evidence. `source.json` pins
+the source SHA-256, original timestamps and the 960×540 JPEG transform.
+Its `closeup-departure-native.json` retains measured native observations of
+the nearby-red contact and a separate referee reset. The white was still while
+other-ball tracks were noisy; cue approach is measured in the preceding frame.

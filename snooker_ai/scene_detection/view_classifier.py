@@ -10,6 +10,7 @@ import cv2
 import numpy as np
 
 from snooker_ai.config import Config
+from snooker_ai.table_detection.surface import playing_surface_mask
 from snooker_ai.types import CameraViewType
 
 
@@ -75,6 +76,7 @@ class ViewClassifier:
             frame = cv2.resize(frame_bgr, (640, max(1, round(h * 640 / w))))
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         green = cv2.inRange(hsv, self.hsv_lower, self.hsv_upper)
+        green = playing_surface_mask(hsv, green)
         g = float(np.count_nonzero(green)) / float(green.size)
         e = self.edge_density(frame)
         s = self.skin_ratio(frame)
@@ -124,6 +126,9 @@ class ViewClassifier:
         does not establish that the following play is a replay.
         """
         small = cv2.resize(frame, (320, 180))
+        gold = ViewClassifier._gold_chevron_stinger(small)
+        if gold:
+            return gold
         sphere = ViewClassifier._red_sphere_stinger(small)
         if sphere:
             return sphere
@@ -157,6 +162,37 @@ class ViewClassifier:
             return []
         title = cv2.cvtColor(small[58:128, 106:214], cv2.COLOR_BGR2GRAY)
         return (cv2.resize(title, (16, 12)).astype(np.float32).ravel()/255).tolist()
+
+    @staticmethod
+    def _gold_chevron_stinger(small: np.ndarray) -> list[float]:
+        """Measure a full-height gold chevron over its dark teal wipe field."""
+        hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV)
+        field = ((hsv[:, :, 0] >= 55) & (hsv[:, :, 0] <= 100)
+                 & (hsv[:, :, 1] >= 20) & (hsv[:, :, 1] <= 150)
+                 & (hsv[:, :, 2] <= 120))
+        if np.mean(field) < .20:
+            return []
+        gold = cv2.inRange(hsv, (18, 55, 120), (40, 185, 255)) > 0
+        centres, widths = [], []
+        for fraction in (.10, .25, .40, .50, .60, .75, .90):
+            row = gold[round(fraction * (gold.shape[0] - 1))]
+            edges = np.diff(np.r_[False, row, False].astype(np.int8))
+            starts, ends = np.where(edges == 1)[0], np.where(edges == -1)[0]
+            if not len(starts):
+                return []
+            i = int(np.argmax(ends - starts))
+            widths.append(float(ends[i] - starts[i]))
+            centres.append(float((ends[i] + starts[i]) / 2))
+        w = gold.shape[1]
+        if (min(widths) < .04 * w or max(widths) > .35 * w
+                or max(widths) - min(widths) > .08 * w
+                or any(abs(centres[i] - centres[-i-1]) > .04 * w for i in range(3))
+                or not centres[0] < centres[1] < centres[2] < centres[3]
+                or centres[3] - centres[0] < .10 * w):
+            return []
+        # A type-specific canonical fingerprint associates only two independently
+        # measured chevrons; a single wipe never labels subsequent play a replay.
+        return [4., 0., 0.] + [1.] * 192
 
     @staticmethod
     @lru_cache(maxsize=1)

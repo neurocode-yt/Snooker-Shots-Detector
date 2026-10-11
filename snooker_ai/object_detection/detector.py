@@ -533,6 +533,7 @@ class ObjectDetector:
 
     def _warm_cue_spheres(
         self, hsv: np.ndarray, mask: np.ndarray, *, green_cast_only: bool = False,
+        strong_green_cast: bool = False,
     ) -> list[_Proposal]:
         """Separate shaded ivory spheres from a pink bridge in low views.
 
@@ -544,7 +545,13 @@ class ObjectDetector:
         # A green-graded white can touch a warm bridge in the broad ivory
         # mask. An independent cooler outline separates those measured pixels;
         # it retains every sphere, highlight and cloth gate below.
-        warm = cv2.inRange(hsv, (25 if green_cast_only else 15, 0, 125), (44, 140, 255))
+        if strong_green_cast:
+            # Green arena light saturates the lower hemisphere while the pale
+            # cap stays bright. Recover its measured outline without admitting
+            # saturated cloth, and retain the sphere/skin/annulus gates below.
+            warm = cv2.inRange(hsv, (25, 0, 100), (55, 220, 255))
+        else:
+            warm = cv2.inRange(hsv, (25 if green_cast_only else 15, 0, 125), (44, 140, 255))
         # The sphere's ivory mask can include achromatic highlights. Pink skin
         # under the arena lighting has a near-neutral magenta cast; including
         # that cast joins the white ball to the bridge instead of its outline.
@@ -586,7 +593,7 @@ class ObjectDetector:
                 circularity < .65 or fill < .48 or max(bw, bh) > 1.80 * min(bw, bh)
             ):
                 continue
-            size = min(13, max(3, int(round(radius * .75)) | 1))
+            size = min(25 if strong_green_cast else 13, max(3, int(round(radius * .75)) | 1))
             x0, x1 = max(0, x-size), min(hsv.shape[1], x+bw+size)
             y0, y1 = max(0, y-size), min(hsv.shape[0], y+bh+size)
             # Re-open the original measured pixels rather than filling its
@@ -641,10 +648,15 @@ class ObjectDetector:
             if not len(pixels):
                 continue
             hue, sat, value = np.median(pixels, axis=0)
-            neutral_cap = float(np.mean((pixels[:, 1] < 110) & (pixels[:, 2] >= 210)))
+            cap_saturation = 140 if strong_green_cast else 110
+            neutral_cap = float(np.mean((pixels[:, 1] < cap_saturation) & (pixels[:, 2] >= 210)))
             # Pink skin, neutral gloves and saturated yellow/brown balls fail
             # different gates even when one fragment happens to look circular.
-            if not (15 <= hue <= 44 and 35 <= sat <= 125 and value >= 150):
+            if strong_green_cast:
+                plausible_colour = 25 <= hue <= 50 and 35 <= sat <= 185 and value >= 130
+            else:
+                plausible_colour = 15 <= hue <= 44 and 35 <= sat <= 125 and value >= 150
+            if not plausible_colour:
                 continue
             if neutral_cap < 0.25:
                 continue
@@ -662,8 +674,15 @@ class ObjectDetector:
                 cue_sphere_black_occlusion=black_occlusion,
                 cue_sphere_colour_occlusion=colour_occlusion,
             ))
-        if not green_cast_only:
+        if not green_cast_only and not strong_green_cast:
             proposals.extend(self._warm_cue_spheres(hsv, mask, green_cast_only=True))
+            # Broader colour recovery must not pull an already measured ivory
+            # centre towards a joined bridge/fingertip component.
+            proposals.extend(
+                recovered for recovered in self._warm_cue_spheres(hsv, mask, strong_green_cast=True)
+                if not any(np.hypot(recovered.cx-prior.cx, recovered.cy-prior.cy)
+                           <= .80*(recovered.radius+prior.radius) for prior in proposals)
+            )
         return proposals
 
     def _occluded_cue_sphere(

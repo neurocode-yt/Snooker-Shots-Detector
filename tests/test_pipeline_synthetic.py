@@ -9,9 +9,10 @@ import pytest
 from snooker_ai.config import load_config
 from snooker_ai.pipeline.analyzer import Analyzer
 from snooker_ai.types import EditMode
+from snooker_ai.utils.ffmpeg import find_ffmpeg, find_ffprobe
 
 
-@pytest.mark.skipif(shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None, reason="ffmpeg/ffprobe required")
+@pytest.mark.skipif(shutil.which(find_ffmpeg()) is None or shutil.which(find_ffprobe()) is None, reason="ffmpeg/ffprobe required")
 def test_analyze_synthetic(synthetic_video, tmp_path):
     cfg = load_config()
     # Speed up
