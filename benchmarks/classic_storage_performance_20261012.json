@@ -1,0 +1,103 @@
+{
+  "date": "2026-10-12",
+  "algorithm": "classic",
+  "baseline_commit": "961ada9",
+  "job_id": "20261011-202935-4f685f09",
+  "observations_per_trial": 5438,
+  "repetitions": 3,
+  "all_loaded_feature_values_identical": true,
+  "trials": [
+    {
+      "repeat": 0,
+      "name": "full",
+      "save_seconds": 0.36911010000039823,
+      "load_seconds": 0.4534750999882817,
+      "bytes": 11678513,
+      "observations": 5438
+    },
+    {
+      "repeat": 0,
+      "name": "compact",
+      "save_seconds": 0.30381929999566637,
+      "load_seconds": 0.31817740001133643,
+      "bytes": 6715135,
+      "observations": 5438
+    },
+    {
+      "repeat": 1,
+      "name": "compact",
+      "save_seconds": 0.3036592999997083,
+      "load_seconds": 0.3307883999950718,
+      "bytes": 6715135,
+      "observations": 5438
+    },
+    {
+      "repeat": 1,
+      "name": "full",
+      "save_seconds": 0.3592528000008315,
+      "load_seconds": 0.44352359999902546,
+      "bytes": 11678513,
+      "observations": 5438
+    },
+    {
+      "repeat": 2,
+      "name": "full",
+      "save_seconds": 0.3797344999911729,
+      "load_seconds": 0.4231113000132609,
+      "bytes": 11678513,
+      "observations": 5438
+    },
+    {
+      "repeat": 2,
+      "name": "compact",
+      "save_seconds": 0.3001116999948863,
+      "load_seconds": 0.31714599998667836,
+      "bytes": 6715135,
+      "observations": 5438
+    }
+  ],
+  "checkpoint": {
+    "bytes": {
+      "before": 11678513,
+      "after": 6715135,
+      "reduction_percent": 42.50008541327136
+    },
+    "save_seconds": {
+      "before": 0.36936579999746755,
+      "after": 0.3025300999967537,
+      "reduction_percent": 18.09471802781203
+    },
+    "load_seconds": {
+      "before": 0.44003666666685604,
+      "after": 0.3220372666643622,
+      "reduction_percent": 26.815810804200336
+    }
+  },
+  "analysis_serialization": {
+    "pretty_seconds": [
+      1.3144450999971014,
+      1.2940497000236064
+    ],
+    "compact_seconds": [
+      0.9555622999905609,
+      0.9618511000007857
+    ],
+    "pretty_bytes": 129184071,
+    "compact_bytes": 99850312,
+    "parsed_json_identical": true
+  },
+  "validation": {
+    "status": "passed",
+    "command": ".venv/Scripts/python.exe -m pytest tests -q --ignore-glob=tests/test_dl_*.py",
+    "workspace_passed": 980,
+    "relevant_passed": 963,
+    "unrelated_local_capcut_passed": 17,
+    "elapsed_seconds": 154.14
+  },
+  "full_match_timing_measured": false,
+  "rejected_experiments": [
+    "Reusing per-thread detectors did not improve two reversed-order timing trials.",
+    "Increasing native workers and reducing OpenCV threads failed to show a reliable gain while another Python job was active.",
+    "Direct Pydantic JSON parsing was slower than the existing resume path."
+  ]
+}

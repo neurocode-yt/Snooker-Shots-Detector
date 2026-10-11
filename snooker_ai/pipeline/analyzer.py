@@ -1972,6 +1972,14 @@ class Analyzer:
     def _coarse_cache_path(self) -> Path:
         return self.job_dir / "coarse_checkpoint.json"
 
+    @staticmethod
+    def _cache_feature(feature: FrameFeatures) -> dict:
+        # Internal checkpoints can omit values the model restores by default.
+        # Keep ownership explicit: its absence identifies legacy replay caches.
+        payload = feature.model_dump(mode="json", exclude_defaults=True)
+        payload["replay_stinger_annotated"] = feature.replay_stinger_annotated
+        return payload
+
     def _save_coarse_cache(
         self,
         signature: str,
@@ -1987,7 +1995,7 @@ class Analyzer:
             # cannot pair new observations with another source's old target.
             "broadcast_target": self.broadcast_context.export_target(),
             "confirmed_target_returns": self._confirmed_target_returns,
-            "features": [item.model_dump(mode="json") for item in features],
+            "features": [self._cache_feature(item) for item in features],
             "scenes": [item.model_dump(mode="json") for item in scenes],
             "candidates": [item.model_dump(mode="json") for item in candidates],
         }
@@ -2082,7 +2090,7 @@ class Analyzer:
             "signature": signature,
             "start": start,
             "end": end,
-            "features": [item.model_dump(mode="json") for item in features],
+            "features": [self._cache_feature(item) for item in features],
         }
         try:
             self._write_json_atomic(self._dense_cache_path(index), payload)
@@ -2330,7 +2338,7 @@ class Analyzer:
     def _save_result(self, result: AnalysisResult) -> None:
         path = self.job_dir / "analysis.json"
         # Full analysis (includes per-frame features for resume / resegment)
-        path.write_text(result.model_dump_json(indent=2), encoding="utf-8")
+        path.write_text(result.model_dump_json(), encoding="utf-8")
         # Slim timeline for the review UI (no dense feature vectors)
         slim = {
             "job_id": result.job_id,
