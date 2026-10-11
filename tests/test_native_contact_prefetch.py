@@ -68,15 +68,13 @@ def test_two_outstanding_exact_requests_and_order(tmp_path, monkeypatch):
     assert not pool.pending
 
 
-@pytest.mark.parametrize("reason", ["serial", "small_cpu", "unknown", "foreign", "return", "missing_start", "gap"])
+@pytest.mark.parametrize("reason", ["serial", "small_cpu", "foreign", "return", "missing_start", "gap"])
 def test_unsafe_or_serial_context_stays_on_parent(tmp_path, monkeypatch, reason):
     analyzer = ready_analyzer(tmp_path, monkeypatch)
     if reason == "serial":
         analyzer.config = load_config(overrides={"analysis": {"native_contact_workers": 1}})
     elif reason == "small_cpu":
         monkeypatch.setattr("snooker_ai.pipeline.analyzer.os.cpu_count", lambda: 2)
-    elif reason == "unknown":
-        analyzer.broadcast_context.reset_observations(preserve_target=False)
     elif reason == "foreign":
         analyzer._coarse_context_reference[5].match_context_valid = False
     elif reason == "return":
@@ -88,6 +86,40 @@ def test_unsafe_or_serial_context_stays_on_parent(tmp_path, monkeypatch, reason)
     with prefetch(analyzer) as pool:
         assert pool.pull(0, pool.plans[0], lambda _: True) is None
         assert pool.pool is None
+
+
+def test_unknown_overlay_can_prefetch_without_changing_context(tmp_path, monkeypatch):
+    analyzer = ready_analyzer(tmp_path, monkeypatch)
+    analyzer.broadcast_context.reset_observations(preserve_target=False)
+    monkeypatch.setattr(Analyzer, "_extract_features", lambda *args, **kw:
+                        (still_features((kw['start_time'], kw['end_time'], kw['sample_fps'])), [], []))
+    with prefetch(analyzer) as pool:
+        rows = pool.pull(0, pool.plans[0], lambda _: True)
+    assert rows
+    assert not analyzer.broadcast_context.target_ready
+
+
+def test_learning_a_target_in_unknown_worker_requires_serial_fallback(tmp_path, monkeypatch):
+    analyzer = ready_analyzer(tmp_path, monkeypatch)
+    analyzer.broadcast_context.reset_observations(preserve_target=False)
+
+    def extract(worker, *args, **kwargs):
+        assert worker.broadcast_context.restore_target([1.] * 3072)
+        return still_features((kwargs['start_time'], kwargs['end_time'], kwargs['sample_fps'])), [], []
+
+    monkeypatch.setattr(Analyzer, "_extract_features", extract)
+    with prefetch(analyzer) as pool:
+        assert pool.pull(0, pool.plans[0], lambda _: True) is None
+    assert not analyzer.broadcast_context.target_ready
+
+
+def test_parent_learning_invalidates_outstanding_unknown_requests(tmp_path, monkeypatch):
+    analyzer = ready_analyzer(tmp_path, monkeypatch)
+    analyzer.broadcast_context.reset_observations(preserve_target=False)
+    with prefetch(analyzer) as pool:
+        assert pool.eligible(pool.plans[0])
+        assert analyzer.broadcast_context.restore_target([1.] * 3072)
+        assert not pool.eligible(pool.plans[0])
 
 
 def test_complete_native_coverage_skips_extraction(tmp_path, monkeypatch):

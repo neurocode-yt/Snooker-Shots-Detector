@@ -196,14 +196,18 @@ class _TailPixels:
             diameter = max(3., float(np.linalg.norm(across[1]-across[0])) * .0295)
             if area < .7*diameter**2 or max(width, height) < 1.5*diameter:
                 continue
-            component = labels == index
-            on_cloth = np.count_nonzero(component & (cloth > 0))
+            radius = max(2, round(diameter*.6))
+            # A component and its dilated ring fit inside this measured halo.
+            # Keep image-edge clipping identical to the full-frame operation.
+            x0, x1 = max(0, x-radius), min(labels.shape[1], x+width+radius)
+            y0, y1 = max(0, y-radius), min(labels.shape[0], y+height+radius)
+            component = labels[y0:y1, x0:x1] == index
+            on_cloth = np.count_nonzero(component & (cloth[y0:y1, x0:x1] > 0))
             thickness = float(cv2.distanceTransform(
                 component.astype(np.uint8), cv2.DIST_L2, 3).max()*2)
-            radius = max(2, round(diameter*.6))
             ring = (cv2.dilate(component.astype(np.uint8), cv2.getStructuringElement(
                 cv2.MORPH_ELLIPSE, (2*radius+1, 2*radius+1))) > 0) & ~component
-            green_ring = np.count_nonzero(ring & (green > 0)) / max(1, np.count_nonzero(ring))
+            green_ring = np.count_nonzero(ring & (green[y0:y1, x0:x1] > 0)) / max(1, np.count_nonzero(ring))
             broad = (area >= 1.7*diameter**2 and max(width, height) >= 2*diameter
                      and min(width, height) >= 1.1*diameter and thickness >= .7*diameter
                      and max(width, height) <= 10*diameter)
@@ -243,7 +247,8 @@ class _TailPixels:
             diameter = max(3., float(np.linalg.norm(across[1]-across[0])) * .0295)
             if (area < .7*diameter**2 or max(width, height) < 1.5*diameter
                     or min(width, height) < .7*diameter
-                    or np.count_nonzero((labels == index) & rail) < .6*diameter):
+                    or np.count_nonzero((labels[y:y+height, x:x+width] == index)
+                                        & rail[y:y+height, x:x+width]) < .6*diameter):
                 continue
             broad = (area >= 3*diameter**2 and max(width, height) >= 3*diameter
                      and min(width, height) >= 1.2*diameter)
