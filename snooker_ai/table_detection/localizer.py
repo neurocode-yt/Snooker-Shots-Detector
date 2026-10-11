@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 
 from snooker_ai.config import Config
+from snooker_ai.table_detection.surface import playing_surface_mask
 from snooker_ai.utils.acceleration import acceleration_enabled, disable_acceleration
 from snooker_ai.utils.logging import get_logger
 
@@ -64,6 +65,11 @@ class TableLocalizer:
             frame_input = cv2.UMat(frame_bgr) if use_opencl else frame_bgr
             hsv = cv2.cvtColor(frame_input, cv2.COLOR_BGR2HSV)
             mask = cv2.inRange(hsv, self.hsv_lower, self.hsv_upper)
+            surface = playing_surface_mask(
+                hsv.get() if isinstance(hsv, cv2.UMat) else hsv,
+                mask.get() if isinstance(mask, cv2.UMat) else mask,
+            )
+            mask = cv2.UMat(surface) if use_opencl else surface
             k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (self.morph_k, self.morph_k))
             mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k, iterations=2)
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k, iterations=1)
@@ -76,6 +82,7 @@ class TableLocalizer:
             self.use_opencl = False
             hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
             mask = cv2.inRange(hsv, self.hsv_lower, self.hsv_upper)
+            mask = playing_surface_mask(hsv, mask)
             k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (self.morph_k, self.morph_k))
             mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k, iterations=2)
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k, iterations=1)

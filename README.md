@@ -23,6 +23,7 @@ The web timeline remains available for optional inspection.
 - **Review UI** — move boundaries, add/delete shots, mark replays, export labels
 - **Selected-shots preview** — immediately play included shots as one continuous virtual timeline
 - **Export** — individual clips, one combined MP4, CSV, EDL, training labels
+- **Open in CapCut** — create a Windows CapCut 9.5 project with separate editable shots
 - **Jobs** — progress, resume, batch CLI
 - **Automatic workflow** — upload and start once; detection, cutting, and combined export finish without review approval
 - **Adaptive analysis** — native cadence at cue contact and stop boundaries; cheaper tracking follows the roll and exits on confirmed stillness
@@ -129,6 +130,20 @@ remain source cut lists.
 Choose **Classic editor (previous interface)** to analyze first and open the
 preview, timeline, individual-shot controls, and export buttons. Existing jobs
 also have an **Open classic editor** link. Automatic mode remains the default.
+
+Click **Open in CapCut** in a finished job or the shot editor, then select the new
+**Snooker - …** project on CapCut's Home screen. Included live shots are placed
+consecutively on its timeline, with source audio. Each shot references the full
+analyzed source, so you can extend trims, rearrange clips, add transitions, text,
+or music. This handoff uses straight cuts; the combined MP4's rendered mix
+transitions are not included. Keep the source video in its current location.
+
+The integration creates a fresh project on every click, preserves existing
+CapCut edits, and backs up CapCut's project index. Its private draft format is
+verified against **Windows CapCut 9.5.0**; unsupported versions show a reason
+instead of writing an unverified draft. CapCut must be installed on the PC
+running Snooker AI. For a custom installation or project location, configure
+`capcut.executable_path` and `capcut.projects_dir` in the YAML configuration.
 
 API clients can set `auto_export: false` on `POST /api/jobs` to request analysis
 only. Automatic web jobs export a combined video and avoid encoding

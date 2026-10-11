@@ -1,0 +1,78 @@
+{
+  "scope": "Post-prediction source and decoded-output review; supplements frozen first-test results.",
+  "source_export_review": {
+    "decoded_comparison_frames": 66,
+    "pages_reviewed": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "observation": "All compared frames belong to the intended source shot. Some moving-ball positions differ at the mapped time; exact-frame mapping is not verified.",
+    "ffmpeg_full_decode_exit_code": 0
+  },
+  "confirmed_truncated_examples": [
+    {
+      "contact": 110.13333333333334,
+      "clip_end": 118.4,
+      "observed_moving_ball": "red",
+      "continuation_observations": [
+        118.5,
+        119.0,
+        119.5,
+        120.0
+      ],
+      "source_review_interval": [
+        117.0,
+        123.0
+      ],
+      "sheet_sha256": "9199597e66ff064afd06e5ccab5a8de119da1613546b074b290321cf29a2b30f"
+    },
+    {
+      "contact": 1050.6333333333334,
+      "clip_end": 1057.9,
+      "observed_moving_ball": "white",
+      "continuation_observations": [
+        1058.0,
+        1058.5
+      ],
+      "source_review_interval": [
+        1057.0,
+        1061.0
+      ],
+      "sheet_sha256": "f00c10277e5bfe0a5bddd9889fc16e63740d8c76f24f200921c1625263cff337"
+    }
+  ],
+  "handling_overlap_note": "Seven retained windows overlap source-reviewed referee handling cores. This includes overlap near continuing ball motion, not seven false cue strokes.",
+  "complete_outcomes_verified": false,
+  "deployment_quality_verified": false,
+  "selected_ensemble_review": {
+    "compared_frames": 76,
+    "reviewed_pages": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "all_compared_frames_belong_to_intended_source_shots": true,
+    "exact_frame_mapping_verified": false,
+    "confirmed_early_cuts": {
+      "110.13333333333334": 118.13333333333334,
+      "1050.6333333333334": 1057.9
+    },
+    "handling_overlap_clips": 6,
+    "ffmpeg_full_decode_exit_code": 0,
+    "complete_outcomes_verified": false
+  }
+}

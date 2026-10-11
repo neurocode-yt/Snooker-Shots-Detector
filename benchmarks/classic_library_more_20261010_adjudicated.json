@@ -1,0 +1,179 @@
+{
+  "algorithm": "classic",
+  "uses_deep_learning": false,
+  "labels_human_approved": false,
+  "predictions_consulted": true,
+  "frozen_at": "2026-10-10T17:29:10.371566+00:00",
+  "annotation_method": "Initial source-only chronological and native-frame review. Two timing labels were subsequently corrected from original native frames after first-test mismatches; those match groups are explicitly development cases. Original labels and first-test results are retained.",
+  "sections": [
+    {
+      "library_index": 19,
+      "source_relative_path": "Judd Trump vs. Thepchaiya Un-Nooh _ 2019 Champion of Champions-1673fe3f.mp4",
+      "source_sha256": "ce57d01d8dca0af42f5da93ea582454444f9f6e773f29158dbfa5f497449b99d",
+      "source_group": "judd_trump_vs_thepchaiya_un_nooh___2019_champion_of_champions",
+      "split": "development",
+      "source_reviewed": true,
+      "window": {
+        "start": 180,
+        "end": 300
+      },
+      "contacts": [
+        {
+          "lower": 189.8,
+          "upper": 189.84,
+          "description": "Un-Nooh safety; score unchanged",
+          "source_evidence": "more-tests/native-19-00.jpg"
+        },
+        {
+          "lower": 220.12,
+          "upper": 220.16,
+          "description": "Trump red, 4 to 5",
+          "source_evidence": "more-tests/native-19-01.jpg"
+        },
+        {
+          "lower": 254.24,
+          "upper": 254.28,
+          "description": "Trump black, 5 to 12",
+          "source_evidence": "more-tests/native-19-02.jpg"
+        },
+        {
+          "lower": 273.76,
+          "upper": 273.8,
+          "description": "Trump red, 12 to 13",
+          "source_evidence": "more-tests/native-19-03.jpg"
+        },
+        {
+          "lower": 286.84,
+          "upper": 286.88,
+          "description": "Trump black, 13 to 20",
+          "source_evidence": "more-tests/timing-adjudication-19.jpg",
+          "previous_bounds": [
+            288.08,
+            288.12
+          ]
+        }
+      ],
+      "negative_intervals": [
+        {
+          "start": 230,
+          "end": 236.5,
+          "description": "Alternate-camera red replay"
+        },
+        {
+          "start": 260,
+          "end": 265.5,
+          "description": "Referee black respot"
+        },
+        {
+          "start": 291,
+          "end": 295.5,
+          "description": "Referee black respot"
+        }
+      ],
+      "predictions_consulted": true
+    },
+    {
+      "library_index": 27,
+      "source_relative_path": "Neil Robertson vs Alexander Ursenbacher.mp4",
+      "source_sha256": "47823c7dd80e00590837f405c589c3c8f15d22045a0d3854ff1759a18ffce31d",
+      "source_group": "neil_robertson_vs_alexander_ursenbacher",
+      "split": "development",
+      "source_reviewed": true,
+      "window": {
+        "start": 780,
+        "end": 840
+      },
+      "contacts": [
+        {
+          "lower": 780.0,
+          "upper": 780.04,
+          "description": "Robertson blue, 33 to 38",
+          "source_evidence": "more-tests/native-27-00.jpg"
+        },
+        {
+          "lower": 803.64,
+          "upper": 803.68,
+          "description": "Robertson red, 38 to 39",
+          "source_evidence": "more-tests/native-27-01.jpg"
+        },
+        {
+          "lower": 817.52,
+          "upper": 817.6,
+          "description": "Robertson black, 39 to 46; camera switches at impact",
+          "source_evidence": "more-tests/timing-adjudication-27.jpg",
+          "previous_bounds": [
+            817.16,
+            817.28
+          ]
+        },
+        {
+          "lower": 829.32,
+          "upper": 829.36,
+          "description": "Robertson red, 46 to 47",
+          "source_evidence": "more-tests/native-27-03.jpg"
+        }
+      ],
+      "negative_intervals": [
+        {
+          "start": 784,
+          "end": 790,
+          "description": "Referee blue respot"
+        },
+        {
+          "start": 822,
+          "end": 826,
+          "description": "Referee black respot"
+        }
+      ],
+      "predictions_consulted": true
+    },
+    {
+      "library_index": 0,
+      "source_relative_path": "Aaron Hill vs Panchaya Channoi.mp4",
+      "source_sha256": "f4ac67239b22e192bf67f9317e8c7686492e86f325eafe8973f066dbf1b791b4",
+      "source_group": "aaron_hill_vs_panchaya_channoi",
+      "split": "test",
+      "source_reviewed": true,
+      "window": {
+        "start": 360,
+        "end": 420
+      },
+      "contacts": [
+        {
+          "lower": 367.4,
+          "upper": 367.44,
+          "description": "Hill black, 20 to 27",
+          "source_evidence": "more-tests/native-00-00.jpg"
+        },
+        {
+          "lower": 393.32,
+          "upper": 393.36,
+          "description": "Hill two-red pot, 27 to 29",
+          "source_evidence": "more-tests/native-00-01.jpg"
+        }
+      ],
+      "negative_intervals": [
+        {
+          "start": 372,
+          "end": 377,
+          "description": "Referee black respot"
+        },
+        {
+          "start": 408,
+          "end": 411,
+          "description": "Repeated feathering with stationary white"
+        }
+      ],
+      "predictions_consulted": false
+    }
+  ],
+  "adjudication": {
+    "original_labels_sha256": "6d5537fa219256d23a61d788f5d5bf0232b08abaafbd3b34ba8407283cc16f43",
+    "reason": "Native source review after first-test mismatches corrected two contact timings. Both match groups are now development cases; original labels and first-test report remain intact.",
+    "source_evidence": [
+      "more-tests/timing-adjudication-19.jpg",
+      "more-tests/timing-adjudication-27.jpg"
+    ]
+  },
+  "initial_annotation_method": "Complete chronological source-only 1fps review, source-native contact crops, and native end-boundary checks; no shot predictions consulted."
+}

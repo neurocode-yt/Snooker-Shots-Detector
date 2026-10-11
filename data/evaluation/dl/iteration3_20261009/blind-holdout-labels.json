@@ -1,0 +1,959 @@
+{
+  "manifest_version": 1,
+  "heads": [
+    "event",
+    "keep",
+    "end",
+    "replay",
+    "handling"
+  ],
+  "paths_relative_to": "../../../..",
+  "independent_holdout_available": true,
+  "frozen_at": "2026-10-09T15:20:41.232697+00:00",
+  "labels_human_approved": false,
+  "label_policy": "Every native-PTS1fps sample0..620 reviewed chronologically; all32live cue strokes refined at8fps from source only. Replay and referee handling use evaluated labels schema with explicit positive and negative intervals; boundary margins remain unknown.",
+  "split_policy": "Unused underlying Robertson-Un-Nooh2022 match; no predictions consulted, not available for training/calibration/model selection.",
+  "limitations": [
+    "AI visual annotations, not human-approved ground truth.",
+    "This is an explicit620-second raw-source segment containing complete first frame plus short inter-frame transition; raw file duration3017.758186 seconds is retained separately.",
+    "Native25fps video sampled at1fps chronologically, then8fps contact refinement; bounds0.12-0.28sec rather than invented point impacts.",
+    "Referee and replay core labels coarse1fps with0.5sec unknown margins.",
+    "Editorial endpoints are weak preferences +/-1sec, not physical ball-stop ground truth.",
+    "Final stroke visible ball outcome is interrupted by camera cut before complete settling; preferred end595 retains visible outcome.",
+    "Archive/promo603..620 contains other-match strokes; they are replay exclusion positives and no new live test-match contacts."
+  ],
+  "videos": [
+    {
+      "id": "jimmy_robertson_un_nooh_2022_frame1",
+      "group_id": "jimmy_robertson_un_nooh_2022",
+      "source_path": "G:\\Adobe Premiere Pro Auto-Save\\Snooker yt shorts\\nWindows\\Jimmy Robertson vs Thepchaiya Un-Nooh _ 2022 Championship League Snooker-f683a272.mp4",
+      "duration": 3017.758186,
+      "source_duration": 3017.758186,
+      "evaluation_interval": {
+        "start": 0.0,
+        "end": 620.0
+      },
+      "source_fingerprint": {
+        "size_bytes": 364769263,
+        "mtime_ns": 1790810309000000000
+      },
+      "source_sha256": "7bab021b21336f00d3fd6c4271d3bf947dd99c433f4bb99e17d6f56f4fb1c718",
+      "scope": "declared raw-source segment containing complete first frame and inter-frame transition",
+      "segment_scope": "complete_first_frame_with_transition",
+      "split": "holdout",
+      "features_path": "data/dl/iteration3_20261009/holdout/jimmy_robertson_un_nooh_2022_frame1.npz",
+      "used_for_model_selection": false,
+      "labels_human_approved": false,
+      "predictions_consulted": false,
+      "reviewed_intervals": [
+        {
+          "start": 0.0,
+          "end": 620.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved"
+        }
+      ],
+      "contacts": [
+        {
+          "lower": 2.16,
+          "upper": 2.28,
+          "description": "Robertson break-off",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 24.28,
+          "upper": 24.4,
+          "description": "Un-Nooh red, score1",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 44.0,
+          "upper": 44.16,
+          "description": "Un-Nooh blue, score6",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 55.88,
+          "upper": 56.0,
+          "description": "Un-Nooh red, score7, close side camera",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 67.16,
+          "upper": 67.4,
+          "description": "Un-Nooh black, score14",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 79.4,
+          "upper": 79.52,
+          "description": "Un-Nooh red, score15",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 89.76,
+          "upper": 89.88,
+          "description": "Un-Nooh blue, score20",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 102.0,
+          "upper": 102.28,
+          "description": "Un-Nooh red, score21",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 117.28,
+          "upper": 117.4,
+          "description": "Un-Nooh blue opening reds, score26",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 144.76,
+          "upper": 144.88,
+          "description": "Un-Nooh red miss",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 172.4,
+          "upper": 172.52,
+          "description": "Robertson safety",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 194.16,
+          "upper": 194.28,
+          "description": "Un-Nooh safety",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 217.4,
+          "upper": 217.52,
+          "description": "Robertson escape/foul; brown moves; score unchanged in this clip",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 266.64,
+          "upper": 266.76,
+          "description": "Un-Nooh red using rest, score27",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 289.88,
+          "upper": 290.0,
+          "description": "Un-Nooh pink, score33",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 306.88,
+          "upper": 307.0,
+          "description": "Un-Nooh red, score34, close side camera",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 318.88,
+          "upper": 319.0,
+          "description": "Un-Nooh blue, score39",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 340.16,
+          "upper": 340.4,
+          "description": "Un-Nooh red, score40",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 355.76,
+          "upper": 355.88,
+          "description": "Un-Nooh blue, score45",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 368.64,
+          "upper": 368.88,
+          "description": "Un-Nooh red, score46",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 382.64,
+          "upper": 382.76,
+          "description": "Un-Nooh brown, score50, close side camera",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 397.0,
+          "upper": 397.28,
+          "description": "Un-Nooh red, score51, close side camera",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 412.52,
+          "upper": 412.76,
+          "description": "Un-Nooh blue, score56",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 428.0,
+          "upper": 428.16,
+          "description": "Un-Nooh red, score57, close side camera",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 439.88,
+          "upper": 440.0,
+          "description": "Un-Nooh pink, score63",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 484.76,
+          "upper": 484.88,
+          "description": "Un-Nooh red miss after abandoned address",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 507.28,
+          "upper": 507.52,
+          "description": "Robertson red, score1; live camera returns before contact at507.28, first moving cue ball507.52",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 533.88,
+          "upper": 534.0,
+          "description": "Robertson pink miss",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 553.28,
+          "upper": 553.4,
+          "description": "Un-Nooh red, score64, close side camera",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 565.76,
+          "upper": 565.88,
+          "description": "Un-Nooh green, score67",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 578.64,
+          "upper": 578.88,
+          "description": "Un-Nooh red, score68, close side camera",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        },
+        {
+          "lower": 590.0,
+          "upper": 590.16,
+          "description": "Un-Nooh colour attempt into nearby black/red cluster; no score update, frame subsequently conceded",
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved",
+          "weight": 1.0
+        }
+      ],
+      "labels": [
+        {
+          "head": "handling",
+          "start": 0.0,
+          "end": 49.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 50.0,
+          "end": 51.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 51.5,
+          "end": 70.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 71.0,
+          "end": 74.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 74.5,
+          "end": 95.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 96.0,
+          "end": 98.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 98.5,
+          "end": 124.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 125.0,
+          "end": 126.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 126.5,
+          "end": 297.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 298.0,
+          "end": 300.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 300.5,
+          "end": 327.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 328.0,
+          "end": 330.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 330.5,
+          "end": 361.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 362.0,
+          "end": 364.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 364.5,
+          "end": 388.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 389.0,
+          "end": 391.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 391.5,
+          "end": 419.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 420.0,
+          "end": 421.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 421.5,
+          "end": 446.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 447.0,
+          "end": 449.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 449.5,
+          "end": 572.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 573.0,
+          "end": 574.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "handling",
+          "start": 574.5,
+          "end": 620.0,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "replay",
+          "start": 0.0,
+          "end": 37.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "replay",
+          "start": 38.0,
+          "end": 42.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "replay",
+          "start": 42.5,
+          "end": 126.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "replay",
+          "start": 127.0,
+          "end": 136.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "replay",
+          "start": 136.5,
+          "end": 229.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "replay",
+          "start": 230.0,
+          "end": 239.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "replay",
+          "start": 239.5,
+          "end": 276.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "replay",
+          "start": 277.0,
+          "end": 284.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "replay",
+          "start": 284.5,
+          "end": 495.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "replay",
+          "start": 496.0,
+          "end": 505.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "replay",
+          "start": 505.5,
+          "end": 602.5,
+          "value": 0.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        },
+        {
+          "head": "replay",
+          "start": 603.0,
+          "end": 620.0,
+          "value": 1.0,
+          "weight": 1.0,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; core interval source-reviewed at1fps, +/-0.5sec margins unknown"
+        }
+      ],
+      "clips": [
+        {
+          "start": 0.21999999999999975,
+          "start_lower": 0.16000000000000014,
+          "start_upper": 0.2799999999999998,
+          "end": 14.0,
+          "end_lower": 13.0,
+          "end_upper": 15.0,
+          "contact_lower": 2.16,
+          "contact_upper": 2.28,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 22.34,
+          "start_lower": 22.28,
+          "start_upper": 22.4,
+          "end": 36.0,
+          "end_lower": 35.0,
+          "end_upper": 37.0,
+          "contact_lower": 24.28,
+          "contact_upper": 24.4,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 42.08,
+          "start_lower": 42.0,
+          "start_upper": 42.16,
+          "end": 53.0,
+          "end_lower": 52.0,
+          "end_upper": 54.0,
+          "contact_lower": 44.0,
+          "contact_upper": 44.16,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 53.94,
+          "start_lower": 53.88,
+          "start_upper": 54.0,
+          "end": 62.0,
+          "end_lower": 61.0,
+          "end_upper": 63.0,
+          "contact_lower": 55.88,
+          "contact_upper": 56.0,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 65.28,
+          "start_lower": 65.16,
+          "start_upper": 65.4,
+          "end": 75.0,
+          "end_lower": 74.0,
+          "end_upper": 76.0,
+          "contact_lower": 67.16,
+          "contact_upper": 67.4,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 77.46000000000001,
+          "start_lower": 77.4,
+          "start_upper": 77.52,
+          "end": 87.0,
+          "end_lower": 86.0,
+          "end_upper": 88.0,
+          "contact_lower": 79.4,
+          "contact_upper": 79.52,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 87.82,
+          "start_lower": 87.76,
+          "start_upper": 87.88,
+          "end": 99.0,
+          "end_lower": 98.0,
+          "end_upper": 100.0,
+          "contact_lower": 89.76,
+          "contact_upper": 89.88,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 100.14,
+          "start_lower": 100.0,
+          "start_upper": 100.28,
+          "end": 113.0,
+          "end_lower": 112.0,
+          "end_upper": 114.0,
+          "contact_lower": 102.0,
+          "contact_upper": 102.28,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 115.34,
+          "start_lower": 115.28,
+          "start_upper": 115.4,
+          "end": 126.0,
+          "end_lower": 125.0,
+          "end_upper": 127.0,
+          "contact_lower": 117.28,
+          "contact_upper": 117.4,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 142.82,
+          "start_lower": 142.76,
+          "start_upper": 142.88,
+          "end": 154.0,
+          "end_lower": 153.0,
+          "end_upper": 155.0,
+          "contact_lower": 144.76,
+          "contact_upper": 144.88,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 170.46,
+          "start_lower": 170.4,
+          "start_upper": 170.52,
+          "end": 185.0,
+          "end_lower": 184.0,
+          "end_upper": 186.0,
+          "contact_lower": 172.4,
+          "contact_upper": 172.52,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 192.22,
+          "start_lower": 192.16,
+          "start_upper": 192.28,
+          "end": 209.0,
+          "end_lower": 208.0,
+          "end_upper": 210.0,
+          "contact_lower": 194.16,
+          "contact_upper": 194.28,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 215.46,
+          "start_lower": 215.4,
+          "start_upper": 215.52,
+          "end": 229.0,
+          "end_lower": 228.0,
+          "end_upper": 230.0,
+          "contact_lower": 217.4,
+          "contact_upper": 217.52,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 264.7,
+          "start_lower": 264.64,
+          "start_upper": 264.76,
+          "end": 274.0,
+          "end_lower": 273.0,
+          "end_upper": 275.0,
+          "contact_lower": 266.64,
+          "contact_upper": 266.76,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 287.94,
+          "start_lower": 287.88,
+          "start_upper": 288.0,
+          "end": 298.0,
+          "end_lower": 297.0,
+          "end_upper": 299.0,
+          "contact_lower": 289.88,
+          "contact_upper": 290.0,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 304.94,
+          "start_lower": 304.88,
+          "start_upper": 305.0,
+          "end": 316.0,
+          "end_lower": 315.0,
+          "end_upper": 317.0,
+          "contact_lower": 306.88,
+          "contact_upper": 307.0,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 316.94,
+          "start_lower": 316.88,
+          "start_upper": 317.0,
+          "end": 329.0,
+          "end_lower": 328.0,
+          "end_upper": 330.0,
+          "contact_lower": 318.88,
+          "contact_upper": 319.0,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 338.28,
+          "start_lower": 338.16,
+          "start_upper": 338.4,
+          "end": 352.0,
+          "end_lower": 351.0,
+          "end_upper": 353.0,
+          "contact_lower": 340.16,
+          "contact_upper": 340.4,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 353.82,
+          "start_lower": 353.76,
+          "start_upper": 353.88,
+          "end": 367.0,
+          "end_lower": 366.0,
+          "end_upper": 368.0,
+          "contact_lower": 355.76,
+          "contact_upper": 355.88,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 366.76,
+          "start_lower": 366.64,
+          "start_upper": 366.88,
+          "end": 377.0,
+          "end_lower": 376.0,
+          "end_upper": 378.0,
+          "contact_lower": 368.64,
+          "contact_upper": 368.88,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 380.7,
+          "start_lower": 380.64,
+          "start_upper": 380.76,
+          "end": 393.0,
+          "end_lower": 392.0,
+          "end_upper": 394.0,
+          "contact_lower": 382.64,
+          "contact_upper": 382.76,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 395.14,
+          "start_lower": 395.0,
+          "start_upper": 395.28,
+          "end": 410.0,
+          "end_lower": 409.0,
+          "end_upper": 411.0,
+          "contact_lower": 397.0,
+          "contact_upper": 397.28,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 410.64,
+          "start_lower": 410.52,
+          "start_upper": 410.76,
+          "end": 419.0,
+          "end_lower": 418.0,
+          "end_upper": 420.0,
+          "contact_lower": 412.52,
+          "contact_upper": 412.76,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 426.08000000000004,
+          "start_lower": 426.0,
+          "start_upper": 426.16,
+          "end": 436.0,
+          "end_lower": 435.0,
+          "end_upper": 437.0,
+          "contact_lower": 428.0,
+          "contact_upper": 428.16,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 437.94,
+          "start_lower": 437.88,
+          "start_upper": 438.0,
+          "end": 450.0,
+          "end_lower": 449.0,
+          "end_upper": 451.0,
+          "contact_lower": 439.88,
+          "contact_upper": 440.0,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 482.82,
+          "start_lower": 482.76,
+          "start_upper": 482.88,
+          "end": 494.0,
+          "end_lower": 493.0,
+          "end_upper": 495.0,
+          "contact_lower": 484.76,
+          "contact_upper": 484.88,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 505.4,
+          "start_lower": 505.28,
+          "start_upper": 505.52,
+          "end": 523.0,
+          "end_lower": 522.0,
+          "end_upper": 524.0,
+          "contact_lower": 507.28,
+          "contact_upper": 507.52,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 531.94,
+          "start_lower": 531.88,
+          "start_upper": 532.0,
+          "end": 545.0,
+          "end_lower": 544.0,
+          "end_upper": 546.0,
+          "contact_lower": 533.88,
+          "contact_upper": 534.0,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 551.3399999999999,
+          "start_lower": 551.28,
+          "start_upper": 551.4,
+          "end": 562.0,
+          "end_lower": 561.0,
+          "end_upper": 563.0,
+          "contact_lower": 553.28,
+          "contact_upper": 553.4,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 563.8199999999999,
+          "start_lower": 563.76,
+          "start_upper": 563.88,
+          "end": 575.0,
+          "end_lower": 574.0,
+          "end_upper": 576.0,
+          "contact_lower": 565.76,
+          "contact_upper": 565.88,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 576.76,
+          "start_lower": 576.64,
+          "start_upper": 576.88,
+          "end": 588.0,
+          "end_lower": 587.0,
+          "end_upper": 589.0,
+          "contact_lower": 578.64,
+          "contact_upper": 578.88,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        },
+        {
+          "start": 588.0799999999999,
+          "start_lower": 588.0,
+          "start_upper": 588.16,
+          "end": 595.0,
+          "end_lower": 594.0,
+          "end_upper": 596.0,
+          "contact_lower": 590.0,
+          "contact_upper": 590.16,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse moving-outcome continuation and settling/visible camera-cut endpoint, +/-1sec; no physical-stop claim"
+        }
+      ],
+      "clip_reviewed_intervals": [
+        {
+          "start": 0.0,
+          "end": 595.0,
+          "weight": 0.35,
+          "provenance": "Codex complete chronological source-only1fps plus native-PTS8fps contact refinement; blind_jimmy.json sha256=1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6; frozen before predictions; not human approved; coarse source editorial preferences, not physical-stop truth"
+        }
+      ]
+    }
+  ]
+}

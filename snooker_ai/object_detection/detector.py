@@ -9,7 +9,9 @@ and dependency-free so they can feed the tracker on every analysis frame.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import hashlib
+from collections import OrderedDict
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Optional
 
@@ -94,6 +96,8 @@ class ObjectDetector:
         )
         self.model = None
         self._diameter_ema = 0.0
+        self._ivory_cache: OrderedDict[bytes, tuple[_Proposal, ...]] = OrderedDict()
+        self._ivory_cache_limit = 512
         if self.enabled:
             self._try_load_model()
 
@@ -125,11 +129,14 @@ class ObjectDetector:
         use_hough: bool = True,
         partial_view: bool = False,
         table_bounds: tuple[int, int, int, int] | None = None,
+        allow_closeup_scale: bool = True,
+        main_table_view: bool = False,
     ) -> list[Detection]:
         if self.model is not None:
             return self._detect_model(frame_bgr, table_mask)
         return self._detect_blobs(frame_bgr, table_mask, use_hough=use_hough, partial_view=partial_view,
-                                  table_bounds=table_bounds)
+                                  table_bounds=table_bounds, allow_closeup_scale=allow_closeup_scale,
+                                  main_table_view=main_table_view)
 
     def estimated_ball_diameter(self) -> float:
         """Return the temporally smoothed image-space ball diameter in pixels."""
@@ -173,6 +180,8 @@ class ObjectDetector:
         use_hough: bool = True,
         partial_view: bool = False,
         table_bounds: tuple[int, int, int, int] | None = None,
+        allow_closeup_scale: bool = True,
+        main_table_view: bool = False,
     ) -> list[Detection]:
         """Find ball-scale cloth deviations and circular candidates.
 
@@ -225,7 +234,7 @@ class ObjectDetector:
         else:
             warm_spheres = []
         diameter_prior = self._diameter_prior(table_w, table_h)
-        if partial_view:
+        if partial_view and allow_closeup_scale:
             # A close-up can show a 50px white ball on only a fraction of the
             # playing surface. Table-length scale is meaningless there. Seed
             # from an enclosed, circular white component with a cloth annulus.
@@ -272,10 +281,12 @@ class ObjectDetector:
         foreground_ids = []
         ball_area = np.pi * radius_prior * radius_prior
         for component in range(1, count):
-            _, _, cw, ch, area = stats[component]
+            component_x, component_y, cw, ch, area = stats[component]
             if area < ball_area * 2.5:
                 continue
-            component_pixels = hsv[labels == component]
+            component_pixels = hsv[component_y:component_y+ch, component_x:component_x+cw][
+                labels[component_y:component_y+ch, component_x:component_x+cw] == component
+            ]
             red = ((component_pixels[:, 0] < 15) | (component_pixels[:, 0] > 165)) & (component_pixels[:, 1] > 110)
             elongated = max(cw, ch) > 3 * diameter_prior and max(cw, ch) > 3 * min(cw, ch)
             if elongated or (area > ball_area * 6 and float(np.mean(red)) < 0.65):
@@ -394,6 +405,16 @@ class ObjectDetector:
             color_conf, deviation_conf, surround_conf = self._colour_scores(
                 hsv, cloth, proposal.cx, proposal.cy, proposal.radius
             )
+            # In a main camera, a rounded wrist can fit the ivory recovery mask
+            # while remaining attached to broad foreground. A real overlapping
+            # colour provides separate occlusion proof; close-up recovery retains
+            # its weaker cloth requirement for balls beside the bridge.
+            colour_occluded = (proposal.cue_sphere_red_occlusion
+                               or proposal.cue_sphere_black_occlusion
+                               or proposal.cue_sphere_colour_occlusion)
+            if (main_table_view and in_foreground and proposal.cue_sphere_supported
+                    and surround_conf < .65 and not colour_occluded):
+                continue
             if in_foreground and not proposal.cue_sphere_supported:
                 continue
             if deviation_conf < 0.08:
@@ -516,7 +537,42 @@ class ObjectDetector:
                     best = (score, radius * 2)
         return best[1]
 
-    def _warm_cue_spheres(self, hsv: np.ndarray, mask: np.ndarray) -> list[_Proposal]:
+    def _warm_cue_spheres(
+        self, hsv: np.ndarray, mask: np.ndarray, *, green_cast_only: bool = False,
+        strong_green_cast: bool = False,
+        _contour_cache: dict | None = None,
+    ) -> list[_Proposal]:
+        # Nearby proposal windows revisit original images. This calculation
+        # depends only on measured pixels/mask and cloth bounds, never on the
+        # tracker, diameter estimate or temporal state. Keep a bounded cache
+        # across detector resets; a changed image or mask cannot reuse it.
+        if green_cast_only or strong_green_cast or _contour_cache is not None:
+            return self._compute_warm_cue_spheres(
+                hsv, mask, green_cast_only=green_cast_only,
+                strong_green_cast=strong_green_cast, _contour_cache=_contour_cache,
+            )
+        digest = hashlib.sha256()
+        digest.update(str((hsv.shape, hsv.dtype.str)).encode())
+        for array in (hsv, self.cloth_lower, self.cloth_upper):
+            digest.update(np.ascontiguousarray(array))
+        digest.update(str((mask.shape, mask.dtype.str)).encode())
+        digest.update(np.ascontiguousarray(mask))
+        key = digest.digest()
+        cached = self._ivory_cache.get(key)
+        if cached is not None:
+            self._ivory_cache.move_to_end(key)
+            return [replace(p) for p in cached]
+        proposals = self._compute_warm_cue_spheres(hsv, mask)
+        self._ivory_cache[key] = tuple(replace(p) for p in proposals)
+        if len(self._ivory_cache) > self._ivory_cache_limit:
+            self._ivory_cache.popitem(last=False)
+        return proposals
+
+    def _compute_warm_cue_spheres(
+        self, hsv: np.ndarray, mask: np.ndarray, *, green_cast_only: bool = False,
+        strong_green_cast: bool = False,
+        _contour_cache: dict | None = None,
+    ) -> list[_Proposal]:
         """Separate shaded ivory spheres from a pink bridge in low views.
 
         A neutral mask alone joins the ball to the player's hand and cue. Warm
@@ -524,7 +580,20 @@ class ObjectDetector:
         skin. The compact outline, neutral highlight area and cloth support are
         independent requirements; hue or brightness alone never identifies it.
         """
-        warm = cv2.inRange(hsv, (15, 0, 125), (44, 140, 255))
+        # Morphological retries frequently produce exactly the same contour.
+        # Cache its calculation within this image, retaining every proposal in
+        # its original order/multiplicity because merging uses source counts.
+        contour_cache = {} if _contour_cache is None else _contour_cache
+        # A green-graded white can touch a warm bridge in the broad ivory
+        # mask. An independent cooler outline separates those measured pixels;
+        # it retains every sphere, highlight and cloth gate below.
+        if strong_green_cast:
+            # Green arena light saturates the lower hemisphere while the pale
+            # cap stays bright. Recover its measured outline without admitting
+            # saturated cloth, and retain the sphere/skin/annulus gates below.
+            warm = cv2.inRange(hsv, (25, 0, 100), (55, 220, 255))
+        else:
+            warm = cv2.inRange(hsv, (25 if green_cast_only else 15, 0, 125), (44, 140, 255))
         # The sphere's ivory mask can include achromatic highlights. Pink skin
         # under the arena lighting has a near-neutral magenta cast; including
         # that cast joins the white ball to the bridge instead of its outline.
@@ -566,7 +635,7 @@ class ObjectDetector:
                 circularity < .65 or fill < .48 or max(bw, bh) > 1.80 * min(bw, bh)
             ):
                 continue
-            size = min(13, max(3, int(round(radius * .75)) | 1))
+            size = min(25 if strong_green_cast else 13, max(3, int(round(radius * .75)) | 1))
             x0, x1 = max(0, x-size), min(hsv.shape[1], x+bw+size)
             y0, y1 = max(0, y-size), min(hsv.shape[0], y+bh+size)
             # Re-open the original measured pixels rather than filling its
@@ -583,65 +652,90 @@ class ObjectDetector:
         contours = list(contours) + detached_contours
         proposals = []
         for contour in contours:
-            area = float(cv2.contourArea(contour))
-            perimeter = float(cv2.arcLength(contour, True))
-            if area < 30 or perimeter <= 0:
+            # Tiny codec fragments need only this cheap necessary gate. Do not
+            # retain their byte keys or build proposal copies for them.
+            if cv2.contourArea(contour) < 30:
                 continue
-            (cx, cy), radius = cv2.minEnclosingCircle(contour)
-            # The cropped playing surface can be a shallow strip in a low
-            # camera while a ball occupies much of that strip's height.
-            if not 4 <= radius <= min(min(hsv.shape[:2]) * .48, max(hsv.shape[:2]) * .18):
-                continue
-            occluded = self._occluded_cue_sphere(hsv, cloth, contour)
-            if occluded is not None:
-                proposals.append(occluded)
-            _, _, bw, bh = cv2.boundingRect(contour)
-            circularity = 4 * np.pi * area / perimeter**2
-            fill = area / max(1, np.pi * radius**2)
-            hull = cv2.convexHull(contour)
-            hull_area = float(cv2.contourArea(hull))
-            hull_perimeter = float(cv2.arcLength(hull, True))
-            hull_circularity = 4 * np.pi * hull_area / max(1, hull_perimeter**2)
-            solidity = area / max(1, hull_area)
-            # Compression makes the shaded lower edge jagged. Accept that
-            # outline only when its convex envelope remains round and filled;
-            # fingers and loose fragments fail these independent shape gates.
-            compact_shaded_outline = (
-                circularity >= 0.55 and hull_circularity >= 0.85 and solidity >= 0.85
-            )
-            # The visible warm hemisphere may be half as tall as it is wide;
-            # its enclosing circle and independent fill gate retain ball scale.
-            if (circularity < 0.65 and not compact_shaded_outline) or fill < 0.48 or max(bw, bh) > 2.0 * min(bw, bh):
-                continue
-            r = max(2, int(round(radius * 0.72)))
-            x0, x1 = max(0, round(cx)-r), min(hsv.shape[1], round(cx)+r+1)
-            y0, y1 = max(0, round(cy)-r), min(hsv.shape[0], round(cy)+r+1)
-            yy, xx = np.ogrid[y0:y1, x0:x1]
-            pixels = hsv[y0:y1, x0:x1][(xx-cx)**2+(yy-cy)**2 <= r*r]
-            if not len(pixels):
-                continue
-            hue, sat, value = np.median(pixels, axis=0)
-            neutral_cap = float(np.mean((pixels[:, 1] < 110) & (pixels[:, 2] >= 210)))
-            # Pink skin, neutral gloves and saturated yellow/brown balls fail
-            # different gates even when one fragment happens to look circular.
-            if not (15 <= hue <= 44 and 35 <= sat <= 125 and value >= 150):
-                continue
-            if neutral_cap < 0.25:
-                continue
-            _, _, surround = self._colour_scores(hsv, cloth, cx, cy, radius)
-            red_occlusion = .10 <= surround < .30 and self._red_neighbors_occlude_sphere(hsv, cx, cy, radius)
-            black_occlusion = .20 <= surround < .45 and self._black_neighbor_occludes_sphere(hsv, cx, cy, radius)
-            colour_occlusion = .12 <= surround < .30 and self._round_colour_overlaps_sphere(hsv, cx, cy, radius)
-            if surround < 0.30 and not (red_occlusion or black_occlusion or colour_occlusion):
-                continue
-            proposals.append(_Proposal(
-                float(cx), float(cy), float(radius),
-                float(0.65 + 0.25 * circularity + 0.10 * fill),
-                cue_sphere_supported=True,
-                cue_sphere_red_occlusion=red_occlusion,
-                cue_sphere_black_occlusion=black_occlusion,
-                cue_sphere_colour_occlusion=colour_occlusion,
+            key = (strong_green_cast, contour.shape, contour.tobytes())
+            if key not in contour_cache:
+                contour_cache[key] = self._ivory_contour_proposals(
+                    hsv, cloth, contour, strong_green_cast=strong_green_cast,
+                )
+            # Proposal merging mutates its inputs. Each occurrence owns a copy.
+            proposals.extend(replace(p) for p in contour_cache[key])
+        if not green_cast_only and not strong_green_cast:
+            proposals.extend(self._warm_cue_spheres(
+                hsv, mask, green_cast_only=True, _contour_cache=contour_cache,
             ))
+            # Broader colour recovery must not pull an already measured ivory
+            # centre towards a joined bridge/fingertip component.
+            proposals.extend(
+                recovered for recovered in self._warm_cue_spheres(
+                    hsv, mask, strong_green_cast=True, _contour_cache=contour_cache,
+                )
+                if not any(np.hypot(recovered.cx-prior.cx, recovered.cy-prior.cy)
+                           <= .80*(recovered.radius+prior.radius) for prior in proposals)
+            )
+        return proposals
+
+    def _ivory_contour_proposals(
+        self, hsv: np.ndarray, cloth: np.ndarray, contour: np.ndarray, *,
+        strong_green_cast: bool,
+    ) -> list[_Proposal]:
+        """Evaluate one measured outline, independently of its mask/retry."""
+        area = float(cv2.contourArea(contour))
+        perimeter = float(cv2.arcLength(contour, True))
+        if area < 30 or perimeter <= 0:
+            return []
+        (cx, cy), radius = cv2.minEnclosingCircle(contour)
+        # A low-camera ball can occupy much of a shallow cloth strip's height.
+        if not 4 <= radius <= min(min(hsv.shape[:2]) * .48, max(hsv.shape[:2]) * .18):
+            return []
+        occluded = self._occluded_cue_sphere(hsv, cloth, contour)
+        proposals = [occluded] if occluded is not None else []
+        _, _, bw, bh = cv2.boundingRect(contour)
+        circularity = 4 * np.pi * area / perimeter**2
+        fill = area / max(1, np.pi * radius**2)
+        hull = cv2.convexHull(contour)
+        hull_area = float(cv2.contourArea(hull))
+        hull_perimeter = float(cv2.arcLength(hull, True))
+        hull_circularity = 4 * np.pi * hull_area / max(1, hull_perimeter**2)
+        solidity = area / max(1, hull_area)
+        compact_shaded_outline = (
+            circularity >= 0.55 and hull_circularity >= 0.85 and solidity >= 0.85
+        )
+        if (circularity < 0.65 and not compact_shaded_outline) or fill < 0.48 or max(bw, bh) > 2.0 * min(bw, bh):
+            return proposals
+        r = max(2, int(round(radius * 0.72)))
+        x0, x1 = max(0, round(cx)-r), min(hsv.shape[1], round(cx)+r+1)
+        y0, y1 = max(0, round(cy)-r), min(hsv.shape[0], round(cy)+r+1)
+        yy, xx = np.ogrid[y0:y1, x0:x1]
+        pixels = hsv[y0:y1, x0:x1][(xx-cx)**2+(yy-cy)**2 <= r*r]
+        if not len(pixels):
+            return proposals
+        hue, sat, value = np.median(pixels, axis=0)
+        cap_saturation = 140 if strong_green_cast else 110
+        neutral_cap = float(np.mean((pixels[:, 1] < cap_saturation) & (pixels[:, 2] >= 210)))
+        if strong_green_cast:
+            plausible_colour = 25 <= hue <= 50 and 35 <= sat <= 185 and value >= 130
+        else:
+            plausible_colour = 15 <= hue <= 44 and 35 <= sat <= 125 and value >= 150
+        if not plausible_colour or neutral_cap < 0.25:
+            return proposals
+        _, _, surround = self._colour_scores(hsv, cloth, cx, cy, radius)
+        red_occlusion = .10 <= surround < .30 and self._red_neighbors_occlude_sphere(hsv, cx, cy, radius)
+        black_occlusion = .20 <= surround < .45 and self._black_neighbor_occludes_sphere(hsv, cx, cy, radius)
+        colour_occlusion = .12 <= surround < .30 and self._round_colour_overlaps_sphere(hsv, cx, cy, radius)
+        if surround < 0.30 and not (red_occlusion or black_occlusion or colour_occlusion):
+            return proposals
+        proposals.append(_Proposal(
+            float(cx), float(cy), float(radius),
+            float(0.65 + 0.25 * circularity + 0.10 * fill),
+            cue_sphere_supported=True,
+            cue_sphere_red_occlusion=red_occlusion,
+            cue_sphere_black_occlusion=black_occlusion,
+            cue_sphere_colour_occlusion=colour_occlusion,
+        ))
         return proposals
 
     def _occluded_cue_sphere(

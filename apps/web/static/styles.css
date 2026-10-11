@@ -562,3 +562,6 @@ button.danger { border-color: var(--danger); color: var(--danger); }
   z-index: 50;
 }
 .back { color: var(--muted); font-size: 0.9rem; }
+.capcut-status { overflow-wrap: anywhere; }
+.review-body > .capcut-status { margin: 12px 20px; }
+.job-item .capcut-status { margin: 8px 0 0; font-size: 0.85rem; }

@@ -31,11 +31,14 @@ from snooker_ai.object_detection.detector import ObjectDetector
 from snooker_ai.replay_detection.detector import ReplayDetector
 from snooker_ai.scene_detection.detector import SceneDetector, SceneObservation
 from snooker_ai.scene_detection.broadcast_context import BroadcastContextGuard
+from snooker_ai.scene_detection.contact_visibility import ContactVisibilityDetector, raw_visibility
+from snooker_ai.scene_detection.promotion import PromotionDetector
 from snooker_ai.scene_detection.table_context import (
     TableInteractionDetector, ViewGeometry, ball_layout, view_geometry,
 )
 from snooker_ai.segmentation.builder import SegmentBuilder
 from snooker_ai.segmentation.visual_tail import VisualTailDetector
+from snooker_ai.segmentation.portrait import PortraitCutawayDetector
 from snooker_ai.table_detection.localizer import TableLocalizer, TableObservation
 from snooker_ai.temporal_model.state_machine import ShotStateMachine
 from snooker_ai.tracking.tracker import BallTracker
@@ -59,7 +62,7 @@ from snooker_ai.utils.video import open_capture, sampled_frames
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 32
+_CACHE_VERSION = 38
 
 
 class Analyzer:
@@ -239,12 +242,15 @@ class Analyzer:
             ),
             signature=analysis_signature,
             resume=resume,
-            existing_dense=(prior_result.features if prior_result is not None
+            existing_dense=(raw_visibility(prior_result.features) if prior_result is not None
                             and prior_result.analysis_feature_signature == analysis_signature else None),
         )
         if dense_features:
             self._annotate_scenes(dense_features, scenes)
             self._apply_match_context(dense_features, rack_reference)
+            dense_features = ContactVisibilityDetector(self.config).revalidate(
+                source, dense_features, candidates
+            )
             dense_features = self.strike_det.score_frames(dense_features)
             features = self._merge_feature_layers(features, dense_features)
             # Dense ranges may reveal a strike that the sparse proposal pass
@@ -306,17 +312,44 @@ class Analyzer:
             candidates = self.replay_det.mark_candidates(candidates, features)
             candidates = self._recover_replay_returns(candidates, features, metadata.duration)
             self._record_detection_stage("replay_and_live_returns", candidates)
+            promotions = PromotionDetector().detect(source, candidates, features)
+            candidates = [c for c in candidates if c.timestamp not in promotions]
+            self._record_detection_stage("promotion_context", candidates, extra={
+                "excluded_promotional_contacts": sorted(promotions),
+            })
             features = self.state_machine.label(features)
 
         report(0.92, JobStatus.SEGMENTING.value, "Building shot segments")
         shots = self.segmenter.build(candidates, features, metadata.duration, mode)
+        tail_detector = VisualTailDetector(self.config)
+        report(0.93, JobStatus.SEGMENTING.value, "Verifying table coverage at uncertain shot endings")
+        stops = tail_detector.revalidated_stops(source, proxy.mapper, shots, features)
+        for candidate in candidates:
+            stop = stops.get(candidate.timestamp)
+            if stop is not None:
+                candidate.evidence.update({
+                    "refined_stop_timestamp": stop.physical_stop_timestamp,
+                    "refined_stop_confirmation_timestamp": stop.stop_confirmation_timestamp,
+                    "refined_last_motion_timestamp": stop.last_ball_motion_timestamp,
+                    "refined_stop_confidence": stop.end_confidence,
+                    "refined_ball_motion_start": stop.motion_start,
+                    "refined_stop_review_required": float(stop.manual_review_required),
+                    "refined_stop_upper_bound": float("upper_bound" in stop.reason),
+                    "native_table_coverage_stop_revalidated": 1.,
+                })
+        if stops:
+            shots = self.segmenter.build(candidates, features, metadata.duration, mode)
         report(0.94, JobStatus.SEGMENTING.value, "Checking shot endings for referee entry")
-        entries = VisualTailDetector(self.config).detect(
+        entries = tail_detector.detect(
             source, proxy.proxy_path, proxy.mapper, shots, features,
         )
         if self._record_visual_tail_boundaries(
             candidates, shots, entries, metadata.duration, metadata.fps,
         ):
+            shots = self.segmenter.build(candidates, features, metadata.duration, mode)
+        report(0.95, JobStatus.SEGMENTING.value, "Checking uncertain endings for player cutaways")
+        portraits = PortraitCutawayDetector(self.config).detect(source, shots, features)
+        if self._record_portrait_boundaries(candidates, shots, portraits, metadata.duration, metadata.fps):
             shots = self.segmenter.build(candidates, features, metadata.duration, mode)
         shots = self._preserve_user_edits(shots, job_id)
         shots = self._score_importance(shots, features)
@@ -427,6 +460,35 @@ class Analyzer:
                 "visual_hand_entry_source_pts": entry.source_entry_pts,
                 "visual_hand_entry_confidence": entry.confidence,
                 "visual_hand_entry_clip_cap_timestamp": cap,
+            })
+            changed = True
+        return changed
+
+    def _record_portrait_boundaries(self, candidates, shots, entries, duration, source_fps) -> bool:
+        """Limit unusable portrait footage while retaining physical-stop evidence."""
+        settings = self.config.mode_settings(EditMode.STRICT)
+        minimum_clip = max(0., float(settings.get("minimum_clip_seconds", 0.)))
+        minimum_after = max(0., float(settings.get("minimum_strike_visibility_seconds", .1)))
+        changed = False
+        for entry in entries:
+            if (not all(np.isfinite(v) for v in (entry.strike_timestamp, entry.start_timestamp,
+                                                entry.confirmation_timestamp))
+                    or not entry.strike_timestamp < entry.start_timestamp < entry.confirmation_timestamp <= duration):
+                continue
+            shot = next((s for s in shots if abs(s.cue_strike-entry.strike_timestamp) < 1e-4), None)
+            candidate = next((c for c in candidates if abs(c.timestamp-entry.strike_timestamp) < 1e-4), None)
+            if (shot is None or candidate is None or not shot.included
+                    or shot.possible_replay or shot.user_modified):
+                continue
+            cap = entry.start_timestamp - 1/max(source_fps, 1.)
+            floor = max(shot.clip_start+minimum_clip, shot.cue_strike+minimum_after)
+            if not floor-1e-6 <= cap < shot.clip_end:
+                continue
+            candidate.evidence.update({
+                "portrait_start_timestamp": entry.start_timestamp,
+                "portrait_confirmation_timestamp": entry.confirmation_timestamp,
+                "portrait_clip_cap_timestamp": cap,
+                "portrait_confidence": .85,
             })
             changed = True
         return changed
@@ -929,6 +991,12 @@ class Analyzer:
                     table_obs.mask,
                     use_hough=idx % hough_step == 0,
                     partial_view=not geometry.full_table,
+                    # A referee can temporarily hide a main-table corner.
+                    # That occlusion does not change the camera's ball scale.
+                    allow_closeup_scale=current_view not in (
+                        CameraViewType.MAIN_TABLE, CameraViewType.WIDE_ARENA),
+                    main_table_view=current_view in (
+                        CameraViewType.MAIN_TABLE, CameraViewType.WIDE_ARENA),
                     table_bounds=((table_obs.bbox[0], table_obs.bbox[1],
                                    table_obs.bbox[0]+table_obs.bbox[2], table_obs.bbox[1]+table_obs.bbox[3])
                                   if table_obs.bbox is not None else None),
@@ -1830,7 +1898,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 34,
+            "result_policy_version": 59,
             "visual_tail": self.config.get("visual_tail", {}),
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")
@@ -1904,6 +1972,14 @@ class Analyzer:
     def _coarse_cache_path(self) -> Path:
         return self.job_dir / "coarse_checkpoint.json"
 
+    @staticmethod
+    def _cache_feature(feature: FrameFeatures) -> dict:
+        # Internal checkpoints can omit values the model restores by default.
+        # Keep ownership explicit: its absence identifies legacy replay caches.
+        payload = feature.model_dump(mode="json", exclude_defaults=True)
+        payload["replay_stinger_annotated"] = feature.replay_stinger_annotated
+        return payload
+
     def _save_coarse_cache(
         self,
         signature: str,
@@ -1919,7 +1995,7 @@ class Analyzer:
             # cannot pair new observations with another source's old target.
             "broadcast_target": self.broadcast_context.export_target(),
             "confirmed_target_returns": self._confirmed_target_returns,
-            "features": [item.model_dump(mode="json") for item in features],
+            "features": [self._cache_feature(item) for item in features],
             "scenes": [item.model_dump(mode="json") for item in scenes],
             "candidates": [item.model_dump(mode="json") for item in candidates],
         }
@@ -2014,7 +2090,7 @@ class Analyzer:
             "signature": signature,
             "start": start,
             "end": end,
-            "features": [item.model_dump(mode="json") for item in features],
+            "features": [self._cache_feature(item) for item in features],
         }
         try:
             self._write_json_atomic(self._dense_cache_path(index), payload)
@@ -2262,7 +2338,7 @@ class Analyzer:
     def _save_result(self, result: AnalysisResult) -> None:
         path = self.job_dir / "analysis.json"
         # Full analysis (includes per-frame features for resume / resegment)
-        path.write_text(result.model_dump_json(indent=2), encoding="utf-8")
+        path.write_text(result.model_dump_json(), encoding="utf-8")
         # Slim timeline for the review UI (no dense feature vectors)
         slim = {
             "job_id": result.job_id,
@@ -2408,7 +2484,12 @@ class _NativeContactPrefetch:
         return self.reference[lo:hi]
 
     def eligible(self, key):
-        if self.workers < 2 or not self.target:
+        if self.workers < 2:
+            return False
+        # An unrecognised overlay can be checked independently while its
+        # context remains unknown. A newly learned target changes the parent
+        # state; speculative windows must then run again in parent order.
+        if not self.target and self.parent.broadcast_context.target_ready:
             return False
         start, end, _ = key
         rows = self._context(key)
@@ -2433,7 +2514,8 @@ class _NativeContactPrefetch:
             start_time=start, end_time=end, collect_scene_observations=False,
             checkpoint_stage="contact_prefetch",
         )
-        if worker._confirmed_target_returns:
+        if (worker._confirmed_target_returns
+                or not self.target and worker.broadcast_context.target_ready):
             # A newly discovered context correction must be applied in parent
             # order. Repeat this uncommon window synchronously to preserve it.
             return None

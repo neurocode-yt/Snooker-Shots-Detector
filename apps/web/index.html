@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Snooker AI</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260719c" />
+  <link rel="stylesheet" href="/static/styles.css?v=20261011capcut" />
 </head>
 <body>
   <header class="top">
@@ -22,7 +22,11 @@
             <option value="classic">Classic editor (previous interface)</option>
           </select>
         </label>
+        <template id="dl-workflow-option">
+          <option value="dl_algo">DL Algo</option>
+        </template>
         <p id="workflow-description" class="muted">Upload the entire match. Remove waiting and setup footage, then export with mix transitions.</p>
+        <p id="algorithm-status" class="muted hidden" role="status" aria-live="polite"></p>
         <label class="file-label">
           <input type="file" id="file" accept="video/*,.mp4,.mov,.mkv,.avi,.webm" required />
           <span id="file-name">Choose a snooker video…</span>
@@ -91,6 +95,7 @@
     </section>
   </main>
 
-  <script src="/static/app.js?v=20261001classic"></script>
+  <script src="/static/capcut.js?v=20261011"></script>
+  <script src="/static/app.js?v=20261011capcut"></script>
 </body>
 </html>

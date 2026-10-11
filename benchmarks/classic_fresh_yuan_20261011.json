@@ -1,0 +1,75 @@
+{
+  "algorithm": "classic",
+  "uses_deep_learning": false,
+  "labels_human_approved": false,
+  "predictions_consulted": false,
+  "frozen_at": "2026-10-10T21:54:44.597570+00:00",
+  "annotation_method": "Source-only chronological 1fps review of the complete 120-second interval, followed by original consecutive native-PTS frames around every visible impact and the interval end. Auxiliary bright-component positions aided crop annotation; no shot detector predictions were read. AI reviewed, not human approved.",
+  "sections": [
+    {
+      "library_index": 48,
+      "source_relative_path": "Yuan Sijun vs Michael Holt - 2026 Quarter-Final.mp4",
+      "source_sha256": "55deb63a17215f5f180d116370ab356784a3db00456eb43962ee6e45d368137b",
+      "source_group": "yuan_sijun_vs_michael_holt_2026_quarter_final",
+      "split": "development",
+      "initial_evaluation_split": "test",
+      "promoted_to_development_reason": "First full-pipeline evaluation exposed a late occlusion timestamp and a referee reset false positive; this group subsequently informed fixes. Original contact labels are unchanged.",
+      "source_reviewed": true,
+      "predictions_consulted": false,
+      "window": {
+        "start": 600.0,
+        "end": 720.0
+      },
+      "contacts": [
+        {
+          "lower": 601.68,
+          "upper": 601.72,
+          "description": "Holt red contact, overhead",
+          "source_evidence": "continued_2026_10_11/fresh-exact-0.jpg"
+        },
+        {
+          "lower": 635.0,
+          "upper": 635.08,
+          "description": "Yuan red contact, main camera",
+          "source_evidence": "continued_2026_10_11/fresh-exact-1.jpg"
+        },
+        {
+          "lower": 654.08,
+          "upper": 654.12,
+          "description": "Holt red contact, main camera",
+          "source_evidence": "continued_2026_10_11/fresh-exact-2.jpg"
+        },
+        {
+          "lower": 672.6,
+          "upper": 672.68,
+          "description": "Yuan red contact, overhead",
+          "source_evidence": "continued_2026_10_11/fresh-exact-3.jpg"
+        },
+        {
+          "lower": 686.16,
+          "upper": 686.24,
+          "description": "Holt red contact, overhead",
+          "source_evidence": "continued_2026_10_11/fresh-exact-4.jpg"
+        },
+        {
+          "lower": 699.96,
+          "upper": 700.04,
+          "description": "Yuan contact before referee ball replacement",
+          "source_evidence": "continued_2026_10_11/fresh-exact-5.jpg"
+        }
+      ],
+      "negative_intervals": [
+        {
+          "start": 618.0,
+          "end": 625.0,
+          "description": "Player walking/chalking portrait; no contact"
+        },
+        {
+          "start": 711.0,
+          "end": 720.0,
+          "description": "Referee ball replacement and next address; no new contact. Native end checked through 720.36."
+        }
+      ]
+    }
+  ]
+}

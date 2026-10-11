@@ -1,0 +1,422 @@
+{
+  "algorithm": "classic",
+  "uses_deep_learning": false,
+  "frozen_at": "2026-10-10T15:29:47.213830+00:00",
+  "annotation_method": "Initial source-only review of all six 60s sections at 1fps, then native contact frames. One development boundary green was subsequently adjudicated against native source frames after a detector prediction exposed the omission; see adjudication. Selection and test labels were frozen before predictions.",
+  "labels_human_approved": false,
+  "predictions_consulted": true,
+  "sections": [
+    {
+      "library_index": 15,
+      "source_sha256": "f1f901799d0c94627ca80b5f4295c485f062ad26795bcdc1a8584298cda8332d",
+      "source_group": "bai_yulu_vs_liam_graham",
+      "split": "development",
+      "window": {
+        "start": 180,
+        "end": 240
+      },
+      "contacts": [
+        {
+          "lower": 199.72,
+          "upper": 199.76,
+          "description": "Liam safety; score remains 0-1",
+          "coarse_bounds": [
+            199,
+            200
+          ],
+          "source_evidence": [
+            {
+              "path": "native-contact-crops\\15-00.jpg",
+              "sha256": "7eac17b098dd292bf3959a5e8a442bd2216ff5c91e138a13d364be9c29a2328c"
+            }
+          ]
+        }
+      ],
+      "negative_intervals": [
+        {
+          "start": 228,
+          "end": 237,
+          "description": "Player walking and addressing; white stationary"
+        }
+      ],
+      "replay_intervals": [],
+      "notes": "All sixty source samples reviewed. One stroke. No replay.",
+      "source_reviewed": true,
+      "source_relative_path": "Bai Yulu vs Liam Graham.mp4",
+      "predictions_consulted": false
+    },
+    {
+      "library_index": 17,
+      "source_sha256": "afce51203fe917a89295e84a354ff2998be14de13b7fb0b60c5babdcb8785a58",
+      "source_group": "jiang_jun_vs_thepchaiya_un_nooh",
+      "split": "selection",
+      "window": {
+        "start": 600,
+        "end": 660
+      },
+      "contacts": [
+        {
+          "lower": 601.96,
+          "upper": 602.0,
+          "description": "Thep red, 40 to 41; referee in foreground",
+          "coarse_bounds": [
+            602,
+            603
+          ],
+          "source_evidence": [
+            {
+              "path": "native-contact-crops\\17-00.jpg",
+              "sha256": "4c1fb0d4ea7e3a05ca8e4752f0dceff9ad3f2845c0f44383ca670fdb56cbfa67"
+            }
+          ]
+        },
+        {
+          "lower": 614.64,
+          "upper": 614.72,
+          "description": "Thep blue, 41 to 46",
+          "coarse_bounds": [
+            615,
+            616
+          ],
+          "source_evidence": [
+            {
+              "path": "native-contact-crops\\17-01.jpg",
+              "sha256": "6e3fedda1e0a0ca2b9ef1132ef4e44a0cc4e24990714cc4f32e172506bbfc160"
+            }
+          ]
+        },
+        {
+          "lower": 630.16,
+          "upper": 630.2,
+          "description": "Thep red, 46 to 47",
+          "coarse_bounds": [
+            630,
+            631
+          ],
+          "source_evidence": [
+            {
+              "path": "native-contact-crops\\17-02.jpg",
+              "sha256": "40018055d54ab5c797f2a9d785cb47d93d4ca146f2b1966a37366a4825a93df9"
+            }
+          ]
+        },
+        {
+          "lower": 637.4,
+          "upper": 637.48,
+          "description": "Thep black, 47 to 54",
+          "coarse_bounds": [
+            638,
+            639
+          ],
+          "source_evidence": [
+            {
+              "path": "native-contact-crops\\17-03.jpg",
+              "sha256": "369194f43e0df7d2bed85a3742029a7333ba179c5918aa1282c9a42ad58781e0"
+            }
+          ]
+        },
+        {
+          "lower": 651.44,
+          "upper": 651.52,
+          "description": "Thep red, 54 to 55",
+          "coarse_bounds": [
+            652,
+            653
+          ],
+          "source_evidence": [
+            {
+              "path": "native-contact-crops\\17-04-extra.jpg",
+              "sha256": "e14a167107699f78988bfdf597e66a456e3170a02fd3fada1111029e0cfcd3d5"
+            },
+            {
+              "path": "native-contact-crops\\17-04.jpg",
+              "sha256": "4b885198d3c7c1574da476de60905154642986ff082abe9f82334505887e071f"
+            }
+          ]
+        }
+      ],
+      "negative_intervals": [
+        {
+          "start": 622,
+          "end": 625,
+          "description": "Referee respots blue"
+        },
+        {
+          "start": 643,
+          "end": 647,
+          "description": "Referee respots black"
+        }
+      ],
+      "replay_intervals": [],
+      "notes": "All sixty source samples reviewed. Five strokes. Dissolve at 651 is live camera change.",
+      "source_reviewed": true,
+      "source_relative_path": "Jiang Jun vs Thepchaiya Un-Nooh.mp4",
+      "predictions_consulted": false
+    },
+    {
+      "library_index": 25,
+      "source_sha256": "712e765bcbc767badff4cc2a2f459762b96e21359106c16426ff0b87d1c8c250",
+      "source_group": "mark_williams_vs_andrew_higginson",
+      "split": "development",
+      "window": {
+        "start": 1080,
+        "end": 1140
+      },
+      "contacts": [],
+      "negative_intervals": [
+        {
+          "start": 1080,
+          "end": 1087,
+          "description": "Referee ball handling"
+        },
+        {
+          "start": 1103,
+          "end": 1111,
+          "description": "Referee gathers and racks reds"
+        },
+        {
+          "start": 1120,
+          "end": 1127,
+          "description": "Referee finishes racking"
+        },
+        {
+          "start": 1130,
+          "end": 1135,
+          "description": "Player places white in D by hand"
+        },
+        {
+          "start": 1135,
+          "end": 1140,
+          "description": "Player addresses break but does not strike in section"
+        }
+      ],
+      "replay_intervals": [],
+      "notes": "All sixty source samples reviewed. Entire minute is frame preparation. Zero cue strikes.",
+      "source_reviewed": true,
+      "source_relative_path": "Mark Williams vs Andrew Higginson.mp4",
+      "predictions_consulted": false
+    },
+    {
+      "library_index": 30,
+      "source_sha256": "de27fabf2b1204b8565bfdd9de82916f0bcb87a1db993fa24eb1589a86ed8c72",
+      "source_group": "reanne_evans_vs_mink_nutcharut",
+      "split": "development",
+      "window": {
+        "start": 120,
+        "end": 180
+      },
+      "contacts": [
+        {
+          "lower": 149.8,
+          "upper": 149.88,
+          "description": "Mink red, 6 to 7",
+          "coarse_bounds": [
+            150,
+            151
+          ],
+          "source_evidence": [
+            {
+              "path": "native-contact-crops\\30-00.jpg",
+              "sha256": "1e8629bbac4ae4a1f0aa95472be73efa211e617b9c0b9d33573da3f41413c6c2"
+            }
+          ]
+        },
+        {
+          "lower": 179.6,
+          "upper": 179.64,
+          "description": "Mink green; contact just before the reviewed section ends",
+          "source_evidence": [
+            {
+              "path": "section-end-30.jpg",
+              "sha256": "02ae38ee6fdb267a60dd022eca22bccc970b3fdfbace5226234507bce6d7598b"
+            }
+          ],
+          "predictions_consulted": true
+        }
+      ],
+      "negative_intervals": [
+        {
+          "start": 158,
+          "end": 166,
+          "description": "Player walks and chalks; white stationary"
+        },
+        {
+          "start": 171,
+          "end": 179.4,
+          "description": "Player addresses green before real contact at 179.60-179.64"
+        }
+      ],
+      "replay_intervals": [
+        {
+          "start": 129,
+          "end": 137,
+          "description": "Graphic wipe then overhead replay of preceding shot"
+        }
+      ],
+      "notes": "Two live strokes. Green contact in final second was found during prediction-triggered source adjudication. First contact already rolling at 120 is outside section. Overhead replay at 129-137.",
+      "source_reviewed": true,
+      "source_relative_path": "Reanne Evans vs Mink Nutcharut.mp4",
+      "predictions_consulted": true
+    },
+    {
+      "library_index": 20,
+      "source_sha256": "107ecf6120e54d813dee0d5d6798ab13fde3a95039ff4b9e4458c76adc05297c",
+      "source_group": "kyren_wilson_vs_thepchaiya_un_nooh___2019_champion_of_champions",
+      "split": "test",
+      "window": {
+        "start": 300,
+        "end": 360
+      },
+      "contacts": [
+        {
+          "lower": 306.96,
+          "upper": 307.0,
+          "description": "Wilson safety; no score change",
+          "coarse_bounds": [
+            307,
+            308
+          ],
+          "source_evidence": [
+            {
+              "path": "native-contact-crops\\20-00.jpg",
+              "sha256": "7c5bb47cee92446cd4b90d978e1e9f21a1fab9b44d0e45e4a5f6a977809b5a60"
+            }
+          ]
+        },
+        {
+          "lower": 326.68,
+          "upper": 326.72,
+          "description": "Thep red, 6 to 7",
+          "coarse_bounds": [
+            326,
+            327
+          ],
+          "source_evidence": [
+            {
+              "path": "native-contact-crops\\20-01.jpg",
+              "sha256": "5f1925d803ffb85aedbf65ac964b4e37db5caae9db108c540ef983f718e2e64d"
+            }
+          ]
+        },
+        {
+          "lower": 340.6,
+          "upper": 340.64,
+          "description": "Thep black, 7 to 14",
+          "coarse_bounds": [
+            340,
+            341
+          ],
+          "source_evidence": [
+            {
+              "path": "native-contact-crops\\20-02.jpg",
+              "sha256": "123b77fd6e7a0eef560ac95e7ba1ca9d39bf3f585e7ad068681c7238add33d86"
+            }
+          ]
+        },
+        {
+          "lower": 356.56,
+          "upper": 356.6,
+          "description": "Thep red, 14 to 15",
+          "coarse_bounds": [
+            356,
+            357
+          ],
+          "source_evidence": [
+            {
+              "path": "native-contact-crops\\20-03.jpg",
+              "sha256": "9c42bbe140d7410f30d3bad074bf2008d0b4608c2412793e4b1e5ff7001ee47f"
+            }
+          ]
+        }
+      ],
+      "negative_intervals": [
+        {
+          "start": 348,
+          "end": 351,
+          "description": "Referee respots black while player approaches next red"
+        }
+      ],
+      "replay_intervals": [],
+      "notes": "All sixty source samples reviewed. Four live strokes. Contact on low camera in all four cases.",
+      "source_reviewed": true,
+      "source_relative_path": "Kyren Wilson vs. Thepchaiya Un-Nooh _ 2019 Champion of Champions-40e5323d.mp4",
+      "predictions_consulted": false
+    },
+    {
+      "library_index": 33,
+      "source_sha256": "4b3fca1b55214725226fa8c8c54bfb6bd3d0a0e90a1501ba1941b095adfb4e70",
+      "source_group": "thanawat_tirapongpaiboon_vs_paul_norris",
+      "split": "test",
+      "window": {
+        "start": 480,
+        "end": 540
+      },
+      "contacts": [
+        {
+          "lower": 487.64,
+          "upper": 487.72,
+          "description": "Thanawat red, 24 to 25 using mechanical rest",
+          "coarse_bounds": [
+            489,
+            490
+          ],
+          "source_evidence": [
+            {
+              "path": "native-contact-crops\\33-00-extra.jpg",
+              "sha256": "43cce9da147789c3fe99878bf6e2c821d8f242170afb8945825769c33a298767"
+            },
+            {
+              "path": "native-contact-crops\\33-00.jpg",
+              "sha256": "a8913a1072af200a108eac8c841700decff6e6dc4944e43ee0292d1176063c44"
+            }
+          ]
+        },
+        {
+          "lower": 532.96,
+          "upper": 533.0,
+          "description": "Thanawat green, 25 to 28 using mechanical rest",
+          "coarse_bounds": [
+            533,
+            534
+          ],
+          "source_evidence": [
+            {
+              "path": "native-contact-crops\\33-01-extra.jpg",
+              "sha256": "1fd85e81256340374a86e59dc7770788e6355af7b870d642279488b54a70db22"
+            },
+            {
+              "path": "native-contact-crops\\33-01.jpg",
+              "sha256": "e6421e9713a10113dc15455fbbb2728632c829342866e324a5ff3e78c09e235f"
+            }
+          ]
+        }
+      ],
+      "negative_intervals": [
+        {
+          "start": 480,
+          "end": 487,
+          "description": "Player feathers cue over mechanical rest; white stationary"
+        },
+        {
+          "start": 517,
+          "end": 526,
+          "description": "Player feathers cue over mechanical rest; white stationary"
+        }
+      ],
+      "replay_intervals": [],
+      "notes": "All sixty source samples reviewed. Two live strokes. No replay.",
+      "source_reviewed": true,
+      "source_relative_path": "Thanawat Tirapongpaiboon vs Paul Norris.mp4",
+      "predictions_consulted": false
+    }
+  ],
+  "coarse_annotations_sha256": "d23cd1688be2ccaf52f33859a6da6c58baf70b9f4a3e9ccc2615374f14e78a83",
+  "adjudication": {
+    "at": "2026-10-10T15:43:31.670788+00:00",
+    "original_labels_sha256": "7f6c43756302cf3a7a700095e8b7a78a3263e8770756f8033c14d56fde4ffb33",
+    "development_prediction_consulted": true,
+    "test_predictions_consulted": false,
+    "change": "Added source-verified green at the development section boundary; no test labels changed."
+  },
+  "source_only_initial_annotations": true
+}

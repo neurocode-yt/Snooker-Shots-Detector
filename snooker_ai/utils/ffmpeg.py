@@ -15,6 +15,35 @@ from snooker_ai.utils.logging import get_logger
 logger = get_logger("ffmpeg")
 
 
+@lru_cache(maxsize=32)
+def _supports_hide_banner(binary: str) -> bool:
+    """Skip stale PATH shims that cannot run the flags used by this app."""
+    try:
+        result = subprocess.run(
+            [binary, "-hide_banner", "-version"],
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=5.0,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return result.returncode == 0
+
+
+def _first_compatible(candidates: Sequence[str]) -> str | None:
+    seen = set()
+    for candidate in candidates:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if Path(candidate).is_file() and _supports_hide_banner(candidate):
+            return candidate
+    return None
+
+
 class FFmpegError(RuntimeError):
     def __init__(self, message: str, returncode: int = 1, stderr: str = ""):
         super().__init__(message)
@@ -23,15 +52,17 @@ class FFmpegError(RuntimeError):
 
 
 def find_ffmpeg() -> str:
+    candidates = []
     path = shutil.which("ffmpeg")
-    if path and Path(path).is_file():
-        return path
-
-    candidates = [
-        r"C:\ffmpeg\bin\ffmpeg.exe",
-        r"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
-        os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Links\ffmpeg.exe"),
-    ]
+    if path:
+        candidates.append(path)
+    candidates.extend(
+        [
+            r"C:\ffmpeg\bin\ffmpeg.exe",
+            r"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
+            os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Links\ffmpeg.exe"),
+        ]
+    )
     winget_pkg = os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Packages")
     if os.path.isdir(winget_pkg):
         for root, _, files in os.walk(winget_pkg):
@@ -39,23 +70,21 @@ def find_ffmpeg() -> str:
                 if file.lower() == "ffmpeg.exe":
                     candidates.append(os.path.join(root, file))
 
-    for c in candidates:
-        if Path(c).is_file():
-            return c
-
-    return "ffmpeg"
+    return _first_compatible(candidates) or "ffmpeg"
 
 
 def find_ffprobe() -> str:
+    candidates = []
     path = shutil.which("ffprobe")
-    if path and Path(path).is_file():
-        return path
-
-    candidates = [
-        r"C:\ffmpeg\bin\ffprobe.exe",
-        r"C:\Program Files\ffmpeg\bin\ffprobe.exe",
-        os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Links\ffprobe.exe"),
-    ]
+    if path:
+        candidates.append(path)
+    candidates.extend(
+        [
+            r"C:\ffmpeg\bin\ffprobe.exe",
+            r"C:\Program Files\ffmpeg\bin\ffprobe.exe",
+            os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Links\ffprobe.exe"),
+        ]
+    )
     winget_pkg = os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Packages")
     if os.path.isdir(winget_pkg):
         for root, _, files in os.walk(winget_pkg):
@@ -63,11 +92,7 @@ def find_ffprobe() -> str:
                 if file.lower() == "ffprobe.exe":
                     candidates.append(os.path.join(root, file))
 
-    for c in candidates:
-        if Path(c).is_file():
-            return c
-
-    return "ffprobe"
+    return _first_compatible(candidates) or "ffprobe"
 
 
 @lru_cache(maxsize=8)

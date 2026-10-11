@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from typing import Any
+from functools import lru_cache
+from pathlib import Path
 
 import cv2
 import numpy as np
 
 from snooker_ai.config import Config
+from snooker_ai.table_detection.surface import playing_surface_mask
 from snooker_ai.types import CameraViewType
 
 
@@ -73,6 +76,7 @@ class ViewClassifier:
             frame = cv2.resize(frame_bgr, (640, max(1, round(h * 640 / w))))
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         green = cv2.inRange(hsv, self.hsv_lower, self.hsv_upper)
+        green = playing_surface_mask(hsv, green)
         g = float(np.count_nonzero(green)) / float(green.size)
         e = self.edge_density(frame)
         s = self.skin_ratio(frame)
@@ -116,13 +120,21 @@ class ViewClassifier:
 
     @staticmethod
     def replay_stinger_signature(frame: np.ndarray) -> list[float]:
-        """Recognize a dark neon-ring wipe; colours alone are insufficient.
+        """Recognize measured broadcast graphics, never colour alone.
 
-        Two nearly complete concentric magenta/yellow rings must surround the
-        centre title. The fingerprint associates opening and closing wipes;
-        this graphic by itself does not label any following play a replay.
+        These fingerprints associate opening and closing wipes; one graphic
+        does not establish that the following play is a replay.
         """
         small = cv2.resize(frame, (320, 180))
+        gold = ViewClassifier._gold_chevron_stinger(small)
+        if gold:
+            return gold
+        sphere = ViewClassifier._red_sphere_stinger(small)
+        if sphere:
+            return sphere
+        blue = ViewClassifier._blue_title_stinger(small)
+        if blue:
+            return blue
         hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV)
         if np.mean(hsv[:, :, 2] < 115) < .55:
             return []
@@ -150,6 +162,108 @@ class ViewClassifier:
             return []
         title = cv2.cvtColor(small[58:128, 106:214], cv2.COLOR_BGR2GRAY)
         return (cv2.resize(title, (16, 12)).astype(np.float32).ravel()/255).tolist()
+
+    @staticmethod
+    def _gold_chevron_stinger(small: np.ndarray) -> list[float]:
+        """Measure a full-height gold chevron over its dark teal wipe field."""
+        hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV)
+        field = ((hsv[:, :, 0] >= 55) & (hsv[:, :, 0] <= 100)
+                 & (hsv[:, :, 1] >= 20) & (hsv[:, :, 1] <= 150)
+                 & (hsv[:, :, 2] <= 120))
+        if np.mean(field) < .20:
+            return []
+        gold = cv2.inRange(hsv, (18, 55, 120), (40, 185, 255)) > 0
+        centres, widths = [], []
+        for fraction in (.10, .25, .40, .50, .60, .75, .90):
+            row = gold[round(fraction * (gold.shape[0] - 1))]
+            edges = np.diff(np.r_[False, row, False].astype(np.int8))
+            starts, ends = np.where(edges == 1)[0], np.where(edges == -1)[0]
+            if not len(starts):
+                return []
+            i = int(np.argmax(ends - starts))
+            widths.append(float(ends[i] - starts[i]))
+            centres.append(float((ends[i] + starts[i]) / 2))
+        w = gold.shape[1]
+        if (min(widths) < .04 * w or max(widths) > .35 * w
+                or max(widths) - min(widths) > .08 * w
+                or any(abs(centres[i] - centres[-i-1]) > .04 * w for i in range(3))
+                or not centres[0] < centres[1] < centres[2] < centres[3]
+                or centres[3] - centres[0] < .10 * w):
+            return []
+        # A type-specific canonical fingerprint associates only two independently
+        # measured chevrons; a single wipe never labels subsequent play a replay.
+        return [4., 0., 0.] + [1.] * 192
+
+    @staticmethod
+    @lru_cache(maxsize=1)
+    def _blue_title_template() -> np.ndarray | None:
+        return cv2.imread(str(Path(__file__).parent/'assets/championship_title.png'), cv2.IMREAD_GRAYSCALE)
+
+    @staticmethod
+    def _blue_title_stinger(small: np.ndarray) -> list[float]:
+        """Recognize a source-verified title wipe, rather than blue banners.
+
+        A fullscreen cyan field must contain the measured Championship League
+        lettering. The binary title template ignores video grading; paired
+        opening and closing graphics still establish replay ownership elsewhere.
+        A different vector length keeps this family separate from neon rings.
+        """
+        hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV)
+        cyan = cv2.inRange(hsv, (85, 75, 145), (105, 220, 255))
+        if np.mean(cyan > 0) < .60:
+            return []
+        title = (((hsv[60:126,64:256,1] < 80)
+                  & (hsv[60:126,64:256,2] > 185))*255).astype(np.uint8)
+        template = ViewClassifier._blue_title_template()
+        if template is None or template.shape != title.shape or np.std(title) < 10:
+            return []
+        if float(cv2.matchTemplate(title, template, cv2.TM_CCOEFF_NORMED)[0,0]) < .90:
+            return []
+        return [2.]+(cv2.resize(title, (16,12)).astype(np.float32).ravel()/255).tolist()
+
+    @staticmethod
+    @lru_cache(maxsize=1)
+    def _red_sphere_templates() -> tuple[np.ndarray, ...]:
+        bank = cv2.imread(str(Path(__file__).parent/'assets/red_replay_sphere.png'), cv2.IMREAD_GRAYSCALE)
+        if bank is None or bank.shape[1] != 96 or bank.shape[0] % 96:
+            return ()
+        return tuple(cv2.GaussianBlur(part, (3,3), 0)
+                     for part in np.split(bank, bank.shape[0]//96))
+
+    @staticmethod
+    def _red_sphere_stinger(small: np.ndarray) -> list[float]:
+        """Recognize the rendered sphere/reflection pattern of a replay wipe.
+
+        The disc must occupy a substantial part of the frame and match a
+        source-derived rendering template. A photographed red ball, red shirt
+        or lens flare alone supplies no marker. Animation phases share one
+        canonical fingerprint only after this measured template match.
+        """
+        hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV)
+        red = (cv2.inRange(hsv,(140,55,45),(179,255,255))
+               | cv2.inRange(hsv,(0,55,45),(12,255,255)))
+        if np.mean(red > 0) < .08:
+            return []
+        red = cv2.morphologyEx(red, cv2.MORPH_CLOSE, np.ones((7,7),np.uint8))
+        contours, _ = cv2.findContours(red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        templates = ViewClassifier._red_sphere_templates()
+        if not templates:
+            return []
+        for contour in contours:
+            x,y,width,height = cv2.boundingRect(contour)
+            if (cv2.contourArea(contour) < .08*red.size or x < 2 or x+width >= 318
+                    or not .70 <= width/max(1,height) <= 1.35
+                    or cv2.contourArea(cv2.convexHull(contour))/max(1,width*height) < .65):
+                continue
+            patch = cv2.cvtColor(small[y:y+height,x:x+width], cv2.COLOR_BGR2GRAY)
+            patch = cv2.GaussianBlur(cv2.resize(patch,(96,96)),(3,3),0)
+            if np.std(patch) < 10:
+                continue
+            score = max(float(cv2.matchTemplate(patch,template,cv2.TM_CCOEFF_NORMED)[0,0])
+                        for template in templates)
+            if score >= .91:
+                return [3.,0.]+(cv2.resize(templates[0],(16,12)).astype(np.float32).ravel()/255).tolist()
+        return []
 
     @staticmethod
     def _cloth_geometry(mask: np.ndarray) -> dict[str, Any]:

@@ -1,0 +1,142 @@
+{
+  "algorithm": "classic",
+  "uses_deep_learning": false,
+  "feature_cache_version": 38,
+  "result_policy_version": 59,
+  "labels_human_approved": false,
+  "contact_tolerance_seconds": 0.25,
+  "scope": "Two completely source-reviewed 120-second intervals only. Original source labels frozen before predictions; O Sullivan section promoted to development after its first failures.",
+  "original_mode_tests_passed": 952,
+  "additional_workspace_integration_tests_passed": 17,
+  "workspace_tests_passed": 969,
+  "dl_test_files_excluded": true,
+  "exact_physical_stops_independently_verified": false,
+  "source_copy_pixel_pairs_verified": 11,
+  "first_annotation_sha256": "5b3133157a4d34bbbe509041ee622416f74a45789f9b210403e4ca32995de674",
+  "full_pipeline": {
+    "16": {
+      "source_relative_path": "Jack Lisowski vs Mark Selby - 2026 Quarter-Final.mp4",
+      "split": "test",
+      "source_window": {
+        "start": 600.0,
+        "end": 720.0
+      },
+      "source_offset": 600.0,
+      "initial": {
+        "matched": 3,
+        "missed": 0,
+        "false_positive": 0
+      },
+      "current": {
+        "matched": 3,
+        "missed": 0,
+        "false_positive": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "reference_count": 3,
+      "complete_contact_brackets_covered": 3,
+      "render_duration": 21.92,
+      "decode_pass": true,
+      "clip_boundaries": [
+        {
+          "contact": 19.92,
+          "start": 17.92,
+          "end": 24.24,
+          "timing_review": false,
+          "availability_cap": "non_table_cutaway_clip_boundary"
+        },
+        {
+          "contact": 40.24,
+          "start": 38.24,
+          "end": 46.6,
+          "timing_review": false,
+          "availability_cap": "non_table_cutaway_clip_boundary"
+        },
+        {
+          "contact": 91.84,
+          "start": 89.84,
+          "end": 97.56,
+          "timing_review": false,
+          "availability_cap": "non_table_cutaway_clip_boundary"
+        }
+      ]
+    },
+    "31": {
+      "source_relative_path": "Ronnie OSullivan vs Judd Trump.mp4",
+      "split": "development",
+      "source_window": {
+        "start": 600.0,
+        "end": 720.0
+      },
+      "source_offset": 599.96,
+      "initial": {
+        "matched": 3,
+        "missed": 4,
+        "false_positive": 2
+      },
+      "current": {
+        "matched": 7,
+        "missed": 0,
+        "false_positive": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "reference_count": 7,
+      "complete_contact_brackets_covered": 7,
+      "render_duration": 68.64,
+      "decode_pass": true,
+      "clip_boundaries": [
+        {
+          "contact": 5.36,
+          "start": 3.3600000000000003,
+          "end": 14.52,
+          "timing_review": true,
+          "availability_cap": "replay_clip_boundary"
+        },
+        {
+          "contact": 30.52,
+          "start": 28.72,
+          "end": 48.52,
+          "timing_review": true,
+          "availability_cap": ""
+        },
+        {
+          "contact": 50.52,
+          "start": 48.52,
+          "end": 55.760000000000005,
+          "timing_review": true,
+          "availability_cap": "visual_hand_entry_clip_boundary"
+        },
+        {
+          "contact": 62.88,
+          "start": 60.88,
+          "end": 71.4,
+          "timing_review": true,
+          "availability_cap": ""
+        },
+        {
+          "contact": 73.4,
+          "start": 71.4,
+          "end": 75.6,
+          "timing_review": true,
+          "availability_cap": "visual_hand_entry_clip_boundary"
+        },
+        {
+          "contact": 101.68,
+          "start": 99.68,
+          "end": 109.16,
+          "timing_review": true,
+          "availability_cap": ""
+        },
+        {
+          "contact": 111.16,
+          "start": 109.16,
+          "end": 116.56,
+          "timing_review": true,
+          "availability_cap": "visual_hand_entry_clip_boundary"
+        }
+      ]
+    }
+  }
+}

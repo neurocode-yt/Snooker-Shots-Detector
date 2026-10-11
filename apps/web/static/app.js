@@ -10,24 +10,60 @@ const sectionList = document.getElementById("section-list");
 const zoomSlider = document.getElementById("timeline-zoom");
 const startBtn = document.getElementById("start-btn");
 const workflow = document.getElementById("workflow");
+// Keep DL available in the backend while its interface is temporarily hidden.
+const DL_ALGO_VISIBLE = false;
+if (DL_ALGO_VISIBLE) {
+  workflow.appendChild(document.getElementById("dl-workflow-option").content.cloneNode(true));
+}
+let dlCapability = null;
+
+function updateStartAvailability() {
+  startBtn.disabled = !sourceDuration || workflow.disabled
+    || (workflow.value === "dl_algo" && !dlCapability?.available);
+}
+
+async function loadAlgorithms() {
+  if (!DL_ALGO_VISIBLE) return;
+  try {
+    const response = await fetch("/api/algorithms");
+    if (!response.ok) throw new Error("Could not check DL Algo readiness.");
+    const metadata = await response.json();
+    dlCapability = metadata.algorithms.find((item) => item.id === "dl_algo")
+      || { available: false, reason: "DL Algo is not available yet." };
+  } catch (error) {
+    dlCapability = { available: false, reason: error.message || String(error) };
+  }
+  updateWorkflow();
+}
 
 function updateWorkflow() {
   const classic = workflow.value === "classic";
+  const dl = DL_ALGO_VISIBLE && workflow.value === "dl_algo";
   document.getElementById("workflow-heading").textContent = classic
-    ? "Upload & analyze" : "Create snooker highlights";
+    ? "Upload & analyze" : dl ? "DL Algo" : "Create snooker highlights";
   document.getElementById("workflow-description").textContent = classic
     ? "Detect shots, then open the previous editor with preview, timeline, shot controls, and export buttons."
-    : "Upload the entire match. Remove waiting and setup footage, then export with mix transitions.";
+    : dl ? "Create highlights with DL Algo. Results are saved as a separate job."
+      : "Upload the entire match. Remove waiting and setup footage, then export with mix transitions.";
+  const status = document.getElementById("algorithm-status");
+  status.classList.toggle("hidden", !dl);
+  status.textContent = dlCapability?.available
+    ? "Experimental DL Algo is ready for comparison. Accuracy on new matches has not been verified."
+    : dlCapability?.reason || "Checking DL Algo readiness…";
   document.getElementById("pre-editor-heading").textContent = classic
     ? "Prepare match before analysis" : "Optional source trimming";
   document.getElementById("pre-editor-description").textContent = classic
     ? "Split around frame breaks and delete those sections, or keep the whole video. Your original video is never changed."
     : "Keep the whole video and start. Shot detection, cutting, and export run automatically.";
-  startBtn.textContent = classic ? "Prepare & start analysis" : "Create video automatically";
+  startBtn.textContent = classic ? "Prepare & start analysis"
+    : dl ? "Create with DL Algo" : "Create video automatically";
+  updateStartAvailability();
 }
 
-workflow.addEventListener("change", updateWorkflow);
-updateWorkflow();
+workflow.addEventListener("change", () => {
+  updateWorkflow();
+  if (workflow.value === "dl_algo") loadAlgorithms();
+});
 
 let sourceDuration = 0;
 let sections = [];
@@ -40,6 +76,13 @@ let localVideoUrl = null;
 let draggingPlayhead = false;
 let dragPointerClientX = 0;
 let dragScrollFrame = 0;
+updateWorkflow();
+loadAlgorithms();
+setInterval(() => {
+  if (workflow.value === "dl_algo" && !dlCapability?.available && !document.hidden) {
+    loadAlgorithms();
+  }
+}, 10000);
 
 function fmt(t) {
   if (!Number.isFinite(t)) return "00:00.000";
@@ -179,7 +222,7 @@ function initializeEditor(duration) {
   editHistory = [];
   redoHistory = [];
   preEditor.classList.remove("hidden");
-  startBtn.disabled = false;
+  updateStartAvailability();
   window.requestAnimationFrame(renderEditor);
 }
 
@@ -363,11 +406,17 @@ async function restartJob(jobId) {
   }
 }
 
+const capcutJobMessages = new Map();
+
 async function refreshJobs() {
   const el = document.getElementById("jobs");
+  // Preserve a pending handoff and its result while the periodic job poll runs.
+  if (el.querySelector("[data-capcut-active]")) return;
   try {
-    const res = await fetch("/api/jobs");
-    const jobs = await res.json();
+    const [res, capcut] = await Promise.all([fetch("/api/jobs"), window.snookerCapCut.load()]);
+    const jobs = (await res.json()).filter(
+      (job) => DL_ALGO_VISIBLE || job.algorithm !== "dl_algo",
+    );
     if (!jobs.length) {
       el.innerHTML = "<p class='meta'>No jobs yet.</p>";
       return;
@@ -379,16 +428,30 @@ async function refreshJobs() {
       <div class="job-item">
         <div>
           <strong>${job.job_id}</strong>
-          <div class="meta">${job.status || ""} · ${(job.progress * 100 || 0).toFixed(0)}% · ${job.message || ""}</div>
+          <div class="meta">${job.algorithm === "dl_algo" ? "DL Algo · " : ""}${job.status || ""} · ${(job.progress * 100 || 0).toFixed(0)}% · ${job.message || ""}</div>
         </div>
         <div class="job-actions">
           <button type="button" class="btn-restart" data-job-id="${job.job_id}">Restart</button>
           ${job.download_url ? `<a href="${job.download_url}">Download video</a>` : ""}
-          <a href="/review/${job.job_id}?editor=classic">Open classic editor</a>
+          ${["completed", "ready_for_review"].includes(job.status) ? `<button type="button" class="btn-capcut" data-job-id="${job.job_id}" ${capcut.available ? "" : "disabled"}>Open in CapCut</button>` : ""}
+          <a href="/review/${job.job_id}?editor=classic">${job.algorithm === "dl_algo" ? "Open DL Algo editor" : "Open classic editor"}</a>
         </div>
       </div>`,
       )
       .join("");
+    el.querySelectorAll(".btn-capcut").forEach((button) => {
+      button.title = capcut.available
+        ? "Create a new CapCut project with separate editable shots"
+        : capcut.reason;
+      const message = capcutJobMessages.get(button.dataset.jobId);
+      if (message) {
+        const status = document.createElement("p");
+        status.className = "capcut-status muted";
+        status.setAttribute("role", "status");
+        status.textContent = message;
+        button.closest(".job-item").querySelector("div").appendChild(status);
+      }
+    });
   } catch (error) {
     el.innerHTML = `<p class="meta">Could not load jobs: ${error}</p>`;
   }
@@ -467,6 +530,15 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
   const text = document.getElementById("progress-text");
   const mode = "strict";
   const autoExport = workflow.value !== "classic";
+  const algorithm = DL_ALGO_VISIBLE && workflow.value === "dl_algo" ? "dl_algo" : "classic";
+  if (algorithm === "dl_algo") {
+    await loadAlgorithms();
+    if (!dlCapability?.available) {
+      text.textContent = dlCapability?.reason || "DL Algo is not ready yet.";
+      wrap.classList.remove("hidden");
+      return;
+    }
+  }
   if (!keepRanges.length) {
     text.textContent = "Keep at least one section before starting analysis.";
     wrap.classList.remove("hidden");
@@ -508,7 +580,7 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
     const start = await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source_path: path, mode, resume: true, auto_export: autoExport }),
+      body: JSON.stringify({ source_path: path, mode, algorithm, resume: true, auto_export: autoExport }),
     });
     if (!start.ok) throw new Error(await start.text());
     const { job_id: jobId } = await start.json();
@@ -522,8 +594,8 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
       text.textContent = `${metadata.status}: ${metadata.message || ""}`;
       if (["ready_for_review", "completed", "failed"].includes(metadata.status)) {
         clearInterval(poll);
-        startBtn.disabled = false;
         workflow.disabled = false;
+        updateStartAvailability();
         refreshJobs();
         if (metadata.status === "failed") {
           text.textContent = `Failed: ${metadata.error || metadata.message}`;
@@ -542,12 +614,29 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
     }, 1500);
   } catch (error) {
     text.textContent = `Error: ${error.message || error}`;
-    startBtn.disabled = false;
     workflow.disabled = false;
+    updateStartAvailability();
   }
 });
 
 document.getElementById("jobs").addEventListener("click", (event) => {
+  const capcutButton = event.target.closest(".btn-capcut");
+  if (capcutButton?.dataset.jobId) {
+    const item = capcutButton.closest(".job-item");
+    item.dataset.capcutActive = "true";
+    let status = item.querySelector(".capcut-status");
+    if (!status) {
+      status = document.createElement("p");
+      status.className = "capcut-status muted";
+      status.setAttribute("role", "status");
+      item.querySelector("div").appendChild(status);
+    }
+    window.snookerCapCut.open(capcutButton.dataset.jobId, capcutButton, status).finally(() => {
+      capcutJobMessages.set(capcutButton.dataset.jobId, status.textContent);
+      delete item.dataset.capcutActive;
+    });
+    return;
+  }
   const btn = event.target.closest(".btn-restart");
   if (btn && btn.dataset.jobId) {
     restartJob(btn.dataset.jobId);

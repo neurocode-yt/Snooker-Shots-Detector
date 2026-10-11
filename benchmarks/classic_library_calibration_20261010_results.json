@@ -1,0 +1,207 @@
+{
+  "before": {
+    "matched": 12,
+    "missed": 2,
+    "false_positive": 1,
+    "cases": [
+      {
+        "id": "source-15",
+        "source_group": "bai_yulu_vs_liam_graham",
+        "split": "development",
+        "matched": 1,
+        "missed": 0,
+        "false_positive": 0,
+        "features_sha256": "d292284739b2bc477d9b171b6ac71b0f7d77e1361ffa0f793af55d50e5f9cc7b",
+        "contact_timestamps": [
+          199.71906934116095
+        ]
+      },
+      {
+        "id": "source-17",
+        "source_group": "jiang_jun_vs_thepchaiya_un_nooh",
+        "split": "selection",
+        "matched": 3,
+        "missed": 2,
+        "false_positive": 1,
+        "features_sha256": "49d1d219c037a81056e24c67968fd614757fdb46d2f49b51d8ac9e636071b775",
+        "contact_timestamps": [
+          601.9959736161569,
+          614.675888807939,
+          637.3957368487348,
+          650.6756480275099
+        ]
+      },
+      {
+        "id": "source-25",
+        "source_group": "mark_williams_vs_andrew_higginson",
+        "split": "development",
+        "matched": 0,
+        "missed": 0,
+        "false_positive": 0,
+        "features_sha256": "04a0c0c53165787aa291f6e449d823ee8e9663f6fd87422b326ebb7087911902",
+        "contact_timestamps": []
+      },
+      {
+        "id": "source-30",
+        "source_group": "reanne_evans_vs_mink_nutcharut",
+        "split": "development",
+        "matched": 2,
+        "missed": 0,
+        "false_positive": 0,
+        "features_sha256": "078272830233f75dc29d67649e61e44bcd21654aca527b1f4c01954e75f6b2b2",
+        "contact_timestamps": [
+          149.84,
+          179.64
+        ]
+      },
+      {
+        "id": "source-20",
+        "source_group": "kyren_wilson_vs_thepchaiya_un_nooh___2019_champion_of_champions",
+        "split": "test",
+        "matched": 4,
+        "missed": 0,
+        "false_positive": 0,
+        "features_sha256": "76cbdbad117db14e2796225f4c538adbfd3ab79509a9ce899a1766ff4ad06868",
+        "contact_timestamps": [
+          307.0,
+          326.76,
+          340.52,
+          356.6
+        ]
+      },
+      {
+        "id": "source-33",
+        "source_group": "thanawat_tirapongpaiboon_vs_paul_norris",
+        "split": "test",
+        "matched": 2,
+        "missed": 0,
+        "false_positive": 0,
+        "features_sha256": "e02fd288ad06e4604db24673e1916a313cbdc050460016b8225e095c07b89d6e",
+        "contact_timestamps": [
+          487.63512876612424,
+          532.9546760462505
+        ]
+      }
+    ]
+  },
+  "after": {
+    "matched": 14,
+    "missed": 0,
+    "false_positive": 0,
+    "cases": [
+      {
+        "id": "source-15",
+        "source_group": "bai_yulu_vs_liam_graham",
+        "split": "development",
+        "matched": 1,
+        "missed": 0,
+        "false_positive": 0,
+        "features_sha256": "f4dda4a2f31d092f5f3a1e17d5c0025019d0fe03eccec04f1e6764d4d8cf359e",
+        "contact_timestamps": [
+          199.71906934116095
+        ]
+      },
+      {
+        "id": "source-17",
+        "source_group": "jiang_jun_vs_thepchaiya_un_nooh",
+        "split": "selection",
+        "matched": 5,
+        "missed": 0,
+        "false_positive": 0,
+        "features_sha256": "a4b71dbe9e081627654e00acf59141c569c1306bd8651973e158700ad6a09d8c",
+        "contact_timestamps": [
+          601.9959736161569,
+          614.675888807939,
+          630.1957850048207,
+          637.3957368487348,
+          651.4756426768337
+        ]
+      },
+      {
+        "id": "source-25",
+        "source_group": "mark_williams_vs_andrew_higginson",
+        "split": "development",
+        "matched": 0,
+        "missed": 0,
+        "false_positive": 0,
+        "features_sha256": "af50539823afbef05ed7ce3b0a9f7e855c6a052465514539624b560c3b2eb0c1",
+        "contact_timestamps": []
+      },
+      {
+        "id": "source-30",
+        "source_group": "reanne_evans_vs_mink_nutcharut",
+        "split": "development",
+        "matched": 2,
+        "missed": 0,
+        "false_positive": 0,
+        "features_sha256": "c7f70bd141ed5a7559ae06eb3a193a69a18a38a183c82cbed69b17c154d493e8",
+        "contact_timestamps": [
+          149.84,
+          179.64
+        ]
+      },
+      {
+        "id": "source-20",
+        "source_group": "kyren_wilson_vs_thepchaiya_un_nooh___2019_champion_of_champions",
+        "split": "test",
+        "matched": 4,
+        "missed": 0,
+        "false_positive": 0,
+        "features_sha256": "e8771f1efb9dfa430abef1214a6723fc0b809fae6171b55f552a68da9ffbcec2",
+        "contact_timestamps": [
+          307.0,
+          326.76,
+          340.52,
+          356.6
+        ]
+      },
+      {
+        "id": "source-33",
+        "source_group": "thanawat_tirapongpaiboon_vs_paul_norris",
+        "split": "test",
+        "matched": 2,
+        "missed": 0,
+        "false_positive": 0,
+        "features_sha256": "9b0fea81619ff2046cf562ecc95725533f3cd0040e6bcd0edba0012549b7ceaf",
+        "contact_timestamps": [
+          487.63512876612424,
+          532.9546760462505
+        ]
+      }
+    ]
+  },
+  "algorithm": "classic",
+  "uses_deep_learning": false,
+  "video_inventory": {
+    "video_files": 51,
+    "readable_videos": 51,
+    "duration_hours": 54.64441704,
+    "roles": {
+      "advertisement_or_promo_candidate": 14,
+      "edited_source_candidate": 12,
+      "match_candidate": 24,
+      "short_source_candidate": 1
+    }
+  },
+  "labelled_section_minutes": 6,
+  "labelled_contacts": 14,
+  "contact_tolerance_seconds": 0.25,
+  "labels_human_approved": false,
+  "selected_numeric_overrides": {},
+  "baseline_revision": "f16400e",
+  "feature_cache_version": 33,
+  "result_policy_version": 36,
+  "final_holdout_check": "Previously reserved six contacts were rechecked after the pipeline fix; their labels and predictions did not drive that fix.",
+  "scope": "Contact selection on six fully reviewed one-minute sections. This does not measure all 54.6 hours or guarantee future accuracy.",
+  "full_pipeline_section": {
+    "matched": 5,
+    "missed": 0,
+    "false_positive": 0
+  },
+  "evidence_root": "data/editor_audit/original_2026_10_10",
+  "rule_file_sha256": {
+    "snooker_ai/event_fusion/strike.py": "6f2c0e1155265cce82bbd34514bf5615e81810848af3be58ce62c7a501ee6d88",
+    "snooker_ai/object_detection/detector.py": "bde277e4bb5a4fe2bd02484e32be0261bf1abd4c544131f57ad02a027e7a3bec",
+    "snooker_ai/pipeline/analyzer.py": "5d9c41615432d7cc2120c357b6df9fa4e508b3b79135bf85c6ada9892af51e1f"
+  }
+}

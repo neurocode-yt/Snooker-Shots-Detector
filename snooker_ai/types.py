@@ -140,6 +140,7 @@ class FrameFeatures(BaseModel):
     camera_scene_id: int = 0
     view_classified: bool = False
     table_full_view: bool = True
+    native_contact_coverage_revalidated: bool = False
     table_handling: bool = False
     handling_score: float = 0.0
     match_context_valid: bool = True

@@ -1,0 +1,993 @@
+{
+  "video_id": "nutcharut_dikme",
+  "group_id": "nutcharut_dikme",
+  "split": "holdout",
+  "independent_holdout": true,
+  "checkpoint_sha256": "2b059ce6cb9ace1cb0a768bab710015781f93d57a22723379829b9f6f1a62325",
+  "manifest_sha256": "950521bcfc84af8d9a5e43c0e4f2424162888a7aaae6551d900a5fa8e9801f76",
+  "fitting_and_model_selection_groups": [
+    "lisowski_selby_2026_quarter_final",
+    "zhao_trump_2026_quarter_final"
+  ],
+  "source_path": "data/uploads/20260719-203821_77b1a5eb_Mink_Nutcharut_vs_Umut_Dikme_-_2025_Round_1_cleaned_9f69f700.mp4",
+  "feature_samples": 6204,
+  "selected_clip_count": 2,
+  "selected_seconds": 15.539999999999964,
+  "dl": {
+    "true_positive": 2,
+    "false_positive": 0,
+    "false_negative": 34,
+    "precision": 1.0,
+    "recall": 0.05555555555555555,
+    "matches": [
+      {
+        "prediction_index": 0,
+        "reference_index": 23,
+        "timestamp": 483.64,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 1,
+        "reference_index": 28,
+        "timestamp": 608.52,
+        "error_outside_bounds": 0.0
+      }
+    ],
+    "missed_reference_indexes": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      24,
+      25,
+      26,
+      27,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35
+    ],
+    "false_prediction_indexes": [],
+    "unreviewed_predictions_ignored": 0,
+    "tolerance_seconds": 0.25,
+    "scope": "Exhaustively reviewed source intervals only",
+    "source_contact_coverage": {
+      "fully_covered_brackets": 2,
+      "partial_brackets": 0,
+      "missing_brackets": 34,
+      "fully_covered_recall": 0.05555555555555555,
+      "fully_covered_reference_indexes": [
+        23,
+        28
+      ],
+      "partial_reference_indexes": [],
+      "missing_reference_indexes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        24,
+        25,
+        26,
+        27,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35
+      ],
+      "scope": "Single source clip contains the complete contact uncertainty interval; clip ends are exclusive. This checks clipping records, not decoded frames or complete shot outcomes."
+    },
+    "boundary_errors": [],
+    "boundary_reference_kind": "Reviewed editorial preferences; not physical-stop truth",
+    "labelled_contaminants": {
+      "replay": [],
+      "handling": []
+    },
+    "false_replay_clips": 0,
+    "false_handling_clips": 0
+  },
+  "dl_strict": {
+    "true_positive": 2,
+    "false_positive": 0,
+    "false_negative": 34,
+    "precision": 1.0,
+    "recall": 0.05555555555555555,
+    "matches": [
+      {
+        "prediction_index": 0,
+        "reference_index": 23,
+        "timestamp": 483.64,
+        "error_outside_bounds": 0.0
+      },
+      {
+        "prediction_index": 1,
+        "reference_index": 28,
+        "timestamp": 608.52,
+        "error_outside_bounds": 0.0
+      }
+    ],
+    "missed_reference_indexes": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      24,
+      25,
+      26,
+      27,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35
+    ],
+    "false_prediction_indexes": [],
+    "unreviewed_predictions_ignored": 0,
+    "tolerance_seconds": 0,
+    "scope": "Exhaustively reviewed source intervals only",
+    "source_contact_coverage": {
+      "fully_covered_brackets": 2,
+      "partial_brackets": 0,
+      "missing_brackets": 34,
+      "fully_covered_recall": 0.05555555555555555,
+      "fully_covered_reference_indexes": [
+        23,
+        28
+      ],
+      "partial_reference_indexes": [],
+      "missing_reference_indexes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        24,
+        25,
+        26,
+        27,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35
+      ],
+      "scope": "Single source clip contains the complete contact uncertainty interval; clip ends are exclusive. This checks clipping records, not decoded frames or complete shot outcomes."
+    },
+    "boundary_errors": [],
+    "boundary_reference_kind": "Reviewed editorial preferences; not physical-stop truth",
+    "labelled_contaminants": {
+      "replay": [],
+      "handling": []
+    },
+    "false_replay_clips": 0,
+    "false_handling_clips": 0
+  },
+  "thresholds": {
+    "event": 0.9500000000000001,
+    "keep": 0.55,
+    "end": 0.6500000000000001,
+    "replay": 0.5,
+    "handling": 0.5
+  },
+  "temperatures": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+  ],
+  "candidate_count": 2,
+  "clips": [
+    {
+      "contact": 483.64,
+      "start": 481.64,
+      "end": 489.88
+    },
+    {
+      "contact": 608.52,
+      "start": 606.52,
+      "end": 613.8199999999999
+    }
+  ],
+  "labels_human_approved": false,
+  "deployment_quality_verified": false,
+  "limitations": [
+    "AI visual review, not human-approved ground truth",
+    "One-second contact brackets, one two-second bracket; no frame-exact accuracy claim",
+    "This is a selected complete-source test of two cleaned clips, not all videos or all future frames",
+    "No independently annotated editorial endpoints and no positive replay examples",
+    "Contact precision initially 1 second",
+    "No replay appears in this complete cleaned clip; replay exclusion cannot be positively tested here",
+    "Editorial clip endpoints have not been independently annotated",
+    "Clip records evaluated; complete outcomes, rendered MP4s and frame-exact boundaries require separate review."
+  ],
+  "reference_contacts": [
+    {
+      "lower": 7,
+      "upper": 8,
+      "description": "Nutcharut break-off",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 0,
+      "event_peak_probability": 0.0024617186281830072,
+      "event_peak_time": 7.88,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 32,
+      "upper": 33,
+      "description": "Dikme red pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 1,
+      "event_peak_probability": 0.0007143870461732149,
+      "event_peak_time": 32.64,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 56,
+      "upper": 57,
+      "description": "Dikme black pot opening reds",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 2,
+      "event_peak_probability": 0.0009453772217966616,
+      "event_peak_time": 56.88,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 78,
+      "upper": 79,
+      "description": "Dikme red pot displacing black",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 3,
+      "event_peak_probability": 0.0004883575020357966,
+      "event_peak_time": 78.52,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 105,
+      "upper": 106,
+      "description": "Dikme black pot from cushion",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 4,
+      "event_peak_probability": 0.0005073946667835116,
+      "event_peak_time": 106.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 124,
+      "upper": 125,
+      "description": "Dikme red attempt, missed",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 5,
+      "event_peak_probability": 0.0007721437141299248,
+      "event_peak_time": 124.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 151,
+      "upper": 152,
+      "description": "Nutcharut safety",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 6,
+      "event_peak_probability": 0.0005610018270090222,
+      "event_peak_time": 151.4,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 178,
+      "upper": 179,
+      "description": "Dikme safety",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 7,
+      "event_peak_probability": 0.0010389086091890931,
+      "event_peak_time": 178.16,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 205,
+      "upper": 206,
+      "description": "Nutcharut safety",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 8,
+      "event_peak_probability": 0.0035619453992694616,
+      "event_peak_time": 205.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 225,
+      "upper": 226,
+      "description": "Dikme safety opening pack",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 9,
+      "event_peak_probability": 0.0035081878304481506,
+      "event_peak_time": 226.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 253,
+      "upper": 254,
+      "description": "Nutcharut safety",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 10,
+      "event_peak_probability": 0.0016989009454846382,
+      "event_peak_time": 253.4,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 273,
+      "upper": 274,
+      "description": "Dikme red pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 11,
+      "event_peak_probability": 0.0006902818568050861,
+      "event_peak_time": 273.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 291,
+      "upper": 292,
+      "description": "Dikme black pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 12,
+      "event_peak_probability": 0.0006071319803595543,
+      "event_peak_time": 291.52,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 306,
+      "upper": 307,
+      "description": "Dikme red pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 13,
+      "event_peak_probability": 0.001347317942418158,
+      "event_peak_time": 306.16,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 322,
+      "upper": 323,
+      "description": "Dikme black pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 14,
+      "event_peak_probability": 0.0005912976921536028,
+      "event_peak_time": 322.88,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 337,
+      "upper": 338,
+      "description": "Dikme red pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 15,
+      "event_peak_probability": 0.0005782622611150146,
+      "event_peak_time": 338.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 349,
+      "upper": 350,
+      "description": "Dikme black pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 16,
+      "event_peak_probability": 0.001344029325991869,
+      "event_peak_time": 349.16,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 364,
+      "upper": 365,
+      "description": "Dikme red pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 17,
+      "event_peak_probability": 0.002967954846099019,
+      "event_peak_time": 364.88,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 375,
+      "upper": 376,
+      "description": "Dikme blue pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 18,
+      "event_peak_probability": 0.0005173274548724294,
+      "event_peak_time": 376.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 389,
+      "upper": 390,
+      "description": "Dikme red with rest",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 19,
+      "event_peak_probability": 0.0028600471559911966,
+      "event_peak_time": 389.52,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 412,
+      "upper": 413,
+      "description": "Dikme black pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 20,
+      "event_peak_probability": 0.0007838211604394019,
+      "event_peak_time": 412.76,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 443,
+      "upper": 444,
+      "description": "Dikme red pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 21,
+      "event_peak_probability": 0.0005871195462532341,
+      "event_peak_time": 443.76,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 465,
+      "upper": 466,
+      "description": "Dikme black pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 22,
+      "event_peak_probability": 0.0017214351100847125,
+      "event_peak_time": 465.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 483,
+      "upper": 484,
+      "description": "Dikme red pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 23,
+      "event_peak_probability": 0.9999009370803833,
+      "event_peak_time": 483.64,
+      "source_bracket_fully_preserved": true
+    },
+    {
+      "lower": 500,
+      "upper": 501,
+      "description": "Dikme blue pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 24,
+      "event_peak_probability": 0.016272827982902527,
+      "event_peak_time": 500.76,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 520,
+      "upper": 521,
+      "description": "Dikme red attempt, missed",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 25,
+      "event_peak_probability": 0.1348094344139099,
+      "event_peak_time": 520.16,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 570,
+      "upper": 571,
+      "description": "Nutcharut red attempt with rest, missed; abandoned addresses at 554 and 558 are not strokes",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 26,
+      "event_peak_probability": 0.0010730982758104801,
+      "event_peak_time": 570.28,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 588,
+      "upper": 589,
+      "description": "Dikme red pot, white subsequently moves blue",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 27,
+      "event_peak_probability": 0.0006567529635503888,
+      "event_peak_time": 588.4,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 608,
+      "upper": 609,
+      "description": "Dikme brown pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 28,
+      "event_peak_probability": 0.9749597311019897,
+      "event_peak_time": 608.52,
+      "source_bracket_fully_preserved": true
+    },
+    {
+      "lower": 624,
+      "upper": 625,
+      "description": "Dikme red attempt, missed",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 29,
+      "event_peak_probability": 0.0005396287888288498,
+      "event_peak_time": 624.4,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 649,
+      "upper": 650,
+      "description": "Nutcharut red pot with rest",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 30,
+      "event_peak_probability": 0.0006073754047974944,
+      "event_peak_time": 649.76,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 675,
+      "upper": 676,
+      "description": "Nutcharut pink attempt, missed",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 31,
+      "event_peak_probability": 0.003896785667166114,
+      "event_peak_time": 675.88,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 689,
+      "upper": 690,
+      "description": "Dikme red attempt, missed",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 32,
+      "event_peak_probability": 0.001491948263719678,
+      "event_peak_time": 689.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 726,
+      "upper": 727,
+      "description": "Nutcharut safety",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 33,
+      "event_peak_probability": 0.001008631312288344,
+      "event_peak_time": 726.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 748,
+      "upper": 749,
+      "description": "Dikme red pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 34,
+      "event_peak_probability": 0.003235079115256667,
+      "event_peak_time": 748.52,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 759,
+      "upper": 760,
+      "description": "Dikme black attempt, missed; black remains on table until EOF",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 35,
+      "event_peak_probability": 0.0005173092358745635,
+      "event_peak_time": 759.0,
+      "source_bracket_fully_preserved": false
+    }
+  ],
+  "missed_contacts": [
+    {
+      "lower": 7,
+      "upper": 8,
+      "description": "Nutcharut break-off",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 0,
+      "event_peak_probability": 0.0024617186281830072,
+      "event_peak_time": 7.88,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 32,
+      "upper": 33,
+      "description": "Dikme red pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 1,
+      "event_peak_probability": 0.0007143870461732149,
+      "event_peak_time": 32.64,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 56,
+      "upper": 57,
+      "description": "Dikme black pot opening reds",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 2,
+      "event_peak_probability": 0.0009453772217966616,
+      "event_peak_time": 56.88,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 78,
+      "upper": 79,
+      "description": "Dikme red pot displacing black",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 3,
+      "event_peak_probability": 0.0004883575020357966,
+      "event_peak_time": 78.52,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 105,
+      "upper": 106,
+      "description": "Dikme black pot from cushion",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 4,
+      "event_peak_probability": 0.0005073946667835116,
+      "event_peak_time": 106.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 124,
+      "upper": 125,
+      "description": "Dikme red attempt, missed",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 5,
+      "event_peak_probability": 0.0007721437141299248,
+      "event_peak_time": 124.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 151,
+      "upper": 152,
+      "description": "Nutcharut safety",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 6,
+      "event_peak_probability": 0.0005610018270090222,
+      "event_peak_time": 151.4,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 178,
+      "upper": 179,
+      "description": "Dikme safety",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 7,
+      "event_peak_probability": 0.0010389086091890931,
+      "event_peak_time": 178.16,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 205,
+      "upper": 206,
+      "description": "Nutcharut safety",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 8,
+      "event_peak_probability": 0.0035619453992694616,
+      "event_peak_time": 205.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 225,
+      "upper": 226,
+      "description": "Dikme safety opening pack",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 9,
+      "event_peak_probability": 0.0035081878304481506,
+      "event_peak_time": 226.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 253,
+      "upper": 254,
+      "description": "Nutcharut safety",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 10,
+      "event_peak_probability": 0.0016989009454846382,
+      "event_peak_time": 253.4,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 273,
+      "upper": 274,
+      "description": "Dikme red pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 11,
+      "event_peak_probability": 0.0006902818568050861,
+      "event_peak_time": 273.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 291,
+      "upper": 292,
+      "description": "Dikme black pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 12,
+      "event_peak_probability": 0.0006071319803595543,
+      "event_peak_time": 291.52,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 306,
+      "upper": 307,
+      "description": "Dikme red pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 13,
+      "event_peak_probability": 0.001347317942418158,
+      "event_peak_time": 306.16,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 322,
+      "upper": 323,
+      "description": "Dikme black pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 14,
+      "event_peak_probability": 0.0005912976921536028,
+      "event_peak_time": 322.88,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 337,
+      "upper": 338,
+      "description": "Dikme red pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 15,
+      "event_peak_probability": 0.0005782622611150146,
+      "event_peak_time": 338.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 349,
+      "upper": 350,
+      "description": "Dikme black pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 16,
+      "event_peak_probability": 0.001344029325991869,
+      "event_peak_time": 349.16,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 364,
+      "upper": 365,
+      "description": "Dikme red pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 17,
+      "event_peak_probability": 0.002967954846099019,
+      "event_peak_time": 364.88,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 375,
+      "upper": 376,
+      "description": "Dikme blue pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 18,
+      "event_peak_probability": 0.0005173274548724294,
+      "event_peak_time": 376.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 389,
+      "upper": 390,
+      "description": "Dikme red with rest",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 19,
+      "event_peak_probability": 0.0028600471559911966,
+      "event_peak_time": 389.52,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 412,
+      "upper": 413,
+      "description": "Dikme black pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 20,
+      "event_peak_probability": 0.0007838211604394019,
+      "event_peak_time": 412.76,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 443,
+      "upper": 444,
+      "description": "Dikme red pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 21,
+      "event_peak_probability": 0.0005871195462532341,
+      "event_peak_time": 443.76,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 465,
+      "upper": 466,
+      "description": "Dikme black pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 22,
+      "event_peak_probability": 0.0017214351100847125,
+      "event_peak_time": 465.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 500,
+      "upper": 501,
+      "description": "Dikme blue pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 24,
+      "event_peak_probability": 0.016272827982902527,
+      "event_peak_time": 500.76,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 520,
+      "upper": 521,
+      "description": "Dikme red attempt, missed",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 25,
+      "event_peak_probability": 0.1348094344139099,
+      "event_peak_time": 520.16,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 570,
+      "upper": 571,
+      "description": "Nutcharut red attempt with rest, missed; abandoned addresses at 554 and 558 are not strokes",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 26,
+      "event_peak_probability": 0.0010730982758104801,
+      "event_peak_time": 570.28,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 588,
+      "upper": 589,
+      "description": "Dikme red pot, white subsequently moves blue",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 27,
+      "event_peak_probability": 0.0006567529635503888,
+      "event_peak_time": 588.4,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 624,
+      "upper": 625,
+      "description": "Dikme red attempt, missed",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 29,
+      "event_peak_probability": 0.0005396287888288498,
+      "event_peak_time": 624.4,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 649,
+      "upper": 650,
+      "description": "Nutcharut red pot with rest",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 30,
+      "event_peak_probability": 0.0006073754047974944,
+      "event_peak_time": 649.76,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 675,
+      "upper": 676,
+      "description": "Nutcharut pink attempt, missed",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 31,
+      "event_peak_probability": 0.003896785667166114,
+      "event_peak_time": 675.88,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 689,
+      "upper": 690,
+      "description": "Dikme red attempt, missed",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 32,
+      "event_peak_probability": 0.001491948263719678,
+      "event_peak_time": 689.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 726,
+      "upper": 727,
+      "description": "Nutcharut safety",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 33,
+      "event_peak_probability": 0.001008631312288344,
+      "event_peak_time": 726.0,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 748,
+      "upper": 749,
+      "description": "Dikme red pot",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 34,
+      "event_peak_probability": 0.003235079115256667,
+      "event_peak_time": 748.52,
+      "source_bracket_fully_preserved": false
+    },
+    {
+      "lower": 759,
+      "upper": 760,
+      "description": "Dikme black attempt, missed; black remains on table until EOF",
+      "provenance": "Codex source-only visual review blind_nutcharut.json sha256=f5f48f4614881bf25d0ba0d210a20fc8fa073772d9e03e40c789f8239b41def0; not human approved",
+      "reference_index": 35,
+      "event_peak_probability": 0.0005173092358745635,
+      "event_peak_time": 759.0,
+      "source_bracket_fully_preserved": false
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "algorithm": "dl_algo",
+  "evaluation_status": "failed",
+  "target": "Zero missing shots and no unwanted footage",
+  "checkpoint_sha256": "2b059ce6cb9ace1cb0a768bab710015781f93d57a22723379829b9f6f1a62325",
+  "manifest_sha256": "950521bcfc84af8d9a5e43c0e4f2424162888a7aaae6551d900a5fa8e9801f76",
+  "training_groups": [
+    "lisowski_selby_2026_quarter_final",
+    "zhao_trump_2026_quarter_final"
+  ],
+  "unseen_match_groups": [
+    "hawkins_un_nooh",
+    "nutcharut_dikme"
+  ],
+  "independent_holdout": true,
+  "labels_frozen_before_predictions": true,
+  "labels_human_approved": false,
+  "checkpoint_and_thresholds_changed": false,
+  "whole_source_duration_processed": true,
+  "neural_sample_fps": 8.0,
+  "deployment_quality_verified": false,
+  "reference_shots": 68,
+  "detected_shots": 3,
+  "missed_shots": 65,
+  "extra_shots": 0,
+  "videos": [
+    {
+      "video_id": "hawkins_un_nooh",
+      "duration": 514.0,
+      "reference_shots": 32,
+      "detected_shots": 1,
+      "missed_shots": 31,
+      "extra_shots": 0,
+      "shot_recall": 0.03125,
+      "fully_covered_contact_brackets": 1,
+      "event_peak_probability_median": 0.018205519765615463,
+      "raw_event_candidates": 1,
+      "labelled_handling_overlap_clips": 0,
+      "report": "data/evaluation/dl/independent_20261009/hawkins_un_nooh.json"
+    },
+    {
+      "video_id": "nutcharut_dikme",
+      "duration": 775.48,
+      "reference_shots": 36,
+      "detected_shots": 2,
+      "missed_shots": 34,
+      "extra_shots": 0,
+      "shot_recall": 0.05555555555555555,
+      "fully_covered_contact_brackets": 2,
+      "event_peak_probability_median": 0.0010237699607387185,
+      "raw_event_candidates": 2,
+      "labelled_handling_overlap_clips": 0,
+      "report": "data/evaluation/dl/independent_20261009/nutcharut_dikme.json"
+    }
+  ],
+  "limitations": [
+    "AI visual review, not human-approved ground truth",
+    "One-second contact brackets, one two-second bracket; no frame-exact accuracy claim",
+    "This is a selected complete-source test of two cleaned clips, not all videos or all future frames",
+    "No independently annotated editorial endpoints and no positive replay examples",
+    "Zero extra clips or handling overlaps is not a successful exclusion test when most shots are omitted.",
+    "The inspected model generalizes poorly; its in-sample 121/121 contact result does not establish deployment accuracy.",
+    "Neither unseen match was used to tune thresholds or refit during this evaluation."
+  ],
+  "local_artifacts": {
+    "frozen_model": "data/dl/independent_20261009/frozen-model.pt",
+    "source_sheets": "data/dl/independent_20261009/review",
+    "probabilities": "data/dl/independent_20261009/results",
+    "renders": "data/dl/independent_20261009/exports"
+  },
+  "output_qa_report": "data/evaluation/dl/independent_20261009/render_review.json",
+  "shot_recall": 0.04411764705882353,
+  "render_qa": [
+    {
+      "video_id": "hawkins_un_nooh",
+      "output_path": "G:\\2026 AI START\\Grok\\snooker\\data\\dl\\independent_20261009\\exports\\hawkins_un_nooh\\highlights.mp4",
+      "ffmpeg_decode_exit_code": 0,
+      "decode_errors": "",
+      "output_duration": 5.44,
+      "output_fps": 25.0,
+      "compared_contact_frames": 2,
+      "minimum_psnr_db": 48.00526277253333,
+      "complete_shot_outcomes_verified": false
+    },
+    {
+      "video_id": "nutcharut_dikme",
+      "output_path": "G:\\2026 AI START\\Grok\\snooker\\data\\dl\\independent_20261009\\exports\\nutcharut_dikme\\highlights.mp4",
+      "ffmpeg_decode_exit_code": 0,
+      "decode_errors": "",
+      "output_duration": 15.28,
+      "output_fps": 25.0,
+      "compared_contact_frames": 4,
+      "minimum_psnr_db": 46.40245503177704,
+      "complete_shot_outcomes_verified": false
+    }
+  ]
+}

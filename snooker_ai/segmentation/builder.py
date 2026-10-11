@@ -201,10 +201,19 @@ class SegmentBuilder:
                     and visual_cap < clip_cap):
                 clip_cap = visual_cap
                 availability_reason = "visual_hand_entry_clip_boundary"
+            portrait_cap = float(cand.evidence.get("portrait_clip_cap_timestamp", 0.))
+            portrait_start = float(cand.evidence.get("portrait_start_timestamp", 0.))
+            portrait_confirmation = float(cand.evidence.get("portrait_confirmation_timestamp", 0.))
+            if (cand.evidence.get("portrait_confidence", 0.) >= .8
+                    and visual_floor-1e-6 <= portrait_cap < portrait_start < portrait_confirmation <= duration
+                    and portrait_cap < clip_cap):
+                clip_cap = portrait_cap
+                availability_reason = "portrait_cutaway_clip_boundary"
             # A sustained broadcast cutaway limits usable edit footage. It is
             # not a measurement of where the balls physically stopped.
             cutaway_boundary = availability_reason in {
                 "non_table_cutaway_clip_boundary", "visual_hand_entry_clip_boundary",
+                "portrait_cutaway_clip_boundary",
             }
             if physical_stop > clip_cap + 1e-9 and not cutaway_boundary:
                 physical_stop = clip_cap
@@ -222,6 +231,11 @@ class SegmentBuilder:
                 max(0.0, float(mode_cfg.get("end_before_ball_stop_seconds", 0.0)))
                 if stop_confirmed else 0.0
             )
+            if cand.evidence.get("native_table_coverage_stop_revalidated", 0.) >= .5:
+                # A recovered view proves observed stillness, while its timing
+                # remains under review. Keep that source boundary visible;
+                # early padding removal cannot substitute for a measured end.
+                end_trim = 0.
             if end_trim > 0:
                 # Duration is cue contact to physical stop, excluding pre-roll
                 # and confirmation look-ahead. Unresolved caps are not stops.
@@ -542,6 +556,31 @@ class SegmentBuilder:
         that fails this bar while colliding with another shot's window is a
         preparation/collision artefact and enters conflict resolution instead.
         """
+        evidence = shot.evidence
+        confirmed_closeup_departure = bool(
+            shot.shot_confidence >= self.high
+            and evidence.get("closeup_addressed_departure_confirmed", 0) >= .5
+            and evidence.get("dense_transition_confirmed", 0) >= .5
+            and evidence.get("cue_shape_measured", 0) >= .5
+            and evidence.get("pre_cue_spatial_quiet_ratio", 0) >= .90
+            and evidence.get("stable_cue_motion_count", 0) >= 6
+            and evidence.get("largest_cue_step_diameters", 1) <= .50)
+        if confirmed_closeup_departure:
+            return True
+        confirmed_return = bool(
+            shot.shot_confidence >= self.medium
+            and evidence.get("reacquired_ball_roll", 0) >= .5
+            and evidence.get("native_occlusion_confirmed", 0) >= .5
+            and evidence.get("dense_transition_confirmed", 0) >= .5
+            and evidence.get("cue_ball_motion_confirmed", 0) >= .5
+            and evidence.get("ball_onset_run", 0) >= 8
+            and evidence.get("cue_direction_consistency", 0) >= .90
+            and evidence.get("cue_displacement_diameters", 0) >= .65)
+        # A hidden contact has uncertain timing even when its returned roll is
+        # independently measured. That timing confidence must not erase the
+        # genuine next shot when the previous stop is still unresolved.
+        if confirmed_return:
+            return True
         if shot.shot_confidence < self.high:
             return False
         quiet = shot.evidence.get("pre_ball_quiet_ratio")
@@ -595,6 +634,7 @@ class SegmentBuilder:
                 usable_end = float(prev.evidence.get("usable_source_end_timestamp", float("inf")))
                 if prev_stop > usable_end+1e-6 and prev.evidence.get("usable_source_end_reason") in {
                     "non_table_cutaway_clip_boundary", "visual_hand_entry_clip_boundary", "replay_clip_boundary",
+                    "portrait_cutaway_clip_boundary",
                 }:
                     # A stop reacquired after unusable footage is an upper
                     # bound. It cannot erase the next independently proven
