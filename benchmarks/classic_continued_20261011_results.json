@@ -1,0 +1,67 @@
+{
+  "algorithm": "classic",
+  "uses_deep_learning": false,
+  "feature_cache_version": 37,
+  "result_policy_version": 56,
+  "labels_human_approved": false,
+  "contact_tolerance_seconds": 0.25,
+  "scope": "Complete source-reviewed development intervals only. Contact metrics do not certify exact physical stop times or unreviewed footage.",
+  "tests_passed": 1138,
+  "tests_skipped": 16,
+  "exact_physical_stops_independently_verified": false,
+  "long_source_initial_full_pipeline": {
+    "matched": 31,
+    "missed": 1,
+    "false_positive": 1,
+    "missed_contact": "Un-Nooh safety at 194.16\u2013194.28s",
+    "extra_contact": 616.2,
+    "source_confirmed": "Cue contact during closing promo countdown"
+  },
+  "full_pipeline": {
+    "fresh": {
+      "matched": 6,
+      "missed": 0,
+      "false_positive": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "reference_count": 6,
+      "complete_contact_brackets_covered": 6,
+      "render_duration": 43.16,
+      "decode_pass": true
+    },
+    "prefix": {
+      "matched": 10,
+      "missed": 0,
+      "false_positive": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "reference_count": 10,
+      "complete_contact_brackets_covered": 10,
+      "render_duration": 77.32,
+      "decode_pass": true
+    },
+    "trump": {
+      "matched": 5,
+      "missed": 0,
+      "false_positive": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "reference_count": 5,
+      "complete_contact_brackets_covered": 5,
+      "render_duration": 36.56,
+      "decode_pass": true
+    },
+    "long": {
+      "matched": 32,
+      "missed": 0,
+      "false_positive": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "reference_count": 32,
+      "complete_contact_brackets_covered": 32,
+      "render_duration": 241.84,
+      "decode_pass": true,
+      "overlaps_prefix": true
+    }
+  }
+}

@@ -31,6 +31,8 @@ from snooker_ai.object_detection.detector import ObjectDetector
 from snooker_ai.replay_detection.detector import ReplayDetector
 from snooker_ai.scene_detection.detector import SceneDetector, SceneObservation
 from snooker_ai.scene_detection.broadcast_context import BroadcastContextGuard
+from snooker_ai.scene_detection.contact_visibility import ContactVisibilityDetector, raw_visibility
+from snooker_ai.scene_detection.promotion import PromotionDetector
 from snooker_ai.scene_detection.table_context import (
     TableInteractionDetector, ViewGeometry, ball_layout, view_geometry,
 )
@@ -240,12 +242,15 @@ class Analyzer:
             ),
             signature=analysis_signature,
             resume=resume,
-            existing_dense=(prior_result.features if prior_result is not None
+            existing_dense=(raw_visibility(prior_result.features) if prior_result is not None
                             and prior_result.analysis_feature_signature == analysis_signature else None),
         )
         if dense_features:
             self._annotate_scenes(dense_features, scenes)
             self._apply_match_context(dense_features, rack_reference)
+            dense_features = ContactVisibilityDetector(self.config).revalidate(
+                source, dense_features, candidates
+            )
             dense_features = self.strike_det.score_frames(dense_features)
             features = self._merge_feature_layers(features, dense_features)
             # Dense ranges may reveal a strike that the sparse proposal pass
@@ -307,6 +312,11 @@ class Analyzer:
             candidates = self.replay_det.mark_candidates(candidates, features)
             candidates = self._recover_replay_returns(candidates, features, metadata.duration)
             self._record_detection_stage("replay_and_live_returns", candidates)
+            promotions = PromotionDetector().detect(source, candidates, features)
+            candidates = [c for c in candidates if c.timestamp not in promotions]
+            self._record_detection_stage("promotion_context", candidates, extra={
+                "excluded_promotional_contacts": sorted(promotions),
+            })
             features = self.state_machine.label(features)
 
         report(0.92, JobStatus.SEGMENTING.value, "Building shot segments")
@@ -1888,7 +1898,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 53,
+            "result_policy_version": 56,
             "visual_tail": self.config.get("visual_tail", {}),
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")
