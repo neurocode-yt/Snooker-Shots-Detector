@@ -12,7 +12,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -24,6 +24,12 @@ from snooker_ai.jobs.store import JobStore
 from snooker_ai.pipeline.analyzer import Analyzer as Analyzer
 from snooker_ai.pipeline.algorithms import Algorithm, algorithm_capabilities, create_analyzer
 from snooker_ai.rendering.exporter import Exporter
+from snooker_ai.rendering.capcut import (
+    CapCutUnavailable,
+    create_capcut_project,
+    find_capcut,
+    launch_capcut,
+)
 from snooker_ai.rendering.preprocessor import KeepRange, VideoPreprocessor
 from snooker_ai.types import (
     EditMode,
@@ -305,6 +311,14 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     @app.get("/api/algorithms")
     async def get_algorithms() -> dict[str, Any]:
         return {"algorithms": algorithm_capabilities(cfg)}
+
+    @app.get("/api/capcut")
+    async def capcut_capability() -> dict[str, Any]:
+        try:
+            installation = find_capcut(cfg)
+        except CapCutUnavailable as exc:
+            return {"available": False, "reason": str(exc)}
+        return {"available": True, "version": installation.version}
 
     def require_algorithm(algorithm: Algorithm) -> None:
         if algorithm is Algorithm.CLASSIC:
@@ -661,6 +675,49 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                 "metadata": str(er.metadata_path) if er.metadata_path else None,
                 "training_labels": str(er.training_labels_path) if er.training_labels_path else None,
             }
+        finally:
+            lock.release()
+
+    @app.post("/api/jobs/{job_id}/open-capcut")
+    async def open_capcut(job_id: str, request: Request) -> dict[str, Any]:
+        # A cross-site browser request must not create local desktop projects.
+        origin = request.headers.get("origin")
+        if origin and origin.rstrip("/") != str(request.base_url).rstrip("/"):
+            raise HTTPException(403, "Open in CapCut must be requested from Snooker AI.")
+        lock = _locks.setdefault(job_id, threading.Lock())
+        if not lock.acquire(blocking=False):
+            raise HTTPException(409, f"Job {job_id} is already processing")
+        try:
+            try:
+                result = await asyncio.to_thread(store.load_analysis, job_id)
+            except FileNotFoundError as exc:
+                raise HTTPException(404, str(exc)) from exc
+            try:
+                installation = find_capcut(cfg)
+                project = await asyncio.to_thread(create_capcut_project, result, cfg, installation)
+            except CapCutUnavailable as exc:
+                raise HTTPException(409, str(exc)) from exc
+            except ValueError as exc:
+                raise HTTPException(400, str(exc)) from exc
+            except OSError as exc:
+                raise HTTPException(500, f"Could not create CapCut project: {exc}") from exc
+            out_dir = store.job_dir(job_id) / "export"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            (out_dir / "capcut_project.json").write_text(
+                json.dumps(project, indent=2), encoding="utf-8",
+            )
+            launched, launch_error = True, None
+            try:
+                await asyncio.to_thread(launch_capcut, installation)
+            except OSError as exc:
+                launched, launch_error = False, str(exc)
+            message = (
+                f"{project['shot_count']} editable shots ready. "
+                f"Open \u201c{project['project_name']}\u201d on CapCut\u2019s Home screen."
+            )
+            if not launched:
+                message = "Project created; start CapCut manually. " + message
+            return {**project, "launched": launched, "launch_error": launch_error, "message": message}
         finally:
             lock.release()
 

@@ -48,7 +48,12 @@ def expected_feature_spec(settings: dict, identity: dict, rgb_config: dict) -> d
     if (size != crop or size % patch or height % 8 or width % 8 or min(height, width) < 128
             or not math.isfinite(fps) or not 0 < fps <= 60):
         raise ValueError('Unsupported DL feature preprocessing dimensions or sampling rate.')
-    return {
+    peak_direction = settings.get('flow_peak_direction', False)
+    if not isinstance(peak_direction, bool):
+        raise ValueError('flow_peak_direction must be a boolean.')
+    if peak_direction and (grid_h > height or grid_w > width):
+        raise ValueError('Peak-direction grid must fit the learned flow dimensions.')
+    spec = {
         'version': 1, 'rgb_model': identity['rgb_model'], 'rgb_revision': identity['rgb_revision'],
         'flow_model': identity['flow_model'], 'flow_sha256': identity['flow_sha256'],
         'global_size': size, 'crop_size': crop,
@@ -59,6 +64,11 @@ def expected_feature_spec(settings: dict, identity: dict, rgb_config: dict) -> d
         'flow_units': 'fraction_of_frame_per_second', 'source_time': 'video_pts_zero_origin',
         'dimension': 6*positive_integer(rgb_config['hidden_size']) + 6*grid_h*grid_w,
     }
+    if peak_direction:
+        spec.update(version=2, flow_channel_count=8,
+                    dimension=6*positive_integer(rgb_config['hidden_size']) + 8*grid_h*grid_w)
+        spec['flow_channels'] += ',residual_peak_velocity_x,residual_peak_velocity_y'
+    return spec
 
 
 def resolved_path(value: str | Path) -> Path:

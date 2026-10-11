@@ -47,6 +47,8 @@ class TemporalModelConfig:
     rgb_clip: float = 0.0
     motion_translate_cells: int = 0
     motion_scale_jitter: float = 0.0
+    motion_pooling: str = 'mean_max'
+    rgb_difference_frames: int = 0
 
     def __post_init__(self) -> None:
         if self.input_dim < 1 or self.hidden_dim < 4:
@@ -68,8 +70,15 @@ class TemporalModelConfig:
                 or not isinstance(self.motion_translate_cells, int) or self.motion_translate_cells < 0):
             raise ValueError('Invalid neural modality/augmentation settings.')
         if not self.flow_grid and (not self.use_rgb or self.rgb_dropout or self.rgb_clip
-                                   or self.motion_translate_cells or self.motion_scale_jitter):
+                                   or self.motion_translate_cells or self.motion_scale_jitter
+                                   or self.motion_pooling != 'mean_max' or self.rgb_difference_frames):
             raise ValueError('Modality and motion augmentation require spatial motion geometry.')
+        if (self.motion_pooling not in ('mean_max', 'rgb_attention')
+                or isinstance(self.rgb_difference_frames, bool)
+                or not isinstance(self.rgb_difference_frames, int)
+                or not 0 <= self.rgb_difference_frames <= 32
+                or (self.motion_pooling == 'rgb_attention' and not self.use_rgb)):
+            raise ValueError('Invalid spatial attention or RGB temporal difference settings.')
 
     @property
     def rgb_dim(self) -> int:
@@ -78,7 +87,7 @@ class TemporalModelConfig:
     @property
     def receptive_field(self) -> int:
         # Two kernel-3 convolutions in each residual block.
-        return 1 + 4 * max(sum(self.local_dilations), sum(self.context_dilations))
+        return 1 + 4 * max(sum(self.local_dilations), sum(self.context_dilations)) + 2*self.rgb_difference_frames
 
     @classmethod
     def from_dict(cls, values: dict[str, Any]) -> "TemporalModelConfig":
@@ -122,11 +131,17 @@ class TemporalHighlightNet(nn.Module if nn is not None else object):
         if config.flow_grid:
             # Shared spatial filters recognize the same local motion pattern
             # anywhere on the table, rather than memorizing flattened cells.
-            self.rgb_projection = nn.Sequential(nn.Linear(config.rgb_dim, config.hidden_dim),
+            self.rgb_projection = nn.Sequential(nn.Linear(config.rgb_dim*(2 if config.rgb_difference_frames else 1), config.hidden_dim),
                                                 nn.LayerNorm(config.hidden_dim), nn.GELU())
             self.motion_encoder = nn.Sequential(nn.Conv2d(config.flow_channels, 32, 3, padding=1),
                                                 nn.GELU(), nn.Conv2d(32, 32, 3, padding=1), nn.GELU())
-            self.motion_projection = nn.Sequential(nn.Linear(64, config.hidden_dim),
+            if config.motion_pooling == 'rgb_attention':
+                self.motion_query = nn.Linear(config.hidden_dim, 4*32)
+                self.motion_key = nn.Linear(32+2, 32)
+                rows, columns = torch.meshgrid(torch.linspace(-1,1,config.flow_grid[0]),
+                                               torch.linspace(-1,1,config.flow_grid[1]), indexing='ij')
+                self.register_buffer('motion_positions', torch.stack((columns,rows),dim=-1).reshape(1,-1,2))
+            self.motion_projection = nn.Sequential(nn.Linear(192 if config.motion_pooling == 'rgb_attention' else 64, config.hidden_dim),
                                                    nn.LayerNorm(config.hidden_dim), nn.GELU())
         self.projection = nn.Sequential(
             nn.Linear(config.hidden_dim*2 if config.flow_grid else config.input_dim, config.hidden_dim),
@@ -172,6 +187,13 @@ class TemporalHighlightNet(nn.Module if nn is not None else object):
                 # One decision for the entire sequence: avoid inventing frame cuts.
                 retained = (torch.rand((batch,1,1), device=features.device) >= self.config.rgb_dropout)
                 appearance = appearance * retained / (1-self.config.rgb_dropout)
+            if self.config.rgb_difference_frames:
+                # Preserve appearance while exposing local change to the model.
+                # Span resets and the inference halo protect source/chunk seams.
+                lag = self.config.rgb_difference_frames
+                difference = torch.zeros_like(appearance)
+                difference[:,lag:] = appearance[:,lag:]-appearance[:,:-lag]
+                appearance = torch.cat((appearance,difference),dim=-1)
             rgb = self.rgb_projection(appearance)
             motion_features = features[..., self.config.rgb_dim:]
             if self.training and self.config.motion_scale_jitter:
@@ -193,6 +215,14 @@ class TemporalHighlightNet(nn.Module if nn is not None else object):
             spatial=spatial.reshape(batch*frames,self.config.flow_channels,*self.config.flow_grid)
             spatial = self.motion_encoder(spatial)
             pooled = torch.cat((spatial.mean(dim=(2, 3)), spatial.amax(dim=(2, 3))), dim=1)
+            if self.config.motion_pooling == 'rgb_attention':
+                tokens = spatial.flatten(2).transpose(1,2)
+                positions = self.motion_positions.expand(batch*frames,-1,-1)
+                keys = self.motion_key(torch.cat((tokens,positions),dim=-1))
+                queries = self.motion_query(rgb).reshape(batch*frames,4,32)
+                attention = torch.softmax(queries @ keys.transpose(1,2) / np.sqrt(32),dim=-1)
+                localized = (attention @ tokens).reshape(batch*frames,128)
+                pooled = torch.cat((pooled,localized),dim=-1)
             motion = self.motion_projection(pooled).reshape(batch, frames, -1)
             normalized = torch.cat((rgb, motion), dim=-1)
         value = self.projection(normalized)

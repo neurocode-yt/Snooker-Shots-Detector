@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Review — Snooker AI</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20260719d" />
+  <link rel="stylesheet" href="/static/styles.css?v=20261011capcut" />
 </head>
 <body class="review-body">
   <header class="top compact">
@@ -16,6 +16,7 @@
       <button id="restart-analysis-btn" title="Re-run analysis from last valid checkpoint">Restart analysis</button>
       <button id="export-combined-btn" class="primary">Export combined video</button>
       <button id="export-clips-btn">Export individual clips</button>
+      <button id="open-capcut-btn" disabled title="Checking CapCut Desktop on this PC">Open in CapCut</button>
       <button id="open-export-btn" title="Open the folder containing the combined video and exports">
         Open export folder
       </button>
@@ -26,6 +27,8 @@
       <button id="save-labels-btn">Save training labels</button>
     </div>
   </header>
+
+  <p id="capcut-status" class="capcut-status muted hidden" role="status" aria-live="polite"></p>
 
   <main class="review-layout">
     <section class="player-col">
@@ -100,6 +103,7 @@
   <script>
     window.SNOOKER_JOB_ID = "{{JOB_ID}}";
   </script>
-  <script src="/static/review.js?v=20261001classic"></script>
+  <script src="/static/capcut.js?v=20261011"></script>
+  <script src="/static/review.js?v=20261011capcut"></script>
 </body>
 </html>
