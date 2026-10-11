@@ -2476,7 +2476,12 @@ class _NativeContactPrefetch:
         return self.reference[lo:hi]
 
     def eligible(self, key):
-        if self.workers < 2 or not self.target:
+        if self.workers < 2:
+            return False
+        # An unrecognised overlay can be checked independently while its
+        # context remains unknown. A newly learned target changes the parent
+        # state; speculative windows must then run again in parent order.
+        if not self.target and self.parent.broadcast_context.target_ready:
             return False
         start, end, _ = key
         rows = self._context(key)
@@ -2501,7 +2506,8 @@ class _NativeContactPrefetch:
             start_time=start, end_time=end, collect_scene_observations=False,
             checkpoint_stage="contact_prefetch",
         )
-        if worker._confirmed_target_returns:
+        if (worker._confirmed_target_returns
+                or not self.target and worker.broadcast_context.target_ready):
             # A newly discovered context correction must be applied in parent
             # order. Repeat this uncommon window synchronously to preserve it.
             return None

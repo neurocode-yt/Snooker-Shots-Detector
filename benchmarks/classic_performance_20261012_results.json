@@ -1,0 +1,120 @@
+{
+  "date": "2026-10-12",
+  "algorithm": "classic",
+  "baseline_commit": "f5d1b10",
+  "hardware": {
+    "cpu": "Intel i5-10300H",
+    "cores": 4,
+    "logical_processors": 8,
+    "gpu": "NVIDIA RTX 3050 Laptop GPU"
+  },
+  "slow_job": {
+    "job_id": "20261011-202935-4f685f09",
+    "match": "Marco Fu vs Mink Nutcharu",
+    "duration_seconds": 2718.656,
+    "coarse_proposals": 682,
+    "final_shots": 88,
+    "coarse_target_known": false
+  },
+  "serial_pixel_calculations": {
+    "before_seconds": 37.30887320000329,
+    "after_seconds": 33.507132500002626,
+    "time_reduction_percent": 10.189910265101032,
+    "windows": [
+      {
+        "start": 396.03063,
+        "end": 400.03063,
+        "before_seconds": 10.719028799998341,
+        "after_seconds": 10.80207760000485,
+        "observations": 100,
+        "feature_differences": 0
+      },
+      {
+        "start": 397.510595,
+        "end": 401.510595,
+        "before_seconds": 12.138332600006834,
+        "after_seconds": 11.60009789999458,
+        "observations": 100,
+        "feature_differences": 0
+      },
+      {
+        "start": 399.030559,
+        "end": 403.030559,
+        "before_seconds": 14.451511799998116,
+        "after_seconds": 11.104957000003196,
+        "observations": 100,
+        "feature_differences": 0
+      }
+    ],
+    "observations": 300,
+    "all_feature_values_identical": true
+  },
+  "native_contact_prefetch": {
+    "before_seconds": 27.65089440002339,
+    "after_seconds": 15.873802599991905,
+    "time_reduction_percent": 42.592082663414764,
+    "windows": [
+      [
+        396.03063,
+        400.03063,
+        25.000367836386374
+      ],
+      [
+        397.510595,
+        401.510595,
+        25.000367836386374
+      ],
+      [
+        399.030559,
+        403.030559,
+        25.000367836386374
+      ]
+    ],
+    "observations": 300,
+    "workers": 2,
+    "all_feature_values_identical": true,
+    "learned_target": false
+  },
+  "positive_referee_pixels": {
+    "before_seconds": 2.7491481000033673,
+    "after_seconds": 1.8750600999919698,
+    "time_reduction_percent": 31.794867654104443,
+    "backend": "cpu",
+    "observations": 80,
+    "repetitions": 5,
+    "all_observation_values_identical": true,
+    "entry": {
+      "strike_timestamp": 89.84,
+      "entry_timestamp": 95.60000000000001,
+      "confirmation_timestamp": 95.84,
+      "source_entry_pts": 95.60000000000001,
+      "source_confirmation_pts": 95.84,
+      "confidence": 0.85
+    }
+  },
+  "post_capped_tail_repeat": {
+    "before_seconds": 74.78286409997963,
+    "after_seconds": 84.77257269999245,
+    "time_reduction_percent": -13.358285645033941,
+    "entries": 0,
+    "entries_identical": true,
+    "backend": "auto",
+    "note": "Both detectors were given final clips already capped before referee entry; this is not a positive-entry recall trial. This single end-to-end timing did not improve."
+  },
+  "validation": {
+    "command": ".venv/Scripts/python.exe -m pytest tests -q --ignore-glob=tests/test_dl_*.py",
+    "status": "passed",
+    "workspace_passed": 977,
+    "relevant_passed": 960,
+    "unrelated_local_capcut_passed": 17,
+    "elapsed_seconds": 128.82
+  },
+  "full_match_timing_measured": false,
+  "notes": [
+    "Benchmarks ran sequentially without concurrent test runs.",
+    "Single timing samples vary; relative improvements must not be extrapolated to a complete match.",
+    "No sampling rate, threshold, candidate coverage, physical stop requirement or DL code changed.",
+    "Serial fallback is required when a worker learns a new scoreboard target or a context return, or parent context changes.",
+    "Decode-thread limiting and cross-mask contour frame caching were tried and rejected."
+  ]
+}
