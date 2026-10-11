@@ -17,7 +17,7 @@ from snooker_ai.rendering.preprocessor import (
     normalize_keep_ranges,
 )
 from snooker_ai.types import VideoMetadata
-from snooker_ai.utils.ffmpeg import run_command
+from snooker_ai.utils.ffmpeg import find_ffmpeg, find_ffprobe, run_command
 
 
 def test_keep_ranges_are_sorted_merged_and_validated():
@@ -36,7 +36,7 @@ def test_keep_ranges_are_sorted_merged_and_validated():
 
 
 @pytest.mark.skipif(
-    shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None,
+    shutil.which(find_ffmpeg()) is None or shutil.which(find_ffprobe()) is None,
     reason="ffmpeg/ffprobe required",
 )
 def test_preprocessor_joins_kept_ranges_with_audio(tmp_path: Path):
@@ -44,7 +44,7 @@ def test_preprocessor_joins_kept_ranges_with_audio(tmp_path: Path):
     output = tmp_path / "cleaned.mp4"
     run_command(
         [
-            shutil.which("ffmpeg") or "ffmpeg",
+            find_ffmpeg(),
             "-y",
             "-hide_banner",
             "-loglevel",

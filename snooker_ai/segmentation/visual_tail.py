@@ -497,7 +497,12 @@ class VisualTailDetector:
             if not proxy_capture.isOpened():
                 return []
             for shot in eligible:
-                start = max(shot.cue_strike+1, shot.clip_end-20)
+                # An unresolved long end can stretch beyond a referee reset.
+                # Searching only its last 20 seconds then misses that earlier
+                # entry entirely. Sample the whole uncertain tail on the proxy;
+                # only actual entry triggers request native confirmation.
+                uncertain = not shot.evidence.get("stop_confirmed") or shot.manual_review_required
+                start = shot.cue_strike+1 if uncertain else max(shot.cue_strike+1, shot.clip_end-20)
                 end = min(time_mapper.source_duration, shot.clip_end+.4)
                 if end <= start:
                     continue

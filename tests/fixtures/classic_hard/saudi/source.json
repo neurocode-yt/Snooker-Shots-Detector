@@ -1,0 +1,39 @@
+{
+  "source_relative_path": "Ronnie OSullivan vs Judd Trump.mp4",
+  "source_sha256": "3e099990d15b35d14e6bb73dc15b6e3d2a4941eeae9eac123da492da6fad953c",
+  "resize": [
+    960,
+    540
+  ],
+  "jpeg_quality": 97,
+  "frames": [
+    {
+      "name": "main-blue",
+      "source_seconds": 650.44
+    },
+    {
+      "name": "close-red",
+      "source_seconds": 662.76
+    },
+    {
+      "name": "close-black",
+      "source_seconds": 673.24
+    },
+    {
+      "name": "close-touching-red",
+      "source_seconds": 701.56
+    },
+    {
+      "name": "referee-blue",
+      "source_seconds": 657.56
+    },
+    {
+      "name": "gold-opening",
+      "source_seconds": 615.0
+    },
+    {
+      "name": "gold-closing",
+      "source_seconds": 628.0
+    }
+  ]
+}

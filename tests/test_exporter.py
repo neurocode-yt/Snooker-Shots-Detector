@@ -20,7 +20,7 @@ from snooker_ai.types import (
     ShotRecord,
     VideoMetadata,
 )
-from snooker_ai.utils.ffmpeg import run_command
+from snooker_ai.utils.ffmpeg import find_ffmpeg, find_ffprobe, run_command
 
 
 def _strict_shot(
@@ -307,7 +307,7 @@ def test_audio_presence_is_checked_even_when_timing_verification_is_disabled(
 
 
 @pytest.mark.skipif(
-    shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None,
+    shutil.which(find_ffmpeg()) is None or shutil.which(find_ffprobe()) is None,
     reason="ffmpeg/ffprobe required",
 )
 def test_ffmpeg_strict_export_preserves_audio_and_excludes_confirmation_tail(
@@ -316,7 +316,7 @@ def test_ffmpeg_strict_export_preserves_audio_and_excludes_confirmation_tail(
     source = tmp_path / "source.mp4"
     run_command(
         [
-            shutil.which("ffmpeg") or "ffmpeg",
+            find_ffmpeg(),
             "-y",
             "-hide_banner",
             "-loglevel",

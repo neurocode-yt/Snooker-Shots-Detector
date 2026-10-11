@@ -557,6 +557,16 @@ class SegmentBuilder:
         preparation/collision artefact and enters conflict resolution instead.
         """
         evidence = shot.evidence
+        confirmed_closeup_departure = bool(
+            shot.shot_confidence >= self.high
+            and evidence.get("closeup_addressed_departure_confirmed", 0) >= .5
+            and evidence.get("dense_transition_confirmed", 0) >= .5
+            and evidence.get("cue_shape_measured", 0) >= .5
+            and evidence.get("pre_cue_spatial_quiet_ratio", 0) >= .90
+            and evidence.get("stable_cue_motion_count", 0) >= 6
+            and evidence.get("largest_cue_step_diameters", 1) <= .50)
+        if confirmed_closeup_departure:
+            return True
         confirmed_return = bool(
             shot.shot_confidence >= self.medium
             and evidence.get("reacquired_ball_roll", 0) >= .5
