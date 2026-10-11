@@ -152,7 +152,7 @@ class JobStore:
     def save_analysis(self, result: AnalysisResult) -> None:
         self._sync_review_timestamps(result)
         path = self.job_dir(result.job_id) / "analysis.json"
-        path.write_text(result.model_dump_json(indent=2), encoding="utf-8")
+        path.write_text(result.model_dump_json(), encoding="utf-8")
         slim = {
             "job_id": result.job_id,
             "source_path": result.source_path,
