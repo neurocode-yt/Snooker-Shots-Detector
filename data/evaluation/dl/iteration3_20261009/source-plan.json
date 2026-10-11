@@ -1,0 +1,24 @@
+{
+  "id": "jimmy_robertson_un_nooh_2022_frame1",
+  "group_id": "jimmy_robertson_un_nooh_2022",
+  "source_path": "G:\\Adobe Premiere Pro Auto-Save\\Snooker yt shorts\\nWindows\\Jimmy Robertson vs Thepchaiya Un-Nooh _ 2022 Championship League Snooker-f683a272.mp4",
+  "duration": 3017.758186,
+  "source_duration": 3017.758186,
+  "evaluation_interval": {
+    "start": 0.0,
+    "end": 620.0
+  },
+  "scope": "declared raw-source segment containing complete first frame and inter-frame transition",
+  "fps": 25.0,
+  "source_fingerprint": {
+    "size_bytes": 364769263,
+    "mtime_ns": 1790810309000000000
+  },
+  "source_sha256": "7bab021b21336f00d3fd6c4271d3bf947dd99c433f4bb99e17d6f56f4fb1c718",
+  "split": "holdout",
+  "used_for_model_selection": false,
+  "labels_human_approved": false,
+  "predictions_consulted": false,
+  "reserved_at": "2026-10-09T14:51:44.658838+00:00",
+  "scope_selection_method": "Source-only chronological 30-second native-PTS overview; first frame ends before ~610 sec break and second frame starts ~720 sec. Chosen before any model predictions."
+}

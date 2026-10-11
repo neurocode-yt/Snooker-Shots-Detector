@@ -25,6 +25,62 @@ from snooker_ai.dl.settings import dl_settings, expected_feature_spec, resolved_
 FEATURE_VERSION = 1
 
 
+def checked_rgb_cache(path: Path, source: Path, intervals: list[tuple[float, float]],
+                      original_spec: dict[str, Any], new_spec: dict[str, Any],
+                      rgb_dimension: int = 2304) -> tuple[np.ndarray, np.ndarray]:
+    """Reuse RGB only from an exact legacy source/cadence cache with provenance.
+
+    A flow change never authorizes a different source, RGB preprocessing or
+    coverage. Native PTS are checked again when the new motion is decoded.
+    The returned RGB matrix is a copy; neither the old archive nor its chunks
+    are written by the experimental extractor.
+    """
+    if (original_spec.get('version') != 1 or original_spec.get('flow_channel_count', 6) != 6
+            or 'dimension' not in original_spec or 'flow_grid' not in original_spec
+            or original_spec['dimension'] - 6*int(np.prod(original_spec['flow_grid'])) != rgb_dimension):
+        raise ValueError('RGB reuse requires an explicit original version-1 feature spec.')
+    rgb_keys = ('rgb_model', 'rgb_revision', 'global_size', 'crop_size', 'rgb_views',
+                'sample_fps', 'source_time')
+    if any(original_spec.get(key) != new_spec.get(key) for key in rgb_keys):
+        raise ValueError('RGB preprocessing, backbone or source cadence differs.')
+    identity = {'path': str(source.resolve()), 'size': source.stat().st_size,
+                'mtime_ns': source.stat().st_mtime_ns, 'intervals': intervals}
+    with np.load(path, allow_pickle=False) as stored:
+        required = {'timestamps', 'features', 'feature_spec', 'source_identity', 'fingerprint'}
+        if not required.issubset(stored.files):
+            raise ValueError('RGB reuse cache lacks source/spec provenance.')
+        cached_spec = json.loads(str(stored['feature_spec'].item()))
+        cached_identity = json.loads(str(stored['source_identity'].item()))
+        key = hashlib.sha256(json.dumps({'source': cached_identity, 'spec': original_spec},
+                                        sort_keys=True).encode()).hexdigest()
+        if (cached_spec != original_spec or cached_identity != json.loads(json.dumps(identity))
+                or str(stored['fingerprint'].item()) != key):
+            raise ValueError('RGB reuse cache has a different source, original feature spec or fingerprint.')
+        times = np.asarray(stored['timestamps'], dtype=np.float64)
+        features = np.asarray(stored['features'], dtype=np.float32)
+        if (times.ndim != 1 or not len(times) or not np.isfinite(times).all()
+                or np.any(np.diff(times) <= 0) or features.ndim != 2
+                or features.shape != (len(times), original_spec['dimension'])
+                or rgb_dimension < 1 or rgb_dimension > features.shape[1]
+                or not np.isfinite(features).all()):
+            raise ValueError('RGB reuse cache is corrupt or has incompatible dimensions.')
+        cadence = 1/float(original_spec['sample_fps'])
+        # A source interval may end between samples. Require full coverage and
+        # absence of hidden cadence gaps inside every explicitly reviewed span.
+        covered = np.zeros(len(times), dtype=bool)
+        for start, end in intervals:
+            selected = (times >= start-1e-6) & (times <= end+1e-6)
+            window = times[selected]
+            if (not len(window) or window[0] > start+1.75*cadence
+                    or window[-1] < end-1.75*cadence
+                    or np.any(np.diff(window) > 1.75*cadence+1e-6)):
+                raise ValueError('RGB reuse cache is incomplete or has a source cadence gap.')
+            covered |= selected
+        if not covered.all():
+            raise ValueError('RGB reuse cache contains observations outside requested coverage.')
+        return times.copy(), features[:, :rgb_dimension].copy()
+
+
 def annotation_intervals(video: dict[str, Any]) -> list[dict[str, Any]]:
     """Extract every supervised head's coverage, including isolated weak clips."""
     rows = [row for name in ('reviewed_intervals', 'clip_reviewed_intervals', 'labels', 'clips')
@@ -110,6 +166,10 @@ class NeuralFeatures:
         self.flow.load_state_dict(load_file(str(self.assets/'raft-small.safetensors')))
         self.embedding_dim = int(self.rgb.config.hidden_size)
         self.spec = expected_feature_spec(self.settings, identity, self.rgb.config.to_dict())
+        if self.spec.get('flow_channel_count') == 8:
+            actual = hashlib.sha256((self.assets/'raft-small.safetensors').read_bytes()).hexdigest()
+            if actual != identity['flow_sha256']:
+                raise ValueError('Opt-in local-motion backbone differs from prepared weights.')
         self.previous: tuple[float, Any] | None = None
 
     def _tensor(self, image: np.ndarray, size: tuple[int, int]):
@@ -117,9 +177,20 @@ class NeuralFeatures:
         image = cv2.resize(image, (size[1], size[0]), interpolation=cv2.INTER_AREA)
         return self.torch.from_numpy(image.copy()).permute(2, 0, 1).float()/255.
 
-    def encode_batch(self, frames: list[tuple[float, np.ndarray]]) -> np.ndarray:
+    def encode_batch(self, frames: list[tuple[float, np.ndarray]],
+                     rgb_vectors: np.ndarray | None = None) -> np.ndarray:
+        if rgb_vectors is None:
+            rgb_vectors = self.encode_rgb_batch(frames)
+        elif (rgb_vectors.shape != (len(frames), 6*self.embedding_dim)
+              or not np.isfinite(rgb_vectors).all()):
+            raise ValueError('Reused RGB embeddings do not match source observations.')
+        result = np.concatenate((rgb_vectors, self.encode_motion_batch(frames)), axis=1).astype(np.float32)
+        if not np.isfinite(result).all():
+            raise RuntimeError('Neural feature extraction produced non-finite values.')
+        return result
+
+    def encode_rgb_batch(self, frames: list[tuple[float, np.ndarray]]) -> np.ndarray:
         torch = self.torch
-        vectors = []
         views = []
         global_size = int(self.settings['global_size'])
         crop_size = int(self.settings['crop_size'])
@@ -142,11 +213,17 @@ class NeuralFeatures:
             patch = encoded[::5, 1:].mean(dim=1)
             rgb_vectors = torch.cat([cls[:, 0], patch, cls[:, 1:].reshape(len(frames), -1)], dim=1).cpu().numpy()
         del images, encoded, cls, patch
+        return rgb_vectors
+
+    def encode_motion_batch(self, frames: list[tuple[float, np.ndarray]]) -> np.ndarray:
+        torch = self.torch
+        vectors = []
         flow_h, flow_w = self.spec['flow_size']
         grid_h, grid_w = self.spec['flow_grid']
-        for index, (timestamp, image) in enumerate(frames):
+        channels = int(self.spec.get('flow_channel_count', 6))
+        for timestamp, image in frames:
             current = self._tensor(image, (flow_h, flow_w)).to(self.device)
-            motion = torch.zeros(6, grid_h, grid_w, device=self.device)
+            motion = torch.zeros(channels, grid_h, grid_w, device=self.device)
             if self.previous is not None:
                 previous_t, previous_image = self.previous
                 dt = timestamp-previous_t
@@ -155,17 +232,21 @@ class NeuralFeatures:
                         flow = self.flow(previous_image[None]*2-1, current[None]*2-1,
                                          num_flow_updates=self.spec['flow_updates'])[-1][0]
                         velocity = flow / torch.tensor([flow_w, flow_h], device=self.device)[:, None, None] / dt
-                        global_motion = velocity.flatten(1).median(dim=1).values[:, None, None]
-                        magnitude = torch.linalg.vector_norm(velocity, dim=0, keepdim=True)
-                        residual = torch.linalg.vector_norm(velocity-global_motion, dim=0, keepdim=True)
-                        maps = torch.cat([velocity, magnitude, residual])
-                        mean_motion = torch.nn.functional.adaptive_avg_pool2d(maps, (grid_h, grid_w))
-                        # Tiny moving balls must not disappear in average pooling.
-                        peaks = torch.nn.functional.adaptive_max_pool2d(
-                            torch.cat([magnitude, residual]), (grid_h, grid_w))
-                        motion = torch.cat([mean_motion, peaks])
+                        if channels == 8:
+                            from snooker_ai.dl.local_motion import pool_local_motion
+                            motion = pool_local_motion(velocity, (grid_h, grid_w))
+                        else:
+                            global_motion = velocity.flatten(1).median(dim=1).values[:, None, None]
+                            magnitude = torch.linalg.vector_norm(velocity, dim=0, keepdim=True)
+                            residual = torch.linalg.vector_norm(velocity-global_motion, dim=0, keepdim=True)
+                            maps = torch.cat([velocity, magnitude, residual])
+                            mean_motion = torch.nn.functional.adaptive_avg_pool2d(maps, (grid_h, grid_w))
+                            # Tiny moving balls must not disappear in average pooling.
+                            peaks = torch.nn.functional.adaptive_max_pool2d(
+                                torch.cat([magnitude, residual]), (grid_h, grid_w))
+                            motion = torch.cat([mean_motion, peaks])
             self.previous = (timestamp, current)
-            vectors.append(np.concatenate([rgb_vectors[index], motion.float().cpu().numpy().reshape(-1)]))
+            vectors.append(motion.float().cpu().numpy().reshape(-1))
         result = np.asarray(vectors, dtype=np.float32)
         if not np.isfinite(result).all():
             raise RuntimeError('Neural feature extraction produced non-finite values.')
@@ -173,14 +254,32 @@ class NeuralFeatures:
 
     def extract(self, source: Path, output: Path, duration: float,
                 intervals: list[tuple[float, float]] | None = None,
-                progress=None) -> tuple[np.ndarray, np.ndarray]:
+                progress=None, *, rgb_cache: Path | None = None,
+                original_feature_spec: dict[str, Any] | None = None) -> tuple[np.ndarray, np.ndarray]:
         intervals = intervals or [(0., duration)]
+        if rgb_cache is not None and output.resolve() == rgb_cache.resolve():
+            raise ValueError('New flow features must never overwrite the original RGB cache.')
+        rgb_times = rgb_values = None
+        rgb_digest = None
+        if rgb_cache is not None:
+            if original_feature_spec is None:
+                raise ValueError('RGB reuse needs the exact expected original feature spec.')
+            rgb_times, rgb_values = checked_rgb_cache(rgb_cache, source, intervals,
+                                                     original_feature_spec, self.spec,
+                                                     6*self.embedding_dim)
+            rgb_digest = _file_digest(rgb_cache)
         identity = {'path': str(source.resolve()), 'size': source.stat().st_size,
                     'mtime_ns': source.stat().st_mtime_ns, 'intervals': intervals}
         key = hashlib.sha256(json.dumps({'source': identity, 'spec': self.spec}, sort_keys=True).encode()).hexdigest()
         if output.exists():
             with np.load(output, allow_pickle=False) as stored:
+                if (self.spec.get('version') == 2 and ('feature_spec' not in stored
+                        or json.loads(str(stored['feature_spec'].item())) != self.spec)):
+                    raise ValueError('Opt-in features cannot overwrite an archive with different semantics.')
                 if 'fingerprint' in stored and str(stored['fingerprint'].item()) == key:
+                    if rgb_digest is not None and ('rgb_cache_sha256' not in stored
+                            or str(stored['rgb_cache_sha256'].item()) != rgb_digest):
+                        raise ValueError('Opt-in output has different RGB cache provenance.')
                     times = np.asarray(stored['timestamps'], dtype=np.float64)
                     values = np.asarray(stored['features'], dtype=np.float32)
                     self._validate_part(times, values)
@@ -197,6 +296,9 @@ class NeuralFeatures:
                     continue
                 with np.load(cached, allow_pickle=False) as stored:
                     if 'fingerprint' not in stored or str(stored['fingerprint'].item()) != key:
+                        continue
+                    if rgb_digest is not None and ('rgb_cache_sha256' not in stored
+                            or str(stored['rgb_cache_sha256'].item()) != rgb_digest):
                         continue
                     times = np.asarray(stored['timestamps'], dtype=np.float64)
                     values = np.asarray(stored['features'], dtype=np.float32)
@@ -217,6 +319,9 @@ class NeuralFeatures:
             if path.name != f'chunk_{index:05d}.npz':
                 raise RuntimeError('DL feature checkpoint is missing a committed chunk.')
             with np.load(path, allow_pickle=False) as stored:
+                if rgb_digest is not None and ('rgb_cache_sha256' not in stored
+                        or str(stored['rgb_cache_sha256'].item()) != rgb_digest):
+                    raise RuntimeError('RGB cache changed since the saved motion checkpoint.')
                 chunk_times = np.asarray(stored['timestamps'], dtype=np.float64)
                 chunk_features = np.asarray(stored['features'], dtype=np.float32)
                 self._validate_part(chunk_times, chunk_features)
@@ -240,21 +345,31 @@ class NeuralFeatures:
             complete = np.concatenate(parts)
             temporary = checkpoint_dir/f'chunk_{checkpoint_index:05d}.partial.npz'
             state = self.previous[1].detach().float().cpu().numpy()
+            provenance = {'rgb_cache_sha256': rgb_digest} if rgb_digest is not None else {}
             np.savez_compressed(temporary, timestamps=np.asarray(timestamps[persisted:]),
-                                features=complete[persisted:], previous_image=state)
+                                features=complete[persisted:], previous_image=state, **provenance)
             temporary.replace(checkpoint_dir/f'chunk_{checkpoint_index:05d}.npz')
             persisted = len(timestamps)
             checkpoint_index += 1
         total = sum(b-a for a, b in intervals)
         seen = len(timestamps)/self.spec['sample_fps']
         started = time.monotonic()
+        def encode(frames):
+            if rgb_times is None:
+                return self.encode_batch(frames)
+            batch_times = np.asarray([timestamp for timestamp, _ in frames])
+            indices = np.searchsorted(rgb_times, batch_times)
+            if (np.any(indices >= len(rgb_times))
+                    or not np.array_equal(rgb_times[indices], batch_times)):
+                raise RuntimeError('Reused RGB timestamps differ from the decoded native source PTS.')
+            return self.encode_batch(frames, rgb_values[indices])
         if timestamps and progress:
             progress(min(1., seen/max(total,1)), f'Resumed {len(timestamps)} learned observations')
         for timestamp, frame in source_frames(source, intervals, self.spec['sample_fps'],
                                               timestamps[-1] if timestamps else -math.inf):
             batch.append((timestamp, frame))
             if len(batch) >= int(self.settings['batch_frames']):
-                parts.append(self.encode_batch(batch))
+                parts.append(encode(batch))
                 timestamps.extend(t for t, _ in batch)
                 seen += len(batch)/self.spec['sample_fps']
                 batch.clear()
@@ -263,17 +378,26 @@ class NeuralFeatures:
                 if progress:
                     progress(min(1., seen/max(total, 1)), f'Learned RGB/motion observations: {len(timestamps)}')
         if batch:
-            parts.append(self.encode_batch(batch))
+            parts.append(encode(batch))
             timestamps.extend(t for t, _ in batch)
         save_checkpoint()
         if not parts:
             raise RuntimeError('No original source frames were decoded for DL Algo.')
         times, features = np.asarray(timestamps, dtype=np.float64), np.concatenate(parts)
+        if rgb_times is not None and not np.array_equal(times, rgb_times):
+            raise RuntimeError('New flow observations do not exactly cover the reused RGB timestamps.')
+        if self.spec.get('version') == 2 and (source.stat().st_size != identity['size']
+                or source.stat().st_mtime_ns != identity['mtime_ns']):
+            raise RuntimeError('Source identity changed during opt-in feature extraction.')
+        if rgb_digest is not None and _file_digest(rgb_cache) != rgb_digest:
+            raise RuntimeError('RGB cache changed during motion extraction.')
         temporary = output.with_name(output.stem+'.partial.npz')
+        provenance = ({'rgb_cache_sha256': rgb_digest, 'rgb_cache_path': str(rgb_cache.resolve())}
+                      if rgb_digest is not None else {})
         np.savez_compressed(temporary, timestamps=times, features=features,
                             feature_spec=json.dumps(self.spec, sort_keys=True), fingerprint=key,
                             source_identity=json.dumps(identity, sort_keys=True),
-                            elapsed_seconds=time.monotonic()-started)
+                            elapsed_seconds=time.monotonic()-started, **provenance)
         temporary.replace(output)
         return times, features
 
@@ -283,6 +407,14 @@ class NeuralFeatures:
                 or values.shape != (len(times), self.spec['dimension'])
                 or not np.isfinite(values).all()):
             raise RuntimeError('DL feature cache is corrupt or out of order.')
+
+
+def _file_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open('rb') as stream:
+        for piece in iter(lambda: stream.read(4*1024*1024), b''):
+            digest.update(piece)
+    return digest.hexdigest()
 
 
 def prepare_assets(destination: Path, rgb_model: str = 'facebook/dinov2-small') -> dict[str, Any]:

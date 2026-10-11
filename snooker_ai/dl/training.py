@@ -54,6 +54,10 @@ class TrainingConfig:
     rgb_clip: float = 0.0
     motion_translate_cells: int = 0
     motion_scale_jitter: float = 0.0
+    motion_pooling: str = 'mean_max'
+    rgb_difference_frames: int = 0
+    calibration_objective: str = 'target_recall'
+    selection_objective: str = 'validation_loss'
 
     def __post_init__(self) -> None:
         continuous = (
@@ -87,8 +91,17 @@ class TrainingConfig:
                 or not isinstance(self.motion_translate_cells, int) or self.motion_translate_cells < 0):
             raise ValueError('Invalid neural modality/augmentation settings.')
         if not self.spatial_flow and (not self.use_rgb or self.rgb_dropout or self.rgb_clip
-                                     or self.motion_translate_cells or self.motion_scale_jitter):
+                                     or self.motion_translate_cells or self.motion_scale_jitter
+                                     or self.motion_pooling != 'mean_max' or self.rgb_difference_frames):
             raise ValueError('Modality and motion augmentation require spatial motion geometry.')
+        if (self.motion_pooling not in ('mean_max', 'rgb_attention')
+                or isinstance(self.rgb_difference_frames, bool)
+                or not isinstance(self.rgb_difference_frames, int)
+                or not 0 <= self.rgb_difference_frames <= 32
+                or (self.motion_pooling == 'rgb_attention' and not self.use_rgb)):
+            raise ValueError('Invalid spatial attention or RGB temporal difference settings.')
+        if self.calibration_objective not in ('target_recall','f2') or self.selection_objective not in ('validation_loss','event_f2'):
+            raise ValueError('Unknown event calibration or model selection objective.')
 
     @property
     def event_candidate_settings(self) -> dict[str, float]:
@@ -313,7 +326,9 @@ def _calibration(
     if contact_count:
         event_options = [event_metrics(videos, predictions, float(t), config) for t in np.arange(.05, 1, .05)]
         qualifying = [option for option in event_options if option["recall"] >= config.target_event_recall]
-        if qualifying:
+        if config.calibration_objective == 'f2':
+            event = max(event_options, key=lambda value: (value['f2'],value['precision'],value['recall']))
+        elif qualifying:
             event = max(qualifying, key=lambda value: (value["precision"], value["threshold"]))
         else:
             event = max(event_options, key=lambda value: (value["f2"], value["recall"]))
@@ -376,6 +391,7 @@ def _calibration(
         "frame_heads": frame_metrics,
         "event_tolerance_seconds": config.event_tolerance_seconds,
         "target_event_recall": config.target_event_recall,
+        "event_calibration_objective": config.calibration_objective,
         "target_event_recall_achieved": bool(contact_count and event["recall"] >= config.target_event_recall),
     }
 
@@ -526,6 +542,8 @@ def train_temporal(
     }
     train_videos = by_split["train"]
     validation_videos = by_split["validation"]
+    if config.selection_objective == 'event_f2' and not validation_videos:
+        raise ValueError('Event-F2 model selection requires a separate validation match group.')
     stop_videos = validation_videos or train_videos
     model = TemporalHighlightNet(
         TemporalModelConfig(
@@ -533,9 +551,11 @@ def train_temporal(
             hidden_dim=config.hidden_dim,
             dropout=config.dropout,
             flow_grid=tuple(feature_spec.get('flow_grid', ())) if config.spatial_flow else (),
+            flow_channels=int(feature_spec.get('flow_channel_count', 6)),
             use_rgb=config.use_rgb, rgb_dropout=config.rgb_dropout, rgb_clip=config.rgb_clip,
             motion_translate_cells=config.motion_translate_cells,
             motion_scale_jitter=config.motion_scale_jitter,
+            motion_pooling=config.motion_pooling, rgb_difference_frames=config.rgb_difference_frames,
         )
     ).to(device)
     # The holdout never contributes even unsupervised normalization statistics.
@@ -561,6 +581,7 @@ def train_temporal(
     positive_weights = _positive_weights(train_videos, device)
     generator = random.Random(config.seed)
     best_loss = math.inf
+    best_objective = math.inf
     best_state = None
     best_epoch = 0
     history: list[dict[str, Any]] = []
@@ -602,6 +623,15 @@ def train_temporal(
                     raise RuntimeError("Temporal validation produced a non-finite loss.")
                 selection_loss += float(loss) * len(batch_windows)
         selection_loss /= len(stop_windows)
+        objective = selection_loss
+        event_selection = None
+        if config.selection_objective == 'event_f2':
+            predictions = [predict_probabilities(model, video.features, device=device,
+                                                 timestamps=video.timestamps) for video in validation_videos]
+            options = [event_metrics(validation_videos,predictions,float(t),config)
+                       for t in np.arange(.05,1,.05)]
+            event_selection = max(options,key=lambda value:(value['f2'],value['precision'],value['recall']))
+            objective = -event_selection['f2']
         entry = {
             "epoch": epoch + 1,
             "training_loss": training_loss / len(train_windows),
@@ -609,9 +639,13 @@ def train_temporal(
             "selection_scope": "group_disjoint_validation" if validation_videos else "development_training",
         }
         history.append(entry)
+        if event_selection is not None:
+            entry['validation_event_metrics'] = event_selection
+            entry['model_selection_objective'] = 'event_f2'
         print(json.dumps(entry), flush=True)
-        if selection_loss < best_loss - .0001:
-            best_loss, best_epoch = selection_loss, epoch + 1
+        if (objective < best_objective-.0001 or
+                (abs(objective-best_objective) < 1e-8 and selection_loss < best_loss-.0001)):
+            best_objective, best_loss, best_epoch = objective, selection_loss, epoch + 1
             best_state = {key: value.detach().cpu().clone() for key, value in model.state_dict().items()}
         elif epoch + 1 - best_epoch >= config.patience:
             break
@@ -641,6 +675,8 @@ def train_temporal(
         "feature_spec": feature_spec,
         "best_epoch": best_epoch,
         "selection_loss": best_loss,
+        "selection_objective": config.selection_objective,
+        "best_selection_objective_value": best_objective,
         "history": history,
         "calibration": calibration,
         "independent_test_available": bool(by_split["test"]),
@@ -706,6 +742,10 @@ def main() -> None:
     parser.add_argument("--rgb-clip", type=float, default=0.)
     parser.add_argument("--motion-translate-cells", type=int, default=0)
     parser.add_argument("--motion-scale-jitter", type=float, default=0.)
+    parser.add_argument("--motion-pooling", choices=('mean_max','rgb_attention'), default='mean_max')
+    parser.add_argument("--rgb-difference-frames", type=int, default=0)
+    parser.add_argument("--calibration-objective", choices=('target_recall','f2'), default='target_recall')
+    parser.add_argument("--selection-objective", choices=('validation_loss','event_f2'), default='validation_loss')
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--event-nms-seconds", type=float, default=1.0)
     parser.add_argument("--event-uncertainty-ratio", type=float, default=.5)
@@ -722,6 +762,8 @@ def main() -> None:
         dropout=args.dropout, target_event_recall=args.target_event_recall,
         use_rgb=args.use_rgb, rgb_dropout=args.rgb_dropout, rgb_clip=args.rgb_clip,
         motion_translate_cells=args.motion_translate_cells, motion_scale_jitter=args.motion_scale_jitter,
+        motion_pooling=args.motion_pooling, rgb_difference_frames=args.rgb_difference_frames,
+        calibration_objective=args.calibration_objective, selection_objective=args.selection_objective,
         min_event_gap_seconds=args.event_nms_seconds,
         event_uncertainty_ratio=args.event_uncertainty_ratio,
         max_event_uncertainty_seconds=args.max_event_uncertainty_seconds,

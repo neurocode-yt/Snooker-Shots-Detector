@@ -21,6 +21,31 @@ from snooker_ai.dl.settings import dl_settings  # noqa: E402
 from tools.dl_train_pipeline import atomic_json, file_hash, utc_now  # noqa: E402
 
 
+def evaluation_bounds(video: dict) -> tuple[float, float]:
+    """Keep a declared test segment distinct from the source file duration."""
+    import math
+    duration = float(video['duration'])
+    interval = video.get('evaluation_interval')
+    if interval is None:
+        return 0., duration
+    if not isinstance(interval, dict) or not video.get('segment_scope'):
+        raise ValueError('An explicit evaluation segment needs interval bounds and segment_scope.')
+    start, end = float(interval['start']), float(interval['end'])
+    if not math.isfinite(start+end) or not 0 <= start < end <= duration:
+        raise ValueError('Invalid evaluation segment within the source duration.')
+    if any(float(contact['lower']) < start or float(contact['upper']) > end
+           for contact in video.get('contacts', [])):
+        raise ValueError('Contact annotations exceed the declared evaluation segment.')
+    covered = start
+    for reviewed in sorted(video.get('reviewed_intervals', []), key=lambda row: float(row['start'])):
+        left, right = float(reviewed['start']), float(reviewed['end'])
+        if left <= covered:
+            covered = max(covered, right)
+    if covered < end:
+        raise ValueError('The complete declared segment must be source reviewed.')
+    return start, end
+
+
 def used_groups(training: dict[str, Any]) -> set[str]:
     """Include model-selection groups and every ensemble member's groups."""
     groups = set()
@@ -39,6 +64,8 @@ def validate_holdout(manifest: dict, training: dict) -> set[str]:
     if not manifest.get('independent_holdout_available') or not manifest.get('videos'):
         raise ValueError('An explicitly declared nonempty independent holdout is required.')
     for video in manifest['videos']:
+        if video.get('evaluation_interval') is not None:
+            evaluation_bounds(video)
         for name in ('event', 'keep', 'end', 'replay', 'replays', 'handling'):
             if video.get(name):
                 raise ValueError(f'{name} annotations must use the evaluated labels schema, not an ignored key.')
@@ -50,7 +77,7 @@ def validate_holdout(manifest: dict, training: dict) -> set[str]:
 
 
 def checked_features(video: dict, base: Path):
-    """Reject stale, wrong-source or incomplete whole-source feature caches."""
+    """Reject stale, wrong-source or incomplete declared-scope feature caches."""
     import numpy as np
 
     source = (base/Path(video['source_path'])).resolve()
@@ -60,16 +87,17 @@ def checked_features(video: dict, base: Path):
         identity = json.loads(str(archive['source_identity'].item()))
         fingerprint = str(archive['fingerprint'].item())
     stat = source.stat()
+    start, end = evaluation_bounds(video)
     expected = {'path': str(source), 'size': stat.st_size, 'mtime_ns': stat.st_mtime_ns,
-                'intervals': [[0., float(video['duration'])]]}
+                'intervals': [[start, end]]}
     declared = video.get('source_fingerprint', {})
     if (declared.get('size_bytes') != stat.st_size or declared.get('mtime_ns') != stat.st_mtime_ns
             or identity != expected):
         raise ValueError(f'Source identity/whole-source coverage mismatch for {video["id"]}.')
     key = hashlib.sha256(json.dumps({'source': expected, 'spec': spec}, sort_keys=True).encode()).hexdigest()
     cadence = 1/float(spec['sample_fps'])
-    if (key != fingerprint or times[0] > cadence or
-            times[-1] < float(video['duration'])-2*cadence or
+    if (key != fingerprint or times[0] < start-1e-6 or times[0] > start+cadence or
+            times[-1] > end+1e-6 or times[-1] < end-2*cadence or
             np.any(np.diff(times) > 2*cadence+1e-6)):
         raise ValueError(f'Incomplete or incompatible whole-source cache for {video["id"]}.')
     return times, features, spec, path
@@ -119,13 +147,18 @@ def main() -> None:
                 raise ValueError('Output already belongs to another test. Choose a new output directory.')
         probabilities = predict_probabilities(model, features, timestamps=times, device=device,
             chunk_frames=int(settings['temporal_chunk_frames']), temperatures=calibration['temperatures'])
-        candidates, shots, diagnostics = select_highlights(times, probabilities, video['duration'],
+        start, end = evaluation_bounds(video)
+        candidates, shots, diagnostics = select_highlights(times, probabilities, end,
                                                            selection, calibration['thresholds'])
+        if any(shot.clip_start < start-1e-6 or shot.clip_end > end+1e-6 for shot in shots if shot.included):
+            raise RuntimeError('Selection exceeds the declared source evaluation scope.')
         clips = [{'contact':s.cue_strike, 'start':s.clip_start, 'end':s.clip_end} for s in shots if s.included]
         metrics = evaluate_video(clips, video, tolerance_seconds=.25)
         strict = evaluate_video(clips, video, tolerance_seconds=0)
         report = {'video_id':ident, 'group_id':video['group_id'], 'split':'holdout',
             'independent_holdout': True, 'completed_at': utc_now(),
+            'evaluation_scope': 'declared_source_segment' if video.get('evaluation_interval') else 'whole_source',
+            'evaluation_interval': {'start': start, 'end': end}, 'source_duration': video['duration'],
             'checkpoint_sha256':checkpoint_hash, 'manifest_sha256':manifest_hash,
             'fitting_and_model_selection_groups': sorted(groups),
             'source_path':video['source_path'], 'feature_path':str(path), 'feature_samples':len(times),

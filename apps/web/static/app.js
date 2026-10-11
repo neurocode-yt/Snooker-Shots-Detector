@@ -406,10 +406,14 @@ async function restartJob(jobId) {
   }
 }
 
+const capcutJobMessages = new Map();
+
 async function refreshJobs() {
   const el = document.getElementById("jobs");
+  // Preserve a pending handoff and its result while the periodic job poll runs.
+  if (el.querySelector("[data-capcut-active]")) return;
   try {
-    const res = await fetch("/api/jobs");
+    const [res, capcut] = await Promise.all([fetch("/api/jobs"), window.snookerCapCut.load()]);
     const jobs = (await res.json()).filter(
       (job) => DL_ALGO_VISIBLE || job.algorithm !== "dl_algo",
     );
@@ -429,11 +433,25 @@ async function refreshJobs() {
         <div class="job-actions">
           <button type="button" class="btn-restart" data-job-id="${job.job_id}">Restart</button>
           ${job.download_url ? `<a href="${job.download_url}">Download video</a>` : ""}
+          ${["completed", "ready_for_review"].includes(job.status) ? `<button type="button" class="btn-capcut" data-job-id="${job.job_id}" ${capcut.available ? "" : "disabled"}>Open in CapCut</button>` : ""}
           <a href="/review/${job.job_id}?editor=classic">${job.algorithm === "dl_algo" ? "Open DL Algo editor" : "Open classic editor"}</a>
         </div>
       </div>`,
       )
       .join("");
+    el.querySelectorAll(".btn-capcut").forEach((button) => {
+      button.title = capcut.available
+        ? "Create a new CapCut project with separate editable shots"
+        : capcut.reason;
+      const message = capcutJobMessages.get(button.dataset.jobId);
+      if (message) {
+        const status = document.createElement("p");
+        status.className = "capcut-status muted";
+        status.setAttribute("role", "status");
+        status.textContent = message;
+        button.closest(".job-item").querySelector("div").appendChild(status);
+      }
+    });
   } catch (error) {
     el.innerHTML = `<p class="meta">Could not load jobs: ${error}</p>`;
   }
@@ -602,6 +620,23 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
 });
 
 document.getElementById("jobs").addEventListener("click", (event) => {
+  const capcutButton = event.target.closest(".btn-capcut");
+  if (capcutButton?.dataset.jobId) {
+    const item = capcutButton.closest(".job-item");
+    item.dataset.capcutActive = "true";
+    let status = item.querySelector(".capcut-status");
+    if (!status) {
+      status = document.createElement("p");
+      status.className = "capcut-status muted";
+      status.setAttribute("role", "status");
+      item.querySelector("div").appendChild(status);
+    }
+    window.snookerCapCut.open(capcutButton.dataset.jobId, capcutButton, status).finally(() => {
+      capcutJobMessages.set(capcutButton.dataset.jobId, status.textContent);
+      delete item.dataset.capcutActive;
+    });
+    return;
+  }
   const btn = event.target.closest(".btn-restart");
   if (btn && btn.dataset.jobId) {
     restartJob(btn.dataset.jobId);

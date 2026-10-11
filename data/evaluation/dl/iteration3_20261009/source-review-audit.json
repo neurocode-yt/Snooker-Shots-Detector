@@ -1,0 +1,43 @@
+{
+  "completed_at": "2026-10-09T15:24:42.510900+00:00",
+  "scope": "source-only annotation/serialization audit; no inference",
+  "manifest_sha256": "692b007490c32cc800994f34ede976c588521c6045b43c6f800ea5fc99b2339d",
+  "blind_notes_sha256": "1a3fbbd795fe3277b38b3c83dc51170f28e4feb1ba3675ac71d31e13b7480ab6",
+  "source_identity_verified": true,
+  "raw_source_duration_seconds": 3017.758186,
+  "evaluation_interval": {
+    "start": 0.0,
+    "end": 620.0
+  },
+  "segment_scope": "complete_first_frame_with_transition",
+  "labels_human_approved": false,
+  "predictions_consulted": false,
+  "chronological_overview_samples_reviewed": 621,
+  "chronological_overview_pages_reviewed": 39,
+  "dense_contact_pages_reviewed": 33,
+  "additional_refinement_pages_reviewed": 3,
+  "live_contacts": 32,
+  "positive_handling_intervals": 11,
+  "positive_replay_or_archive_intervals": 6,
+  "contact_uncertainty_seconds": {
+    "minimum": 0.12,
+    "maximum": 0.28
+  },
+  "all_contacts_supported_at8fps": true,
+  "contacts_overlap_positive_replay_labels": false,
+  "head_label_coverage_seconds": {
+    "handling": 609.0,
+    "replay": 614.5
+  },
+  "editorial_preferences": 32,
+  "editorial_preference_weight": 0.35,
+  "guarded_limitations": [
+    "AI visual annotations, not human-approved ground truth.",
+    "This is an explicit620-second raw-source segment containing complete first frame plus short inter-frame transition; raw file duration3017.758186 seconds is retained separately.",
+    "Native25fps video sampled at1fps chronologically, then8fps contact refinement; bounds0.12-0.28sec rather than invented point impacts.",
+    "Referee and replay core labels coarse1fps with0.5sec unknown margins.",
+    "Editorial endpoints are weak preferences +/-1sec, not physical ball-stop ground truth.",
+    "Final stroke visible ball outcome is interrupted by camera cut before complete settling; preferred end595 retains visible outcome.",
+    "Archive/promo603..620 contains other-match strokes; they are replay exclusion positives and no new live test-match contacts."
+  ]
+}

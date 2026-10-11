@@ -6,7 +6,7 @@ import json
 import numpy as np
 import pytest
 
-from tools.dl_holdout import checked_features, validate_holdout
+from tools.dl_holdout import checked_features, evaluation_bounds, validate_holdout
 
 
 def test_holdout_rejects_model_selection_leak_in_any_ensemble_member():
@@ -74,3 +74,25 @@ def test_same_length_wrong_source_cannot_reuse_frozen_labels(tmp_path):
     video['source_path'] = 'another.mp4'
     with pytest.raises(ValueError, match='identity'):
         checked_features(video, tmp_path)
+
+
+def test_declared_segment_keeps_raw_duration_and_rejects_overstated_scope(tmp_path):
+    video=make_archive(tmp_path,intervals=[[1.,2.]],times=np.arange(1.,2.,.125))
+    video.update(duration=10.,evaluation_interval={'start':1.,'end':2.},
+                 segment_scope='complete_first_frame',reviewed_intervals=[{'start':1.,'end':2.}])
+    assert evaluation_bounds(video)==(1.,2.)
+    checked_features(video,tmp_path)
+    video.pop('evaluation_interval')
+    with pytest.raises(ValueError,match='coverage mismatch'):
+        checked_features(video,tmp_path)
+
+
+@pytest.mark.parametrize('reviewed,contacts', [
+    ([{'start':1.,'end':1.5}],[]),
+    ([{'start':1.,'end':2.}],[{'lower':2.,'upper':2.1}]),
+])
+def test_incomplete_segment_review_and_outside_contacts_are_rejected(reviewed,contacts):
+    video={'duration':10.,'evaluation_interval':{'start':1.,'end':2.},
+           'segment_scope':'first_frame','reviewed_intervals':reviewed,'contacts':contacts}
+    with pytest.raises(ValueError):
+        evaluation_bounds(video)

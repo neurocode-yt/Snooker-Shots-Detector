@@ -16,8 +16,20 @@ const toast = document.getElementById("toast");
 const exportCombinedBtn = document.getElementById("export-combined-btn");
 const exportClipsBtn = document.getElementById("export-clips-btn");
 const openExportBtn = document.getElementById("open-export-btn");
+const openCapCutBtn = document.getElementById("open-capcut-btn");
+const capCutStatus = document.getElementById("capcut-status");
 const exportStatus = document.getElementById("export-status");
 const combinedDownloadLink = document.getElementById("combined-download-link");
+
+window.snookerCapCut.load().then((capability) => {
+  openCapCutBtn.disabled = !capability.available;
+  openCapCutBtn.title = capability.available
+    ? "Create a new CapCut project with included live shots as separate editable clips"
+    : capability.reason;
+});
+openCapCutBtn.addEventListener("click", () => {
+  window.snookerCapCut.open(jobId, openCapCutBtn, capCutStatus);
+});
 
 let shots = [];
 let activeId = null;
