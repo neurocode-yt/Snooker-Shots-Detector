@@ -2490,6 +2490,8 @@ class Analyzer:
             "job_id": result.job_id,
             "source_path": result.source_path,
             "mode": result.mode.value,
+            "selection": result.selection.value,
+            "pot_selection_summary": result.pot_selection_summary,
             "original_duration": result.original_duration,
             "edited_duration": result.edited_duration,
             "pause_removed_seconds": result.pause_removed_seconds,

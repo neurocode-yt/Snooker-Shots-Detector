@@ -80,6 +80,7 @@ include = ["snooker_ai*", "apps*"]
 [tool.setuptools.package-data]
 "snooker_ai.scene_detection" = ["assets/*.png"]
 "snooker_ai.rendering" = ["assets/*.json"]
+"snooker_ai.pot_detection" = ["assets/*.npz"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

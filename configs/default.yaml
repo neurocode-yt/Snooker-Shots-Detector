@@ -74,6 +74,12 @@ analysis:
   decode_prefetch_frames: 8
 
 # Scene / camera cut detection
+pot_selection:
+  sample_fps: 2.0
+  baseline_seconds: 12.0
+  score_update_grace_seconds: 8.0
+  min_digit_confidence: 0.78
+
 scene_detection:
   hard_cut_threshold: 0.42
   fade_threshold: 0.18

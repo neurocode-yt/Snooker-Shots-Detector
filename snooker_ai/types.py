@@ -28,6 +28,18 @@ class EditMode(str, Enum):
         return cls.STRICT
 
 
+class ShotSelection(str, Enum):
+    ALL = "all"
+    POTS_ONLY = "pots_only"
+
+
+class PotStatus(str, Enum):
+    POT = "pot"
+    NO_POT = "no_pot"
+    FOUL = "foul"
+    UNKNOWN = "unknown"
+
+
 class CameraViewType(str, Enum):
     MAIN_TABLE = "main_table"
     WIDE_ARENA = "wide_arena"
@@ -241,6 +253,7 @@ class ShotRecord(BaseModel):
     possible_replay: bool = False
     manual_review_required: bool = False
     evidence: dict[str, Any] = Field(default_factory=dict)
+    pot_status: Optional[PotStatus] = None
     importance: float = 0.0
     included: bool = True
     user_modified: bool = False
@@ -329,6 +342,8 @@ class AnalysisResult(BaseModel):
     shots: list[ShotRecord] = Field(default_factory=list)
     events: list[TimelineEvent] = Field(default_factory=list)
     mode: EditMode = EditMode.STRICT
+    selection: ShotSelection = ShotSelection.ALL
+    pot_selection_summary: dict[str, Any] = Field(default_factory=dict)
     original_duration: float = 0.0
     edited_duration: float = 0.0
     pause_removed_seconds: float = 0.0

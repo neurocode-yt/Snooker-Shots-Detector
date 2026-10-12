@@ -11,7 +11,7 @@ from typing import Any, Optional
 
 from snooker_ai.config import Config
 from snooker_ai.pipeline.algorithms import Algorithm
-from snooker_ai.types import AnalysisResult, JobProgress, JobStatus, ShotRecord, ShotUpdate
+from snooker_ai.types import AnalysisResult, JobProgress, JobStatus, ShotRecord, ShotUpdate, ShotSelection
 from snooker_ai.utils.logging import get_logger
 from snooker_ai.utils.persistence import atomic_text
 
@@ -30,8 +30,10 @@ class JobStore:
     def create(
         self, source_path: str | Path, mode: str = "strict",
         algorithm: str | Algorithm = Algorithm.CLASSIC,
+        selection: str | ShotSelection = ShotSelection.ALL,
     ) -> str:
         selected_algorithm = Algorithm.parse(algorithm)
+        selected_selection = ShotSelection(selection)
         job_id = time.strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8]
         job_dir = self.root / job_id
         job_dir.mkdir(parents=True, exist_ok=True)
@@ -40,6 +42,7 @@ class JobStore:
             "source_path": str(Path(source_path).resolve()),
             "mode": mode,
             "algorithm": selected_algorithm.value,
+            "selection": selected_selection.value,
             "created_at": time.time(),
             "status": JobStatus.PENDING.value,
             "progress": 0.0,
@@ -72,6 +75,7 @@ class JobStore:
             raise FileNotFoundError(f"Job not found: {job_id}")
         meta = json.loads(path.read_text(encoding="utf-8"))
         meta.setdefault("algorithm", Algorithm.CLASSIC.value)
+        meta.setdefault("selection", ShotSelection.ALL.value)
         return meta
 
     def update_progress(
@@ -141,6 +145,8 @@ class JobStore:
             "job_id": result.job_id,
             "source_path": result.source_path,
             "mode": result.mode.value,
+            "selection": result.selection.value,
+            "pot_selection_summary": result.pot_selection_summary,
             "original_duration": result.original_duration,
             "edited_duration": result.edited_duration,
             "pause_removed_seconds": result.pause_removed_seconds,
@@ -156,6 +162,8 @@ class JobStore:
         for s in result.shots:
             if s.shot_id == shot_id:
                 data = update.model_dump(exclude_unset=True)
+                if "included" in data and result.selection is ShotSelection.POTS_ONLY:
+                    s.evidence["pots_only_manual_override"] = True
                 for k, v in data.items():
                     setattr(s, k, v)
                 s.user_modified = True
@@ -188,6 +196,8 @@ class JobStore:
 
     def add_shot(self, job_id: str, shot: ShotRecord) -> ShotRecord:
         result = self.load_analysis(job_id)
+        if result.selection is ShotSelection.POTS_ONLY:
+            shot.evidence["pots_only_manual_override"] = True
         next_id = max((s.shot_id for s in result.shots), default=0) + 1
         shot.shot_id = next_id
         shot.user_modified = True
@@ -223,6 +233,8 @@ class JobStore:
         keep.possible_replay = any(s.possible_replay for s in selected)
         keep.included = any(s.included for s in selected)
         keep.user_modified = True
+        if result.selection is ShotSelection.POTS_ONLY:
+            keep.evidence["pots_only_manual_override"] = True
         keep.manual_review_required = False
         drop = {s.shot_id for s in selected[1:]}
         result.shots = [s for s in result.shots if s.shot_id not in drop]
@@ -256,6 +268,9 @@ class JobStore:
         left.ball_motion_start = min(left.ball_motion_start, at_time)
         left.ball_motion_end = min(left.ball_motion_end, at_time)
         left.user_modified = True
+        if result.selection is ShotSelection.POTS_ONLY:
+            left.evidence["pots_only_manual_override"] = True
+            right.evidence["pots_only_manual_override"] = True
         left.manual_review_required = False
         right.clip_start = at_time
         right.cue_strike = max(at_time, min(right.cue_strike, right.clip_end))

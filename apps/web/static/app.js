@@ -16,9 +16,30 @@ if (DL_ALGO_VISIBLE) {
   workflow.appendChild(document.getElementById("dl-workflow-option").content.cloneNode(true));
 }
 let dlCapability = null;
+let potsAvailable = false;
+let potsStatus = "Checking potted-shots mode…";
+
+async function loadShotSelections() {
+  try {
+    const response = await fetch("/api/shot-selections");
+    if (!response.ok) throw new Error("Restart the app server to enable Potted shots only.");
+    const data = await response.json();
+    const capability = data.selections.find((item) => item.id === "pots_only");
+    potsAvailable = Boolean(capability?.available);
+    potsStatus = capability?.reason || "Potted shots only is unavailable.";
+  } catch (error) {
+    potsAvailable = false;
+    potsStatus = error.message || String(error);
+  }
+  const option = document.getElementById("pots-workflow-option");
+  option.disabled = !potsAvailable;
+  option.title = potsStatus;
+  updateWorkflow();
+}
 
 function updateStartAvailability() {
   startBtn.disabled = !sourceDuration || workflow.disabled
+    || (workflow.value === "pots_only" && !potsAvailable)
     || (workflow.value === "dl_algo" && !dlCapability?.available);
 }
 
@@ -39,15 +60,17 @@ async function loadAlgorithms() {
 function updateWorkflow() {
   const classic = workflow.value === "classic";
   const dl = DL_ALGO_VISIBLE && workflow.value === "dl_algo";
+  const pots = workflow.value === "pots_only";
   document.getElementById("workflow-heading").textContent = classic
-    ? "Upload & analyze" : dl ? "DL Algo" : "Create snooker highlights";
+    ? "Upload & analyze" : dl ? "DL Algo" : pots ? "Potted shots only" : "Create snooker highlights";
   document.getElementById("workflow-description").textContent = classic
     ? "Detect shots, then open the previous editor with preview, timeline, shot controls, and export buttons."
+    : pots ? "Keep confirmed scoring pots using stable scores and the player's turn. Misses and fouls are excluded; unreadable scores are flagged for review."
     : dl ? "Create highlights with DL Algo. Results are saved as a separate job."
       : "Upload the entire match. Remove waiting and setup footage, then export with mix transitions.";
   const status = document.getElementById("algorithm-status");
-  status.classList.toggle("hidden", !dl);
-  status.textContent = dlCapability?.available
+  status.classList.toggle("hidden", !dl && !pots);
+  status.textContent = pots ? potsStatus : dlCapability?.available
     ? "Experimental DL Algo is ready for comparison. Accuracy on new matches has not been verified."
     : dlCapability?.reason || "Checking DL Algo readiness…";
   document.getElementById("pre-editor-heading").textContent = classic
@@ -56,12 +79,13 @@ function updateWorkflow() {
     ? "Split around frame breaks and delete those sections, or keep the whole video. Your original video is never changed."
     : "Keep the whole video and start. Shot detection, cutting, and export run automatically.";
   startBtn.textContent = classic ? "Prepare & start analysis"
-    : dl ? "Create with DL Algo" : "Create video automatically";
+    : dl ? "Create with DL Algo" : pots ? "Create pots-only video" : "Create video automatically";
   updateStartAvailability();
 }
 
 workflow.addEventListener("change", () => {
   updateWorkflow();
+  if (workflow.value === "pots_only") loadShotSelections();
   if (workflow.value === "dl_algo") loadAlgorithms();
 });
 
@@ -77,6 +101,7 @@ let draggingPlayhead = false;
 let dragPointerClientX = 0;
 let dragScrollFrame = 0;
 updateWorkflow();
+loadShotSelections();
 loadAlgorithms();
 setInterval(() => {
   if (workflow.value === "dl_algo" && !dlCapability?.available && !document.hidden) {
@@ -451,7 +476,7 @@ async function refreshJobs() {
       <div class="job-item">
         <div>
           <strong>${job.job_id}</strong>
-          <div class="meta">${job.algorithm === "dl_algo" ? "DL Algo · " : ""}${job.status || ""} · ${(job.progress * 100 || 0).toFixed(0)}% · ${escapeJobText(job.message)}</div>
+          <div class="meta">${job.selection === "pots_only" ? "Potted shots only · " : ""}${job.algorithm === "dl_algo" ? "DL Algo · " : ""}${job.status || ""} · ${(job.progress * 100 || 0).toFixed(0)}% · ${escapeJobText(job.message)}</div>
           ${job.error ? `<div class="meta" role="alert">Error: ${escapeJobText(job.error)}</div>` : ""}
           ${Number.isFinite(job.checkpoint?.source_time) ? `<div class="meta">Saved through ${fmt(job.checkpoint.source_time)}${job.checkpoint.duration ? ` of ${fmt(job.checkpoint.duration)}` : ""}</div>` : ""}
         </div>
@@ -606,7 +631,8 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
     const start = await fetch("/api/jobs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source_path: path, mode, algorithm, resume: true, auto_export: autoExport }),
+      body: JSON.stringify({ source_path: path, mode, algorithm,
+        selection: workflow.value === "pots_only" ? "pots_only" : "all", resume: true, auto_export: autoExport }),
     });
     if (!start.ok) throw new Error(await start.text());
     const { job_id: jobId } = await start.json();

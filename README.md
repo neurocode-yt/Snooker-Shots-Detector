@@ -158,6 +158,22 @@ Jobs whose worker has stopped show **Interrupted** with an error. Decoder failur
 and incomplete proxies cannot silently finish as a successful full-video scan.
 API clients can resume with `POST /api/jobs/{job_id}/continue`.
 
+Choose **Potted shots only** to run the original detector and keep confirmed
+scoring pots. It compares repeated stable points scores before/after a stroke,
+uses the pre-shot turn indicator to exclude foul points awarded to the opponent,
+and waits for delayed updates. Centre frame/match counters are not points scores.
+Unreadable scores, corrections and ambiguous outcomes are excluded automatically
+and flagged in the classic editor for review. This filter does not recover shots
+which the original detector did not find, and it does not guarantee accuracy on
+unsupported broadcast overlays.
+
+**Create pots-only version** in the classic editor creates a separate job using
+the saved detector results; the original job and its export are preserved. The
+score pass also saves resumable checkpoints. API clients set
+`selection: "pots_only"` on `POST /api/jobs`; passing an existing `job_id` creates
+a separate variant when its selection changes. Both default workflows continue
+to use `selection: "all"` and skip the additional score scan.
+
 The timeline stays inside its own horizontally scrollable viewport at every
 zoom level. Drag the yellow playhead to seek. Use `Z` to split, `Ctrl+Z` to
 undo, and `Ctrl+Shift+Z` to redo.

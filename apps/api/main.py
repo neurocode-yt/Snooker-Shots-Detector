@@ -38,6 +38,7 @@ from snooker_ai.types import (
     JobStatus,
     ShotRecord,
     ShotUpdate,
+    ShotSelection,
 )
 from snooker_ai.utils.logging import get_logger, setup_logging
 
@@ -136,6 +137,7 @@ class AnalyzeBody(BaseModel):
     job_id: Optional[str] = None
     mode: str = "strict"
     algorithm: Optional[Algorithm] = None
+    selection: Optional[ShotSelection] = None
     resume: bool = True
     auto_export: bool = True
 
@@ -143,6 +145,7 @@ class AnalyzeBody(BaseModel):
 class RestartBody(BaseModel):
     mode: Optional[str] = None
     algorithm: Optional[Algorithm] = None
+    selection: Optional[ShotSelection] = None
     force: bool = True
     auto_export: Optional[bool] = None
 
@@ -206,11 +209,40 @@ def _run_analysis(
         logger.warning("Job %s is running in another process", job_id)
         return
     try:
-        algorithm = Algorithm.parse(store.get_meta(job_id).get("algorithm"))
+        job_meta = store.get_meta(job_id)
+        algorithm = Algorithm.parse(job_meta.get("algorithm"))
+        selection = ShotSelection(job_meta.get("selection", "all"))
         analyzer = create_analyzer(cfg, store.job_dir(job_id), algorithm)
 
+        # Selection-only variants can reuse the parent's completed detector
+        # output in a separate job; its source, edits and export stay intact.
+        parent_id = job_meta.get("derived_from_job_id")
+        if parent_id and not (store.job_dir(job_id) / "analysis.json").exists():
+            try:
+                parent_meta = store.get_meta(parent_id)
+                parent = store.load_analysis(parent_id)
+                if (Algorithm.parse(parent_meta.get("algorithm")) is algorithm
+                        and Path(parent.source_path).resolve() == Path(source).resolve()):
+                    parent.job_id = job_id
+                    parent.selection = ShotSelection.ALL
+                    parent.pot_selection_summary = {}
+                    for shot in parent.shots:
+                        shot.included = bool(shot.evidence.pop("pots_only_base_included", shot.included))
+                        shot.manual_review_required = bool(shot.evidence.pop("pots_only_base_review_required", shot.manual_review_required))
+                        shot.evidence.pop("pots_only_manual_override", None)
+                        shot.evidence.pop("pot_confirmation", None)
+                        shot.pot_status = None
+                    store.save_analysis(parent)
+            except (OSError, ValueError):
+                logger.info("Parent analysis unavailable; running a fresh detector scan")
+
         def prog(p: float, stage: str, msg: str) -> None:
-            if auto_export:
+            if selection is ShotSelection.POTS_ONLY:
+                p *= .75
+                if stage == JobStatus.READY_FOR_REVIEW.value:
+                    stage = JobStatus.SEGMENTING.value
+                    msg = "Detection complete; checking scores for successful pots"
+            elif auto_export:
                 p *= 0.90
                 if stage == JobStatus.READY_FOR_REVIEW.value:
                     stage = JobStatus.SEGMENTING.value
@@ -225,7 +257,17 @@ def _run_analysis(
             resume=resume,
             force_reanalyze=force_reanalyze,
         )
+        if selection is ShotSelection.POTS_ONLY:
+            from snooker_ai.pot_detection.selector import PotSelector
+            result = PotSelector(cfg, store.job_dir(job_id)).apply(result, progress=lambda frac, msg:
+                store.update_progress(job_id, .75+.15*frac, JobStatus.SEGMENTING, msg))
+            store.save_analysis(result)
+            meta = store.get_meta(job_id)
+            meta["pot_selection_summary"] = result.pot_selection_summary
+            store._write_meta(job_id, meta)
         n_shots = len(result.shots) if result and result.shots is not None else 0
+        kept = sum(shot.included for shot in result.shots)
+        unknown = int(result.pot_selection_summary.get("unknown", 0))
         if auto_export:
             request = ExportRequest(mode=mode, output_path="highlights.mp4", export_clips=False)
             exporter = Exporter(cfg)
@@ -240,9 +282,17 @@ def _run_analysis(
                 meta = store.get_meta(job_id)
                 meta["auto_export_ready"] = bool(rendered.joined_path and rendered.joined_path.is_file())
                 store._write_meta(job_id, meta)
-                message = f"Finished video ready: {n_shots} detected shots"
+                message = (f"Pots-only video ready: {kept} kept from {n_shots} shots; {unknown} need review"
+                           if selection is ShotSelection.POTS_ONLY
+                           else f"Finished video ready: {n_shots} detected shots")
             else:
-                message = "Analysis complete; no playable shots detected"
+                if selection is ShotSelection.POTS_ONLY and unknown:
+                    store.update_progress(job_id, 1., JobStatus.READY_FOR_REVIEW,
+                        f"No confirmed pots; {unknown} shots need review because scores were inconclusive",
+                        shots_detected=n_shots)
+                    return
+                message = ("Analysis complete; no scoring pots detected" if selection is ShotSelection.POTS_ONLY
+                           else "Analysis complete; no playable shots detected")
             store.update_progress(
                 job_id, 1.0, JobStatus.COMPLETED, message, shots_detected=n_shots,
             )
@@ -251,7 +301,8 @@ def _run_analysis(
             job_id,
             1.0,
             JobStatus.READY_FOR_REVIEW,
-            f"Detected {n_shots} shots",
+            (f"Pots only: {kept} kept from {n_shots} shots; {unknown} need review"
+             if selection is ShotSelection.POTS_ONLY else f"Detected {n_shots} shots"),
             shots_detected=n_shots,
         )
     except Exception as exc:
@@ -338,6 +389,14 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     async def get_algorithms() -> dict[str, Any]:
         return {"algorithms": algorithm_capabilities(cfg)}
 
+    @app.get("/api/shot-selections")
+    async def get_shot_selections() -> dict[str, Any]:
+        return {"selections": [
+            {"id": "all", "label": "All shots", "available": True},
+            {"id": "pots_only", "label": "Potted shots only", "available": True,
+             "reason": "Requires readable scores; ambiguous shots can be reviewed"},
+        ]}
+
     @app.get("/api/capcut")
     async def capcut_capability() -> dict[str, Any]:
         try:
@@ -370,12 +429,17 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             raise HTTPException(400, f"source not found: {source}")
         mode = EditMode.from_string(body.mode)
         algorithm = body.algorithm or Algorithm.parse((existing_meta or {}).get("algorithm"))
+        selection = body.selection or ShotSelection((existing_meta or {}).get("selection", "all"))
+        if selection is ShotSelection.POTS_ONLY and algorithm is not Algorithm.CLASSIC:
+            raise HTTPException(400, "Potted shots only uses the current algorithm")
         require_algorithm(algorithm)
         switched_algorithm = (
             existing_meta is not None
             and algorithm != Algorithm.parse(existing_meta.get("algorithm"))
         )
-        if body.job_id and not switched_algorithm:
+        switched_selection = existing_meta is not None and selection.value != existing_meta.get("selection", "all")
+        separate_job = switched_algorithm or switched_selection
+        if body.job_id and not separate_job:
             job_id = body.job_id
             job_dir = store.job_dir(job_id)
             job_dir.mkdir(parents=True, exist_ok=True)
@@ -389,6 +453,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                         "source_path": str(Path(source).resolve()),
                         "mode": mode.value,
                         "algorithm": algorithm.value,
+                        "selection": selection.value,
                         "status": JobStatus.PENDING.value,
                         "progress": 0.0,
                         "stage": "pending",
@@ -396,12 +461,12 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                     },
                 )
         else:
-            job_id = store.create(source, mode=mode.value, algorithm=algorithm)
+            job_id = store.create(source, mode=mode.value, algorithm=algorithm, selection=selection)
         if (_locks.setdefault(job_id, threading.Lock()).locked() or job_id in _queued
                 or JobLease.is_running(store.job_dir(job_id))):
             raise HTTPException(409, f"Job {job_id} is already running")
         meta = store.get_meta(job_id)
-        if switched_algorithm:
+        if separate_job:
             meta["derived_from_job_id"] = body.job_id
         meta["auto_export"] = body.auto_export
         if body.auto_export:
@@ -413,7 +478,8 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         return {
             "job_id": job_id, "status": "started", "mode": mode.value,
             "algorithm": algorithm.value,
-            "derived_from_job_id": body.job_id if switched_algorithm else None,
+            "selection": selection.value,
+            "derived_from_job_id": body.job_id if separate_job else None,
         }
 
     @app.post("/api/jobs/{job_id}/restart")
@@ -434,20 +500,26 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         mode_str = (body.mode if body and body.mode else None) or meta.get("mode", "strict")
         mode = EditMode.from_string(mode_str)
         algorithm = (body.algorithm if body else None) or Algorithm.parse(meta.get("algorithm"))
+        selection = (body.selection if body else None) or ShotSelection(meta.get("selection", "all"))
+        if selection is ShotSelection.POTS_ONLY and algorithm is not Algorithm.CLASSIC:
+            raise HTTPException(400, "Potted shots only uses the current algorithm")
         require_algorithm(algorithm)
         switched_algorithm = algorithm != Algorithm.parse(meta.get("algorithm"))
+        separate_job = switched_algorithm or selection.value != meta.get("selection", "all")
         previous_job_id = job_id
-        if not switched_algorithm:
+        if not separate_job:
             lock = _locks.setdefault(job_id, threading.Lock())
             if lock.locked() or job_id in _queued or JobLease.is_running(store.job_dir(job_id)):
                 raise HTTPException(409, f"Job {job_id} is already running")
         force = body.force if body is not None else True
+        if separate_job and not switched_algorithm and (body is None or "force" not in body.model_fields_set):
+            force = False
         auto_export = (
             body.auto_export if body and body.auto_export is not None
             else bool(meta.get("auto_export", True))
         )
-        if switched_algorithm:
-            job_id = store.create(source, mode=mode.value, algorithm=algorithm)
+        if separate_job:
+            job_id = store.create(source, mode=mode.value, algorithm=algorithm, selection=selection)
             meta = store.get_meta(job_id)
             meta["derived_from_job_id"] = previous_job_id
         meta["auto_export"] = auto_export
@@ -459,7 +531,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             job_id,
             0.01,
             JobStatus.ANALYZING,
-            "Starting separate analysis..." if switched_algorithm
+            "Starting separate analysis..." if separate_job
             else "Restarting analysis from last valid checkpoint...",
             error=None,
         )
@@ -469,11 +541,12 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         _queued.add(job_id)
         return {
             "job_id": job_id,
-            "status": "started" if switched_algorithm else "restarted",
+            "status": "started" if separate_job else "restarted",
             "mode": mode.value,
             "algorithm": algorithm.value,
-            "derived_from_job_id": previous_job_id if switched_algorithm else None,
-            "message": "Starting separate analysis" if switched_algorithm
+            "selection": selection.value,
+            "derived_from_job_id": previous_job_id if separate_job else None,
+            "message": "Starting separate analysis" if separate_job
             else "Restarting analysis from last checkpoint",
         }
 
@@ -589,6 +662,8 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                 return {
                     "job_id": job_id,
                     "mode": timeline.get("mode", "strict"),
+                    "selection": timeline.get("selection", "all"),
+                    "pot_selection_summary": timeline.get("pot_selection_summary", {}),
                     "original_duration": timeline.get("original_duration", 0.0),
                     "edited_duration": timeline.get("edited_duration", 0.0),
                     "shots": timeline.get("shots", []),
@@ -602,6 +677,8 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         return {
             "job_id": job_id,
             "mode": result.mode.value,
+            "selection": result.selection.value,
+            "pot_selection_summary": result.pot_selection_summary,
             "original_duration": result.original_duration,
             "edited_duration": result.edited_duration,
             "shots": [s.model_dump() for s in result.shots],
