@@ -31,12 +31,14 @@ class EditMode(str, Enum):
 class ShotSelection(str, Enum):
     ALL = "all"
     POTS_ONLY = "pots_only"
+    POTS_AND_FOULS = "pots_and_fouls"
 
 
 class PotStatus(str, Enum):
     POT = "pot"
     NO_POT = "no_pot"
     FOUL = "foul"
+    POINTS = "points"
     UNKNOWN = "unknown"
 
 

@@ -433,7 +433,7 @@ def test_capabilities_advertise_selection_separately_from_detection_algorithm(co
     with TestClient(create_app(config)) as client:
         response = client.get("/api/shot-selections")
     assert response.status_code == 200
-    assert [item["id"] for item in response.json()["selections"]] == ["all", "pots_only"]
+    assert [item["id"] for item in response.json()["selections"]] == ["all", "pots_only", "pots_and_fouls"]
 
 
 def test_default_workflow_preserves_shots_and_never_runs_score_selection(

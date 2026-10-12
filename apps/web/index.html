@@ -20,6 +20,7 @@
           <select id="workflow" aria-describedby="workflow-description">
             <option value="automatic">Automatic video</option>
             <option id="pots-workflow-option" value="pots_only" disabled>Potted shots only</option>
+            <option id="points-workflow-option" value="pots_and_fouls" disabled>Pots + fouls highlights</option>
             <option value="classic">Classic editor (previous interface)</option>
           </select>
         </label>
@@ -93,10 +94,11 @@
     <section class="card">
       <h2>Recent jobs</h2>
       <div id="jobs" class="jobs"></div>
+      <button type="button" id="show-more-jobs" class="hidden">Show more videos</button>
     </section>
   </main>
 
   <script src="/static/capcut.js?v=20261011"></script>
-  <script src="/static/app.js?v=20261013pots"></script>
+  <script src="/static/app.js?v=20261013points"></script>
 </body>
 </html>

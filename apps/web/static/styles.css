@@ -130,8 +130,13 @@ button.danger { border-color: var(--danger); color: var(--danger); }
   align-items: center;
 }
 .job-item .meta { color: var(--muted); font-size: 0.85rem; }
+.job-item > div:first-child { min-width: 0; }
+.job-item strong { overflow-wrap: anywhere; }
 .job-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex: 0 1 55%;
   gap: 0.5rem;
   align-items: center;
 }

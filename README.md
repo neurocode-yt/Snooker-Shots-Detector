@@ -167,12 +167,23 @@ and flagged in the classic editor for review. This filter does not recover shots
 which the original detector did not find, and it does not guarantee accuracy on
 unsupported broadcast overlays.
 
-**Create pots-only version** in the classic editor creates a separate job using
-the saved detector results; the original job and its export are preserved. The
-score pass also saves resumable checkpoints. API clients set
-`selection: "pots_only"` on `POST /api/jobs`; passing an existing `job_id` creates
-a separate variant when its selection changes. Both default workflows continue
-to use `selection: "all"` and skip the additional score scan.
+Choose **Pots + fouls highlights** to also keep foul points and confirmed point
+increases whose pot/foul type is uncertain. Unchanged scores are skipped;
+unreadable, corrected and ambiguously timed updates remain flagged for review.
+
+Completed videos in Recent jobs and the classic editor have a one-click
+**Pots + fouls highlights** button. It creates a separate version from the saved
+shot timeline without rerunning detection or uploading the match. Compatible
+score checkpoints are reused; the first score check on a video still takes time,
+and export encodes only the selected clips. Repeated clicks return the finished
+version or resume its interrupted work. Original jobs, exports and explicit
+review choices are preserved. Use **Show more videos** to reach older results.
+
+API clients can call `POST /api/jobs/{job_id}/points-highlights` for this fast
+completed-video action, or set `selection: "pots_and_fouls"` or `"pots_only"`
+on `POST /api/jobs` for new matches. Both default workflows continue to use
+`selection: "all"` and skip the additional score scan. Restart the app server
+after updating to enable these options.
 
 The timeline stays inside its own horizontally scrollable viewport at every
 zoom level. Drag the yellow playhead to seek. Use `Z` to split, `Ctrl+Z` to

@@ -17,6 +17,8 @@ if (DL_ALGO_VISIBLE) {
 }
 let dlCapability = null;
 let potsAvailable = false;
+let pointsAvailable = false;
+let pointsStatus = "Checking points highlights…";
 let potsStatus = "Checking potted-shots mode…";
 
 async function loadShotSelections() {
@@ -27,19 +29,28 @@ async function loadShotSelections() {
     const capability = data.selections.find((item) => item.id === "pots_only");
     potsAvailable = Boolean(capability?.available);
     potsStatus = capability?.reason || "Potted shots only is unavailable.";
+    const points = data.selections.find((item) => item.id === "pots_and_fouls");
+    pointsAvailable = Boolean(points?.available);
+    pointsStatus = points?.reason || "Restart the app server to enable pots + fouls highlights.";
   } catch (error) {
     potsAvailable = false;
     potsStatus = error.message || String(error);
+    pointsAvailable = false;
+    pointsStatus = "Restart the app server to enable pots + fouls highlights.";
   }
   const option = document.getElementById("pots-workflow-option");
   option.disabled = !potsAvailable;
   option.title = potsStatus;
+  document.getElementById("points-workflow-option").disabled = !pointsAvailable;
+  document.getElementById("points-workflow-option").title = pointsStatus;
   updateWorkflow();
+  refreshJobs();
 }
 
 function updateStartAvailability() {
   startBtn.disabled = !sourceDuration || workflow.disabled
     || (workflow.value === "pots_only" && !potsAvailable)
+    || (workflow.value === "pots_and_fouls" && !pointsAvailable)
     || (workflow.value === "dl_algo" && !dlCapability?.available);
 }
 
@@ -61,16 +72,18 @@ function updateWorkflow() {
   const classic = workflow.value === "classic";
   const dl = DL_ALGO_VISIBLE && workflow.value === "dl_algo";
   const pots = workflow.value === "pots_only";
+  const points = workflow.value === "pots_and_fouls";
   document.getElementById("workflow-heading").textContent = classic
-    ? "Upload & analyze" : dl ? "DL Algo" : pots ? "Potted shots only" : "Create snooker highlights";
+    ? "Upload & analyze" : dl ? "DL Algo" : points ? "Pots + fouls highlights" : pots ? "Potted shots only" : "Create snooker highlights";
   document.getElementById("workflow-description").textContent = classic
     ? "Detect shots, then open the previous editor with preview, timeline, shot controls, and export buttons."
+    : points ? "Keep pots, fouls and confirmed points increases. Shots without points are skipped; unclear scores are flagged for review."
     : pots ? "Keep confirmed scoring pots using stable scores and the player's turn. Misses and fouls are excluded; unreadable scores are flagged for review."
     : dl ? "Create highlights with DL Algo. Results are saved as a separate job."
       : "Upload the entire match. Remove waiting and setup footage, then export with mix transitions.";
   const status = document.getElementById("algorithm-status");
-  status.classList.toggle("hidden", !dl && !pots);
-  status.textContent = pots ? potsStatus : dlCapability?.available
+  status.classList.toggle("hidden", !dl && !pots && !points);
+  status.textContent = points ? pointsStatus : pots ? potsStatus : dlCapability?.available
     ? "Experimental DL Algo is ready for comparison. Accuracy on new matches has not been verified."
     : dlCapability?.reason || "Checking DL Algo readiness…";
   document.getElementById("pre-editor-heading").textContent = classic
@@ -79,13 +92,13 @@ function updateWorkflow() {
     ? "Split around frame breaks and delete those sections, or keep the whole video. Your original video is never changed."
     : "Keep the whole video and start. Shot detection, cutting, and export run automatically.";
   startBtn.textContent = classic ? "Prepare & start analysis"
-    : dl ? "Create with DL Algo" : pots ? "Create pots-only video" : "Create video automatically";
+    : dl ? "Create with DL Algo" : points ? "Create points highlights" : pots ? "Create pots-only video" : "Create video automatically";
   updateStartAvailability();
 }
 
 workflow.addEventListener("change", () => {
   updateWorkflow();
-  if (workflow.value === "pots_only") loadShotSelections();
+  if (["pots_only", "pots_and_fouls"].includes(workflow.value)) loadShotSelections();
   if (workflow.value === "dl_algo") loadAlgorithms();
 });
 
@@ -432,6 +445,33 @@ async function restartJob(jobId) {
 }
 
 const capcutJobMessages = new Map();
+const pointsJobMessages = new Map();
+let visibleJobs = 20;
+
+function videoName(job) {
+  return (job.source_path || job.job_id).split(/[\\/]/).pop()
+    .replace(/^\d{8}-\d{6}_[a-f0-9]{8}_/i, "");
+}
+
+async function createPointsHighlights(jobId, button) {
+  const item = button.closest(".job-item");
+  item.dataset.pointsActive = "true";
+  button.disabled = true;
+  button.textContent = "Starting…";
+  try {
+    const response = await fetch(`/api/jobs/${jobId}/points-highlights`, {method: "POST"});
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Could not create points highlights");
+    pointsJobMessages.set(jobId, data.status === "ready"
+      ? "Points highlights are ready in the jobs list."
+      : "Creating points highlights from saved shots; the original video stays available.");
+  } catch (error) {
+    pointsJobMessages.set(jobId, error.message || String(error));
+  } finally {
+    delete item.dataset.pointsActive;
+    await refreshJobs();
+  }
+}
 
 function escapeJobText(value) {
   const span = document.createElement("span");
@@ -459,7 +499,7 @@ async function continueJob(jobId, button) {
 async function refreshJobs() {
   const el = document.getElementById("jobs");
   // Preserve a pending handoff and its result while the periodic job poll runs.
-  if (el.querySelector("[data-capcut-active]")) return;
+  if (el.querySelector("[data-capcut-active], [data-points-active]")) return;
   try {
     const [res, capcut] = await Promise.all([fetch("/api/jobs"), window.snookerCapCut.load()]);
     const jobs = (await res.json()).filter(
@@ -467,20 +507,25 @@ async function refreshJobs() {
     );
     if (!jobs.length) {
       el.innerHTML = "<p class='meta'>No jobs yet.</p>";
+      document.getElementById("show-more-jobs").classList.add("hidden");
       return;
     }
+    document.getElementById("show-more-jobs").classList.toggle("hidden", jobs.length <= visibleJobs);
     el.innerHTML = jobs
-      .slice(0, 20)
+      .slice(0, visibleJobs)
       .map(
         (job) => `
       <div class="job-item">
         <div>
-          <strong>${job.job_id}</strong>
-          <div class="meta">${job.selection === "pots_only" ? "Potted shots only · " : ""}${job.algorithm === "dl_algo" ? "DL Algo · " : ""}${job.status || ""} · ${(job.progress * 100 || 0).toFixed(0)}% · ${escapeJobText(job.message)}</div>
+          <strong>${escapeJobText(videoName(job))}</strong>
+          <div class="meta">${job.job_id}</div>
+          <div class="meta">${job.selection === "pots_and_fouls" ? "Pots + fouls · " : job.selection === "pots_only" ? "Potted shots only · " : ""}${job.algorithm === "dl_algo" ? "DL Algo · " : ""}${job.status || ""} · ${(job.progress * 100 || 0).toFixed(0)}% · ${escapeJobText(job.message)}</div>
+          ${pointsJobMessages.has(job.job_id) ? `<div class="meta" role="status">${escapeJobText(pointsJobMessages.get(job.job_id))}</div>` : ""}
           ${job.error ? `<div class="meta" role="alert">Error: ${escapeJobText(job.error)}</div>` : ""}
           ${Number.isFinite(job.checkpoint?.source_time) ? `<div class="meta">Saved through ${fmt(job.checkpoint.source_time)}${job.checkpoint.duration ? ` of ${fmt(job.checkpoint.duration)}` : ""}</div>` : ""}
         </div>
         <div class="job-actions">
+          ${["completed", "ready_for_review"].includes(job.status) && job.algorithm !== "dl_algo" && job.selection !== "pots_and_fouls" ? `<button type="button" class="btn-points primary" data-job-id="${job.job_id}" ${pointsAvailable && job.can_create_points ? "" : "disabled"} title="${escapeJobText(pointsAvailable ? "Use saved shot detection to create a separate pots + fouls video" : pointsStatus)}">Pots + fouls highlights</button>` : ""}
           ${job.can_continue ? `<button type="button" class="btn-continue primary" data-job-id="${job.job_id}" title="Resume saved work without uploading again">Continue</button>` : ""}
           <button type="button" class="btn-restart" data-job-id="${job.job_id}" ${job.running ? "disabled" : ""}>Restart analysis</button>
           ${job.download_url ? `<a href="${job.download_url}">Download video</a>` : ""}
@@ -632,7 +677,7 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ source_path: path, mode, algorithm,
-        selection: workflow.value === "pots_only" ? "pots_only" : "all", resume: true, auto_export: autoExport }),
+        selection: ["pots_only", "pots_and_fouls"].includes(workflow.value) ? workflow.value : "all", resume: true, auto_export: autoExport }),
     });
     if (!start.ok) throw new Error(await start.text());
     const { job_id: jobId } = await start.json();
@@ -672,6 +717,11 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
 });
 
 document.getElementById("jobs").addEventListener("click", (event) => {
+  const pointsButton = event.target.closest(".btn-points");
+  if (pointsButton?.dataset.jobId) {
+    createPointsHighlights(pointsButton.dataset.jobId, pointsButton);
+    return;
+  }
   const continueButton = event.target.closest(".btn-continue");
   if (continueButton?.dataset.jobId) {
     continueJob(continueButton.dataset.jobId, continueButton);
@@ -701,4 +751,8 @@ document.getElementById("jobs").addEventListener("click", (event) => {
 });
 
 refreshJobs();
+document.getElementById("show-more-jobs").addEventListener("click", () => {
+  visibleJobs += 20;
+  refreshJobs();
+});
 setInterval(refreshJobs, 10000);

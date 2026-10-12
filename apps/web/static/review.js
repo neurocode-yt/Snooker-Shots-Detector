@@ -232,7 +232,7 @@ function render() {
           ${fmt(s.clip_start)} → ${fmt(s.clip_end)} · strike ${fmt(s.cue_strike)}
           ${s.possible_replay ? " · REPLAY" : ""}
           ${s.evidence?.pots_only_manual_override ? " · MANUAL SELECTION" : ""}
-          ${s.pot_status ? ` · ${s.pot_status === "pot" ? "POT" : s.pot_status === "no_pot" ? "NO POT" : s.pot_status === "foul" ? "FOUL" : "POT UNCONFIRMED"}` : ""}
+          ${s.pot_status ? ` · ${s.pot_status === "pot" ? "POT" : s.pot_status === "no_pot" ? "NO POINTS" : s.pot_status === "foul" ? "FOUL" : s.pot_status === "points" ? "POINTS" : "UNCONFIRMED"}` : ""}
           ${s.manual_review_required ? " · REVIEW" : ""}
           ${!s.included ? " · EXCLUDED" : ""}
         </div>
@@ -257,7 +257,7 @@ function render() {
   const included = shots.filter((s) => s.included);
   const edited = included.reduce((a, s) => a + Math.max(0, s.clip_end - s.clip_start), 0);
   stats.innerHTML = `
-    ${meta.selection === "pots_only" ? "Potted shots only · " : ""}
+    ${meta.selection === "pots_and_fouls" ? "Pots + fouls · " : meta.selection === "pots_only" ? "Potted shots only · " : ""}
     ${shots.length} shots · ${included.length} included ·
     source ${fmt(duration)} · edited ~${fmt(edited)} ·
     removed ~${fmt(Math.max(0, duration - edited))}
@@ -275,18 +275,18 @@ function render() {
 async function load() {
   const pr = await fetch(`/api/jobs/${jobId}`);
   meta = await pr.json();
-  let potsAvailable = false;
+  let pointsAvailable = false;
   try {
     const capabilityResponse = await fetch("/api/shot-selections");
     if (capabilityResponse.ok) {
       const capabilities = await capabilityResponse.json();
-      potsAvailable = capabilities.selections.some((item) => item.id === "pots_only" && item.available);
+      pointsAvailable = capabilities.selections.some((item) => item.id === "pots_and_fouls" && item.available);
     }
   } catch (error) {
     // Existing editing and export remain available while capabilities are offline.
   }
-  document.getElementById("pots-only-btn").disabled = Boolean(meta.running)
-    || meta.selection === "pots_only" || meta.algorithm === "dl_algo" || !potsAvailable;
+  document.getElementById("points-highlights-btn").disabled = Boolean(meta.running)
+    || !meta.can_create_points || meta.selection === "pots_and_fouls" || !pointsAvailable;
   document.getElementById("continue-analysis-btn").disabled = Boolean(meta.running);
   document.getElementById("restart-analysis-btn").disabled = Boolean(meta.running);
   if (["failed", "interrupted", "cancelled"].includes(meta.status)) {
@@ -693,17 +693,14 @@ async function runSavedAnalysis(action) {
 }
 document.getElementById("restart-analysis-btn").addEventListener("click", () => runSavedAnalysis("restart"));
 document.getElementById("continue-analysis-btn").addEventListener("click", () => runSavedAnalysis("continue"));
-document.getElementById("pots-only-btn").addEventListener("click", async () => {
-  const button = document.getElementById("pots-only-btn");
+document.getElementById("points-highlights-btn").addEventListener("click", async () => {
+  const button = document.getElementById("points-highlights-btn");
   button.disabled = true;
   try {
-    const response = await fetch("/api/jobs", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ job_id: jobId, algorithm: "classic", selection: "pots_only", auto_export: true }),
-    });
+    const response = await fetch(`/api/jobs/${jobId}/points-highlights`, {method: "POST"});
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Could not create pots-only version");
+      throw new Error(error.detail || "Could not create points highlights");
     }
     window.location.href = "/";
   } catch (error) {

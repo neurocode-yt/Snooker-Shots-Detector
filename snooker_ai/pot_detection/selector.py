@@ -134,16 +134,14 @@ def classify_shot(
     points = delta[side]
     if not 1 <= points <= 15:
         return PotStatus.UNKNOWN, {**evidence, "reason": "score_jump_not_a_single_scoring_stroke"}
+    if not reset and (after[-1].left, after[-1].right) == (base.left, base.right):
+        return PotStatus.UNKNOWN, {**evidence, "reason": "score_corrected_back"}
     if base.active_player is not None and side != base.active_player:
         if 4 <= points <= 7:
             return PotStatus.FOUL, {**evidence, "reason": "opponent_received_points"}
         return PotStatus.UNKNOWN, {**evidence, "reason": "turn_indicator_conflicts_with_score"}
     if base.active_player is None and points >= 4:
         return PotStatus.UNKNOWN, {**evidence, "reason": "foul_or_pot_without_turn_indicator"}
-    # Do not accept a score which returned to its original value. A frame reset
-    # after a stable final pot can still retain that pot's confirmed score.
-    if not reset and (after[-1].left, after[-1].right) == (base.left, base.right):
-        return PotStatus.UNKNOWN, {**evidence, "reason": "score_corrected_back"}
     return PotStatus.POT, {
         **evidence,
         "points": points,
@@ -316,7 +314,14 @@ class PotSelector:
             {round(item.t, 6): item for item in readings}.values(), key=lambda item: item.t
         )
 
-    def apply(self, result: AnalysisResult, progress=None) -> AnalysisResult:
+    def apply(
+        self,
+        result: AnalysisResult,
+        progress=None,
+        selection: ShotSelection = ShotSelection.POTS_ONLY,
+    ) -> AnalysisResult:
+        selection = ShotSelection(selection)
+        include_fouls = selection is ShotSelection.POTS_AND_FOULS
         readings = self.scan(result, progress)
         grace = float(self.settings.get("score_update_grace_seconds", 8))
         baseline = float(self.settings.get("baseline_seconds", 6))
@@ -342,7 +347,22 @@ class PotSelector:
                 + grace,
                 max_score_gap=max(0.8, 1.6 / max(0.5, float(self.settings.get("sample_fps", 2)))),
             )
-            if status is PotStatus.POT and i > 0:
+            if (
+                include_fouls
+                and status is PotStatus.UNKNOWN
+                and evidence.get("reason")
+                in {"foul_or_pot_without_turn_indicator", "turn_indicator_conflicts_with_score"}
+            ):
+                # The increase is confirmed even when its pot/foul attribution
+                # is uncertain. This workflow deliberately includes both.
+                status = PotStatus.POINTS
+                evidence["reason"] = "confirmed_points_change"
+            scoring = status in (
+                {PotStatus.POT, PotStatus.FOUL, PotStatus.POINTS}
+                if include_fouls
+                else {PotStatus.POT}
+            )
+            if scoring and i > 0:
                 previous = shots[i - 1]
                 if (
                     previous.pot_status is PotStatus.UNKNOWN
@@ -359,14 +379,20 @@ class PotSelector:
             shot.pot_status = status
             shot.evidence["pot_confirmation"] = evidence
             if not shot.evidence.get("pots_only_manual_override", False):
-                shot.included = bool(base_included and status is PotStatus.POT)
+                kept_statuses = (
+                    {PotStatus.POT, PotStatus.FOUL, PotStatus.POINTS}
+                    if include_fouls
+                    else {PotStatus.POT}
+                )
+                shot.included = bool(base_included and status in kept_statuses)
                 shot.manual_review_required = bool(base_review or status is PotStatus.UNKNOWN)
-        result.selection = ShotSelection.POTS_ONLY
+        result.selection = selection
         result.pot_selection_summary = {
             **counts,
             "included": sum(shot.included for shot in shots),
             "method": "stable_score_and_striker",
             "policy": _POLICY,
+            "selection": selection.value,
         }
         result.edited_duration = sum(shot.duration() for shot in shots if shot.included)
         result.pause_removed_seconds = max(0.0, result.original_duration - result.edited_duration)

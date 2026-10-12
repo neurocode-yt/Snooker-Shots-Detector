@@ -11,7 +11,14 @@ from typing import Any, Optional
 
 from snooker_ai.config import Config
 from snooker_ai.pipeline.algorithms import Algorithm
-from snooker_ai.types import AnalysisResult, JobProgress, JobStatus, ShotRecord, ShotUpdate, ShotSelection
+from snooker_ai.types import (
+    AnalysisResult,
+    JobProgress,
+    JobStatus,
+    ShotRecord,
+    ShotUpdate,
+    ShotSelection,
+)
 from snooker_ai.utils.logging import get_logger
 from snooker_ai.utils.persistence import atomic_text
 
@@ -28,7 +35,9 @@ class JobStore:
         self.uploads = uploads
 
     def create(
-        self, source_path: str | Path, mode: str = "strict",
+        self,
+        source_path: str | Path,
+        mode: str = "strict",
         algorithm: str | Algorithm = Algorithm.CLASSIC,
         selection: str | ShotSelection = ShotSelection.ALL,
     ) -> str:
@@ -49,6 +58,10 @@ class JobStore:
             "stage": "pending",
             "message": "Created",
         }
+        try:
+            meta["source_fingerprint"] = self.source_fingerprint(source_path)
+        except OSError:
+            pass
         self._write_meta(job_id, meta)
         self.update_progress(job_id, 0.0, JobStatus.PENDING, "Created")
         return job_id
@@ -121,6 +134,74 @@ class JobStore:
         return result
 
     @staticmethod
+    def source_fingerprint(source: str | Path) -> dict[str, Any]:
+        path = Path(source).resolve()
+        stat = path.stat()
+        return {"path": str(path), "size": stat.st_size, "mtime_ns": stat.st_mtime_ns}
+
+    def load_selection_analysis(self, job_id: str) -> AnalysisResult:
+        """Read the saved shot timeline without loading dense detector vectors."""
+        try:
+            data = json.loads((self.job_dir(job_id) / "timeline.json").read_text("utf-8"))
+            if not all(key in data for key in ("source_path", "metadata", "shots")):
+                raise ValueError("Incomplete saved timeline")
+            result = AnalysisResult.model_validate(data)
+            self._sync_review_timestamps(result)
+            return result
+        except (OSError, ValueError, TypeError):
+            return self.load_analysis(job_id)
+
+    def validate_saved_source(self, job_id: str) -> dict[str, Any]:
+        meta = self.get_meta(job_id)
+        current = self.source_fingerprint(meta["source_path"])
+        bound = meta.get("source_fingerprint")
+        if bound is None:
+            proxy_dir = self.job_dir(job_id) / str(self.config.get("paths.proxy_subdir", "proxy"))
+            try:
+                values = json.loads((proxy_dir / "proxy.signature.json").read_text("utf-8"))[
+                    "video"
+                ]["source"]
+                bound = {
+                    "path": str(Path(values[0]).resolve()),
+                    "size": values[1],
+                    "mtime_ns": values[2],
+                }
+            except (OSError, ValueError, KeyError, IndexError, TypeError):
+                # Legacy jobs have no source fingerprint. Reject a source
+                # changed after their saved analysis rather than reusing it.
+                saved = self.job_dir(job_id) / "analysis.json"
+                if not saved.is_file():
+                    saved = self.job_dir(job_id) / "timeline.json"
+                if current["mtime_ns"] > saved.stat().st_mtime_ns:
+                    raise ValueError("Source video changed since detection; analyze it again first")
+        if bound is not None and current != bound:
+            raise ValueError("Source video changed since detection; analyze it again first")
+        return current
+
+    def seed_selection_analysis(self, job_id: str, parent_id: str) -> AnalysisResult:
+        result = self.load_selection_analysis(parent_id)
+        result.job_id = job_id
+        result.selection = ShotSelection.ALL
+        result.pot_selection_summary = {}
+        for shot in result.shots:
+            base_included = shot.evidence.pop("pots_only_base_included", shot.included)
+            if not shot.evidence.get("pots_only_manual_override"):
+                shot.included = bool(base_included)
+            shot.manual_review_required = bool(
+                shot.evidence.pop("pots_only_base_review_required", shot.manual_review_required)
+            )
+            shot.evidence.pop("pot_confirmation", None)
+            shot.pot_status = None
+        self.save_analysis(result)
+        # Score observations belong to the source/window, not the selection
+        # policy. The selector validates signatures/ranges before reuse.
+        for path in (self.job_dir(parent_id) / "pot_score_cache").glob("window_*.json"):
+            atomic_text(
+                self.job_dir(job_id) / "pot_score_cache" / path.name, path.read_text("utf-8")
+            )
+        return result
+
+    @staticmethod
     def _sync_review_timestamps(result: AnalysisResult) -> None:
         for shot in result.shots:
             if shot.user_modified:
@@ -162,7 +243,7 @@ class JobStore:
         for s in result.shots:
             if s.shot_id == shot_id:
                 data = update.model_dump(exclude_unset=True)
-                if "included" in data and result.selection is ShotSelection.POTS_ONLY:
+                if "included" in data and result.selection is not ShotSelection.ALL:
                     s.evidence["pots_only_manual_override"] = True
                 for k, v in data.items():
                     setattr(s, k, v)
@@ -174,9 +255,7 @@ class JobStore:
             raise KeyError(f"Shot {shot_id} not found")
         # Recompute edited duration
         result.edited_duration = sum(s.duration() for s in result.shots if s.included)
-        result.pause_removed_seconds = max(
-            0.0, result.original_duration - result.edited_duration
-        )
+        result.pause_removed_seconds = max(0.0, result.original_duration - result.edited_duration)
         self.save_analysis(result)
         self._export_corrections(job_id, result)
         return found
@@ -188,15 +267,13 @@ class JobStore:
         for i, s in enumerate(result.shots, start=1):
             s.shot_id = i
         result.edited_duration = sum(s.duration() for s in result.shots if s.included)
-        result.pause_removed_seconds = max(
-            0.0, result.original_duration - result.edited_duration
-        )
+        result.pause_removed_seconds = max(0.0, result.original_duration - result.edited_duration)
         self.save_analysis(result)
         self._export_corrections(job_id, result, deleted_strikes=deleted)
 
     def add_shot(self, job_id: str, shot: ShotRecord) -> ShotRecord:
         result = self.load_analysis(job_id)
-        if result.selection is ShotSelection.POTS_ONLY:
+        if result.selection is not ShotSelection.ALL:
             shot.evidence["pots_only_manual_override"] = True
         next_id = max((s.shot_id for s in result.shots), default=0) + 1
         shot.shot_id = next_id
@@ -206,9 +283,7 @@ class JobStore:
         for i, s in enumerate(result.shots, start=1):
             s.shot_id = i
         result.edited_duration = sum(s.duration() for s in result.shots if s.included)
-        result.pause_removed_seconds = max(
-            0.0, result.original_duration - result.edited_duration
-        )
+        result.pause_removed_seconds = max(0.0, result.original_duration - result.edited_duration)
         self.save_analysis(result)
         self._export_corrections(job_id, result)
         return shot
@@ -233,7 +308,7 @@ class JobStore:
         keep.possible_replay = any(s.possible_replay for s in selected)
         keep.included = any(s.included for s in selected)
         keep.user_modified = True
-        if result.selection is ShotSelection.POTS_ONLY:
+        if result.selection is not ShotSelection.ALL:
             keep.evidence["pots_only_manual_override"] = True
         keep.manual_review_required = False
         drop = {s.shot_id for s in selected[1:]}
@@ -242,14 +317,15 @@ class JobStore:
             s.shot_id = i
         result.shots.sort(key=lambda s: s.clip_start)
         result.edited_duration = sum(s.duration() for s in result.shots if s.included)
-        result.pause_removed_seconds = max(
-            0.0, result.original_duration - result.edited_duration
-        )
+        result.pause_removed_seconds = max(0.0, result.original_duration - result.edited_duration)
         self.save_analysis(result)
         self._export_corrections(job_id, result)
         # Return the merged shot (id may have renumbered)
         for s in result.shots:
-            if abs(s.clip_start - keep.clip_start) < 1e-6 and abs(s.clip_end - keep.clip_end) < 1e-6:
+            if (
+                abs(s.clip_start - keep.clip_start) < 1e-6
+                and abs(s.clip_end - keep.clip_end) < 1e-6
+            ):
                 return s
         return keep
 
@@ -268,7 +344,7 @@ class JobStore:
         left.ball_motion_start = min(left.ball_motion_start, at_time)
         left.ball_motion_end = min(left.ball_motion_end, at_time)
         left.user_modified = True
-        if result.selection is ShotSelection.POTS_ONLY:
+        if result.selection is not ShotSelection.ALL:
             left.evidence["pots_only_manual_override"] = True
             right.evidence["pots_only_manual_override"] = True
         left.manual_review_required = False
@@ -283,18 +359,14 @@ class JobStore:
         for i, s in enumerate(result.shots, start=1):
             s.shot_id = i
         result.edited_duration = sum(s.duration() for s in result.shots if s.included)
-        result.pause_removed_seconds = max(
-            0.0, result.original_duration - result.edited_duration
-        )
+        result.pause_removed_seconds = max(0.0, result.original_duration - result.edited_duration)
         self.save_analysis(result)
         self._export_corrections(job_id, result)
         return result.shots
 
     def _recompute_durations(self, result: AnalysisResult) -> None:
         result.edited_duration = sum(s.duration() for s in result.shots if s.included)
-        result.pause_removed_seconds = max(
-            0.0, result.original_duration - result.edited_duration
-        )
+        result.pause_removed_seconds = max(0.0, result.original_duration - result.edited_duration)
 
     def _export_corrections(
         self, job_id: str, result: AnalysisResult, *, deleted_strikes: Optional[list[float]] = None
@@ -308,8 +380,11 @@ class JobStore:
         deleted = sorted(set(deleted + (deleted_strikes or [])))
         # Explicitly adding a shot back restores it, including on re-analysis.
         deleted = [
-            t for t in deleted
-            if not any(shot.user_modified and abs(shot.cue_strike - t) <= 1.5 for shot in result.shots)
+            t
+            for t in deleted
+            if not any(
+                shot.user_modified and abs(shot.cue_strike - t) <= 1.5 for shot in result.shots
+            )
         ]
         path.write_text(
             json.dumps(

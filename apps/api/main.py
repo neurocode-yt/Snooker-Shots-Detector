@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
 import subprocess
@@ -212,12 +213,30 @@ def _run_analysis(
         job_meta = store.get_meta(job_id)
         algorithm = Algorithm.parse(job_meta.get("algorithm"))
         selection = ShotSelection(job_meta.get("selection", "all"))
-        analyzer = create_analyzer(cfg, store.job_dir(job_id), algorithm)
+        reused_result = None
+        fast_variant = bool(job_meta.get("reuse_saved_detection") and not force_reanalyze)
+        if fast_variant:
+            if store.source_fingerprint(source) != job_meta.get("source_fingerprint"):
+                raise ValueError("Source video changed; create fresh highlights from a new analysis")
+            if (store.job_dir(job_id)/"analysis.json").is_file():
+                reused_result = store.load_analysis(job_id)
+            else:
+                parent_id = job_meta["derived_from_job_id"]
+                parent_path = store.job_dir(parent_id)/job_meta.get("parent_analysis_file", "analysis.json")
+                parent_stat = parent_path.stat()
+                if [parent_stat.st_size, parent_stat.st_mtime_ns] != job_meta.get("parent_analysis_identity"):
+                    raise ValueError("Saved analysis changed; click the highlights button again")
+                reused_result = store.seed_selection_analysis(job_id, parent_id)
+            store.update_progress(job_id, .75, JobStatus.SEGMENTING,
+                                  "Reusing saved shots; checking points without rerunning detection")
+        elif force_reanalyze and job_meta.get("reuse_saved_detection"):
+            job_meta["reuse_saved_detection"] = False
+            store._write_meta(job_id, job_meta)
 
         # Selection-only variants can reuse the parent's completed detector
         # output in a separate job; its source, edits and export stay intact.
         parent_id = job_meta.get("derived_from_job_id")
-        if parent_id and not (store.job_dir(job_id) / "analysis.json").exists():
+        if not fast_variant and parent_id and not (store.job_dir(job_id) / "analysis.json").exists():
             try:
                 parent_meta = store.get_meta(parent_id)
                 parent = store.load_analysis(parent_id)
@@ -237,11 +256,11 @@ def _run_analysis(
                 logger.info("Parent analysis unavailable; running a fresh detector scan")
 
         def prog(p: float, stage: str, msg: str) -> None:
-            if selection is ShotSelection.POTS_ONLY:
+            if selection is not ShotSelection.ALL:
                 p *= .75
                 if stage == JobStatus.READY_FOR_REVIEW.value:
                     stage = JobStatus.SEGMENTING.value
-                    msg = "Detection complete; checking scores for successful pots"
+                    msg = "Detection complete; checking scoring shots"
             elif auto_export:
                 p *= 0.90
                 if stage == JobStatus.READY_FOR_REVIEW.value:
@@ -249,18 +268,18 @@ def _run_analysis(
                     msg = "Detection complete; preparing automatic export"
             store.update_progress(job_id, p, stage, msg)
 
-        result = analyzer.analyze(
-            source,
-            job_id,
-            mode=mode,
-            progress=prog,
-            resume=resume,
-            force_reanalyze=force_reanalyze,
-        )
-        if selection is ShotSelection.POTS_ONLY:
+        if reused_result is not None:
+            result = reused_result
+        else:
+            analyzer = create_analyzer(cfg, store.job_dir(job_id), algorithm)
+            result = analyzer.analyze(
+                source, job_id, mode=mode, progress=prog, resume=resume,
+                force_reanalyze=force_reanalyze,
+            )
+        if selection is not ShotSelection.ALL:
             from snooker_ai.pot_detection.selector import PotSelector
             result = PotSelector(cfg, store.job_dir(job_id)).apply(result, progress=lambda frac, msg:
-                store.update_progress(job_id, .75+.15*frac, JobStatus.SEGMENTING, msg))
+                store.update_progress(job_id, .75+.15*frac, JobStatus.SEGMENTING, msg), selection=selection)
             store.save_analysis(result)
             meta = store.get_meta(job_id)
             meta["pot_selection_summary"] = result.pot_selection_summary
@@ -282,16 +301,17 @@ def _run_analysis(
                 meta = store.get_meta(job_id)
                 meta["auto_export_ready"] = bool(rendered.joined_path and rendered.joined_path.is_file())
                 store._write_meta(job_id, meta)
-                message = (f"Pots-only video ready: {kept} kept from {n_shots} shots; {unknown} need review"
-                           if selection is ShotSelection.POTS_ONLY
+                label = "Pots + fouls highlights" if selection is ShotSelection.POTS_AND_FOULS else "Pots-only video"
+                message = (f"{label} ready: {kept} kept from {n_shots} shots; {unknown} need review"
+                           if selection is not ShotSelection.ALL
                            else f"Finished video ready: {n_shots} detected shots")
             else:
-                if selection is ShotSelection.POTS_ONLY and unknown:
+                if selection is not ShotSelection.ALL and unknown:
                     store.update_progress(job_id, 1., JobStatus.READY_FOR_REVIEW,
-                        f"No confirmed pots; {unknown} shots need review because scores were inconclusive",
+                        f"No confirmed scoring shots; {unknown} shots need review because scores were inconclusive",
                         shots_detected=n_shots)
                     return
-                message = ("Analysis complete; no scoring pots detected" if selection is ShotSelection.POTS_ONLY
+                message = ("Analysis complete; no scoring shots detected" if selection is not ShotSelection.ALL
                            else "Analysis complete; no playable shots detected")
             store.update_progress(
                 job_id, 1.0, JobStatus.COMPLETED, message, shots_detected=n_shots,
@@ -301,8 +321,8 @@ def _run_analysis(
             job_id,
             1.0,
             JobStatus.READY_FOR_REVIEW,
-            (f"Pots only: {kept} kept from {n_shots} shots; {unknown} need review"
-             if selection is ShotSelection.POTS_ONLY else f"Detected {n_shots} shots"),
+            (f"{'Pots + fouls' if selection is ShotSelection.POTS_AND_FOULS else 'Pots only'}: {kept} kept from {n_shots} shots; {unknown} need review"
+             if selection is not ShotSelection.ALL else f"Detected {n_shots} shots"),
             shots_detected=n_shots,
         )
     except Exception as exc:
@@ -395,6 +415,8 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             {"id": "all", "label": "All shots", "available": True},
             {"id": "pots_only", "label": "Potted shots only", "available": True,
              "reason": "Requires readable scores; ambiguous shots can be reviewed"},
+            {"id": "pots_and_fouls", "label": "Pots + fouls highlights", "available": True,
+             "reason": "Keep confirmed pots, fouls and points increases"},
         ]}
 
     @app.get("/api/capcut")
@@ -430,7 +452,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         mode = EditMode.from_string(body.mode)
         algorithm = body.algorithm or Algorithm.parse((existing_meta or {}).get("algorithm"))
         selection = body.selection or ShotSelection((existing_meta or {}).get("selection", "all"))
-        if selection is ShotSelection.POTS_ONLY and algorithm is not Algorithm.CLASSIC:
+        if selection is not ShotSelection.ALL and algorithm is not Algorithm.CLASSIC:
             raise HTTPException(400, "Potted shots only uses the current algorithm")
         require_algorithm(algorithm)
         switched_algorithm = (
@@ -501,7 +523,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         mode = EditMode.from_string(mode_str)
         algorithm = (body.algorithm if body else None) or Algorithm.parse(meta.get("algorithm"))
         selection = (body.selection if body else None) or ShotSelection(meta.get("selection", "all"))
-        if selection is ShotSelection.POTS_ONLY and algorithm is not Algorithm.CLASSIC:
+        if selection is not ShotSelection.ALL and algorithm is not Algorithm.CLASSIC:
             raise HTTPException(400, "Potted shots only uses the current algorithm")
         require_algorithm(algorithm)
         switched_algorithm = algorithm != Algorithm.parse(meta.get("algorithm"))
@@ -549,6 +571,69 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             "message": "Starting separate analysis" if separate_job
             else "Restarting analysis from last checkpoint",
         }
+
+    @app.post("/api/jobs/{job_id}/points-highlights")
+    async def points_highlights(job_id: str, background: BackgroundTasks) -> dict[str, Any]:
+        try:
+            parent = store.get_meta(job_id)
+        except FileNotFoundError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        if Algorithm.parse(parent.get("algorithm")) is not Algorithm.CLASSIC:
+            raise HTTPException(400, "Points highlights uses saved results from the current algorithm")
+        if parent.get("status") not in {JobStatus.COMPLETED.value, JobStatus.READY_FOR_REVIEW.value}:
+            raise HTTPException(409, "Wait until this video's analysis has finished")
+        if (_locks.setdefault(job_id, threading.Lock()).locked() or job_id in _queued
+                or JobLease.is_running(store.job_dir(job_id))):
+            raise HTTPException(409, "This video is still processing")
+        analysis_path = store.job_dir(job_id)/"analysis.json"
+        if not analysis_path.is_file():
+            analysis_path = store.job_dir(job_id)/"timeline.json"
+        if not analysis_path.is_file():
+            raise HTTPException(409, "No saved shot detection is available for this video")
+        try:
+            fingerprint = store.validate_saved_source(job_id)
+        except (OSError, ValueError, KeyError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+        if (parent.get("selection") == ShotSelection.POTS_AND_FOULS.value
+                and (store.job_dir(job_id)/"export"/"highlights.mp4").is_file()
+                and parent.get("auto_export_ready") is not False):
+            return {"job_id": job_id, "status": "ready",
+                    "download_url": f"/api/jobs/{job_id}/download/highlights"}
+        stat = analysis_path.stat()
+        identity = [stat.st_size, stat.st_mtime_ns]
+        templates = Path(__file__).resolve().parents[2]/"snooker_ai"/"pot_detection"/"assets"/"score_digits.npz"
+        key = hashlib.sha256(json.dumps({
+            "version": 1, "parent": job_id, "analysis": identity, "source": fingerprint,
+            "scores": cfg.get("pot_selection", {}), "export": cfg.get("export", {}),
+            "templates": hashlib.sha256(templates.read_bytes()).hexdigest(),
+        }, sort_keys=True, default=str).encode()).hexdigest()
+        existing = next((meta for meta in store.list_jobs() if meta.get("points_variant_key") == key), None)
+        if existing is not None:
+            variant_id = existing["job_id"]
+            if (existing.get("status") == JobStatus.COMPLETED.value
+                    and existing.get("auto_export_ready")
+                    and (store.job_dir(variant_id)/"export"/"highlights.mp4").is_file()):
+                return {"job_id": variant_id, "status": "ready",
+                        "download_url": f"/api/jobs/{variant_id}/download/highlights"}
+            if (_locks.setdefault(variant_id, threading.Lock()).locked() or variant_id in _queued
+                    or JobLease.is_running(store.job_dir(variant_id))):
+                return {"job_id": variant_id, "status": "running"}
+            meta = existing
+        else:
+            variant_id = store.create(fingerprint["path"], mode=parent.get("mode", "strict"),
+                                      selection=ShotSelection.POTS_AND_FOULS)
+            meta = store.get_meta(variant_id)
+            meta.update(derived_from_job_id=job_id, reuse_saved_detection=True,
+                        parent_analysis_identity=identity, parent_analysis_file=analysis_path.name,
+                        points_variant_key=key)
+        meta.update(auto_export=True, auto_export_ready=False)
+        store._write_meta(variant_id, meta)
+        store.update_progress(variant_id, min(.9, float(meta.get("progress", 0))), JobStatus.PENDING,
+                              "Creating pots + fouls highlights from saved detection")
+        _queued.add(variant_id)
+        background.add_task(_run_queued_analysis, variant_id, fingerprint["path"],
+            EditMode.from_string(meta.get("mode", "strict")), True, False, cfg, True)
+        return {"job_id": variant_id, "status": "started", "derived_from_job_id": job_id}
 
     @app.post("/api/jobs/{job_id}/continue")
     async def continue_job(job_id: str, background: BackgroundTasks) -> dict[str, Any]:
@@ -632,7 +717,12 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             and meta.get("auto_export_ready") is not False
             and (store.job_dir(job_id) / "export" / "highlights.mp4").is_file()
         )
+        saved = ((store.job_dir(job_id)/"analysis.json").is_file()
+                 or (store.job_dir(job_id)/"timeline.json").is_file())
+        can_points = (not running and saved and Algorithm.parse(meta.get("algorithm")) is Algorithm.CLASSIC
+                      and meta.get("status") in {JobStatus.COMPLETED.value, JobStatus.READY_FOR_REVIEW.value})
         return {**meta, "running": running, "can_continue": not running,
+                "has_saved_detection": saved, "can_create_points": can_points,
                 "checkpoint": checkpoint,
                 "download_url": f"/api/jobs/{job_id}/download/highlights" if available else None}
 
