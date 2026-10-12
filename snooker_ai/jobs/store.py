@@ -13,6 +13,7 @@ from snooker_ai.config import Config
 from snooker_ai.pipeline.algorithms import Algorithm
 from snooker_ai.types import AnalysisResult, JobProgress, JobStatus, ShotRecord, ShotUpdate
 from snooker_ai.utils.logging import get_logger
+from snooker_ai.utils.persistence import atomic_text
 
 logger = get_logger("jobs")
 
@@ -63,24 +64,7 @@ class JobStore:
         # and can make a concurrent reader fail JSON decoding. A unique temp
         # file also keeps simultaneous analyzer processes from sharing scratch
         # state; replace publishes only a complete JSON document.
-        temp_path = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
-        try:
-            temp_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
-            delay = 0.01
-            for attempt in range(8):
-                try:
-                    temp_path.replace(path)
-                    break
-                except PermissionError:
-                    # Windows readers briefly deny replacement while their
-                    # read handle is open. Retry the short sharing window;
-                    # persistent failures still surface to the caller.
-                    if attempt == 7:
-                        raise
-                    time.sleep(delay)
-                    delay = min(0.25, delay * 2)
-        finally:
-            temp_path.unlink(missing_ok=True)
+        atomic_text(path, json.dumps(meta, indent=2))
 
     def get_meta(self, job_id: str) -> dict[str, Any]:
         path = self._meta_path(job_id)
@@ -152,7 +136,7 @@ class JobStore:
     def save_analysis(self, result: AnalysisResult) -> None:
         self._sync_review_timestamps(result)
         path = self.job_dir(result.job_id) / "analysis.json"
-        path.write_text(result.model_dump_json(), encoding="utf-8")
+        atomic_text(path, result.model_dump_json())
         slim = {
             "job_id": result.job_id,
             "source_path": result.source_path,
@@ -164,9 +148,7 @@ class JobStore:
             "scenes": [s.model_dump() for s in result.scenes],
             "metadata": result.metadata.model_dump(),
         }
-        (self.job_dir(result.job_id) / "timeline.json").write_text(
-            json.dumps(slim, indent=2), encoding="utf-8"
-        )
+        atomic_text(self.job_dir(result.job_id) / "timeline.json", json.dumps(slim, indent=2))
 
     def update_shot(self, job_id: str, shot_id: int, update: ShotUpdate) -> ShotRecord:
         result = self.load_analysis(job_id)

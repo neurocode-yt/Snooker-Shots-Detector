@@ -272,6 +272,11 @@ function render() {
 async function load() {
   const pr = await fetch(`/api/jobs/${jobId}`);
   meta = await pr.json();
+  document.getElementById("continue-analysis-btn").disabled = Boolean(meta.running);
+  document.getElementById("restart-analysis-btn").disabled = Boolean(meta.running);
+  if (["failed", "interrupted", "cancelled"].includes(meta.status)) {
+    setExportStatus(`${meta.error || meta.message} — Use Continue to resume saved work.`, "error");
+  }
   document.getElementById("job-label").textContent = jobId;
 
   const res = await fetch(`/api/jobs/${jobId}/shots`);
@@ -627,15 +632,17 @@ document.getElementById("save-labels-btn").addEventListener("click", () => {
   showToast("Labels download started");
 });
 
-document.getElementById("restart-analysis-btn").addEventListener("click", async () => {
-  if (!confirm(`Restart analysis for job ${jobId}? Saved checkpoints and your manual edits will be preserved.`)) return;
-  const btn = document.getElementById("restart-analysis-btn");
+async function runSavedAnalysis(action) {
+  if (action === "restart" && !confirm(`Restart analysis for job ${jobId}? Saved checkpoints and your manual edits will be preserved.`)) return;
+  const btn = document.getElementById(`${action === "continue" ? "continue" : "restart"}-analysis-btn`);
   btn.disabled = true;
-  showToast("Restarting analysis...");
-  setExportStatus("Restarting analysis from last checkpoint...", "working");
+  document.getElementById("continue-analysis-btn").disabled = true;
+  document.getElementById("restart-analysis-btn").disabled = true;
+  showToast(action === "continue" ? "Continuing saved work..." : "Restarting analysis...");
+  setExportStatus("Resuming processing from the last saved checkpoint...", "working");
 
   try {
-    const res = await fetch(`/api/jobs/${jobId}/restart`, { method: "POST" });
+    const res = await fetch(`/api/jobs/${jobId}/${action}`, { method: "POST" });
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.detail || err.message || "Failed to restart analysis");
@@ -646,10 +653,12 @@ document.getElementById("restart-analysis-btn").addEventListener("click", async 
       if (!pRes.ok) return;
       const progressMeta = await pRes.json();
       setExportStatus(`Analyzing: ${progressMeta.status} (${(progressMeta.progress * 100 || 0).toFixed(0)}%) - ${progressMeta.message || ""}`, "working");
-      if (["ready_for_review", "completed", "failed"].includes(progressMeta.status)) {
+      if (["ready_for_review", "completed", "failed", "interrupted", "cancelled"].includes(progressMeta.status)) {
         clearInterval(poll);
         btn.disabled = false;
-        if (progressMeta.status === "failed") {
+        document.getElementById("continue-analysis-btn").disabled = false;
+        document.getElementById("restart-analysis-btn").disabled = false;
+        if (["failed", "interrupted", "cancelled"].includes(progressMeta.status)) {
           showToast(`Analysis failed: ${progressMeta.error || progressMeta.message}`);
           setExportStatus(`Analysis failed: ${progressMeta.error || progressMeta.message}`, "error");
         } else {
@@ -661,10 +670,14 @@ document.getElementById("restart-analysis-btn").addEventListener("click", async 
     }, 1500);
   } catch (err) {
     btn.disabled = false;
+    document.getElementById("continue-analysis-btn").disabled = false;
+    document.getElementById("restart-analysis-btn").disabled = false;
     showToast(`Could not restart: ${err.message}`);
     setExportStatus(`Restart error: ${err.message}`, "error");
   }
-});
+}
+document.getElementById("restart-analysis-btn").addEventListener("click", () => runSavedAnalysis("restart"));
+document.getElementById("continue-analysis-btn").addEventListener("click", () => runSavedAnalysis("continue"));
 
 // Keyboard shortcuts
 document.addEventListener("keydown", (e) => {

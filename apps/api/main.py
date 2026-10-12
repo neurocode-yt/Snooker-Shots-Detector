@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 from snooker_ai.config import Config, load_config
 from snooker_ai.ingestion.probe import probe_video
 from snooker_ai.jobs.store import JobStore
+from snooker_ai.jobs.lease import JobLease
 from snooker_ai.pipeline.analyzer import Analyzer as Analyzer
 from snooker_ai.pipeline.algorithms import Algorithm, algorithm_capabilities, create_analyzer
 from snooker_ai.rendering.exporter import Exporter
@@ -44,6 +45,11 @@ logger = get_logger("api")
 
 # In-process job locks
 _locks: dict[str, threading.Lock] = {}
+_queued: set[str] = set()
+_ACTIVE_STATUSES = {status.value for status in (
+    JobStatus.PENDING, JobStatus.VALIDATING, JobStatus.PROXY, JobStatus.ANALYZING,
+    JobStatus.DETECTING, JobStatus.REFINING, JobStatus.SEGMENTING, JobStatus.EXPORTING,
+)}
 
 
 class VideoFileResponse(FileResponse):
@@ -194,6 +200,11 @@ def _run_analysis(
     if not lock.acquire(blocking=False):
         logger.warning("Job %s already running", job_id)
         return
+    lease = JobLease(store.job_dir(job_id))
+    if not lease.acquire():
+        lock.release()
+        logger.warning("Job %s is running in another process", job_id)
+        return
     try:
         algorithm = Algorithm.parse(store.get_meta(job_id).get("algorithm"))
         analyzer = create_analyzer(cfg, store.job_dir(job_id), algorithm)
@@ -224,6 +235,8 @@ def _run_analysis(
                     "Creating finished video automatically", shots_detected=n_shots,
                 )
                 rendered = exporter.export(result, store.job_dir(job_id) / "export", request)
+                if not rendered.joined_path or not rendered.joined_path.is_file():
+                    raise RuntimeError("The finished video was not created. Use Continue to retry export.")
                 meta = store.get_meta(job_id)
                 meta["auto_export_ready"] = bool(rendered.joined_path and rendered.joined_path.is_file())
                 store._write_meta(job_id, meta)
@@ -243,9 +256,22 @@ def _run_analysis(
         )
     except Exception as exc:
         logger.exception("Job %s failed", job_id)
-        store.update_progress(job_id, 0.0, JobStatus.FAILED, str(exc), error=str(exc))
+        meta = store.get_meta(job_id)
+        store.update_progress(
+            job_id, min(.99, float(meta.get("progress", 0))), JobStatus.FAILED,
+            "Processing stopped. Saved work is preserved; use Continue to retry.",
+            error=str(exc), shots_detected=int(meta.get("shots_detected", 0)),
+        )
     finally:
+        lease.release()
         lock.release()
+
+
+def _run_queued_analysis(*args) -> None:
+    try:
+        _run_analysis(*args)
+    finally:
+        _queued.discard(args[0])
 
 
 def create_app(config: Optional[Config] = None) -> FastAPI:
@@ -371,6 +397,9 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                 )
         else:
             job_id = store.create(source, mode=mode.value, algorithm=algorithm)
+        if (_locks.setdefault(job_id, threading.Lock()).locked() or job_id in _queued
+                or JobLease.is_running(store.job_dir(job_id))):
+            raise HTTPException(409, f"Job {job_id} is already running")
         meta = store.get_meta(job_id)
         if switched_algorithm:
             meta["derived_from_job_id"] = body.job_id
@@ -378,7 +407,9 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         if body.auto_export:
             meta["auto_export_ready"] = False
         store._write_meta(job_id, meta)
-        background.add_task(_run_analysis, job_id, source, mode, body.resume, False, cfg, body.auto_export)
+        store.update_progress(job_id, float(meta.get("progress", 0)), JobStatus.PENDING, "Queued for processing")
+        _queued.add(job_id)
+        background.add_task(_run_queued_analysis, job_id, source, mode, body.resume, False, cfg, body.auto_export)
         return {
             "job_id": job_id, "status": "started", "mode": mode.value,
             "algorithm": algorithm.value,
@@ -408,7 +439,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         previous_job_id = job_id
         if not switched_algorithm:
             lock = _locks.setdefault(job_id, threading.Lock())
-            if lock.locked():
+            if lock.locked() or job_id in _queued or JobLease.is_running(store.job_dir(job_id)):
                 raise HTTPException(409, f"Job {job_id} is already running")
         force = body.force if body is not None else True
         auto_export = (
@@ -433,8 +464,9 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             error=None,
         )
         background.add_task(
-            _run_analysis, job_id, source, mode, True, force, cfg, auto_export
+            _run_queued_analysis, job_id, source, mode, True, force, cfg, auto_export
         )
+        _queued.add(job_id)
         return {
             "job_id": job_id,
             "status": "started" if switched_algorithm else "restarted",
@@ -444,6 +476,30 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             "message": "Starting separate analysis" if switched_algorithm
             else "Restarting analysis from last checkpoint",
         }
+
+    @app.post("/api/jobs/{job_id}/continue")
+    async def continue_job(job_id: str, background: BackgroundTasks) -> dict[str, Any]:
+        try:
+            meta = store.get_meta(job_id)
+        except FileNotFoundError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        if (_locks.setdefault(job_id, threading.Lock()).locked() or job_id in _queued
+                or JobLease.is_running(store.job_dir(job_id))):
+            raise HTTPException(409, f"Job {job_id} is already running")
+        source = meta.get("source_path")
+        if not source or not Path(source).is_file():
+            raise HTTPException(400, f"Source video not found: {source}")
+        algorithm = Algorithm.parse(meta.get("algorithm"))
+        require_algorithm(algorithm)
+        mode = EditMode.from_string(meta.get("mode", "strict"))
+        auto_export = bool(meta.get("auto_export", True))
+        meta["auto_export_ready"] = False
+        store._write_meta(job_id, meta)
+        store.update_progress(job_id, min(.99, float(meta.get("progress", 0))),
+                              JobStatus.PENDING, "Continuing from last saved checkpoint", error=None)
+        _queued.add(job_id)
+        background.add_task(_run_queued_analysis, job_id, source, mode, True, False, cfg, auto_export)
+        return {"job_id": job_id, "status": "continued", "message": "Continuing from last saved checkpoint"}
 
     @app.post("/api/preprocess")
     async def preprocess_video(body: PreprocessBody) -> dict[str, Any]:
@@ -483,17 +539,34 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
 
     def with_download(meta: dict[str, Any]) -> dict[str, Any]:
         job_id = meta["job_id"]
+        running = (_locks.setdefault(job_id, threading.Lock()).locked() or job_id in _queued
+                   or JobLease.is_running(store.job_dir(job_id)))
+        if meta.get("status") in _ACTIVE_STATUSES and not running:
+            store.update_progress(
+                job_id, min(.99, float(meta.get("progress", 0))), JobStatus.INTERRUPTED,
+                "Processing was interrupted. Use Continue to resume saved work.",
+                error="The processing worker stopped before completion.",
+                shots_detected=int(meta.get("shots_detected", 0)),
+            )
+            meta = store.get_meta(job_id)
+        checkpoint = {}
+        try:
+            checkpoint = json.loads((store.job_dir(job_id) / "checkpoint.json").read_text("utf-8"))
+        except (OSError, ValueError):
+            pass
         available = (
             meta.get("status") == JobStatus.COMPLETED.value
             and meta.get("auto_export_ready") is not False
             and (store.job_dir(job_id) / "export" / "highlights.mp4").is_file()
         )
-        return {**meta, "download_url": f"/api/jobs/{job_id}/download/highlights" if available else None}
+        return {**meta, "running": running, "can_continue": not running,
+                "checkpoint": checkpoint,
+                "download_url": f"/api/jobs/{job_id}/download/highlights" if available else None}
 
     @app.get("/api/jobs/{job_id}")
     async def get_job(job_id: str) -> dict[str, Any]:
         try:
-            return store.get_meta(job_id)
+            return with_download(store.get_meta(job_id))
         except FileNotFoundError as exc:
             raise HTTPException(404, str(exc)) from exc
 
@@ -613,6 +686,10 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         lock = _locks.setdefault(job_id, threading.Lock())
         if not lock.acquire(blocking=False):
             raise HTTPException(409, f"Job {job_id} is already processing")
+        lease = JobLease(store.job_dir(job_id))
+        if job_id in _queued or not lease.acquire():
+            lock.release()
+            raise HTTPException(409, f"Job {job_id} is already processing")
         try:
             try:
                 result = store.load_analysis(job_id)
@@ -649,7 +726,9 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             try:
                 er = await asyncio.to_thread(Exporter(cfg).export, result, out_dir, req)
             except Exception as exc:
-                store.update_progress(job_id, 0.0, JobStatus.FAILED, str(exc), error=str(exc))
+                current = store.get_meta(job_id)
+                store.update_progress(job_id, current.get("progress", 0), JobStatus.FAILED,
+                                      "Export stopped. Use Continue to retry saved work.", error=str(exc))
                 raise HTTPException(500, str(exc)) from exc
             clip_paths = er.clip_paths if er and er.clip_paths is not None else []
             meta = store.get_meta(job_id)
@@ -676,6 +755,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                 "training_labels": str(er.training_labels_path) if er.training_labels_path else None,
             }
         finally:
+            lease.release()
             lock.release()
 
     @app.post("/api/jobs/{job_id}/open-capcut")

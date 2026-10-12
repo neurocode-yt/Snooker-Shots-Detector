@@ -149,6 +149,15 @@ API clients can set `auto_export: false` on `POST /api/jobs` to request analysis
 only. Automatic web jobs export a combined video and avoid encoding
 separate numbered clips unless explicitly requested later.
 
+If processing stops or the laptop shuts down, restart the server and click
+**Continue** in Recent jobs or the classic editor. It uses the same job, source,
+and saved edits. The original detector saves coarse observations and tracking
+state about once a minute, reuses completed refinement windows, and reuses saved
+analysis if only export needs retrying. Export itself is retried from that stage.
+Jobs whose worker has stopped show **Interrupted** with an error. Decoder failures
+and incomplete proxies cannot silently finish as a successful full-video scan.
+API clients can resume with `POST /api/jobs/{job_id}/continue`.
+
 The timeline stays inside its own horizontally scrollable viewport at every
 zoom level. Drag the yellow playhead to seek. Use `Z` to split, `Ctrl+Z` to
 undo, and `Ctrl+Shift+Z` to redo.

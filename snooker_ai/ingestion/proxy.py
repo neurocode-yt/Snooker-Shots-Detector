@@ -13,6 +13,8 @@ from snooker_ai.utils.acceleration import acceleration_enabled
 from snooker_ai.utils.ffmpeg import FFmpegError, find_ffmpeg, run_command, supports_encoder
 from snooker_ai.utils.logging import get_logger
 from snooker_ai.utils.timebase import TimeMapper
+from snooker_ai.utils.video import IncompleteVideoError
+from snooker_ai.utils.persistence import atomic_text
 
 logger = get_logger("ingestion.proxy")
 
@@ -113,6 +115,7 @@ def generate_proxy(
                 or int(existing.width or 0) != pw
                 or int(existing.height or 0) != ph
                 or bool(existing.has_audio) != bool(metadata.has_audio)
+                or abs(existing.duration - metadata.duration) > max(.25, 2 / target_fps)
             ):
                 reuse_proxy = False
                 logger.info(
@@ -288,18 +291,17 @@ def generate_proxy(
     elif not metadata.has_audio:
         logger.info("Source has no audio; skipping audio extract")
 
-    temporary_signature = signature_path.with_suffix(".json.tmp")
-    temporary_signature.write_text(json.dumps(signatures), encoding="utf-8")
-    temporary_signature.replace(signature_path)
-
     # Probe proxy duration for mapper (may differ by a few frames)
     from snooker_ai.ingestion.probe import probe_video
 
-    try:
-        proxy_meta = probe_video(proxy_path)
-        proxy_duration = proxy_meta.duration
-    except Exception:
-        proxy_duration = metadata.duration
+    proxy_meta = probe_video(proxy_path)
+    proxy_duration = proxy_meta.duration
+    if abs(proxy_duration - metadata.duration) > max(.25, 2 / target_fps):
+        raise IncompleteVideoError(
+            f"Analysis proxy has {proxy_duration:.2f}s, but the source has {metadata.duration:.2f}s. "
+            "The full video was not converted. Use Continue to regenerate the proxy."
+        )
+    atomic_text(signature_path, json.dumps(signatures))
 
     mapper = TimeMapper(
         source_duration=metadata.duration,

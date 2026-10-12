@@ -408,6 +408,29 @@ async function restartJob(jobId) {
 
 const capcutJobMessages = new Map();
 
+function escapeJobText(value) {
+  const span = document.createElement("span");
+  span.textContent = String(value || "");
+  return span.innerHTML;
+}
+
+async function continueJob(jobId, button) {
+  button.disabled = true;
+  button.textContent = "Continuing…";
+  try {
+    const response = await fetch(`/api/jobs/${jobId}/continue`, { method: "POST" });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Could not continue processing");
+    }
+    await refreshJobs();
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = "Continue";
+    alert(error.message || error);
+  }
+}
+
 async function refreshJobs() {
   const el = document.getElementById("jobs");
   // Preserve a pending handoff and its result while the periodic job poll runs.
@@ -428,10 +451,13 @@ async function refreshJobs() {
       <div class="job-item">
         <div>
           <strong>${job.job_id}</strong>
-          <div class="meta">${job.algorithm === "dl_algo" ? "DL Algo · " : ""}${job.status || ""} · ${(job.progress * 100 || 0).toFixed(0)}% · ${job.message || ""}</div>
+          <div class="meta">${job.algorithm === "dl_algo" ? "DL Algo · " : ""}${job.status || ""} · ${(job.progress * 100 || 0).toFixed(0)}% · ${escapeJobText(job.message)}</div>
+          ${job.error ? `<div class="meta" role="alert">Error: ${escapeJobText(job.error)}</div>` : ""}
+          ${Number.isFinite(job.checkpoint?.source_time) ? `<div class="meta">Saved through ${fmt(job.checkpoint.source_time)}${job.checkpoint.duration ? ` of ${fmt(job.checkpoint.duration)}` : ""}</div>` : ""}
         </div>
         <div class="job-actions">
-          <button type="button" class="btn-restart" data-job-id="${job.job_id}">Restart</button>
+          ${job.can_continue ? `<button type="button" class="btn-continue primary" data-job-id="${job.job_id}" title="Resume saved work without uploading again">Continue</button>` : ""}
+          <button type="button" class="btn-restart" data-job-id="${job.job_id}" ${job.running ? "disabled" : ""}>Restart analysis</button>
           ${job.download_url ? `<a href="${job.download_url}">Download video</a>` : ""}
           ${["completed", "ready_for_review"].includes(job.status) ? `<button type="button" class="btn-capcut" data-job-id="${job.job_id}" ${capcut.available ? "" : "disabled"}>Open in CapCut</button>` : ""}
           <a href="/review/${job.job_id}?editor=classic">${job.algorithm === "dl_algo" ? "Open DL Algo editor" : "Open classic editor"}</a>
@@ -592,13 +618,13 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
       const progress = Math.max(10, (metadata.progress || 0) * 100);
       fill.style.width = `${progress}%`;
       text.textContent = `${metadata.status}: ${metadata.message || ""}`;
-      if (["ready_for_review", "completed", "failed"].includes(metadata.status)) {
+      if (["ready_for_review", "completed", "failed", "interrupted", "cancelled"].includes(metadata.status)) {
         clearInterval(poll);
         workflow.disabled = false;
         updateStartAvailability();
         refreshJobs();
-        if (metadata.status === "failed") {
-          text.textContent = `Failed: ${metadata.error || metadata.message}`;
+        if (["failed", "interrupted", "cancelled"].includes(metadata.status)) {
+          text.textContent = `Processing stopped: ${metadata.error || metadata.message}. Use Continue in Recent jobs.`;
         } else if (metadata.status === "completed") {
           text.textContent = metadata.message || "Finished video ready.";
           if (metadata.download_url) {
@@ -620,6 +646,11 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
 });
 
 document.getElementById("jobs").addEventListener("click", (event) => {
+  const continueButton = event.target.closest(".btn-continue");
+  if (continueButton?.dataset.jobId) {
+    continueJob(continueButton.dataset.jobId, continueButton);
+    return;
+  }
   const capcutButton = event.target.closest(".btn-capcut");
   if (capcutButton?.dataset.jobId) {
     const item = capcutButton.closest(".job-item");

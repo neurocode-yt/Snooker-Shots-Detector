@@ -72,19 +72,20 @@ def test_progress_metadata_is_published_atomically(config, tmp_path, monkeypatch
     store = JobStore(config, root=tmp_path / "jobs")
     jid = store.create(tmp_path / "input.mp4", mode="strict")
     meta_path = store._meta_path(jid)
-    original_write_text = Path.write_text
+    original_replace = Path.replace
     observed_existing_meta = []
 
-    def inspect_temp_write(path, data, *args, **kwargs):
+    def inspect_publication(path, target):
         if path.suffix == ".tmp":
             # The public path retains a complete document until the fully
             # written temporary file is atomically published.
             observed_existing_meta.append(
                 json.loads(meta_path.read_text(encoding="utf-8"))
             )
-        return original_write_text(path, data, *args, **kwargs)
+            assert json.loads(path.read_text(encoding="utf-8"))["message"] == "Halfway"
+        return original_replace(path, target)
 
-    monkeypatch.setattr(Path, "write_text", inspect_temp_write)
+    monkeypatch.setattr(Path, "replace", inspect_publication)
     store.update_progress(jid, 0.5, "analyzing", "Halfway")
 
     assert observed_existing_meta

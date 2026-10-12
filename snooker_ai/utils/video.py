@@ -30,6 +30,10 @@ logger = get_logger("utils.video")
 _hw_state_logged = False
 
 
+class IncompleteVideoError(RuntimeError):
+    """A decoder ended before the requested source interval was read."""
+
+
 def open_capture(path: str | Path, *, prefer_hwaccel: bool = True) -> cv2.VideoCapture:
     """Open a video, preferring hardware decode with a software fallback.
 
@@ -71,6 +75,7 @@ def sampled_frames(
     sample_period: float,
     start_idx: int = 0,
     prefetch: int = 8,
+    next_sample_time: float | None = None,
 ) -> Iterator[tuple[int, float, np.ndarray]]:
     """Yield ``(frame_idx, source_t, frame)`` for each sampled frame.
 
@@ -87,7 +92,8 @@ def sampled_frames(
     def produce() -> None:
         idx = start_idx
         produced = 0
-        next_sample_t = start_time
+        next_sample_t = start_time if next_sample_time is None else next_sample_time
+        ended_early = False
         try:
             while not stop.is_set():
                 video_t = (
@@ -100,17 +106,28 @@ def sampled_frames(
                     break
                 if source_t < start_time - 1e-6 or source_t + 1e-9 < next_sample_t:
                     if not cap.grab():
+                        ended_early = True
                         break
                     idx += 1
                     continue
                 ok, frame = cap.read()
                 if not ok:
+                    ended_early = True
                     break
                 while next_sample_t <= source_t + 1e-9:
                     next_sample_t += sample_period
                 out.put((idx, source_t, frame))
                 idx += 1
                 produced += 1
+            if ended_early and not stop.is_set():
+                reached = to_source(idx / proxy_fps) if proxy_fps > 0 else source_t
+                frame_period = abs(to_source(1 / proxy_fps) - to_source(0)) if proxy_fps > 0 else sample_period
+                if reached + max(.1, 2 * frame_period) < end_time:
+                    raise IncompleteVideoError(
+                        f"Video decoding stopped at {reached:.2f}s of {end_time:.2f}s. "
+                        "Processing is incomplete; saved checkpoints are preserved. "
+                        "Use Continue to retry from the last checkpoint."
+                    )
         except BaseException as exc:  # re-raised in the consumer
             error.append(exc)
         finally:

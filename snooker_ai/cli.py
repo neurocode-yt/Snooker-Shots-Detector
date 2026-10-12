@@ -16,6 +16,7 @@ from snooker_ai import __version__
 from snooker_ai.config import load_config
 from snooker_ai.evaluation.metrics import evaluate_dataset
 from snooker_ai.jobs.store import JobStore
+from snooker_ai.jobs.lease import JobLease
 from snooker_ai.pipeline.analyzer import Analyzer
 from snooker_ai.pipeline.algorithms import Algorithm, algorithm_capabilities, create_analyzer
 from snooker_ai.rendering.exporter import Exporter
@@ -140,22 +141,25 @@ def analyze(
             store.update_progress(jid, p, stage, msg)
 
         try:
-            result = analyzer.analyze(
-                input_video,
-                jid,
-                mode=edit_mode,
-                progress=on_prog,
-                resume=not no_resume,
-            )
-            store.update_progress(
-                jid,
-                1.0,
-                JobStatus.READY_FOR_REVIEW,
-                f"Detected {len(result.shots)} shots",
-                shots_detected=len(result.shots),
-            )
+            with JobLease(store.job_dir(jid)):
+                result = analyzer.analyze(
+                    input_video,
+                    jid,
+                    mode=edit_mode,
+                    progress=on_prog,
+                    resume=not no_resume,
+                )
+                store.update_progress(
+                    jid,
+                    1.0,
+                    JobStatus.READY_FOR_REVIEW,
+                    f"Detected {len(result.shots)} shots",
+                    shots_detected=len(result.shots),
+                )
         except Exception as exc:
-            store.update_progress(jid, 0.0, JobStatus.FAILED, str(exc), error=str(exc))
+            current = store.get_meta(jid)
+            store.update_progress(jid, current.get("progress", 0), JobStatus.FAILED,
+                                  "Processing stopped. Use Continue to resume saved work.", error=str(exc))
             console.print(f"[red]Analysis failed:[/red] {exc}")
             raise typer.Exit(1) from exc
 
@@ -266,22 +270,25 @@ def export(
     store.update_progress(job_id, 0.1, JobStatus.EXPORTING, "Exporting")
     exporter = Exporter(cfg)
     try:
-        er = exporter.export(result, out_dir, request)
-        # Copy joined to requested path if different
-        if er.joined_path and output:
-            dest = output if output.is_absolute() or output.parent != Path(".") else Path.cwd() / output
-            if er.joined_path.resolve() != dest.resolve():
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                import shutil
+        with JobLease(store.job_dir(job_id)):
+            er = exporter.export(result, out_dir, request)
+            # Copy joined to requested path if different
+            if er.joined_path and output:
+                dest = output if output.is_absolute() or output.parent != Path(".") else Path.cwd() / output
+                if er.joined_path.resolve() != dest.resolve():
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    import shutil
 
-                shutil.copy2(er.joined_path, dest)
-                console.print(f"[green]Wrote[/green] {dest}")
-            else:
-                console.print(f"[green]Wrote[/green] {er.joined_path}")
-        console.print(f"Clips: {len(er.clip_paths)} in {out_dir / 'clips'}")
-        store.update_progress(job_id, 1.0, JobStatus.COMPLETED, "Export complete")
+                    shutil.copy2(er.joined_path, dest)
+                    console.print(f"[green]Wrote[/green] {dest}")
+                else:
+                    console.print(f"[green]Wrote[/green] {er.joined_path}")
+            console.print(f"Clips: {len(er.clip_paths)} in {out_dir / 'clips'}")
+            store.update_progress(job_id, 1.0, JobStatus.COMPLETED, "Export complete")
     except Exception as exc:
-        store.update_progress(job_id, 0.0, JobStatus.FAILED, str(exc), error=str(exc))
+        current = store.get_meta(job_id)
+        store.update_progress(job_id, current.get("progress", 0), JobStatus.FAILED,
+                              "Export stopped. Use Continue to retry saved work.", error=str(exc))
         console.print(f"[red]Export failed:[/red] {exc}")
         raise typer.Exit(1) from exc
 
@@ -324,28 +331,32 @@ def batch(
             def on_prog(p: float, stage: str, msg: str, _jid: str = jid) -> None:
                 store.update_progress(_jid, p, stage, msg)
 
-            result = analyzer.analyze(vid, jid, mode=edit_mode, progress=on_prog, resume=True)
-            store.update_progress(
-                jid,
-                1.0,
-                JobStatus.READY_FOR_REVIEW,
-                f"Detected {len(result.shots)} shots",
-                shots_detected=len(result.shots),
-            )
-            console.print(f"[green]OK[/green] {vid.name} → {len(result.shots)} shots ({jid})")
-            if export_after:
-                out_dir = store.job_dir(jid) / "export"
-                Exporter(cfg).export(
-                    result,
-                    out_dir,
-                    ExportRequest(
-                        mode=edit_mode,
-                        output_path=f"{vid.stem}_highlights.mp4",
-                        accurate=True,
-                    ),
+            with JobLease(store.job_dir(jid)):
+                result = analyzer.analyze(vid, jid, mode=edit_mode, progress=on_prog, resume=True)
+                store.update_progress(
+                    jid,
+                    1.0,
+                    JobStatus.READY_FOR_REVIEW,
+                    f"Detected {len(result.shots)} shots",
+                    shots_detected=len(result.shots),
                 )
-                console.print(f"  exported → {out_dir}")
+                console.print(f"[green]OK[/green] {vid.name} → {len(result.shots)} shots ({jid})")
+                if export_after:
+                    out_dir = store.job_dir(jid) / "export"
+                    Exporter(cfg).export(
+                        result,
+                        out_dir,
+                        ExportRequest(
+                            mode=edit_mode,
+                            output_path=f"{vid.stem}_highlights.mp4",
+                            accurate=True,
+                        ),
+                    )
+                    console.print(f"  exported → {out_dir}")
         except Exception as exc:
+            current = store.get_meta(jid)
+            store.update_progress(jid, current.get("progress", 0), JobStatus.FAILED,
+                                  "Processing stopped. Use Continue to resume saved work.", error=str(exc))
             console.print(f"[red]Failed {vid}:[/red] {exc}")
 
 

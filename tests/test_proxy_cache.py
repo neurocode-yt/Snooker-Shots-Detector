@@ -5,6 +5,7 @@ from pathlib import Path
 from snooker_ai.ingestion.proxy import generate_proxy
 from snooker_ai.types import VideoMetadata
 from snooker_ai.utils.ffmpeg import FFmpegError
+from snooker_ai.utils.video import IncompleteVideoError
 import pytest
 
 
@@ -54,6 +55,30 @@ def test_default_proxy_keeps_preview_sound_without_extracting_wav(config, tmp_pa
     assert "-an" not in calls[0]
     assert result.audio_path is None
     assert not (output / "audio.wav").exists()
+
+
+def test_short_proxy_is_regenerated_instead_of_stretching_half_a_match(config, tmp_path, monkeypatch):
+    source, output, metadata, calls, _ = _setup(config, tmp_path, monkeypatch)
+    generate_proxy(source, output, metadata, config)
+    calls.clear()
+    short = VideoMetadata(path="proxy.mp4", width=960, height=540,
+                          duration=2, fps=30, has_audio=True)
+    full = short.model_copy(update={"duration": 5})
+    observations = iter([short, full])
+    monkeypatch.setattr("snooker_ai.ingestion.probe.probe_video", lambda path: next(observations))
+    result = generate_proxy(source, output, metadata, config)
+    assert len(calls) == 1
+    assert result.mapper.to_source(2) == 2
+
+
+def test_short_new_proxy_cannot_be_saved_as_success(config, tmp_path, monkeypatch):
+    source, output, metadata, _, _ = _setup(config, tmp_path, monkeypatch)
+    short = VideoMetadata(path="proxy.mp4", width=960, height=540,
+                          duration=2, fps=30, has_audio=True)
+    monkeypatch.setattr("snooker_ai.ingestion.probe.probe_video", lambda path: short)
+    with pytest.raises(IncompleteVideoError, match="full video was not converted"):
+        generate_proxy(source, output, metadata, config)
+    assert not (output / "proxy.signature.json").exists()
 
 
 def test_proxy_records_cpu_fallback_and_reuses_it(config, tmp_path, monkeypatch):

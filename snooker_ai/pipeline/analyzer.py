@@ -14,6 +14,7 @@ import json
 import os
 import threading
 import time
+from zipfile import BadZipFile
 from bisect import bisect_left, bisect_right
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -57,7 +58,9 @@ from snooker_ai.types import (
 from snooker_ai.utils.logging import get_logger
 from snooker_ai.utils.acceleration import configure_acceleration
 from snooker_ai.utils.timebase import TimeMapper
-from snooker_ai.utils.video import open_capture, sampled_frames
+from snooker_ai.utils.video import IncompleteVideoError, open_capture, sampled_frames
+from snooker_ai.utils.persistence import atomic_text
+from snooker_ai.pipeline.checkpoints import load_snapshot, save_snapshot
 
 logger = get_logger("pipeline")
 
@@ -123,10 +126,13 @@ class Analyzer:
                 result = AnalysisResult.model_validate(data)
                 self._restore_legacy_replay_annotations(result.features, data.get("features", []))
                 prior_result = result
-                if result.analysis_signature == result_signature:
+                if (result.analysis_signature == result_signature
+                        and self._scan_is_complete(result.features, result.original_duration)):
                     if result.mode != mode:
                         result = self._rebuild_segments(result, mode)
                         self._save_result(result)
+                    else:
+                        self._save_timeline(result)
                     report(1.0, JobStatus.READY_FOR_REVIEW.value, "Resumed from saved analysis")
                     return result
                 logger.info("Saved analysis is stale; rebuilding with current detection settings")
@@ -145,6 +151,9 @@ class Analyzer:
         proxy = generate_proxy(source, proxy_dir, metadata, self.config)
 
         cached = self._load_coarse_cache(analysis_signature) if resume else None
+        if cached is not None and not self._scan_is_complete(cached[0], metadata.duration):
+            logger.warning("Coarse checkpoint did not cover the whole video; continuing extraction")
+            cached = None
         if cached is not None:
             features, scenes, candidates = cached
             if self._repair_pathological_replay_labels(features, scenes):
@@ -177,7 +186,12 @@ class Analyzer:
                 ),
                 collect_scene_observations=True,
                 checkpoint_stage="coarse_features",
+                checkpoint_signature=analysis_signature,
+                resume=resume,
             )
+
+            if not self._scan_is_complete(features, metadata.duration):
+                raise IncompleteVideoError("The full video scan is incomplete. Use Continue to resume.")
 
             report(0.68, JobStatus.DETECTING.value, "Detecting camera scenes")
             scenes = self.scene_det.detect_from_observations(
@@ -734,6 +748,8 @@ class Analyzer:
         collect_scene_observations: bool = False,
         checkpoint_stage: str = "features",
         stop_when: Optional[Callable[[list[FrameFeatures]], bool]] = None,
+        checkpoint_signature: str | None = None,
+        resume: bool = True,
     ) -> tuple[list[FrameFeatures], list[SceneObservation], list[float]]:
         sample_fps = float(sample_fps or self.config.get("analysis.sample_fps", 10.0))
         start_time = max(0.0, float(start_time))
@@ -865,6 +881,113 @@ class Analyzer:
         self.tracker = BallTracker()
         self._last_cue_tip = None
 
+        # Only the full coarse scan is checkpointed here. Native windows already
+        # have their own completed-window caches, which Continue reuses.
+        snapshot_path = self.job_dir / "coarse_partial.npz"
+        snapshot_enabled = bool(checkpoint_signature and collect_scene_observations)
+        next_sample_t = start_time
+        saved_at = time.monotonic()
+        checkpoint_every = max(1, int(self.config.get("analysis.checkpoint_every_samples", 120)))
+        checkpoint_seconds = max(1., float(self.config.get("analysis.checkpoint_seconds", 60)))
+        state_names = (
+            "prev_gray", "prev_hist", "prev_image", "prev_sample_t", "camera_scene_id",
+            "geometry", "current_view", "current_view_extra", "last_context_t", "context",
+            "active_foreign", "last_flow_t", "last_table_t", "table_obs", "kept", "next_sample_t",
+        )
+        if snapshot_enabled and resume and snapshot_path.exists():
+            try:
+                snapshot = load_snapshot(snapshot_path)
+                if (snapshot["version"] == 1 and snapshot["signature"] == checkpoint_signature
+                        and snapshot["duration"] == duration and snapshot["sample_fps"] == sample_fps):
+                    restored_features = [FrameFeatures.model_validate(item) for item in snapshot["features"]]
+                    state = snapshot["state"]
+                    if not set(state_names).issubset(state):
+                        raise ValueError("Missing detector state in partial checkpoint")
+                    required = {"table_masks", "motion", "object_diameter", "tracker", "last_cue_tip",
+                                "interaction", "rack_gate", "broadcast", "target_returns", "scene_stream"}
+                    if not required.issubset(snapshot):
+                        raise ValueError("Missing runtime state in partial checkpoint")
+                    next_idx = int(snapshot["next_idx"])
+                    if (not restored_features or next_idx <= 0
+                            or state["kept"] != len(restored_features)
+                            or not 0 <= restored_features[-1].t < duration):
+                        raise ValueError("Invalid partial checkpoint coverage")
+                    if not cap.set(cv2.CAP_PROP_POS_FRAMES, next_idx):
+                        raise RuntimeError("Decoder cannot seek to the saved checkpoint")
+                    if abs(cap.get(cv2.CAP_PROP_POS_FRAMES) - next_idx) > .5:
+                        raise RuntimeError("Decoder did not reach the saved checkpoint")
+                    features = restored_features
+                    idx = next_idx
+                    prev_gray, prev_hist, prev_image = state["prev_gray"], state["prev_hist"], state["prev_image"]
+                    prev_sample_t, camera_scene_id = state["prev_sample_t"], state["camera_scene_id"]
+                    geometry, current_view = state["geometry"], state["current_view"]
+                    current_view_extra = state["current_view_extra"]
+                    last_context_t, context, active_foreign = state["last_context_t"], state["context"], state["active_foreign"]
+                    last_flow_t, last_table_t, table_obs = state["last_flow_t"], state["last_table_t"], state["table_obs"]
+                    kept, next_sample_t = state["kept"], state["next_sample_t"]
+                    self.table._mask_history = snapshot["table_masks"]
+                    self.motion._ema_score, self.motion._last_sample = snapshot["motion"]
+                    self.objects._diameter_ema = snapshot["object_diameter"]
+                    self.tracker.__dict__.update(snapshot["tracker"])
+                    self._last_cue_tip = snapshot["last_cue_tip"]
+                    interaction.__dict__.update(snapshot["interaction"])
+                    if rack_gate is not None:
+                        rack_gate.__dict__.update(snapshot["rack_gate"])
+                    self.broadcast_context.__dict__.update(snapshot["broadcast"])
+                    self._confirmed_target_returns = snapshot["target_returns"]
+                    scene_stream.__dict__.update(snapshot["scene_stream"])
+                    if progress:
+                        progress(features[-1].t / duration,
+                                 f"Continuing from saved checkpoint at {features[-1].t:.1f}s")
+            except (OSError, ValueError, KeyError, TypeError, EOFError, BadZipFile) as exc:
+                logger.warning("Ignoring invalid partial checkpoint: %s", exc)
+                # A malformed state must not combine a restored prefix with a
+                # fresh decoder starting at zero.
+                features, idx, kept = [], 0, 0
+                prev_gray = prev_hist = prev_image = prev_sample_t = None
+                camera_scene_id, next_sample_t = 0, start_time
+                geometry, current_view, current_view_extra = ViewGeometry(), CameraViewType.OTHER, {}
+                last_context_t = context = last_flow_t = last_table_t = table_obs = None
+                active_foreign = False
+                interaction = TableInteractionDetector()
+                if rack_gate is not None:
+                    rack_gate = RackIdleGate()
+                scene_stream = self.scene_det.start_stream()
+                self.table.reset()
+                self.motion.reset()
+                self.objects.reset()
+                self.tracker = BallTracker()
+                self._last_cue_tip = None
+                self.broadcast_context.reset_observations(preserve_target=False)
+                self._confirmed_target_returns = []
+                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+        def persist_snapshot(frame_idx: int, state: dict) -> None:
+            nonlocal saved_at
+            if not snapshot_enabled:
+                return
+            save_snapshot(snapshot_path, {
+                "version": 1, "signature": checkpoint_signature, "duration": duration,
+                "sample_fps": sample_fps, "next_idx": frame_idx + 1,
+                "state": {key: state[key] for key in state_names},
+                "features": [self._cache_feature(item) for item in features],
+                "table_masks": self.table._mask_history,
+                "motion": (self.motion._ema_score, self.motion._last_sample),
+                "object_diameter": self.objects._diameter_ema,
+                "tracker": vars(self.tracker), "last_cue_tip": self._last_cue_tip,
+                "interaction": vars(interaction),
+                "rack_gate": vars(rack_gate) if rack_gate is not None else {},
+                "broadcast": vars(self.broadcast_context),
+                "target_returns": self._confirmed_target_returns,
+                "scene_stream": {key: value for key, value in vars(scene_stream).items() if key != "detector"},
+            })
+            self._write_checkpoint({
+                "stage": checkpoint_stage, "signature": checkpoint_signature,
+                "source_time": features[-1].t, "duration": duration,
+                "frame_idx": frame_idx, "features": len(features),
+            })
+            saved_at = time.monotonic()
+
         # Decode runs on a background thread (see utils.video) so FFmpeg/NVDEC
         # frame decode overlaps the OpenCL/CPU feature extraction below.
         # Unsampled proxy frames are ``grab``-advanced without BGR retrieval.
@@ -877,9 +1000,12 @@ class Analyzer:
             sample_period=sample_period,
             start_idx=idx,
             prefetch=int(self.config.get("analysis.decode_prefetch_frames", 8)),
+            next_sample_time=next_sample_t,
         )
         try:
             for idx, t, frame in frames:
+                while next_sample_t <= t + 1e-9:
+                    next_sample_t += sample_period
                 if resize_to is not None and frame.shape[1::-1] != resize_to:
                     frame = cv2.resize(frame, resize_to, interpolation=cv2.INTER_AREA)
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -929,6 +1055,9 @@ class Analyzer:
                     prev_gray = None
                     prev_hist = hist
                     kept += 1
+                    if snapshot_enabled and (kept == 1 or kept % checkpoint_every == 0
+                                             or time.monotonic() - saved_at >= checkpoint_seconds):
+                        persist_snapshot(idx, locals())
                     if progress and kept % 20 == 0:
                         progress(min(0.99, (t - start_time) / max(end_time - start_time, 1e-6)),
                                  "Skipping stationary racked-table wait")
@@ -1153,6 +1282,9 @@ class Analyzer:
                     scene_stream.observe(frame, t, histogram=hist)
 
                 kept += 1
+                if snapshot_enabled and (kept == 1 or kept % checkpoint_every == 0
+                                         or time.monotonic() - saved_at >= checkpoint_seconds):
+                    persist_snapshot(idx, locals())
                 if (
                     stop_when is not None
                     and kept % max(1, int(round(sample_fps * 0.5))) == 0
@@ -1168,7 +1300,7 @@ class Analyzer:
                     )
 
                 # Checkpoint periodically for long videos
-                if kept % 500 == 0:
+                if not snapshot_enabled and kept % 500 == 0:
                     self._write_checkpoint(
                         {
                             "stage": checkpoint_stage,
@@ -1178,6 +1310,8 @@ class Analyzer:
                         }
                     )
 
+            if snapshot_enabled and features:
+                persist_snapshot(idx, locals())
         finally:
             frames.close()
             cap.release()
@@ -1186,6 +1320,15 @@ class Analyzer:
         observations = scene_stream.observations if scene_stream is not None else []
         self._apply_match_context(features, self._coarse_context_reference)
         return [f for f in features if f.t >= requested_start-1e-6], observations, []
+
+    def _scan_is_complete(self, features: list[FrameFeatures], duration: float) -> bool:
+        if duration <= 0 or not features:
+            return False
+        period = 1 / max(float(self.config.get("analysis.sample_fps", 2)), .01)
+        tolerance = max(1., 2 * period)
+        times = sorted(f.t for f in features if np.isfinite(f.t))
+        return bool(times and times[0] <= tolerance and times[-1] >= duration - tolerance
+                    and all(after - before <= tolerance + 1e-6 for before, after in zip(times, times[1:])))
 
     @staticmethod
     def _apply_match_context(features: list[FrameFeatures], reference: list[FrameFeatures],
@@ -1889,6 +2032,8 @@ class Analyzer:
         # when the user selects serial or parallel native refinement.
         payload["config"]["analysis"] = dict(payload["config"].get("analysis") or {})
         payload["config"]["analysis"].pop("native_contact_workers", None)
+        payload["config"]["analysis"].pop("checkpoint_every_samples", None)
+        payload["config"]["analysis"].pop("checkpoint_seconds", None)
         encoded = json.dumps(
             payload, sort_keys=True, separators=(",", ":"), default=str
         ).encode("utf-8")
@@ -1963,11 +2108,7 @@ class Analyzer:
     @staticmethod
     def _write_json_atomic(path: Path, payload: dict) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_suffix(path.suffix + ".tmp")
-        temporary.write_text(
-            json.dumps(payload, separators=(",", ":")), encoding="utf-8"
-        )
-        temporary.replace(path)
+        atomic_text(path, json.dumps(payload, separators=(",", ":")))
 
     def _coarse_cache_path(self) -> Path:
         return self.job_dir / "coarse_checkpoint.json"
@@ -2009,6 +2150,7 @@ class Analyzer:
                     "candidates": len(candidates),
                 }
             )
+            (self.job_dir / "coarse_partial.npz").unlink(missing_ok=True)
         except OSError as exc:  # analysis can continue without a cache
             logger.warning("Could not save coarse checkpoint: %s", exc)
 
@@ -2338,7 +2480,11 @@ class Analyzer:
     def _save_result(self, result: AnalysisResult) -> None:
         path = self.job_dir / "analysis.json"
         # Full analysis (includes per-frame features for resume / resegment)
-        path.write_text(result.model_dump_json(), encoding="utf-8")
+        atomic_text(path, result.model_dump_json())
+        self._save_timeline(result)
+        logger.info("Saved analysis to %s (%d shots)", path, len(result.shots))
+
+    def _save_timeline(self, result: AnalysisResult) -> None:
         # Slim timeline for the review UI (no dense feature vectors)
         slim = {
             "job_id": result.job_id,
@@ -2355,16 +2501,11 @@ class Analyzer:
             "analysis_version": result.analysis_version,
             "analysis_signature": result.analysis_signature,
         }
-        (self.job_dir / "timeline.json").write_text(
-            json.dumps(slim, indent=2), encoding="utf-8"
-        )
-        logger.info("Saved analysis to %s (%d shots)", path, len(result.shots))
+        atomic_text(self.job_dir / "timeline.json", json.dumps(slim, indent=2))
 
     def _write_checkpoint(self, data: dict) -> None:
         data["updated_at"] = time.time()
-        (self.job_dir / "checkpoint.json").write_text(
-            json.dumps(data), encoding="utf-8"
-        )
+        atomic_text(self.job_dir / "checkpoint.json", json.dumps(data))
 
 
     def _preserve_user_edits(

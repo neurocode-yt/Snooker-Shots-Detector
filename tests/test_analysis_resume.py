@@ -13,7 +13,8 @@ def _saved_analysis(config, tmp_path):
     source.write_bytes(b"source video")
     analyzer = Analyzer(config, tmp_path / "job")
     result = AnalysisResult(
-        job_id="job", source_path=str(source), metadata=VideoMetadata(path=str(source)),
+        job_id="job", source_path=str(source), metadata=VideoMetadata(path=str(source), duration=10),
+        original_duration=10, features=[FrameFeatures(t=i / 2) for i in range(20)],
         analysis_signature=analyzer._result_signature(source),
     )
     analyzer._save_result(result)
@@ -94,7 +95,8 @@ def test_prior_dense_observations_require_matching_source_and_detection_signatur
     monkeypatch.setattr("snooker_ai.pipeline.analyzer.generate_proxy",
                         lambda *args, **kwargs: SimpleNamespace(
                             proxy_path=source, audio_path=None, mapper=TimeMapper(source_duration=10)))
-    monkeypatch.setattr(analyzer, "_load_coarse_cache", lambda signature: ([FrameFeatures(t=0)], [], []))
+    monkeypatch.setattr(analyzer, "_load_coarse_cache", lambda signature: (
+        [FrameFeatures(t=i / 2) for i in range(20)], [], []))
     monkeypatch.setattr(analyzer, "_visual_proposals",
                         lambda features: [StrikeCandidate(timestamp=1, confidence=.6)])
     def refinement(*args, existing_dense=None, **kwargs):
