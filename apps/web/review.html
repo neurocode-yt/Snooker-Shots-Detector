@@ -4,41 +4,40 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Review — Snooker AI</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20261011capcut" />
+  <link rel="stylesheet" href="/static/styles.css?v=20261013ui" />
 </head>
 <body class="review-body">
-  <header class="top compact">
-    <div>
-      <a href="/" class="back">← Jobs</a>
-      <h1>Review <span id="job-label">{{JOB_ID}}</span></h1>
-    </div>
+  <a class="skip-link" href="#editor-workspace">Skip to editor</a>
+  <header class="top compact review-top">
+    <div class="editor-title"><a href="/" class="back">← Your videos</a><h1 id="video-title">Shot editor</h1><p id="editor-subtitle" class="muted">Loading your match…</p></div>
     <div class="header-actions">
-      <button id="restart-analysis-btn" title="Re-run analysis from last valid checkpoint">Restart analysis</button>
-      <button id="continue-analysis-btn" title="Resume processing from the last saved checkpoint">Continue</button>
-      <button id="points-highlights-btn" title="Use saved shots to create a separate pots + fouls video">Pots + fouls highlights</button>
-      <button id="export-combined-btn" class="primary">Export combined video</button>
-      <button id="export-clips-btn">Export individual clips</button>
+      <a id="combined-download-link" class="button secondary export-download-link hidden" download="highlights.mp4">Download video</a>
+      <button id="export-combined-btn" class="primary">Export video</button>
       <button id="open-capcut-btn" disabled title="Checking CapCut Desktop on this PC">Open in CapCut</button>
+      <details class="menu editor-menu"><summary class="button secondary">More <span aria-hidden="true">⌄</span></summary><div class="menu-panel">
+      <button id="points-highlights-btn" title="Use saved shots to create a separate pots + fouls video">Create pots + fouls version</button>
+      <button id="export-clips-btn">Export individual clips</button>
       <button id="open-export-btn" title="Open the folder containing the combined video and exports">
         Open export folder
       </button>
-      <span id="export-status" class="export-status muted" aria-live="polite"></span>
-      <a id="combined-download-link" class="export-download-link hidden" target="_blank" rel="noopener">
-        Download combined video
-      </a>
-      <button id="save-labels-btn">Save training labels</button>
+      <button id="continue-analysis-btn" class="hidden" title="Resume processing from the last saved checkpoint">Continue processing</button>
+      <button id="restart-analysis-btn" title="Re-run analysis from last valid checkpoint">Restart analysis</button>
+      <button id="save-labels-btn">Save review labels</button>
+      <div class="menu-meta">Job <span id="job-label">{{JOB_ID}}</span></div></div></details>
     </div>
   </header>
 
+  <p id="export-status" class="export-status notice hidden" role="status" aria-live="polite"></p>
   <p id="capcut-status" class="capcut-status muted hidden" role="status" aria-live="polite"></p>
 
-  <main class="review-layout">
+  <main class="review-layout" id="editor-workspace">
     <section class="player-col">
-      <section class="selected-preview-card" aria-labelledby="selected-preview-heading">
+      <div class="editor-tabs" role="tablist" aria-label="Video view"><button id="highlights-tab" type="button" role="tab" aria-selected="true" aria-controls="highlights-panel">Highlights preview</button><button id="source-tab" type="button" role="tab" aria-selected="false" aria-controls="source-editor" tabindex="-1">Source &amp; trim</button></div>
+      <section class="selected-preview-card" id="highlights-panel" role="tabpanel" aria-labelledby="highlights-tab">
         <div class="preview-heading-row">
           <div>
-            <h2 id="selected-preview-heading">Selected shots preview</h2>
-            <p class="muted">Previews included shots and skips the rest. The combined export adds smooth mix transitions.</p>
+            <h2 id="selected-preview-heading">Your highlights</h2>
+            <p class="muted">Only included shots. Select a shot on the right to fine-tune it.</p>
           </div>
           <span id="preview-count" class="preview-count">0 shots</span>
         </div>
@@ -53,14 +52,14 @@
         </div>
       </section>
 
-      <details id="source-editor" class="source-editor">
-        <summary>Open source editor and individual-shot controls</summary>
+      <section id="source-editor" class="source-editor hidden" role="tabpanel" aria-labelledby="source-tab">
         <div class="source-editor-content">
+          <div class="source-heading"><h2 id="active-shot-label">Shot controls</h2><span class="muted">Adjust this shot in the full match</span></div>
           <video id="video" controls preload="auto"></video>
           <div class="transport">
             <button data-seek="-1">−1s</button>
             <button data-seek="-0.04">−1f</button>
-            <button id="play-shot">Play shot</button>
+            <button id="play-shot" class="primary">Play shot</button>
             <button data-seek="0.04">+1f</button>
             <button data-seek="1">+1s</button>
             <span id="clock">00:00.000</span>
@@ -69,23 +68,23 @@
             <label>Clip start <input type="number" id="edit-start" step="0.01" /></label>
             <label>Cue strike <input type="number" id="edit-strike" step="0.01" /></label>
             <label>Clip end <input type="number" id="edit-end" step="0.01" /></label>
-            <button id="apply-bounds">Apply (A)</button>
-            <button id="mark-replay">Toggle replay (R)</button>
-            <button id="toggle-include">Include/Exclude (X)</button>
-            <button id="split-shot">Split at playhead (T)</button>
-            <button id="merge-next">Merge with next (M)</button>
-            <button id="delete-shot" class="danger">Delete (Del)</button>
+          </div>
+          <div class="shot-tools"><button id="apply-bounds" class="primary" title="Save boundaries (A)">Save trim</button><button id="toggle-include" title="Include or exclude this shot (X)">Exclude shot</button>
+            <details class="menu shot-menu"><summary class="button secondary">Shot tools <span aria-hidden="true">⌄</span></summary><div class="menu-panel">
+            <button id="mark-replay">Toggle replay</button><button id="split-shot">Split at playhead</button><button id="merge-next">Merge with next</button><button id="delete-shot" class="danger">Delete shot</button></div></details>
           </div>
         </div>
-      </details>
+      </section>
       <div class="stats" id="stats"></div>
-      <p class="hint muted">
+      <details class="keyboard-help"><summary>Keyboard shortcuts</summary><p class="hint muted">
         Shortcuts: J/K navigate · Space play · I/O/S set in/out/strike · A apply ·
         R replay · X include · T split · M merge · N add · Del delete
-      </p>
+      </p></details>
     </section>
 
     <aside class="shots-col">
+      <div class="shots-heading"><h2>Shots <span id="shot-total" class="count-label">0</span></h2><span id="shot-included-count" class="muted"></span></div>
+      <label class="shot-filter-label"><span class="visually-hidden">Filter shots</span><select id="shot-filter" aria-label="Filter shots"><option value="all">All shots</option><option value="included">Included</option><option value="review">Needs review</option><option value="excluded">Excluded</option></select></label>
       <div class="timeline-legend">
         <span class="lg strike"></span> Strike
         <span class="lg review"></span> Needs review
@@ -93,10 +92,9 @@
         <span class="lg excluded"></span> Excluded
       </div>
       <div id="timeline" class="timeline"></div>
-      <ul id="shot-list" class="shot-list"></ul>
+      <ul id="shot-list" class="shot-list" aria-label="Detected shots"></ul>
       <div class="add-shot">
-        <h3>Add missed shot</h3>
-        <button id="add-at-playhead">Add at playhead (N)</button>
+        <button id="add-at-playhead" title="Add a shot at the source video playhead (N)">+ Add missed shot</button><p class="muted">Use the source playhead to mark the cue strike.</p>
       </div>
     </aside>
   </main>
@@ -106,6 +104,7 @@
     window.SNOOKER_JOB_ID = "{{JOB_ID}}";
   </script>
   <script src="/static/capcut.js?v=20261011"></script>
-  <script src="/static/review.js?v=20261013points"></script>
+  <script src="/static/ui.js?v=20261013ui"></script>
+  <script src="/static/review.js?v=20261013ui"></script>
 </body>
 </html>

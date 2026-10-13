@@ -1,4 +1,5 @@
 const jobId = window.SNOOKER_JOB_ID;
+const UI = window.snookerUI;
 const video = document.getElementById("video");
 const selectedVideo = document.getElementById("selected-video");
 const previewPlayBtn = document.getElementById("preview-play");
@@ -6,9 +7,34 @@ const previewSeek = document.getElementById("preview-seek");
 const previewClock = document.getElementById("preview-clock");
 const previewCount = document.getElementById("preview-count");
 const sourceEditor = document.getElementById("source-editor");
-if (new URLSearchParams(window.location.search).get("editor") === "classic") {
-  sourceEditor.open = true;
+const highlightsPanel = document.getElementById("highlights-panel");
+const shotFilter = document.getElementById("shot-filter");
+let currentEditorView = "highlights";
+function setEditorView(view, fromShot = false) {
+  const source = view === "source";
+  if (source && currentEditorView !== "source" && !fromShot && selectedVideo.readyState >= HTMLMediaElement.HAVE_METADATA) seekTo(selectedVideo.currentTime);
+  if (source) selectedVideo.pause(); else video.pause();
+  highlightsPanel.classList.toggle("hidden", source);
+  sourceEditor.classList.toggle("hidden", !source);
+  currentEditorView = view;
+  ["highlights", "source"].forEach((name) => {
+    const tab = document.getElementById(`${name}-tab`);
+    tab.setAttribute("aria-selected", String((name === "source") === source));
+    tab.tabIndex = (name === "source") === source ? 0 : -1;
+  });
 }
+["highlights", "source"].forEach((name) => {
+  const tab = document.getElementById(`${name}-tab`);
+  tab.addEventListener("click", () => setEditorView(name));
+  tab.addEventListener("keydown", (event) => {
+    if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+      event.preventDefault();
+      const target = event.key === "Home" ? "highlights" : event.key === "End" ? "source" : name === "source" ? "highlights" : "source";
+      setEditorView(target);
+      document.getElementById(`${target}-tab`).focus();
+    }
+  });
+});
 const shotList = document.getElementById("shot-list");
 const timeline = document.getElementById("timeline");
 const stats = document.getElementById("stats");
@@ -35,6 +61,8 @@ let shots = [];
 let activeId = null;
 let duration = 0;
 let meta = {};
+let exportBusy = false;
+let pointsCapabilityAvailable = false;
 let pendingSeek = null;
 let playbackStopAt = null;
 let previewSegments = [];
@@ -53,14 +81,16 @@ function showToast(msg) {
 
 function setExportStatus(message, state = "") {
   exportStatus.textContent = message;
+  exportStatus.classList.toggle("hidden", !message);
   exportStatus.dataset.state = state;
 }
 
 function fmt(t) {
   if (!Number.isFinite(t)) return "00:00.000";
-  const m = Math.floor(t / 60);
+  const hours = Math.floor(t / 3600);
+  const m = Math.floor(t / 60) % 60;
   const s = t % 60;
-  return `${String(m).padStart(2, "0")}:${s.toFixed(3).padStart(6, "0")}`;
+  return `${hours ? `${hours}:` : ""}${String(m).padStart(2, "0")}:${s.toFixed(3).padStart(6, "0")}`;
 }
 
 function previewPosition() {
@@ -222,23 +252,23 @@ function confClass(s) {
   return "";
 }
 
+function visibleShots() {
+  return shots.filter((shot) => shotFilter.value === "included" ? shot.included
+    : shotFilter.value === "excluded" ? !shot.included
+    : shotFilter.value === "review" ? shot.manual_review_required : true);
+}
+shotFilter.addEventListener("change", render);
+
 function render() {
-  shotList.innerHTML = shots
-    .map((s) => {
-      const cls = [confClass(s), s.shot_id === activeId ? "active" : ""].filter(Boolean).join(" ");
-      return `<li class="${cls}" data-id="${s.shot_id}">
-        <div class="title">Shot ${s.shot_id} · conf ${s.shot_confidence.toFixed(2)}</div>
-        <div class="detail">
-          ${fmt(s.clip_start)} → ${fmt(s.clip_end)} · strike ${fmt(s.cue_strike)}
-          ${s.possible_replay ? " · REPLAY" : ""}
-          ${s.evidence?.pots_only_manual_override ? " · MANUAL SELECTION" : ""}
-          ${s.pot_status ? ` · ${s.pot_status === "pot" ? "POT" : s.pot_status === "no_pot" ? "NO POINTS" : s.pot_status === "foul" ? "FOUL" : s.pot_status === "points" ? "POINTS" : "UNCONFIRMED"}` : ""}
-          ${s.manual_review_required ? " · REVIEW" : ""}
-          ${!s.included ? " · EXCLUDED" : ""}
-        </div>
-      </li>`;
-    })
-    .join("");
+  const focusedShot = document.activeElement?.closest(".shot-open")?.closest("[data-id]")?.dataset.id;
+  const list = visibleShots();
+  shotList.innerHTML = list.map((shot) => {
+    const classes = [confClass(shot), shot.manual_review_required ? "needs-review" : "", shot.shot_id === activeId ? "active" : ""].filter(Boolean).join(" ");
+    const outcome = {pot: "Pot", no_pot: "No points", foul: "Foul", points: "Points", unknown: "Unconfirmed"}[shot.pot_status];
+    return `<li class="${classes}" data-id="${shot.shot_id}">
+      <button class="shot-open" aria-label="Edit shot ${shot.shot_id}" ${shot.shot_id === activeId ? 'aria-current="true"' : ""}><span class="shot-number">${String(shot.shot_id).padStart(2, "0")}</span><span class="shot-copy"><strong>${UI.time(shot.clip_start)} → ${UI.time(shot.clip_end)}</strong><small>Strike ${fmt(shot.cue_strike)} · ${(shot.clip_end - shot.clip_start).toFixed(1)}s</small><span class="shot-badges">${outcome ? `<span class="shot-badge ${shot.pot_status}">${outcome}</span>` : ""}${shot.manual_review_required ? '<span class="shot-badge warning">Review</span>' : ""}${shot.possible_replay ? '<span class="shot-badge">Replay</span>' : ""}${!shot.included ? '<span class="shot-badge">Excluded</span>' : ""}</span></span></button>
+      <label class="shot-include-label"><input type="checkbox" class="shot-include" data-shot-id="${shot.shot_id}" aria-label="Include shot ${shot.shot_id}" ${shot.included ? "checked" : ""} ${UI.active(meta) || exportBusy ? "disabled" : ""} /></label></li>`;
+  }).join("") || '<li class="empty-state">No shots in this filter.</li>';
 
   timeline.innerHTML = shots
     .map((s) => {
@@ -256,25 +286,41 @@ function render() {
 
   const included = shots.filter((s) => s.included);
   const edited = included.reduce((a, s) => a + Math.max(0, s.clip_end - s.clip_start), 0);
-  stats.innerHTML = `
-    ${meta.selection === "pots_and_fouls" ? "Pots + fouls · " : meta.selection === "pots_only" ? "Potted shots only · " : ""}
-    ${shots.length} shots · ${included.length} included ·
-    source ${fmt(duration)} · edited ~${fmt(edited)} ·
-    removed ~${fmt(Math.max(0, duration - edited))}
-  `;
+  stats.innerHTML = `<div><strong>${included.length} / ${shots.length}</strong><span>Shots included</span></div><div><strong>${UI.time(edited)}</strong><span>Selected footage</span></div><div><strong>${UI.time(duration)}</strong><span>Original match</span></div>`;
+  document.getElementById("shot-total").textContent = shots.length;
+  document.getElementById("shot-included-count").textContent = `${included.length} included`;
+  exportCombinedBtn.disabled = exportClipsBtn.disabled = UI.active(meta) || exportBusy || !included.length;
+  document.getElementById("editor-subtitle").textContent = `${UI.mode(meta)} · ${UI.status(meta).label}`;
+  document.getElementById("continue-analysis-btn").classList.toggle("hidden", !UI.actions(meta).resume);
+  document.getElementById("restart-analysis-btn").disabled = UI.active(meta) || exportBusy;
+  document.getElementById("points-highlights-btn").disabled = exportBusy || !UI.actions(meta, pointsCapabilityAvailable).points;
+  document.getElementById("add-at-playhead").disabled = UI.active(meta) || exportBusy;
 
   const active = shots.find((s) => s.shot_id === activeId);
+  document.getElementById("active-shot-label").textContent = active ? `Shot ${active.shot_id}` : "Shot controls";
+  document.getElementById("toggle-include").textContent = active?.included ? "Exclude shot" : "Include shot";
+  document.querySelectorAll(".boundary-edit input, .shot-tools button, .transport button").forEach((button) => { button.disabled = !active || UI.active(meta) || exportBusy; });
   if (active) {
     document.getElementById("edit-start").value = active.clip_start.toFixed(3);
     document.getElementById("edit-strike").value = active.cue_strike.toFixed(3);
     document.getElementById("edit-end").value = active.clip_end.toFixed(3);
   }
   refreshPreviewPlaylist();
+  if (focusedShot) shotList.querySelector(`li[data-id="${focusedShot}"] .shot-open`)?.focus({preventScroll: true});
 }
 
 async function load() {
   const pr = await fetch(`/api/jobs/${jobId}`);
+  if (!pr.ok) { setExportStatus("This video could not be loaded. Return to Your videos and try again.", "error"); return; }
   meta = await pr.json();
+  document.getElementById("video-title").textContent = UI.title(meta);
+  document.getElementById("editor-subtitle").textContent = `${UI.mode(meta)} · ${UI.status(meta).label}`;
+  if (meta.export_needs_update) setExportStatus("Edits saved. Export video to update your highlights.", "ready");
+  document.title = `${UI.title(meta)} — Shot editor`;
+  if (meta.download_url) {
+    combinedDownloadLink.href = meta.download_url;
+    combinedDownloadLink.classList.remove("hidden");
+  } else combinedDownloadLink.classList.add("hidden");
   let pointsAvailable = false;
   try {
     const capabilityResponse = await fetch("/api/shot-selections");
@@ -285,8 +331,10 @@ async function load() {
   } catch (error) {
     // Existing editing and export remain available while capabilities are offline.
   }
+  pointsCapabilityAvailable = pointsAvailable;
   document.getElementById("points-highlights-btn").disabled = Boolean(meta.running)
     || !meta.can_create_points || meta.selection === "pots_and_fouls" || !pointsAvailable;
+  document.getElementById("continue-analysis-btn").classList.toggle("hidden", !UI.actions(meta).resume);
   document.getElementById("continue-analysis-btn").disabled = Boolean(meta.running);
   document.getElementById("restart-analysis-btn").disabled = Boolean(meta.running);
   if (["failed", "interrupted", "cancelled"].includes(meta.status)) {
@@ -296,7 +344,7 @@ async function load() {
 
   const res = await fetch(`/api/jobs/${jobId}/shots`);
   if (!res.ok) {
-    showToast("Analysis not ready yet");
+    setExportStatus(meta.running ? `${UI.phase(meta)}. Your shots will appear when detection finishes.` : "No saved shots are available for this video.", meta.running ? "working" : "error");
     return;
   }
   const data = await res.json();
@@ -306,9 +354,9 @@ async function load() {
   video.src = videoUrl;
   selectedVideo.src = videoUrl;
   if (shots.length) {
-    activeId = shots[0].shot_id;
-    seekTo(shots[0].clip_start);
-  }
+    activeId = shots.some((shot) => shot.shot_id === activeId) ? activeId : shots[0].shot_id;
+    seekTo(currentShot().clip_start);
+  } else activeId = null;
   render();
 }
 
@@ -351,22 +399,44 @@ function currentShot() {
 }
 
 shotList.addEventListener("click", (e) => {
+  if (!e.target.closest(".shot-open")) return;
   const li = e.target.closest("li[data-id]");
   if (!li) return;
   activeId = Number(li.dataset.id);
+  video.pause();
+  playbackStopAt = null;
   const s = currentShot();
   if (s) seekTo(s.clip_start);
-  sourceEditor.open = true;
+  setEditorView("source", true);
   render();
+});
+
+shotList.addEventListener("keydown", (event) => {
+  const button = event.target.closest(".shot-open");
+  if (!button || !["j", "k", "ArrowDown", "ArrowUp"].includes(event.key)) return;
+  event.preventDefault();
+  const list = visibleShots();
+  const index = list.findIndex((shot) => shot.shot_id === Number(button.closest("[data-id]").dataset.id));
+  const next = list[index + (["j", "ArrowDown"].includes(event.key) ? 1 : -1)];
+  if (!next) return;
+  activeId = next.shot_id;
+  video.pause();
+  playbackStopAt = null;
+  seekTo(next.clip_start);
+  setEditorView("source", true);
+  render();
+  shotList.querySelector(`li[data-id="${next.shot_id}"] .shot-open`)?.focus({preventScroll: true});
 });
 
 timeline.addEventListener("click", (e) => {
   const seg = e.target.closest(".seg[data-id]");
   if (!seg) return;
   activeId = Number(seg.dataset.id);
+  video.pause();
+  playbackStopAt = null;
   const s = currentShot();
   if (s) seekTo(s.clip_start);
-  sourceEditor.open = true;
+  setEditorView("source", true);
   render();
 });
 
@@ -416,6 +486,9 @@ async function applyBounds() {
   }
   const updated = await res.json();
   shots = shots.map((x) => (x.shot_id === updated.shot_id ? updated : x));
+  meta.export_needs_update = true;
+  combinedDownloadLink.classList.add("hidden");
+  setExportStatus("Trim saved. Export video to update your highlights.", "ready");
   showToast("Boundaries saved");
   render();
 }
@@ -439,21 +512,31 @@ document.getElementById("mark-replay").addEventListener("click", async () => {
   render();
 });
 
-document.getElementById("toggle-include").addEventListener("click", async () => {
-  const s = currentShot();
-  if (!s) return;
-  const res = await fetch(`/api/jobs/${jobId}/shots/${s.shot_id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ included: !s.included }),
+async function setShotIncluded(shot, included) {
+  const hadCheckboxFocus = document.activeElement?.matches(`.shot-include[data-shot-id="${shot.shot_id}"]`);
+  const res = await fetch(`/api/jobs/${jobId}/shots/${shot.shot_id}`, {
+    method: "PATCH", headers: {"Content-Type": "application/json"}, body: JSON.stringify({included}),
   });
-  if (!res.ok) {
-    showToast("Update failed");
-    return;
-  }
+  if (!res.ok) throw new Error("The shot selection could not be saved. Try again.");
   const updated = await res.json();
-  shots = shots.map((x) => (x.shot_id === updated.shot_id ? updated : x));
+  shots = shots.map((item) => item.shot_id === updated.shot_id ? updated : item);
+  meta.export_needs_update = true;
+  combinedDownloadLink.classList.add("hidden");
+  setExportStatus("Selection saved. Export video to update your highlights.", "ready");
   render();
+  if (hadCheckboxFocus) (shotList.querySelector(`.shot-include[data-shot-id="${shot.shot_id}"]`) || shotFilter).focus({preventScroll: true});
+}
+document.getElementById("toggle-include").addEventListener("click", async () => {
+  const shot = currentShot();
+  if (!shot) return;
+  try { await setShotIncluded(shot, !shot.included); } catch (error) { showToast(error.message); }
+});
+shotList.addEventListener("change", async (event) => {
+  const checkbox = event.target.closest(".shot-include");
+  if (!checkbox) return;
+  const shot = shots.find((item) => item.shot_id === Number(checkbox.dataset.shotId));
+  checkbox.disabled = true;
+  try { await setShotIncluded(shot, checkbox.checked); } catch (error) { checkbox.checked = shot.included; checkbox.disabled = false; showToast(error.message); }
 });
 
 document.getElementById("delete-shot").addEventListener("click", async () => {
@@ -508,7 +591,8 @@ document.getElementById("merge-next").addEventListener("click", async () => {
 });
 
 document.getElementById("add-at-playhead").addEventListener("click", async () => {
-  const t = video.currentTime;
+  setEditorView("source");
+  const t = pendingSeek ?? video.currentTime;
   const body = {
     cue_strike: t,
     clip_start: Math.max(0, t - 2),
@@ -571,12 +655,14 @@ function downloadArtifact(url) {
 
 async function runExport({ combined, clips, button }) {
   const originalLabel = button.textContent;
+  exportBusy = true;
+  render();
   button.disabled = true;
   exportCombinedBtn.disabled = true;
   exportClipsBtn.disabled = true;
   combinedDownloadLink.classList.add("hidden");
   combinedDownloadLink.removeAttribute("href");
-  button.textContent = combined ? "Combining selected shots..." : "Exporting clips...";
+  button.textContent = "Exporting…";
   setExportStatus(
     combined
       ? "Rendering one continuous video from included shots..."
@@ -622,9 +708,13 @@ async function runExport({ combined, clips, button }) {
     showToast("Export failed: " + err.message);
     setExportStatus("Export failed; check the analysis log for details", "error");
   } finally {
+    exportBusy = false;
     button.textContent = originalLabel;
-    exportCombinedBtn.disabled = false;
-    exportClipsBtn.disabled = false;
+    try {
+      const response = await fetch(`/api/jobs/${jobId}`);
+      if (response.ok) meta = await response.json();
+    } catch (error) { /* Keep the saved shot list while the connection recovers. */ }
+    render();
   }
 }
 
@@ -711,17 +801,26 @@ document.getElementById("points-highlights-btn").addEventListener("click", async
 
 // Keyboard shortcuts
 document.addEventListener("keydown", (e) => {
-  if (e.target.matches("input, textarea, select")) return;
-  const idx = shots.findIndex((s) => s.shot_id === activeId);
+  if (e.ctrlKey || e.metaKey || e.altKey || e.target.matches("input, textarea, select, button, summary, a")) return;
+  if (currentEditorView !== "source" && ["a", "r", "x", "t", "m", "delete", "i", "o", "s"].includes(e.key.toLowerCase())) {
+    showToast("Select a shot or open Source & trim to edit it.");
+    return;
+  }
+  const filtered = visibleShots();
+  const idx = filtered.findIndex((s) => s.shot_id === activeId);
   if (e.key === "j" || e.key === "ArrowDown") {
-    if (idx < shots.length - 1) {
-      activeId = shots[idx + 1].shot_id;
+    e.preventDefault();
+    if (idx < filtered.length - 1) {
+      activeId = filtered[idx + 1].shot_id;
+      setEditorView("source", true);
       seekTo(currentShot().clip_start);
       render();
     }
   } else if (e.key === "k" || e.key === "ArrowUp") {
+    e.preventDefault();
     if (idx > 0) {
-      activeId = shots[idx - 1].shot_id;
+      activeId = filtered[idx - 1].shot_id;
+      setEditorView("source", true);
       seekTo(currentShot().clip_start);
       render();
     }
@@ -739,7 +838,7 @@ document.addEventListener("keydown", (e) => {
     document.getElementById("merge-next").click();
   } else if (e.key === " " && !e.repeat) {
     e.preventDefault();
-    if (sourceEditor.open) {
+    if (currentEditorView === "source") {
       if (video.paused) video.play();
       else video.pause();
     } else {
@@ -756,4 +855,10 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-load();
+document.addEventListener("click", (event) => {
+  document.querySelectorAll(".menu[open]").forEach((menu) => { if (!menu.contains(event.target)) menu.open = false; });
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") document.querySelectorAll(".menu[open]").forEach((menu) => { menu.open = false; menu.querySelector("summary").focus(); });
+});
+load().catch(() => setExportStatus("Unable to load the editor. Check the app connection and reload.", "error"));

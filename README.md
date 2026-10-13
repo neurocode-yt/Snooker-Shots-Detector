@@ -150,7 +150,7 @@ only. Automatic web jobs export a combined video and avoid encoding
 separate numbered clips unless explicitly requested later.
 
 If processing stops or the laptop shuts down, restart the server and click
-**Continue** in Recent jobs or the classic editor. It uses the same job, source,
+**Continue processing** in Your videos or the editor's More menu. It uses the same job, source,
 and saved edits. The original detector saves coarse observations and tracking
 state about once a minute, reuses completed refinement windows, and reuses saved
 analysis if only export needs retrying. Export itself is retried from that stage.
@@ -158,7 +158,7 @@ Jobs whose worker has stopped show **Interrupted** with an error. Decoder failur
 and incomplete proxies cannot silently finish as a successful full-video scan.
 API clients can resume with `POST /api/jobs/{job_id}/continue`.
 
-Choose **Potted shots only** to run the original detector and keep confirmed
+Choose **Pots only** to run the original detector and keep confirmed
 scoring pots. It compares repeated stable points scores before/after a stroke,
 uses the pre-shot turn indicator to exclude foul points awarded to the opponent,
 and waits for delayed updates. Centre frame/match counters are not points scores.
@@ -167,12 +167,12 @@ and flagged in the classic editor for review. This filter does not recover shots
 which the original detector did not find, and it does not guarantee accuracy on
 unsupported broadcast overlays.
 
-Choose **Pots + fouls highlights** to also keep foul points and confirmed point
+Choose **Pots + fouls** to also keep foul points and confirmed point
 increases whose pot/foul type is uncertain. Unchanged scores are skipped;
 unreadable, corrected and ambiguously timed updates remain flagged for review.
 
-Completed videos in Recent jobs and the classic editor have a one-click
-**Pots + fouls highlights** button. It creates a separate version from the saved
+Completed videos in Your videos have a one-click **Pots + fouls** button. The
+editor offers **Create pots + fouls version** under More. It creates a separate version from the saved
 shot timeline without rerunning detection or uploading the match. Compatible
 score checkpoints are reused; the first score check on a video still takes time,
 and export encodes only the selected clips. Repeated clicks return the finished
@@ -184,6 +184,17 @@ completed-video action, or set `selection: "pots_and_fouls"` or `"pots_only"`
 on `POST /api/jobs` for new matches. Both default workflows continue to use
 `selection: "all"` and skip the additional score scan. Restart the app server
 after updating to enable these options.
+
+The workspace separates new-match creation from the searchable video library.
+Filter videos by Processing, Ready or Needs attention. Finished videos offer
+download and editing; only interrupted/failed jobs offer Continue. CapCut,
+restarting and processing details stay in each video's More menu.
+
+The editor shows one player at a time: **Highlights preview** or **Source & trim**.
+Filter the shot list and use its checkboxes to include/exclude shots, then export
+the updated video. Saved edits preserve the previous file but mark its download
+as out of date until a new combined export succeeds. Editing controls pause
+during export. Optional frame-break trimming stays collapsed until needed.
 
 The timeline stays inside its own horizontally scrollable viewport at every
 zoom level. Drag the yellow playhead to seek. Use `Z` to split, `Ctrl+Z` to

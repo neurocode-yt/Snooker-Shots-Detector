@@ -4,43 +4,50 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Snooker AI</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20261011capcut" />
+  <link rel="stylesheet" href="/static/styles.css?v=20261013ui" />
 </head>
-<body>
+<body class="home-body">
+  <a class="skip-link" href="#workspace">Skip to workspace</a>
   <header class="top">
-    <h1>Snooker AI</h1>
-    <p class="sub">Full-match shot detection, break removal &amp; smooth highlights</p>
+    <a class="brand" href="/" aria-label="Snooker AI home"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>Snooker AI</a>
+    <a class="workspace-link" href="#videos">Your videos <span aria-hidden="true">↗</span></a>
   </header>
 
-  <main class="panel">
-    <section class="card">
-      <h2 id="workflow-heading">Create snooker highlights</h2>
+  <main class="panel" id="workspace">
+    <div class="page-heading"><p class="eyebrow">YOUR EDITING WORKSPACE</p><h1>Less waiting. More snooker.</h1><p class="muted">Create highlights from a new match, or pick up a video you’ve already processed.</p></div>
+    <section class="card upload-card" aria-labelledby="workflow-heading">
+      <div class="section-heading"><div><p class="eyebrow">NEW MATCH</p><h2 id="workflow-heading">Create highlights</h2></div><span class="subtle-label">Your original video stays intact</span></div>
       <form id="upload-form">
-        <label for="workflow">Workflow
-          <select id="workflow" aria-describedby="workflow-description">
-            <option value="automatic">Automatic video</option>
-            <option id="pots-workflow-option" value="pots_only" disabled>Potted shots only</option>
-            <option id="points-workflow-option" value="pots_and_fouls" disabled>Pots + fouls highlights</option>
-            <option value="classic">Classic editor (previous interface)</option>
-          </select>
-        </label>
+        <select id="workflow" class="hidden" aria-hidden="true" tabindex="-1">
+          <option value="automatic">Automatic video</option><option id="pots-workflow-option" value="pots_only" disabled>Potted shots only</option>
+          <option id="points-workflow-option" value="pots_and_fouls" disabled>Pots + fouls highlights</option><option value="classic">Classic editor (previous interface)</option>
+        </select>
+        <fieldset class="workflow-choices"><legend>1. Choose your highlights</legend>
+          <label class="workflow-choice"><input type="radio" name="highlight-workflow" value="automatic" checked /><span><strong>All shots</strong><small>Keep every detected shot</small></span><span class="choice-check" aria-hidden="true">✓</span></label>
+          <label class="workflow-choice"><input type="radio" name="highlight-workflow" value="pots_only" disabled /><span><strong>Pots only</strong><small>Keep confirmed scoring pots</small></span><span class="choice-check" aria-hidden="true">✓</span></label>
+          <label class="workflow-choice"><input type="radio" name="highlight-workflow" value="pots_and_fouls" disabled /><span><strong>Pots + fouls</strong><small>Keep confirmed points changes</small></span><span class="choice-check" aria-hidden="true">✓</span></label>
+          <label class="workflow-choice"><input type="radio" name="highlight-workflow" value="classic" /><span><strong>Review &amp; edit</strong><small>Choose your shots in the editor</small></span><span class="choice-check" aria-hidden="true">✓</span></label>
+        </fieldset>
         <template id="dl-workflow-option">
           <option value="dl_algo">DL Algo</option>
         </template>
-        <p id="workflow-description" class="muted">Upload the entire match. Remove waiting and setup footage, then export with mix transitions.</p>
-        <p id="algorithm-status" class="muted hidden" role="status" aria-live="polite"></p>
-        <label class="file-label">
-          <input type="file" id="file" accept="video/*,.mp4,.mov,.mkv,.avi,.webm" required />
-          <span id="file-name">Choose a snooker video…</span>
+        <p id="workflow-description" class="workflow-description muted">Detect shots and create a finished video automatically.</p>
+        <p id="algorithm-status" class="notice hidden" role="status" aria-live="polite"></p>
+        <p class="field-label">2. Add your match</p>
+        <label class="file-label" id="file-drop-zone">
+          <input type="file" id="file" class="visually-hidden" aria-label="Choose a snooker video" accept="video/*,.mp4,.mov,.mkv,.avi,.webm" required />
+          <span class="upload-symbol" aria-hidden="true">↑</span>
+          <span class="file-copy"><strong id="file-name">Choose a video or drop it here</strong><small id="file-meta">MP4, MOV, MKV, AVI or WebM</small></span>
+          <span class="button secondary" id="file-action" aria-hidden="true">Browse files</span>
         </label>
 
         <section id="pre-editor" class="pre-editor hidden" aria-labelledby="pre-editor-heading">
+          <details id="trim-options" class="trim-options"><summary><span>Trim frame breaks <small>Optional</small></span><span id="edit-summary" class="preview-count">Loading…</span></summary><div class="trim-content">
           <div class="pre-editor-heading">
             <div>
               <h3 id="pre-editor-heading">Optional source trimming</h3>
               <p id="pre-editor-description" class="muted">Keep the whole video and start. Shot detection, cutting, and export run automatically.</p>
             </div>
-            <span id="edit-summary" class="preview-count">Loading…</span>
           </div>
 
           <video id="source-preview" controls preload="metadata"></video>
@@ -79,26 +86,35 @@
             Drag the yellow playhead to seek. Z splits, Ctrl+Z undoes, and Ctrl+Shift+Z redoes.
             Use the zoom controls or Ctrl + mouse wheel over the timeline for long matches.
           </p>
+          </div></details>
         </section>
-        <div class="row">
-          <span class="muted">2s lead-in · At least 4s per shot, including 2s after impact · 2–3s end trim when possible</span>
-          <button type="submit" id="start-btn" disabled>Create video automatically</button>
+        <div class="upload-footer">
+          <span class="muted">Includes the lead-in and ball movement, with smooth transitions.</span>
+          <button type="submit" id="start-btn" class="primary" disabled>Create highlights <span aria-hidden="true">↗</span></button>
         </div>
       </form>
-      <div id="progress-wrap" class="hidden">
-        <div class="progress-bar"><div id="progress-fill"></div></div>
+      <div id="progress-wrap" class="upload-progress hidden" role="status" aria-live="polite">
+        <div class="progress-bar" role="progressbar" aria-label="Match processing" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progress-fill"></div></div>
         <p id="progress-text">Starting…</p>
       </div>
     </section>
 
-    <section class="card">
-      <h2>Recent jobs</h2>
-      <div id="jobs" class="jobs"></div>
+    <section class="card library-card" id="videos" aria-labelledby="library-heading">
+      <div class="section-heading"><div><p class="eyebrow">VIDEO LIBRARY</p><h2 id="library-heading">Your videos <span id="jobs-count" class="count-label"></span></h2></div><label class="search-field"><span class="visually-hidden">Search videos</span><input type="search" id="job-search" placeholder="Search by video name…" /></label></div>
+      <div class="library-filters" role="group" aria-label="Filter videos">
+        <button type="button" data-job-filter="all" aria-pressed="true">All videos <span data-filter-count="all">0</span></button>
+        <button type="button" data-job-filter="processing" aria-pressed="false">Processing <span data-filter-count="processing">0</span></button>
+        <button type="button" data-job-filter="ready" aria-pressed="false">Ready <span data-filter-count="ready">0</span></button>
+        <button type="button" data-job-filter="attention" aria-pressed="false">Needs attention <span data-filter-count="attention">0</span></button>
+      </div>
+      <p id="library-status" class="notice hidden" role="status"></p>
+      <div id="jobs" class="jobs" aria-label="Video library"><p class="empty-state">Loading your videos…</p></div>
       <button type="button" id="show-more-jobs" class="hidden">Show more videos</button>
     </section>
   </main>
 
   <script src="/static/capcut.js?v=20261011"></script>
-  <script src="/static/app.js?v=20261013points"></script>
+  <script src="/static/ui.js?v=20261013ui"></script>
+  <script src="/static/app.js?v=20261013ui"></script>
 </body>
 </html>

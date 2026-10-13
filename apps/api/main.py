@@ -300,6 +300,7 @@ def _run_analysis(
                     raise RuntimeError("The finished video was not created. Use Continue to retry export.")
                 meta = store.get_meta(job_id)
                 meta["auto_export_ready"] = bool(rendered.joined_path and rendered.joined_path.is_file())
+                meta["export_needs_update"] = False
                 store._write_meta(job_id, meta)
                 label = "Pots + fouls highlights" if selection is ShotSelection.POTS_AND_FOULS else "Pots-only video"
                 message = (f"{label} ready: {kept} kept from {n_shots} shots; {unknown} need review"
@@ -596,7 +597,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             raise HTTPException(409, str(exc)) from exc
         if (parent.get("selection") == ShotSelection.POTS_AND_FOULS.value
                 and (store.job_dir(job_id)/"export"/"highlights.mp4").is_file()
-                and parent.get("auto_export_ready") is not False):
+                and parent.get("auto_export_ready") is not False and not parent.get("export_needs_update")):
             return {"job_id": job_id, "status": "ready",
                     "download_url": f"/api/jobs/{job_id}/download/highlights"}
         stat = analysis_path.stat()
@@ -612,6 +613,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             variant_id = existing["job_id"]
             if (existing.get("status") == JobStatus.COMPLETED.value
                     and existing.get("auto_export_ready")
+                    and not existing.get("export_needs_update")
                     and (store.job_dir(variant_id)/"export"/"highlights.mp4").is_file()):
                 return {"job_id": variant_id, "status": "ready",
                         "download_url": f"/api/jobs/{variant_id}/download/highlights"}
@@ -715,6 +717,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         available = (
             meta.get("status") == JobStatus.COMPLETED.value
             and meta.get("auto_export_ready") is not False
+            and not meta.get("export_needs_update")
             and (store.job_dir(job_id) / "export" / "highlights.mp4").is_file()
         )
         saved = ((store.job_dir(job_id)/"analysis.json").is_file()
@@ -900,6 +903,8 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             clip_paths = er.clip_paths if er and er.clip_paths is not None else []
             meta = store.get_meta(job_id)
             meta["auto_export_ready"] = bool(er.joined_path)
+            if er.joined_path:
+                meta["export_needs_update"] = False
             store._write_meta(job_id, meta)
             store.update_progress(
                 job_id,
@@ -1033,7 +1038,10 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         path = mapping.get(kind)
         if kind == "highlights":
             try:
-                if store.get_meta(job_id).get("auto_export_ready") is False:
+                meta = store.get_meta(job_id)
+                if meta.get("export_needs_update"):
+                    raise HTTPException(409, "Review changes are saved. Export video to update your highlights.")
+                if meta.get("auto_export_ready") is False:
                     raise HTTPException(404, "No finished video for the current analysis")
             except FileNotFoundError:
                 pass

@@ -371,6 +371,9 @@ class JobStore:
     def _export_corrections(
         self, job_id: str, result: AnalysisResult, *, deleted_strikes: Optional[list[float]] = None
     ) -> None:
+        meta = self.get_meta(job_id)
+        meta["export_needs_update"] = True
+        self._write_meta(job_id, meta)
         path = self.job_dir(job_id) / "corrections.json"
         try:
             previous = json.loads(path.read_text(encoding="utf-8"))

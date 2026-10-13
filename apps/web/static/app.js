@@ -10,6 +10,18 @@ const sectionList = document.getElementById("section-list");
 const zoomSlider = document.getElementById("timeline-zoom");
 const startBtn = document.getElementById("start-btn");
 const workflow = document.getElementById("workflow");
+const UI = window.snookerUI;
+const workflowRadios = [...document.querySelectorAll('[name="highlight-workflow"]')];
+function syncWorkflowChoices() {
+  workflowRadios.forEach((radio) => {
+    radio.checked = radio.value === workflow.value;
+    radio.disabled = workflow.disabled || Boolean([...workflow.options].find((option) => option.value === radio.value)?.disabled);
+  });
+}
+workflowRadios.forEach((radio) => radio.addEventListener("change", () => {
+  workflow.value = radio.value;
+  workflow.dispatchEvent(new Event("change"));
+}));
 // Keep DL available in the backend while its interface is temporarily hidden.
 const DL_ALGO_VISIBLE = false;
 if (DL_ALGO_VISIBLE) {
@@ -48,10 +60,11 @@ async function loadShotSelections() {
 }
 
 function updateStartAvailability() {
-  startBtn.disabled = !sourceDuration || workflow.disabled
+  startBtn.disabled = (!sourceDuration && !previewUnavailable) || !fileInput.files[0] || workflow.disabled
     || (workflow.value === "pots_only" && !potsAvailable)
     || (workflow.value === "pots_and_fouls" && !pointsAvailable)
     || (workflow.value === "dl_algo" && !dlCapability?.available);
+  syncWorkflowChoices();
 }
 
 async function loadAlgorithms() {
@@ -74,15 +87,15 @@ function updateWorkflow() {
   const pots = workflow.value === "pots_only";
   const points = workflow.value === "pots_and_fouls";
   document.getElementById("workflow-heading").textContent = classic
-    ? "Upload & analyze" : dl ? "DL Algo" : points ? "Pots + fouls highlights" : pots ? "Potted shots only" : "Create snooker highlights";
+    ? "Prepare your match" : dl ? "DL Algo" : "Create highlights";
   document.getElementById("workflow-description").textContent = classic
-    ? "Detect shots, then open the previous editor with preview, timeline, shot controls, and export buttons."
+    ? "Detect shots, then choose and trim your highlights in the editor."
     : points ? "Keep pots, fouls and confirmed points increases. Shots without points are skipped; unclear scores are flagged for review."
     : pots ? "Keep confirmed scoring pots using stable scores and the player's turn. Misses and fouls are excluded; unreadable scores are flagged for review."
     : dl ? "Create highlights with DL Algo. Results are saved as a separate job."
-      : "Upload the entire match. Remove waiting and setup footage, then export with mix transitions.";
+      : "Detect shots and create a finished highlights video automatically.";
   const status = document.getElementById("algorithm-status");
-  status.classList.toggle("hidden", !dl && !pots && !points);
+  status.classList.toggle("hidden", !dl && (!pots || potsAvailable) && (!points || pointsAvailable));
   status.textContent = points ? pointsStatus : pots ? potsStatus : dlCapability?.available
     ? "Experimental DL Algo is ready for comparison. Accuracy on new matches has not been verified."
     : dlCapability?.reason || "Checking DL Algo readiness…";
@@ -92,7 +105,7 @@ function updateWorkflow() {
     ? "Split around frame breaks and delete those sections, or keep the whole video. Your original video is never changed."
     : "Keep the whole video and start. Shot detection, cutting, and export run automatically.";
   startBtn.textContent = classic ? "Prepare & start analysis"
-    : dl ? "Create with DL Algo" : points ? "Create points highlights" : pots ? "Create pots-only video" : "Create video automatically";
+    : dl ? "Create with DL Algo" : points ? "Create pots + fouls highlights" : pots ? "Create pots-only highlights" : "Create highlights";
   updateStartAvailability();
 }
 
@@ -103,6 +116,7 @@ workflow.addEventListener("change", () => {
 });
 
 let sourceDuration = 0;
+let previewUnavailable = false;
 let sections = [];
 let selectedSectionId = null;
 let nextSectionId = 1;
@@ -239,7 +253,7 @@ function renderEditor() {
   const kept = sections.filter((section) => !section.deleted);
   const keptDuration = kept.reduce((sum, section) => sum + section.end - section.start, 0);
   document.getElementById("edit-summary").textContent = (
-    `${kept.length} kept · ${fmt(keptDuration)} · removed ${fmt(sourceDuration - keptDuration)}`
+    sourceDuration - keptDuration < .001 ? "Full match selected" : `${UI.time(keptDuration)} kept`
   );
   document.getElementById("zoom-label").textContent = `${timelineZoom}×`;
   zoomSlider.value = String(timelineZoom);
@@ -260,6 +274,7 @@ function initializeEditor(duration) {
   editHistory = [];
   redoHistory = [];
   preEditor.classList.remove("hidden");
+  document.getElementById("edit-summary").textContent = "Full match selected";
   updateStartAvailability();
   window.requestAnimationFrame(renderEditor);
 }
@@ -449,8 +464,7 @@ const pointsJobMessages = new Map();
 let visibleJobs = 20;
 
 function videoName(job) {
-  return (job.source_path || job.job_id).split(/[\\/]/).pop()
-    .replace(/^\d{8}-\d{6}_[a-f0-9]{8}_/i, "");
+  return UI.filename(job);
 }
 
 async function createPointsHighlights(jobId, button) {
@@ -474,12 +488,12 @@ async function createPointsHighlights(jobId, button) {
 }
 
 function escapeJobText(value) {
-  const span = document.createElement("span");
-  span.textContent = String(value || "");
-  return span.innerHTML;
+  return UI.escape(value);
 }
 
 async function continueJob(jobId, button) {
+  const item = button.closest(".job-item");
+  item.dataset.continueActive = "true";
   button.disabled = true;
   button.textContent = "Continuing…";
   try {
@@ -493,69 +507,135 @@ async function continueJob(jobId, button) {
     button.disabled = false;
     button.textContent = "Continue";
     alert(error.message || error);
+  } finally {
+    delete item.dataset.continueActive;
+    refreshJobs();
+  }
+}
+
+let libraryJobs = [];
+let libraryFilter = "all";
+let libraryCapcut = {available: false, reason: "Checking CapCut…"};
+let libraryLoading = false;
+
+function renderJobs() {
+  const el = document.getElementById("jobs");
+  if (el.querySelector("[data-capcut-active], [data-points-active], [data-continue-active], .menu[open]")) return;
+  const query = document.getElementById("job-search").value;
+  const jobs = libraryJobs.filter((job) => UI.matches(job, libraryFilter, query));
+  document.getElementById("jobs-count").textContent = libraryJobs.length;
+  document.querySelectorAll("[data-filter-count]").forEach((count) => {
+    count.textContent = libraryJobs.filter((job) => UI.matches(job, count.dataset.filterCount)).length;
+  });
+  document.querySelectorAll("[data-job-filter]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.jobFilter === libraryFilter)));
+  const more = document.getElementById("show-more-jobs");
+  more.classList.toggle("hidden", jobs.length <= visibleJobs);
+  more.textContent = `Show ${Math.min(20, jobs.length - visibleJobs)} more videos`;
+  if (!jobs.length) {
+    el.innerHTML = `<div class="empty-state"><strong>${libraryJobs.length ? "No matching videos" : "Your highlights will appear here"}</strong><p>${libraryJobs.length ? "Try another name or switch the filter." : "Choose a match above to create your first video."}</p></div>`;
+    return;
+  }
+  const focused = document.activeElement?.closest("[data-job-id]");
+  const focusId = focused?.dataset.jobId;
+  const focusClass = focused?.className;
+  el.innerHTML = jobs.slice(0, visibleJobs).map((job) => {
+    const id = UI.escape(job.job_id);
+    const state = UI.status(job);
+    const actions = UI.actions(job, pointsAvailable);
+    const progress = Math.max(0, Math.min(100, Math.round(Number(job.progress || 0) * 100)));
+    const summary = job.pot_selection_summary || {};
+    const unknown = Number(summary.unknown || 0);
+    const shotCount = Number(job.shots_detected || 0);
+    const countText = Number.isFinite(summary.included) ? `${summary.included} of ${shotCount || Object.values(summary).filter(Number.isInteger).slice(0, 5).reduce((a, b) => a + b, 0)} shots selected` : shotCount ? `${shotCount} shots detected` : "";
+    const date = job.created_at ? new Intl.DateTimeFormat("en-GB", {day: "numeric", month: "short", year: "numeric"}).format(new Date(job.created_at * 1000)) : "";
+    const editor = `/review/${encodeURIComponent(job.job_id)}?editor=classic`;
+    const primary = UI.active(job) ? (actions.editor ? `<a class="button secondary" href="${editor}">View shots</a>` : "") : actions.resume ? `<button class="btn-continue primary" data-job-id="${id}">Continue processing</button>`
+      : job.download_url ? `<a class="button primary" href="${UI.escape(job.download_url)}">Download video <span aria-hidden="true">↓</span></a>`
+      : actions.editor ? `<a class="button primary" href="${editor}">Review shots</a>` : "";
+    return `<article class="job-item" data-library-job="${id}">
+      <div class="job-icon ${state.tone}" aria-hidden="true">${UI.active(job) ? "◷" : UI.stopped(job) ? "!" : "▶"}</div>
+      <div class="job-copy"><div class="job-title-row"><h3 title="${UI.escape(videoName(job))}">${UI.escape(UI.title(job))}</h3><span class="status-badge ${state.tone}">${state.label}</span></div>
+        <div class="job-meta"><span class="mode-badge">${UI.escape(UI.mode(job))}</span>${countText ? `<span>${countText}</span>` : ""}<span>${date}</span></div>
+        ${UI.active(job) ? `<div class="job-progress"><span>${UI.escape(UI.phase(job))}</span><span>${progress}%</span><div role="progressbar" aria-label="Video processing" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"><i style="width:${progress}%"></i></div></div>` : ""}
+        ${UI.stopped(job) ? '<p class="job-warning">Processing stopped. Saved work is preserved.</p>' : job.export_needs_update ? '<p class="job-warning">Edits saved. Open the editor to export the updated video.</p>' : unknown ? `<p class="job-warning">${unknown} ${unknown === 1 ? "shot needs" : "shots need"} a score check in the editor.</p>` : ""}
+        ${pointsJobMessages.has(job.job_id) ? `<p class="job-feedback" role="status">${UI.escape(pointsJobMessages.get(job.job_id))}</p>` : ""}
+        ${capcutJobMessages.has(job.job_id) ? `<p class="capcut-status job-feedback" role="status">${UI.escape(capcutJobMessages.get(job.job_id))}</p>` : ""}
+      </div>
+      <div class="job-actions">${primary}
+        ${job.download_url && !UI.active(job) && actions.editor ? `<a class="button secondary" href="${editor}">Open editor</a>` : ""}
+        ${actions.points ? `<button class="btn-points secondary" data-job-id="${id}" title="Create a separate version from saved shots">Pots + fouls</button>` : ""}
+        <details class="menu job-menu"><summary class="button icon-button" aria-label="More options for ${UI.escape(UI.title(job))}">•••</summary><div class="menu-panel">
+          ${actions.editor && !job.download_url && primary ? `<a href="${editor}">Open editor</a>` : ""}
+          ${UI.finished(job) ? `<button class="btn-capcut" data-job-id="${id}" ${libraryCapcut.available ? "" : "disabled"} title="${UI.escape(libraryCapcut.reason || "Open as editable clips")}">Open in CapCut</button>` : ""}
+          <button class="btn-restart" data-job-id="${id}" ${actions.restart ? "" : "disabled"}>Restart analysis</button>
+          <div class="menu-meta"><strong>Processing details</strong><span>${UI.escape(job.message || "")}</span>${job.error ? `<span class="error-detail">${UI.escape(job.error)}</span>` : ""}${Number.isFinite(job.checkpoint?.source_time) ? `<span>Saved through ${fmt(job.checkpoint.source_time)}${job.checkpoint.duration ? ` of ${fmt(job.checkpoint.duration)}` : ""}</span>` : ""}<span class="job-id">${id}</span></div>
+        </div></details>
+      </div></article>`;
+  }).join("");
+  el.querySelectorAll(".job-item").forEach((item) => item.querySelectorAll("a, button, summary").forEach((control) => {
+    control.dataset.jobId = item.dataset.libraryJob;
+  }));
+  el.querySelectorAll(".menu").forEach((menu) => menu.addEventListener("toggle", () => { if (!menu.open) renderJobs(); }));
+  if (focusId && focusClass) {
+    [...el.querySelectorAll("[data-job-id]")].find((node) => node.dataset.jobId === focusId && node.className === focusClass)?.focus({preventScroll: true});
   }
 }
 
 async function refreshJobs() {
-  const el = document.getElementById("jobs");
-  // Preserve a pending handoff and its result while the periodic job poll runs.
-  if (el.querySelector("[data-capcut-active], [data-points-active]")) return;
+  if (libraryLoading) return;
+  libraryLoading = true;
   try {
     const [res, capcut] = await Promise.all([fetch("/api/jobs"), window.snookerCapCut.load()]);
-    const jobs = (await res.json()).filter(
-      (job) => DL_ALGO_VISIBLE || job.algorithm !== "dl_algo",
-    );
-    if (!jobs.length) {
-      el.innerHTML = "<p class='meta'>No jobs yet.</p>";
-      document.getElementById("show-more-jobs").classList.add("hidden");
-      return;
-    }
-    document.getElementById("show-more-jobs").classList.toggle("hidden", jobs.length <= visibleJobs);
-    el.innerHTML = jobs
-      .slice(0, visibleJobs)
-      .map(
-        (job) => `
-      <div class="job-item">
-        <div>
-          <strong>${escapeJobText(videoName(job))}</strong>
-          <div class="meta">${job.job_id}</div>
-          <div class="meta">${job.selection === "pots_and_fouls" ? "Pots + fouls · " : job.selection === "pots_only" ? "Potted shots only · " : ""}${job.algorithm === "dl_algo" ? "DL Algo · " : ""}${job.status || ""} · ${(job.progress * 100 || 0).toFixed(0)}% · ${escapeJobText(job.message)}</div>
-          ${pointsJobMessages.has(job.job_id) ? `<div class="meta" role="status">${escapeJobText(pointsJobMessages.get(job.job_id))}</div>` : ""}
-          ${job.error ? `<div class="meta" role="alert">Error: ${escapeJobText(job.error)}</div>` : ""}
-          ${Number.isFinite(job.checkpoint?.source_time) ? `<div class="meta">Saved through ${fmt(job.checkpoint.source_time)}${job.checkpoint.duration ? ` of ${fmt(job.checkpoint.duration)}` : ""}</div>` : ""}
-        </div>
-        <div class="job-actions">
-          ${["completed", "ready_for_review"].includes(job.status) && job.algorithm !== "dl_algo" && job.selection !== "pots_and_fouls" ? `<button type="button" class="btn-points primary" data-job-id="${job.job_id}" ${pointsAvailable && job.can_create_points ? "" : "disabled"} title="${escapeJobText(pointsAvailable ? "Use saved shot detection to create a separate pots + fouls video" : pointsStatus)}">Pots + fouls highlights</button>` : ""}
-          ${job.can_continue ? `<button type="button" class="btn-continue primary" data-job-id="${job.job_id}" title="Resume saved work without uploading again">Continue</button>` : ""}
-          <button type="button" class="btn-restart" data-job-id="${job.job_id}" ${job.running ? "disabled" : ""}>Restart analysis</button>
-          ${job.download_url ? `<a href="${job.download_url}">Download video</a>` : ""}
-          ${["completed", "ready_for_review"].includes(job.status) ? `<button type="button" class="btn-capcut" data-job-id="${job.job_id}" ${capcut.available ? "" : "disabled"}>Open in CapCut</button>` : ""}
-          <a href="/review/${job.job_id}?editor=classic">${job.algorithm === "dl_algo" ? "Open DL Algo editor" : "Open classic editor"}</a>
-        </div>
-      </div>`,
-      )
-      .join("");
-    el.querySelectorAll(".btn-capcut").forEach((button) => {
-      button.title = capcut.available
-        ? "Create a new CapCut project with separate editable shots"
-        : capcut.reason;
-      const message = capcutJobMessages.get(button.dataset.jobId);
-      if (message) {
-        const status = document.createElement("p");
-        status.className = "capcut-status muted";
-        status.setAttribute("role", "status");
-        status.textContent = message;
-        button.closest(".job-item").querySelector("div").appendChild(status);
-      }
-    });
+    if (!res.ok) throw new Error("The video library could not be loaded. Retrying shortly.");
+    libraryJobs = (await res.json()).filter((job) => DL_ALGO_VISIBLE || job.algorithm !== "dl_algo")
+      .sort((left, right) => Number(right.created_at || 0) - Number(left.created_at || 0));
+    libraryCapcut = capcut;
+    document.getElementById("library-status").classList.add("hidden");
+    renderJobs();
   } catch (error) {
-    el.innerHTML = `<p class="meta">Could not load jobs: ${error}</p>`;
-  }
+    const status = document.getElementById("library-status");
+    status.textContent = error.message || String(error);
+    status.classList.remove("hidden");
+  } finally { libraryLoading = false; }
 }
+
+const dropZone = document.getElementById("file-drop-zone");
+["dragenter", "dragover"].forEach((eventName) => dropZone.addEventListener(eventName, (event) => {
+  event.preventDefault();
+  if (!fileInput.disabled) dropZone.classList.add("drag-over");
+}));
+["dragleave", "drop"].forEach((eventName) => dropZone.addEventListener(eventName, () => dropZone.classList.remove("drag-over")));
+dropZone.addEventListener("drop", (event) => {
+  event.preventDefault();
+  if (fileInput.disabled || !event.dataTransfer.files.length) return;
+  const files = new DataTransfer();
+  files.items.add(event.dataTransfer.files[0]);
+  fileInput.files = files.files;
+  fileInput.dispatchEvent(new Event("change"));
+});
+document.getElementById("job-search").addEventListener("input", () => { visibleJobs = 20; renderJobs(); });
+document.querySelectorAll("[data-job-filter]").forEach((button) => button.addEventListener("click", () => {
+  libraryFilter = button.dataset.jobFilter;
+  visibleJobs = 20;
+  document.querySelectorAll(".job-menu[open]").forEach((menu) => { menu.open = false; });
+  renderJobs();
+}));
+document.addEventListener("click", (event) => {
+  document.querySelectorAll(".menu[open]").forEach((menu) => {
+    if (!menu.contains(event.target)) menu.open = false;
+  });
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") document.querySelectorAll(".menu[open]").forEach((menu) => { menu.open = false; menu.querySelector("summary").focus(); });
+});
 
 fileInput.addEventListener("change", (event) => {
   const file = event.target.files[0];
-  document.getElementById("file-name").textContent = file ? file.name : "Choose a snooker video…";
+  previewUnavailable = false;
+  document.getElementById("file-name").textContent = file ? file.name : "Choose a video or drop it here";
+  document.getElementById("file-meta").textContent = file ? `${(file.size / 1024 / 1024).toFixed(1)} MB · Reading video…` : "MP4, MOV, MKV, AVI or WebM";
+  document.getElementById("file-action").textContent = file ? "Change video" : "Browse files";
+  dropZone.classList.toggle("has-file", Boolean(file));
   startBtn.disabled = true;
   preEditor.classList.add("hidden");
   sourceDuration = 0;
@@ -567,8 +647,22 @@ fileInput.addEventListener("change", (event) => {
 
 sourcePreview.addEventListener("loadedmetadata", () => {
   if (Number.isFinite(sourcePreview.duration) && sourcePreview.duration > 0) {
+    previewUnavailable = false;
     initializeEditor(sourcePreview.duration);
+    const file = fileInput.files[0];
+    document.getElementById("file-meta").textContent = `${UI.time(sourcePreview.duration)} · ${(file.size / 1024 / 1024).toFixed(1)} MB`;
+    document.getElementById("trim-options").open = false;
   }
+});
+sourcePreview.addEventListener("error", () => {
+  if (!fileInput.files[0]) return;
+  previewUnavailable = true;
+  preEditor.classList.add("hidden");
+  document.getElementById("file-meta").textContent = "Browser preview unavailable. You can still process the full match.";
+  updateStartAvailability();
+});
+document.getElementById("trim-options").addEventListener("toggle", (event) => {
+  if (event.currentTarget.open) requestAnimationFrame(renderEditor);
 });
 sourcePreview.addEventListener("timeupdate", () => {
   updatePlayhead({ ensureVisible: !sourcePreview.paused });
@@ -594,7 +688,7 @@ timelineViewport.addEventListener("wheel", (event) => {
   setZoom(event.deltaY < 0 ? timelineZoom * 2 : timelineZoom / 2);
 }, { passive: false });
 document.addEventListener("keydown", (event) => {
-  if (!sourceDuration || preEditor.classList.contains("hidden")) return;
+  if (!sourceDuration || preEditor.classList.contains("hidden") || !document.getElementById("trim-options").open) return;
   if (
     event.target.matches('textarea, select, input:not([type="range"])')
     || event.target.isContentEditable
@@ -619,7 +713,7 @@ window.addEventListener("beforeunload", () => {
 document.getElementById("upload-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const file = fileInput.files[0];
-  if (!file || !sourceDuration) return;
+  if (!file || (!sourceDuration && !previewUnavailable)) return;
   const keepRanges = mergedKeepRanges();
   const wrap = document.getElementById("progress-wrap");
   const fill = document.getElementById("progress-fill");
@@ -635,7 +729,7 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
       return;
     }
   }
-  if (!keepRanges.length) {
+  if (!keepRanges.length && !previewUnavailable) {
     text.textContent = "Keep at least one section before starting analysis.";
     wrap.classList.remove("hidden");
     return;
@@ -644,6 +738,8 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
   wrap.classList.remove("hidden");
   startBtn.disabled = true;
   workflow.disabled = true;
+  fileInput.disabled = true;
+  syncWorkflowChoices();
   text.textContent = "Uploading original video…";
   fill.style.width = "4%";
 
@@ -654,7 +750,7 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
     if (!upload.ok) throw new Error(await upload.text());
     let { path } = await upload.json();
 
-    const fullSourceKept = (
+    const fullSourceKept = previewUnavailable || (
       keepRanges.length === 1
       && keepRanges[0].start <= 0.001
       && keepRanges[0].end >= sourceDuration - 0.001
@@ -671,7 +767,7 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
       ({ path } = await preprocess.json());
     }
 
-    text.textContent = "Starting AI analysis…";
+    text.textContent = "Finding shots…";
     fill.style.width = "10%";
     const start = await fetch("/api/jobs", {
       method: "POST",
@@ -681,37 +777,49 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
     });
     if (!start.ok) throw new Error(await start.text());
     const { job_id: jobId } = await start.json();
-    text.textContent = `Job ${jobId} running…`;
+    text.textContent = "Your match is processing. You can follow it in Your videos below.";
 
+    let pollBusy = false;
     const poll = setInterval(async () => {
-      const response = await fetch(`/api/jobs/${jobId}/progress`);
-      const metadata = await response.json();
-      const progress = Math.max(10, (metadata.progress || 0) * 100);
-      fill.style.width = `${progress}%`;
-      text.textContent = `${metadata.status}: ${metadata.message || ""}`;
-      if (["ready_for_review", "completed", "failed", "interrupted", "cancelled"].includes(metadata.status)) {
-        clearInterval(poll);
-        workflow.disabled = false;
-        updateStartAvailability();
-        refreshJobs();
-        if (["failed", "interrupted", "cancelled"].includes(metadata.status)) {
-          text.textContent = `Processing stopped: ${metadata.error || metadata.message}. Use Continue in Recent jobs.`;
-        } else if (metadata.status === "completed") {
-          text.textContent = metadata.message || "Finished video ready.";
-          if (metadata.download_url) {
-            const download = document.createElement("a");
-            download.href = metadata.download_url;
-            download.textContent = " Download finished video";
-            text.appendChild(download);
+      if (pollBusy) return;
+      pollBusy = true;
+      try {
+        const response = await fetch(`/api/jobs/${jobId}/progress`);
+        if (!response.ok) throw new Error("Unable to fetch progress");
+        const metadata = await response.json();
+        const progress = Math.max(10, (metadata.progress || 0) * 100);
+        fill.style.width = `${progress}%`;
+        text.textContent = `${UI.phase(metadata)} · ${Math.round(progress)}%`;
+        fill.parentElement.setAttribute("aria-valuenow", String(Math.round(progress)));
+        if (["ready_for_review", "completed", "failed", "interrupted", "cancelled"].includes(metadata.status)) {
+          clearInterval(poll);
+          workflow.disabled = false;
+          fileInput.disabled = false;
+          updateStartAvailability();
+          refreshJobs();
+          if (["failed", "interrupted", "cancelled"].includes(metadata.status)) {
+            text.textContent = "Processing stopped. Saved work is preserved; use Continue processing in Your videos.";
+          } else if (metadata.status === "completed") {
+            text.textContent = metadata.message || "Finished video ready.";
+            if (metadata.download_url) {
+              const download = document.createElement("a");
+              download.href = metadata.download_url;
+              download.textContent = " Download finished video";
+              text.appendChild(download);
+            }
+          } else {
+            window.location.href = `/review/${jobId}?editor=classic`;
           }
-        } else {
-          window.location.href = `/review/${jobId}?editor=classic`;
         }
-      }
+
+      } catch (error) {
+        text.textContent = "Connection lost. Your match may still be processing; checking again shortly.";
+      } finally { pollBusy = false; }
     }, 1500);
   } catch (error) {
     text.textContent = `Error: ${error.message || error}`;
     workflow.disabled = false;
+    fileInput.disabled = false;
     updateStartAvailability();
   }
 });
@@ -736,7 +844,7 @@ document.getElementById("jobs").addEventListener("click", (event) => {
       status = document.createElement("p");
       status.className = "capcut-status muted";
       status.setAttribute("role", "status");
-      item.querySelector("div").appendChild(status);
+      item.querySelector(".job-copy").appendChild(status);
     }
     window.snookerCapCut.open(capcutButton.dataset.jobId, capcutButton, status).finally(() => {
       capcutJobMessages.set(capcutButton.dataset.jobId, status.textContent);
@@ -753,6 +861,6 @@ document.getElementById("jobs").addEventListener("click", (event) => {
 refreshJobs();
 document.getElementById("show-more-jobs").addEventListener("click", () => {
   visibleJobs += 20;
-  refreshJobs();
+  renderJobs();
 });
 setInterval(refreshJobs, 10000);
