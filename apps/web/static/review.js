@@ -47,11 +47,13 @@ const capCutStatus = document.getElementById("capcut-status");
 const exportStatus = document.getElementById("export-status");
 const combinedDownloadLink = document.getElementById("combined-download-link");
 
+let capcutAvailable = false;
 window.snookerCapCut.load().then((capability) => {
-  openCapCutBtn.disabled = !capability.available;
+  capcutAvailable = capability.available;
   openCapCutBtn.title = capability.available
     ? "Create a new CapCut project with included live shots as separate editable clips"
     : capability.reason;
+  if (meta.job_id) syncJobState();
 });
 openCapCutBtn.addEventListener("click", () => {
   window.snookerCapCut.open(jobId, openCapCutBtn, capCutStatus);
@@ -63,6 +65,15 @@ let duration = 0;
 let meta = {};
 let exportBusy = false;
 let pointsCapabilityAvailable = false;
+let editBusy = false;
+let analysisRequestBusy = false;
+let metadataEpoch = 0;
+let loadedTimelineMeta = null;
+let statusTimer = null;
+let statusInFlight = false;
+let statusRefreshQueued = false;
+let timelineBusy = false;
+let timelineRefreshRequired = false;
 let pendingSeek = null;
 let playbackStopAt = null;
 let previewSegments = [];
@@ -289,17 +300,11 @@ function render() {
   stats.innerHTML = `<div><strong>${included.length} / ${shots.length}</strong><span>Shots included</span></div><div><strong>${UI.time(edited)}</strong><span>Selected footage</span></div><div><strong>${UI.time(duration)}</strong><span>Original match</span></div>`;
   document.getElementById("shot-total").textContent = shots.length;
   document.getElementById("shot-included-count").textContent = `${included.length} included`;
-  exportCombinedBtn.disabled = exportClipsBtn.disabled = UI.active(meta) || exportBusy || !included.length;
-  document.getElementById("editor-subtitle").textContent = `${UI.mode(meta)} · ${UI.status(meta).label}`;
-  document.getElementById("continue-analysis-btn").classList.toggle("hidden", !UI.actions(meta).resume);
-  document.getElementById("restart-analysis-btn").disabled = UI.active(meta) || exportBusy;
-  document.getElementById("points-highlights-btn").disabled = exportBusy || !UI.actions(meta, pointsCapabilityAvailable).points;
-  document.getElementById("add-at-playhead").disabled = UI.active(meta) || exportBusy;
+  syncJobState();
 
   const active = shots.find((s) => s.shot_id === activeId);
   document.getElementById("active-shot-label").textContent = active ? `Shot ${active.shot_id}` : "Shot controls";
   document.getElementById("toggle-include").textContent = active?.included ? "Exclude shot" : "Include shot";
-  document.querySelectorAll(".boundary-edit input, .shot-tools button, .transport button").forEach((button) => { button.disabled = !active || UI.active(meta) || exportBusy; });
   if (active) {
     document.getElementById("edit-start").value = active.clip_start.toFixed(3);
     document.getElementById("edit-strike").value = active.cue_strike.toFixed(3);
@@ -309,56 +314,128 @@ function render() {
   if (focusedShot) shotList.querySelector(`li[data-id="${focusedShot}"] .shot-open`)?.focus({preventScroll: true});
 }
 
-async function load() {
-  const pr = await fetch(`/api/jobs/${jobId}`);
-  if (!pr.ok) { setExportStatus("This video could not be loaded. Return to Your videos and try again.", "error"); return; }
-  meta = await pr.json();
+function syncJobState() {
+  const busy = UI.active(meta) || exportBusy || editBusy || analysisRequestBusy || timelineBusy || timelineRefreshRequired;
+  const hasSelection = shots.some((shot) => shot.included);
+  exportCombinedBtn.disabled = exportClipsBtn.disabled = busy || !hasSelection;
   document.getElementById("video-title").textContent = UI.title(meta);
   document.getElementById("editor-subtitle").textContent = `${UI.mode(meta)} · ${UI.status(meta).label}`;
-  if (meta.export_needs_update) setExportStatus("Edits saved. Export video to update your highlights.", "ready");
+  document.getElementById("job-label").textContent = jobId;
   document.title = `${UI.title(meta)} — Shot editor`;
-  if (meta.download_url) {
+  document.getElementById("continue-analysis-btn").classList.toggle("hidden", !UI.actions(meta).resume);
+  document.getElementById("continue-analysis-btn").disabled = busy;
+  document.getElementById("restart-analysis-btn").disabled = busy;
+  document.getElementById("points-highlights-btn").disabled = busy || !UI.actions(meta, pointsCapabilityAvailable).points;
+  document.getElementById("add-at-playhead").disabled = busy || !loadedTimelineMeta;
+  openCapCutBtn.disabled = busy || !capcutAvailable || !hasSelection;
+  updatePreviewControls();
+  document.querySelectorAll(".shot-include").forEach((checkbox) => { checkbox.disabled = busy; });
+  document.querySelectorAll(".boundary-edit input, .shot-tools button, .transport button").forEach((control) => { control.disabled = busy || !currentShot(); });
+  if (meta.download_url && !meta.export_needs_update && !busy) {
     combinedDownloadLink.href = meta.download_url;
     combinedDownloadLink.classList.remove("hidden");
-  } else combinedDownloadLink.classList.add("hidden");
-  let pointsAvailable = false;
+  } else {
+    combinedDownloadLink.classList.add("hidden");
+    combinedDownloadLink.removeAttribute("href");
+  }
+}
+
+async function readSavedShots(snapshot, {seek = false} = {}) {
+  const epoch = metadataEpoch;
+  timelineBusy = true;
+  syncJobState();
+  try {
+    const response = await fetch(`/api/jobs/${jobId}/shots`);
+    if (!response.ok) {
+      if (!UI.active(snapshot)) setExportStatus("No saved shots are available for this video.", "error");
+      return false;
+    }
+    const data = await response.json();
+    if (epoch !== metadataEpoch) return false;
+    shots = data.shots || [];
+    duration = data.original_duration || 0;
+    const videoUrl = `/api/jobs/${jobId}/video`;
+    const mediaChanged = video.getAttribute("src") !== videoUrl;
+    if (mediaChanged) {
+      video.src = videoUrl;
+      selectedVideo.src = videoUrl;
+    }
+    activeId = shots.some((shot) => shot.shot_id === activeId) ? activeId : shots[0]?.shot_id ?? null;
+    if ((seek || mediaChanged) && currentShot()) seekTo(currentShot().clip_start);
+    loadedTimelineMeta = {...snapshot};
+    timelineRefreshRequired = false;
+    render();
+    return true;
+  } finally {
+    timelineBusy = false;
+    syncJobState();
+  }
+}
+
+function scheduleStatusCheck() {
+  clearTimeout(statusTimer);
+  statusTimer = null;
+  if (statusRefreshQueued && !exportBusy && !editBusy && !analysisRequestBusy && !timelineBusy && !statusInFlight) {
+    statusTimer = setTimeout(() => refreshJobStatus(), 0);
+  } else if (UI.active(meta) || timelineRefreshRequired) statusTimer = setTimeout(() => refreshJobStatus(), 2000);
+}
+
+async function refreshJobStatus() {
+  if (statusInFlight || exportBusy || editBusy || analysisRequestBusy || timelineBusy) {
+    statusRefreshQueued = true;
+    return;
+  }
+  statusRefreshQueued = false;
+  statusInFlight = true;
+  const epoch = metadataEpoch;
+  try {
+    const response = await fetch(`/api/jobs/${jobId}`);
+    if (!response.ok) throw new Error("Could not read job status");
+    const next = await response.json();
+    if (epoch !== metadataEpoch || exportBusy || editBusy || analysisRequestBusy) return;
+    const wasActive = UI.active(meta);
+    meta = next;
+    syncJobState();
+    if (UI.active(meta)) {
+      setExportStatus(`${UI.phase(meta)} · ${Math.round((meta.progress || 0) * 100)}%`, "working");
+    } else if (UI.stopped(meta)) {
+      setExportStatus("Processing stopped. Saved work is preserved; use Continue processing under More.", "error");
+    } else if (meta.export_needs_update) {
+      setExportStatus("Edits saved. Export video to update your highlights.", "ready");
+    } else if (wasActive) {
+      setExportStatus(meta.download_url ? "Your highlights are ready to download." : "Shots are ready to review.", "ready");
+    }
+    if (timelineRefreshRequired || UI.needsTimelineRefresh(meta, loadedTimelineMeta)) await readSavedShots(meta);
+  } catch (error) {
+    setExportStatus("Connection lost. Saved work is preserved; checking processing status again shortly.", "error");
+  } finally {
+    statusInFlight = false;
+    scheduleStatusCheck();
+  }
+}
+
+async function load() {
+  const response = await fetch(`/api/jobs/${jobId}`);
+  if (!response.ok) { setExportStatus("This video could not be loaded. Return to Your videos and try again.", "error"); return; }
+  meta = await response.json();
+  syncJobState();
   try {
     const capabilityResponse = await fetch("/api/shot-selections");
     if (capabilityResponse.ok) {
       const capabilities = await capabilityResponse.json();
-      pointsAvailable = capabilities.selections.some((item) => item.id === "pots_and_fouls" && item.available);
+      pointsCapabilityAvailable = capabilities.selections.some((item) => item.id === "pots_and_fouls" && item.available);
     }
-  } catch (error) {
-    // Existing editing and export remain available while capabilities are offline.
-  }
-  pointsCapabilityAvailable = pointsAvailable;
-  document.getElementById("points-highlights-btn").disabled = Boolean(meta.running)
-    || !meta.can_create_points || meta.selection === "pots_and_fouls" || !pointsAvailable;
-  document.getElementById("continue-analysis-btn").classList.toggle("hidden", !UI.actions(meta).resume);
-  document.getElementById("continue-analysis-btn").disabled = Boolean(meta.running);
-  document.getElementById("restart-analysis-btn").disabled = Boolean(meta.running);
-  if (["failed", "interrupted", "cancelled"].includes(meta.status)) {
-    setExportStatus(`${meta.error || meta.message} — Use Continue to resume saved work.`, "error");
-  }
-  document.getElementById("job-label").textContent = jobId;
-
-  const res = await fetch(`/api/jobs/${jobId}/shots`);
-  if (!res.ok) {
-    setExportStatus(meta.running ? `${UI.phase(meta)}. Your shots will appear when detection finishes.` : "No saved shots are available for this video.", meta.running ? "working" : "error");
-    return;
-  }
-  const data = await res.json();
-  shots = data.shots || [];
-  duration = data.original_duration || 0;
-  const videoUrl = `/api/jobs/${jobId}/video`;
-  video.src = videoUrl;
-  selectedVideo.src = videoUrl;
-  if (shots.length) {
-    activeId = shots.some((shot) => shot.shot_id === activeId) ? activeId : shots[0].shot_id;
-    seekTo(currentShot().clip_start);
-  } else activeId = null;
-  render();
+  } catch (error) { /* Editing remains available while capabilities are offline. */ }
+  if (UI.active(meta)) setExportStatus(`${UI.phase(meta)} · ${Math.round((meta.progress || 0) * 100)}%`, "working");
+  else if (UI.stopped(meta)) setExportStatus("Processing stopped. Saved work is preserved; use Continue processing under More.", "error");
+  else if (meta.export_needs_update) setExportStatus("Edits saved. Export video to update your highlights.", "ready");
+  await readSavedShots(meta, {seek: loadedTimelineMeta === null});
+  syncJobState();
+  scheduleStatusCheck();
 }
+
+window.addEventListener("pagehide", () => { clearTimeout(statusTimer); });
+window.addEventListener("pageshow", (event) => { if (event.persisted) refreshJobStatus(); });
 
 function seekTo(t) {
   if (!Number.isFinite(t)) return;
@@ -467,149 +544,115 @@ video.addEventListener("timeupdate", () => {
   }
 });
 
+function markReviewChanged(message) {
+  metadataEpoch += 1;
+  meta.export_needs_update = true;
+  meta.download_url = null;
+  setExportStatus(`${message} Export video to update your highlights.`, "ready");
+  syncJobState();
+}
+
+async function reviewRequest(path, options, message, {refreshShots = false} = {}) {
+  if (editBusy || exportBusy || analysisRequestBusy || timelineBusy || timelineRefreshRequired || UI.active(meta)) return null;
+  editBusy = true;
+  metadataEpoch += 1;
+  syncJobState();
+  let saved = false;
+  try {
+    const response = await fetch(path, options);
+    if (!response.ok) {
+      let detail = "Your change could not be saved. Try again.";
+      try { detail = (await response.json()).detail || detail; } catch (error) { /* Keep a readable fallback. */ }
+      throw new Error(detail);
+    }
+    const data = await response.json();
+    saved = true;
+    markReviewChanged(message);
+    if (refreshShots) {
+      timelineRefreshRequired = true;
+      const stateResponse = await fetch(`/api/jobs/${jobId}`);
+      if (stateResponse.ok) meta = await stateResponse.json();
+      if (!await readSavedShots(meta)) throw new Error("Could not refresh saved shots");
+    }
+    else shots = shots.map((shot) => shot.shot_id === data.shot_id ? data : shot);
+    showToast(message);
+    render();
+    return data;
+  } catch (error) {
+    showToast(saved ? "Change saved. Reconnecting to refresh your shot list…" : error.message || "The change could not be saved. Your saved shots are unchanged.");
+    return null;
+  } finally {
+    editBusy = false;
+    syncJobState();
+    // A rejected edit may mean another tab started processing. Refresh once,
+    // then follow an active worker without reloading either media element.
+    refreshJobStatus();
+  }
+}
+
+const jsonRequest = (body, method = "POST") => ({method, headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+
 async function applyBounds() {
-  const s = currentShot();
-  if (!s) return;
-  const body = {
+  const shot = currentShot();
+  if (!shot) return;
+  await reviewRequest(`/api/jobs/${jobId}/shots/${shot.shot_id}`, jsonRequest({
     clip_start: Number(document.getElementById("edit-start").value),
     cue_strike: Number(document.getElementById("edit-strike").value),
     clip_end: Number(document.getElementById("edit-end").value),
-  };
-  const res = await fetch(`/api/jobs/${jobId}/shots/${s.shot_id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    showToast("Update failed");
-    return;
-  }
-  const updated = await res.json();
-  shots = shots.map((x) => (x.shot_id === updated.shot_id ? updated : x));
-  meta.export_needs_update = true;
-  combinedDownloadLink.classList.add("hidden");
-  setExportStatus("Trim saved. Export video to update your highlights.", "ready");
-  showToast("Boundaries saved");
-  render();
+  }, "PATCH"), "Trim saved.");
 }
-
 document.getElementById("apply-bounds").addEventListener("click", applyBounds);
 
 document.getElementById("mark-replay").addEventListener("click", async () => {
-  const s = currentShot();
-  if (!s) return;
-  const res = await fetch(`/api/jobs/${jobId}/shots/${s.shot_id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ possible_replay: !s.possible_replay, included: s.possible_replay ? s.included : false }),
-  });
-  if (!res.ok) {
-    showToast("Update failed");
-    return;
-  }
-  const updated = await res.json();
-  shots = shots.map((x) => (x.shot_id === updated.shot_id ? updated : x));
-  render();
+  const shot = currentShot();
+  if (!shot) return;
+  await reviewRequest(`/api/jobs/${jobId}/shots/${shot.shot_id}`, jsonRequest({
+    possible_replay: !shot.possible_replay, included: shot.possible_replay ? shot.included : false,
+  }, "PATCH"), "Replay selection saved.");
 });
 
 async function setShotIncluded(shot, included) {
-  const hadCheckboxFocus = document.activeElement?.matches(`.shot-include[data-shot-id="${shot.shot_id}"]`);
-  const res = await fetch(`/api/jobs/${jobId}/shots/${shot.shot_id}`, {
-    method: "PATCH", headers: {"Content-Type": "application/json"}, body: JSON.stringify({included}),
-  });
-  if (!res.ok) throw new Error("The shot selection could not be saved. Try again.");
-  const updated = await res.json();
-  shots = shots.map((item) => item.shot_id === updated.shot_id ? updated : item);
-  meta.export_needs_update = true;
-  combinedDownloadLink.classList.add("hidden");
-  setExportStatus("Selection saved. Export video to update your highlights.", "ready");
-  render();
-  if (hadCheckboxFocus) (shotList.querySelector(`.shot-include[data-shot-id="${shot.shot_id}"]`) || shotFilter).focus({preventScroll: true});
+  const hadFocus = document.activeElement?.matches(`.shot-include[data-shot-id="${shot.shot_id}"]`);
+  const updated = await reviewRequest(`/api/jobs/${jobId}/shots/${shot.shot_id}`, jsonRequest({included}, "PATCH"), "Selection saved.");
+  if (hadFocus) (shotList.querySelector(`.shot-include[data-shot-id="${shot.shot_id}"]`) || shotFilter).focus({preventScroll: true});
+  return updated;
 }
-document.getElementById("toggle-include").addEventListener("click", async () => {
+document.getElementById("toggle-include").addEventListener("click", () => {
   const shot = currentShot();
-  if (!shot) return;
-  try { await setShotIncluded(shot, !shot.included); } catch (error) { showToast(error.message); }
+  if (shot) setShotIncluded(shot, !shot.included);
 });
 shotList.addEventListener("change", async (event) => {
   const checkbox = event.target.closest(".shot-include");
   if (!checkbox) return;
   const shot = shots.find((item) => item.shot_id === Number(checkbox.dataset.shotId));
-  checkbox.disabled = true;
-  try { await setShotIncluded(shot, checkbox.checked); } catch (error) { checkbox.checked = shot.included; checkbox.disabled = false; showToast(error.message); }
+  const updated = await setShotIncluded(shot, checkbox.checked);
+  if (!updated && checkbox.isConnected) checkbox.checked = shot.included;
 });
 
 document.getElementById("delete-shot").addEventListener("click", async () => {
-  const s = currentShot();
-  if (!s) return;
-  if (!confirm(`Delete shot ${s.shot_id}?`)) return;
-  await fetch(`/api/jobs/${jobId}/shots/${s.shot_id}`, { method: "DELETE" });
-  shots = shots.filter((x) => x.shot_id !== s.shot_id);
-  activeId = shots[0]?.shot_id ?? null;
-  // reload to renumber
-  await load();
-  showToast("Shot deleted");
+  const shot = currentShot();
+  if (!shot || !confirm(`Delete shot ${shot.shot_id}?`)) return;
+  await reviewRequest(`/api/jobs/${jobId}/shots/${shot.shot_id}`, {method: "DELETE"}, "Shot deleted.", {refreshShots: true});
 });
 
-document.getElementById("split-shot").addEventListener("click", async () => {
-  const s = currentShot();
-  if (!s) return;
-  const at = video.currentTime;
-  const res = await fetch(`/api/jobs/${jobId}/shots/${s.shot_id}/split`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ at_time: at }),
-  });
-  if (!res.ok) {
-    showToast("Split failed: " + (await res.text()));
-    return;
-  }
-  await load();
-  showToast("Shot split");
+document.getElementById("split-shot").addEventListener("click", () => {
+  const shot = currentShot();
+  if (shot) reviewRequest(`/api/jobs/${jobId}/shots/${shot.shot_id}/split`, jsonRequest({at_time: video.currentTime}), "Shot split.", {refreshShots: true});
 });
 
-document.getElementById("merge-next").addEventListener("click", async () => {
-  const s = currentShot();
-  if (!s) return;
-  const idx = shots.findIndex((x) => x.shot_id === s.shot_id);
-  if (idx < 0 || idx >= shots.length - 1) {
-    showToast("No next shot to merge");
-    return;
-  }
-  const next = shots[idx + 1];
-  const res = await fetch(`/api/jobs/${jobId}/shots/merge`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ shot_ids: [s.shot_id, next.shot_id] }),
-  });
-  if (!res.ok) {
-    showToast("Merge failed: " + (await res.text()));
-    return;
-  }
-  await load();
-  showToast("Shots merged");
+document.getElementById("merge-next").addEventListener("click", () => {
+  const shot = currentShot();
+  if (!shot) return;
+  const index = shots.findIndex((item) => item.shot_id === shot.shot_id);
+  const next = shots[index + 1];
+  if (!next) { showToast("No next shot to merge"); return; }
+  reviewRequest(`/api/jobs/${jobId}/shots/merge`, jsonRequest({shot_ids: [shot.shot_id, next.shot_id]}), "Shots merged.", {refreshShots: true});
 });
 
-document.getElementById("add-at-playhead").addEventListener("click", async () => {
+document.getElementById("add-at-playhead").addEventListener("click", () => {
   setEditorView("source");
-  const t = pendingSeek ?? video.currentTime;
-  const body = {
-    cue_strike: t,
-    clip_start: Math.max(0, t - 2),
-    clip_end: t + 4,
-    shot_confidence: 1.0,
-  };
-  const res = await fetch(`/api/jobs/${jobId}/shots`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    showToast("Add failed");
-    return;
-  }
-  await load();
-  showToast("Shot added");
+  const strike = pendingSeek ?? video.currentTime;
+  reviewRequest(`/api/jobs/${jobId}/shots`, jsonRequest({cue_strike: strike, clip_start: Math.max(0, strike - 2), clip_end: strike + 4, shot_confidence: 1}), "Shot added.", {refreshShots: true});
 });
 
 openExportBtn.addEventListener("click", async () => {
@@ -654,8 +697,10 @@ function downloadArtifact(url) {
 }
 
 async function runExport({ combined, clips, button }) {
+  if (exportBusy || editBusy || analysisRequestBusy || timelineBusy || timelineRefreshRequired || UI.active(meta)) return;
   const originalLabel = button.textContent;
   exportBusy = true;
+  metadataEpoch += 1;
   render();
   button.disabled = true;
   exportCombinedBtn.disabled = true;
@@ -715,6 +760,7 @@ async function runExport({ combined, clips, button }) {
       if (response.ok) meta = await response.json();
     } catch (error) { /* Keep the saved shot list while the connection recovers. */ }
     render();
+    scheduleStatusCheck();
   }
 }
 
@@ -739,48 +785,26 @@ document.getElementById("save-labels-btn").addEventListener("click", () => {
 
 async function runSavedAnalysis(action) {
   if (action === "restart" && !confirm(`Restart analysis for job ${jobId}? Saved checkpoints and your manual edits will be preserved.`)) return;
-  const btn = document.getElementById(`${action === "continue" ? "continue" : "restart"}-analysis-btn`);
-  btn.disabled = true;
-  document.getElementById("continue-analysis-btn").disabled = true;
-  document.getElementById("restart-analysis-btn").disabled = true;
-  showToast(action === "continue" ? "Continuing saved work..." : "Restarting analysis...");
-  setExportStatus("Resuming processing from the last saved checkpoint...", "working");
-
+  if (analysisRequestBusy || editBusy || exportBusy || timelineBusy || timelineRefreshRequired || UI.active(meta)) return;
+  analysisRequestBusy = true;
+  metadataEpoch += 1;
+  syncJobState();
+  setExportStatus("Resuming processing from the last saved checkpoint…", "working");
   try {
-    const res = await fetch(`/api/jobs/${jobId}/${action}`, { method: "POST" });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || err.message || "Failed to restart analysis");
+    const response = await fetch(`/api/jobs/${jobId}/${action}`, {method: "POST"});
+    if (!response.ok) {
+      const detail = await response.json();
+      throw new Error(detail.detail || "Could not start processing");
     }
-    showToast("Analysis restarted");
-    const poll = setInterval(async () => {
-      const pRes = await fetch(`/api/jobs/${jobId}/progress`);
-      if (!pRes.ok) return;
-      const progressMeta = await pRes.json();
-      setExportStatus(`Analyzing: ${progressMeta.status} (${(progressMeta.progress * 100 || 0).toFixed(0)}%) - ${progressMeta.message || ""}`, "working");
-      if (["ready_for_review", "completed", "failed", "interrupted", "cancelled"].includes(progressMeta.status)) {
-        clearInterval(poll);
-        btn.disabled = false;
-        document.getElementById("continue-analysis-btn").disabled = false;
-        document.getElementById("restart-analysis-btn").disabled = false;
-        if (["failed", "interrupted", "cancelled"].includes(progressMeta.status)) {
-          showToast(`Analysis failed: ${progressMeta.error || progressMeta.message}`);
-          setExportStatus(`Analysis failed: ${progressMeta.error || progressMeta.message}`, "error");
-        } else {
-          showToast("Analysis complete — reloading timeline...");
-          setExportStatus("Analysis complete", "ready");
-          await load();
-        }
-      }
-    }, 1500);
-  } catch (err) {
-    btn.disabled = false;
-    document.getElementById("continue-analysis-btn").disabled = false;
-    document.getElementById("restart-analysis-btn").disabled = false;
-    showToast(`Could not restart: ${err.message}`);
-    setExportStatus(`Restart error: ${err.message}`, "error");
+    showToast(action === "continue" ? "Continuing saved work…" : "Analysis restarted");
+  } catch (error) {
+    setExportStatus(error.message || "Could not start processing", "error");
+  } finally {
+    analysisRequestBusy = false;
+    await refreshJobStatus();
   }
 }
+
 document.getElementById("restart-analysis-btn").addEventListener("click", () => runSavedAnalysis("restart"));
 document.getElementById("continue-analysis-btn").addEventListener("click", () => runSavedAnalysis("continue"));
 document.getElementById("points-highlights-btn").addEventListener("click", async () => {
@@ -861,4 +885,7 @@ document.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") document.querySelectorAll(".menu[open]").forEach((menu) => { menu.open = false; menu.querySelector("summary").focus(); });
 });
-load().catch(() => setExportStatus("Unable to load the editor. Check the app connection and reload.", "error"));
+load().catch(() => {
+  setExportStatus("Unable to load the editor. Check the app connection and reload.", "error");
+  scheduleStatusCheck();
+});

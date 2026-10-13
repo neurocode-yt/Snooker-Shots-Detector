@@ -11,7 +11,7 @@ import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -720,12 +720,20 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             and not meta.get("export_needs_update")
             and (store.job_dir(job_id) / "export" / "highlights.mp4").is_file()
         )
-        saved = ((store.job_dir(job_id)/"analysis.json").is_file()
-                 or (store.job_dir(job_id)/"timeline.json").is_file())
+        timeline_revision = None
+        for name in ("timeline.json", "analysis.json"):
+            try:
+                snapshot = (store.job_dir(job_id) / name).stat()
+                timeline_revision = f"{snapshot.st_mtime_ns}:{snapshot.st_size}"
+                break
+            except OSError:
+                continue
+        saved = timeline_revision is not None
         can_points = (not running and saved and Algorithm.parse(meta.get("algorithm")) is Algorithm.CLASSIC
                       and meta.get("status") in {JobStatus.COMPLETED.value, JobStatus.READY_FOR_REVIEW.value})
         return {**meta, "running": running, "can_continue": not running,
                 "has_saved_detection": saved, "can_create_points": can_points,
+                "timeline_revision": timeline_revision,
                 "checkpoint": checkpoint,
                 "download_url": f"/api/jobs/{job_id}/download/highlights" if available else None}
 
@@ -784,10 +792,27 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             raise HTTPException(404, "timeline not found")
         return JSONResponse(content=json.loads(path.read_text(encoding="utf-8")))
 
+    def edit_review(job_id: str, operation: Callable[[], Any]) -> Any:
+        # Another tab or server process must not change the snapshot being
+        # analyzed/exported. Use the same OS lease as those workers.
+        store.get_meta(job_id)
+        lock = _locks.setdefault(job_id, threading.Lock())
+        if job_id in _queued or not lock.acquire(blocking=False):
+            raise HTTPException(409, "This video is processing. Wait for it to finish before editing shots.")
+        lease = JobLease(store.job_dir(job_id))
+        if not lease.acquire():
+            lock.release()
+            raise HTTPException(409, "This video is processing. Wait for it to finish before editing shots.")
+        try:
+            return operation()
+        finally:
+            lease.release()
+            lock.release()
+
     @app.patch("/api/jobs/{job_id}/shots/{shot_id}")
     async def patch_shot(job_id: str, shot_id: int, body: ShotUpdate) -> dict[str, Any]:
         try:
-            s = store.update_shot(job_id, shot_id, body)
+            s = edit_review(job_id, lambda: store.update_shot(job_id, shot_id, body))
         except FileNotFoundError as exc:
             raise HTTPException(404, str(exc)) from exc
         except KeyError as exc:
@@ -797,7 +822,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     @app.delete("/api/jobs/{job_id}/shots/{shot_id}")
     async def remove_shot(job_id: str, shot_id: int) -> dict[str, str]:
         try:
-            store.delete_shot(job_id, shot_id)
+            edit_review(job_id, lambda: store.delete_shot(job_id, shot_id))
         except FileNotFoundError as exc:
             raise HTTPException(404, str(exc)) from exc
         return {"status": "deleted", "shot_id": str(shot_id)}
@@ -820,7 +845,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             included=True,
         )
         try:
-            s = store.add_shot(job_id, shot)
+            s = edit_review(job_id, lambda: store.add_shot(job_id, shot))
         except FileNotFoundError as exc:
             raise HTTPException(404, str(exc)) from exc
         return s.model_dump()
@@ -828,7 +853,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     @app.post("/api/jobs/{job_id}/shots/merge")
     async def merge_shots(job_id: str, body: MergeShotsBody) -> dict[str, Any]:
         try:
-            s = store.merge_shots(job_id, body.shot_ids)
+            s = edit_review(job_id, lambda: store.merge_shots(job_id, body.shot_ids))
         except FileNotFoundError as exc:
             raise HTTPException(404, str(exc)) from exc
         except KeyError as exc:
@@ -840,7 +865,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     @app.post("/api/jobs/{job_id}/shots/{shot_id}/split")
     async def split_shot(job_id: str, shot_id: int, body: SplitShotBody) -> dict[str, Any]:
         try:
-            shots = store.split_shot(job_id, shot_id, body.at_time)
+            shots = edit_review(job_id, lambda: store.split_shot(job_id, shot_id, body.at_time))
         except FileNotFoundError as exc:
             raise HTTPException(404, str(exc)) from exc
         except KeyError as exc:
@@ -902,7 +927,8 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                 raise HTTPException(500, str(exc)) from exc
             clip_paths = er.clip_paths if er and er.clip_paths is not None else []
             meta = store.get_meta(job_id)
-            meta["auto_export_ready"] = bool(er.joined_path)
+            if body.export_joined:
+                meta["auto_export_ready"] = bool(er.joined_path)
             if er.joined_path:
                 meta["export_needs_update"] = False
             store._write_meta(job_id, meta)

@@ -57,7 +57,13 @@
     const hours = Math.floor(value / 3600);
     return `${hours ? `${hours}:` : ""}${String(Math.floor(value / 60) % 60).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
   }
-  const api = Object.freeze({escape, filename, title, mode, active, stopped, finished, needsAttention, status, phase, actions, matches, time});
+  function needsTimelineRefresh(next, loaded) {
+    if (active(next) || next.has_saved_detection === false) return false;
+    if (!next.has_saved_detection && !finished(next)) return false;
+    if (!loaded || active(loaded)) return true;
+    return Boolean(next.timeline_revision && next.timeline_revision !== loaded.timeline_revision);
+  }
+  const api = Object.freeze({escape, filename, title, mode, active, stopped, finished, needsAttention, status, phase, actions, matches, time, needsTimelineRefresh});
   root.snookerUI = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(globalThis);

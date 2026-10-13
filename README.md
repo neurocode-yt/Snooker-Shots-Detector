@@ -196,6 +196,12 @@ the updated video. Saved edits preserve the previous file but mark its download
 as out of date until a new combined export succeeds. Editing controls pause
 during export. Optional frame-break trimming stays collapsed until needed.
 
+An editor opened during processing follows its progress and loads the saved
+shots when the job finishes. Individual-clip export keeps an existing combined
+download available. Replay changes and other saved edits require a new combined
+export; shot edits are blocked while that job is processing in another tab or
+server instance. Refreshing saved shots preserves the current media and playhead.
+
 The timeline stays inside its own horizontally scrollable viewport at every
 zoom level. Drag the yellow playhead to seek. Use `Z` to split, `Ctrl+Z` to
 undo, and `Ctrl+Shift+Z` to redo.

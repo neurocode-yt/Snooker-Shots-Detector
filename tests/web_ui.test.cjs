@@ -50,3 +50,18 @@ test('saved edits require a fresh export and remain easy to find', () => {
   assert.equal(ui.actions(job).resume, false);
   assert.equal(ui.actions(job).editor, true);
 });
+test('processing progress does not reload media; completion loads the saved timeline', () => {
+  const loaded = {status: 'refining', has_saved_detection: true, timeline_revision: 'old'};
+  assert.equal(ui.needsTimelineRefresh({...loaded, timeline_revision: 'new'}, loaded), false);
+  const completed = {status: 'completed', has_saved_detection: true, timeline_revision: 'new'};
+  assert.equal(ui.needsTimelineRefresh(completed, loaded), true);
+  assert.equal(ui.needsTimelineRefresh(completed, completed), false);
+  assert.equal(ui.needsTimelineRefresh(completed, null), true);
+});
+test('legacy processing jobs still update once and unsaved timelines are not requested', () => {
+  const loaded = {status: 'refining', has_saved_detection: true};
+  const completed = {status: 'completed', has_saved_detection: true};
+  assert.equal(ui.needsTimelineRefresh(completed, loaded), true);
+  assert.equal(ui.needsTimelineRefresh(completed, completed), false);
+  assert.equal(ui.needsTimelineRefresh({status: 'interrupted', has_saved_detection: false}, null), false);
+});

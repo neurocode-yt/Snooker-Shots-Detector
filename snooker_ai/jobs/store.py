@@ -220,6 +220,8 @@ class JobStore:
 
     def save_analysis(self, result: AnalysisResult) -> None:
         self._sync_review_timestamps(result)
+        if result.pot_selection_summary:
+            result.pot_selection_summary["included"] = sum(shot.included for shot in result.shots)
         path = self.job_dir(result.job_id) / "analysis.json"
         atomic_text(path, result.model_dump_json())
         slim = {
@@ -373,6 +375,9 @@ class JobStore:
     ) -> None:
         meta = self.get_meta(job_id)
         meta["export_needs_update"] = True
+        meta["shots_detected"] = len(result.shots)
+        if result.pot_selection_summary:
+            meta["pot_selection_summary"] = result.pot_selection_summary
         self._write_meta(job_id, meta)
         path = self.job_dir(job_id) / "corrections.json"
         try:
