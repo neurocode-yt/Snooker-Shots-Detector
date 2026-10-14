@@ -10,6 +10,9 @@ const sectionList = document.getElementById("section-list");
 const zoomSlider = document.getElementById("timeline-zoom");
 const startBtn = document.getElementById("start-btn");
 const workflow = document.getElementById("workflow");
+const processingOrder = document.getElementById("processing-order");
+let queueSettingsBusy = false;
+let appliedProcessingOrder = "parallel";
 const UI = window.snookerUI;
 const workflowRadios = [...document.querySelectorAll('[name="highlight-workflow"]')];
 function syncWorkflowChoices() {
@@ -61,13 +64,14 @@ async function loadShotSelections() {
 
 function updateStartAvailability() {
   const pending = uploadEntries.filter((entry) => !entry.jobId).length;
-  startBtn.disabled = (uploadEntries.length === 1 && !sourceDuration && !previewUnavailable) || !pending || workflow.disabled
+  startBtn.disabled = (uploadEntries.length === 1 && !sourceDuration && !previewUnavailable) || !pending || workflow.disabled || queueSettingsBusy
     || (workflow.value === "pots_only" && !potsAvailable)
     || (workflow.value === "pots_and_fouls" && !pointsAvailable)
     || (workflow.value === "dl_algo" && !dlCapability?.available);
   if (!pending && uploadEntries.length) startBtn.textContent = "Videos submitted";
   else if (uploadEntries.length > 1) startBtn.textContent = `Submit ${pending} ${pending === 1 ? "video" : "videos"}`;
   else if (uploadEntries[0]?.error) startBtn.textContent = "Retry submission";
+  if (pending && processingOrder.value === "sequential") startBtn.textContent = `Add ${pending} ${pending === 1 ? "video" : "videos"} to queue`;
   syncWorkflowChoices();
 }
 
@@ -523,6 +527,46 @@ let libraryFilter = "all";
 let libraryCapcut = {available: false, reason: "Checking CapCut…"};
 let libraryLoading = false;
 
+function showQueue(queue) {
+  if (!queueSettingsBusy) {
+    processingOrder.value = queue.processing_order || "parallel";
+    appliedProcessingOrder = processingOrder.value;
+    processingOrder.disabled = !queue.processing_order;
+  }
+  processingOrder.querySelector('[value="parallel"]').textContent = `Parallel (up to ${queue.max_workers} at once)`;
+  const order = queue.processing_order === "sequential" ? "One video at a time" : `Up to ${queue.max_workers} ${queue.max_workers === 1 ? "match" : "matches"} at once`;
+  document.getElementById("queue-capacity").textContent = `${order} · ${queue.processing} processing · ${queue.waiting} waiting. Waiting videos start automatically; you can add more anytime.`;
+  updateWorkflow();
+}
+
+processingOrder.addEventListener("change", async () => {
+  if (queueSettingsBusy) return;
+  queueSettingsBusy = true;
+  processingOrder.disabled = true;
+  updateStartAvailability();
+  const status = document.getElementById("queue-settings-status");
+  status.classList.remove("hidden");
+  status.textContent = "Saving processing order…";
+  try {
+    const response = await fetch("/api/queue", {method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify({processing_order: processingOrder.value})});
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Could not save processing order");
+    queueSettingsBusy = false;
+    showQueue(data);
+    status.textContent = data.processing_order === "sequential"
+      ? "Queue enabled. Running videos keep going; each waiting video starts after the previous one finishes."
+      : "Parallel processing enabled. Waiting videos start as processing slots become available.";
+  } catch (error) {
+    processingOrder.value = appliedProcessingOrder;
+    status.textContent = error.message || String(error);
+  } finally {
+    queueSettingsBusy = false;
+    processingOrder.disabled = false;
+    updateWorkflow();
+    refreshJobs();
+  }
+});
+
 function renderJobs() {
   const el = document.getElementById("jobs");
   if (el.querySelector("[data-capcut-active], [data-points-active], [data-continue-active], .menu[open]")) return;
@@ -597,7 +641,7 @@ async function refreshJobs() {
     libraryCapcut = capcut;
     if (queueResponse.ok) {
       const queue = await queueResponse.json();
-      document.getElementById("queue-capacity").textContent = `Up to ${queue.max_workers} ${queue.max_workers === 1 ? "match" : "matches"} at once · ${queue.processing} processing · ${queue.waiting} waiting. You can add more while processing continues.`;
+      showQueue(queue);
     } else {
       document.getElementById("queue-capacity").textContent = "Restart the app server to enable the batch queue.";
     }

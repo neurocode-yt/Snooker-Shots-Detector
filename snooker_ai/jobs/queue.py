@@ -40,6 +40,23 @@ class MatchQueue:
         self._threads: list[threading.Thread] = []
         self._closed = False
 
+    def processing_order(self) -> str:
+        """Shared, durable choice: sequential queue or configured parallel capacity."""
+        try:
+            order = json.loads((self.store.root / "queue-settings.json").read_text("utf-8"))["processing_order"]
+            if order in {"sequential", "parallel"}:
+                return order
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+        return "parallel"
+
+    def set_processing_order(self, order: str) -> None:
+        if order not in {"sequential", "parallel"}:
+            raise ValueError("Processing order must be sequential or parallel")
+        with self._condition:
+            atomic_text(self.store.root / "queue-settings.json", json.dumps({"processing_order": order}))
+            self._condition.notify_all()
+
     def start(self) -> None:
         with self._condition:
             if self._threads or self._closed:
@@ -110,15 +127,32 @@ class MatchQueue:
 
     def snapshot(self) -> dict:
         with self._condition:
+            order = self.processing_order()
             return {"max_workers": self.max_workers, "processing": len(self._active),
-                    "waiting": len(self._waiting)}
+                    "waiting": len(self._waiting), "processing_order": order,
+                    "concurrency_limit": 1 if order == "sequential" else self.max_workers}
 
     def _slot(self) -> JobLease | None:
-        for index in range(self.max_workers):
-            lease = JobLease(self.store.root / ".workers" / str(index))
-            if lease.acquire():
-                return lease
-        return None
+        # Probe all slots under a shared dispatch lease. When switching from two
+        # active matches to sequential, a free slot must wait for the other one
+        # to finish too; selecting only slot 0 would accidentally run two again.
+        gate = JobLease(self.store.root / ".workers", ".dispatch.lock")
+        if not gate.acquire():
+            return None
+        free = []
+        try:
+            for index in range(self.max_workers):
+                lease = JobLease(self.store.root / ".workers" / str(index))
+                if lease.acquire():
+                    free.append(lease)
+            limit = 1 if self.processing_order() == "sequential" else self.max_workers
+            if self.max_workers - len(free) < limit and free:
+                return free.pop(0)
+            return None
+        finally:
+            for lease in free:
+                lease.release()
+            gate.release()
 
     def _worker(self) -> None:
         while True:

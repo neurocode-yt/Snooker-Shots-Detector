@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Snooker AI</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20261014batch" />
+  <link rel="stylesheet" href="/static/styles.css?v=20261015queue" />
 </head>
 <body class="home-body">
   <a class="skip-link" href="#workspace">Skip to workspace</a>
@@ -40,7 +40,10 @@
           <span class="file-copy"><strong id="file-name">Choose videos or drop them here</strong><small id="file-meta">Select one or several matches · MP4, MOV, MKV, AVI or WebM</small></span>
           <span class="button secondary" id="file-action" aria-hidden="true">Browse files</span>
         </label>
-        <p id="queue-capacity" class="muted queue-capacity" role="status">Checking processing capacity…</p>
+        <div class="queue-controls"><label for="processing-order">Processing order
+          <select id="processing-order" disabled><option value="sequential">One at a time (queue)</option><option value="parallel" selected>Parallel processing</option></select>
+        </label><p id="queue-capacity" class="muted queue-capacity" role="status">Checking processing capacity…</p></div>
+        <p id="queue-settings-status" class="notice hidden" role="status"></p>
         <ul id="upload-files" class="upload-files hidden" aria-label="Selected videos"></ul>
         <p id="batch-trim-note" class="muted hidden">Each full match will be processed separately. Select one video to trim frame breaks before processing.</p>
 
@@ -119,6 +122,6 @@
   <script src="/static/capcut.js?v=20261011"></script>
   <script src="/static/ui.js?v=20261014batch"></script>
   <script src="/static/batch.js?v=20261014batch"></script>
-  <script src="/static/app.js?v=20261014batch"></script>
+  <script src="/static/app.js?v=20261015queue"></script>
 </body>
 </html>

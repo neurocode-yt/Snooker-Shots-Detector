@@ -53,8 +53,10 @@ def test_two_matches_overlap_third_waits_and_failure_releases_slot(config, tmp_p
         for job in jobs:
             assert queue.submit(job, str(source), EditMode.STRICT, True)
         until(lambda: queue.snapshot()["processing"] == 2)
+        until(lambda: len(seen) == 2)  # slot reservation precedes entering the runner
         assert set(seen) == set(jobs[:2])
-        assert queue.snapshot() == {"max_workers": 2, "processing": 2, "waiting": 2}
+        assert queue.snapshot() == {"max_workers": 2, "processing": 2, "waiting": 2,
+                                    "processing_order": "parallel", "concurrency_limit": 2}
         assert queue.job_state(jobs[2]) == {"queued": True, "queue_position": 1}
         assert queue.job_state(jobs[3])["queue_position"] == 2
         assert not queue.submit(jobs[0], str(source), EditMode.STRICT, True)
@@ -152,7 +154,8 @@ def test_api_accepts_batch_immediately_and_blocks_edits_of_waiting_matches(confi
         try:
             jobs = [client.post("/api/jobs", json={"source_path": str(source), "auto_export": False}).json()["job_id"] for _ in range(3)]
             until(lambda: app.state.match_queue.snapshot()["processing"] == 2)
-            assert client.get("/api/queue").json() == {"max_workers": 2, "processing": 2, "waiting": 1}
+            assert client.get("/api/queue").json() == {"max_workers": 2, "processing": 2, "waiting": 1,
+                                                        "processing_order": "parallel", "concurrency_limit": 2}
             waiting = client.get(f"/api/jobs/{jobs[2]}/progress").json()
             assert waiting["status"] == "pending"
             assert waiting["queued"] and waiting["running"]
@@ -211,6 +214,122 @@ def test_submission_retry_repairs_request_not_yet_persisted(config, tmp_path, mo
         assert response.status_code == 200
         assert app.state.match_queue.wait_idle()
     assert len(calls) == 1 and calls[0][0] == job
+
+
+def test_sequential_queue_starts_next_video_after_entire_previous_job_finishes(config, tmp_path):
+    store, source = prepare(config, tmp_path)
+    jobs = [store.create(source) for _ in range(3)]
+    release = [threading.Event() for _ in jobs]
+    seen = []
+
+    def run(job_id, *_args):
+        seen.append(job_id)
+        store.update_progress(job_id, .9, "exporting")
+        assert release[jobs.index(job_id)].wait(4)
+        store.update_progress(job_id, 1, "completed")
+
+    queue = MatchQueue(config, run)
+    queue.set_processing_order("sequential")
+    queue.start()
+    try:
+        for job in jobs:
+            assert queue.submit(job, str(source), EditMode.STRICT, True)
+        until(lambda: seen == jobs[:1])
+        assert queue.snapshot()["concurrency_limit"] == 1
+        assert queue.snapshot()["waiting"] == 2
+        time.sleep(.3)
+        assert seen == jobs[:1]  # automatic export still owns the processing slot
+        release[0].set()
+        until(lambda: seen == jobs[:2])
+        assert queue.job_state(jobs[2])["queue_position"] == 1
+        release[1].set()
+        until(lambda: seen == jobs)
+        release[2].set()
+        assert queue.wait_idle()
+    finally:
+        for event in release:
+            event.set()
+        queue.close()
+    restarted = MatchQueue(config, lambda *args: None)
+    assert restarted.snapshot()["processing_order"] == "sequential"
+    assert restarted.snapshot()["concurrency_limit"] == 1
+    restarted.close()
+
+
+def test_switch_to_sequential_waits_for_both_already_active_matches(config, tmp_path):
+    store, source = prepare(config, tmp_path)
+    jobs = [store.create(source) for _ in range(3)]
+    release = [threading.Event() for _ in jobs]
+    seen = []
+
+    def run(job_id, *_args):
+        seen.append(job_id)
+        assert release[jobs.index(job_id)].wait(4)
+        store.update_progress(job_id, 1, "completed")
+
+    queue = MatchQueue(config, run)
+    queue.start()
+    try:
+        for job in jobs:
+            assert queue.submit(job, str(source), EditMode.STRICT, True)
+        until(lambda: len(seen) == 2)
+        queue.set_processing_order("sequential")
+        release[0].set()
+        until(lambda: queue.snapshot()["processing"] == 1)
+        time.sleep(.3)
+        assert set(seen) == set(jobs[:2])  # free slot must not start another match yet
+        release[1].set()
+        until(lambda: len(seen) == 3)
+        release[2].set()
+        assert queue.wait_idle()
+    finally:
+        for event in release:
+            event.set()
+        queue.close()
+
+
+def test_processing_order_api_persists_and_validates_choice(config, tmp_path):
+    prepare(config, tmp_path)
+    with TestClient(create_app(config)) as client:
+        response = client.put("/api/queue", json={"processing_order": "sequential"})
+        assert response.status_code == 200
+        assert response.json()["concurrency_limit"] == 1
+        assert client.put("/api/queue", json={"processing_order": "unlimited"}).status_code == 422
+        assert client.get("/api/queue").json()["processing_order"] == "sequential"
+        assert client.get("/api/jobs").status_code == 200
+    with TestClient(create_app(config)) as restarted:
+        assert restarted.get("/api/queue").json()["processing_order"] == "sequential"
+        assert restarted.put("/api/queue", json={"processing_order": "parallel"}).json()["concurrency_limit"] == 2
+
+
+def test_shared_servers_respect_sequential_choice_with_two_configured_slots(config, tmp_path):
+    store, source = prepare(config, tmp_path)
+    jobs = [store.create(source) for _ in range(2)]
+    release = threading.Event()
+    seen = []
+
+    def run(job_id, *_args):
+        seen.append(job_id)
+        assert release.wait(4)
+        store.update_progress(job_id, 1, "completed")
+
+    one, two = MatchQueue(config, run), MatchQueue(config, run)
+    one.set_processing_order("sequential")
+    one.start()
+    two.start()
+    try:
+        assert one.submit(jobs[0], str(source), EditMode.STRICT, True)
+        until(lambda: seen == jobs[:1])
+        assert two.submit(jobs[1], str(source), EditMode.STRICT, True)
+        time.sleep(.3)
+        assert seen == jobs[:1]
+        release.set()
+        assert one.wait_idle() and two.wait_idle()
+        assert seen == jobs
+    finally:
+        release.set()
+        one.close()
+        two.close()
 
 
 @pytest.mark.parametrize("workers", [0, 5, -1])

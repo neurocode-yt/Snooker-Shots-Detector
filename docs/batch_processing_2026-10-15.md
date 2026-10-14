@@ -2,6 +2,12 @@
 
 The upload page now accepts multiple files from the picker or drop zone. Each
 video is uploaded and submitted separately with the chosen highlights mode.
+The **Processing order** control offers **One at a time (queue)** and **Parallel**.
+In queue mode, **Add videos to queue** submits waiting matches and automatically
+starts each after the previous analysis and automatic export finish. More videos
+can be added while it works. The order persists in the jobs directory across
+server restarts. Changing to sequential leaves active jobs running and starts
+the next waiting job only after all previously parallel work has finished.
 Two entire analysis/export jobs run concurrently by default; further jobs wait
 in submission order. The form becomes available once submission finishes, so
 more matches can be added while existing ones process.
@@ -12,6 +18,10 @@ jobs directory. Each queued job has its own ownership lease; queued jobs cannot
 be edited, exported manually, restarted or submitted twice. `GET /api/queue`
 reports the current server's capacity and counts, and job metadata includes
 `queued` and a local `queue_position`.
+`PUT /api/queue` accepts `processing_order: sequential | parallel`; responses
+include `processing_order` and the effective `concurrency_limit`. A shared
+dispatch lease checks all occupied worker slots before admitting another job,
+including when a server changes the limit while matches are already active.
 
 Waiting requests are stored atomically in each job's `queued.json`. Startup
 recovers pending requests with their original source, resume/force settings and
@@ -48,3 +58,16 @@ Validation on Windows:
 This validation covers queue behavior and those specific excerpts. It does not
 establish perfect detection on unseen videos or a throughput improvement on
 every laptop. Simultaneous matches share CPU, GPU, memory and disk bandwidth.
+
+Sequential-mode follow-up validation:
+
+- Full Python suite: **1,306 passed, 16 skipped**; **12** JavaScript presentation
+  and submission checks passed. Ruff and JavaScript syntax checks passed.
+- Tests cover FIFO starts after export, switching from two active videos to one
+  at a time, persisted settings, API validation, and a shared sequential limit
+  across two servers configured with two available slots.
+- The browser queued three videos, displayed one processing and two waiting,
+  and accepted a fourth while the first was active. When the first finished its
+  actual fixture export, the second started automatically; the third and fourth
+  retained their waiting order. Reload preserved the selected processing order.
+  All four fixtures eventually produced separate downloadable exports.

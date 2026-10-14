@@ -12,7 +12,7 @@ import time
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Literal, Optional
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -143,6 +143,10 @@ class AnalyzeBody(BaseModel):
     resume: bool = True
     auto_export: bool = True
     submission_token: Optional[str] = Field(default=None, max_length=128)
+
+
+class QueueSettingsBody(BaseModel):
+    processing_order: Literal["sequential", "parallel"]
 
 
 class RestartBody(BaseModel):
@@ -377,6 +381,11 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
 
     @app.get("/api/queue")
     async def queue_status() -> dict[str, Any]:
+        return queue.snapshot()
+
+    @app.put("/api/queue")
+    async def queue_settings(body: QueueSettingsBody) -> dict[str, Any]:
+        queue.set_processing_order(body.processing_order)
         return queue.snapshot()
     origins = cfg.get("api.cors_origins", ["*"])
     app.add_middleware(

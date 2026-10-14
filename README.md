@@ -111,6 +111,13 @@ submission does not stop the remaining files; retrying skips submissions that
 already succeeded and reuses uploads that reached the server. Batch selection
 processes full matches; select a single video to trim frame breaks first.
 
+Choose **Processing order → One at a time (queue)** to process matches one after
+another. Click **Add videos to queue**; the next waiting video starts automatically
+when the previous analysis and automatic export finish. You can keep adding videos
+while it works. **Parallel** uses the configured capacity instead. The processing
+order is saved across server restarts. Switching to one at a time lets already
+running matches finish before starting the next waiting video.
+
 Set `jobs.max_workers` to **1–4** in `configs/default.yaml` and restart the server
 to change the limit. Servers sharing that jobs directory also share the worker
 slots when configured with the same limit. CPU, GPU, RAM and disk bandwidth are
