@@ -172,6 +172,10 @@ verified against **Windows CapCut 9.5.0**; unsupported versions show a reason
 instead of writing an unverified draft. CapCut must be installed on the PC
 running Snooker AI. For a custom installation or project location, configure
 `capcut.executable_path` and `capcut.projects_dir` in the YAML configuration.
+Discovery checks Windows' registered app-data location as well as the terminal
+environment, including junctions to another drive. If a check fails, the action
+shows the reason and remains available to retry; every click checks again.
+Preparing the project reuses the saved compact timeline when available.
 
 API clients can set `auto_export: false` on `POST /api/jobs` to request analysis
 only. Automatic web jobs export a combined video and avoid encoding

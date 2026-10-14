@@ -40,20 +40,53 @@ class CapCutInstallation:
     version: str
 
 
+def _registered_local_appdata() -> Path | None:
+    """Read the user's Windows folder independently of a terminal's environment."""
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                r"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders") as key:
+            saved = winreg.QueryValueEx(key, "Local AppData")[0]
+        expanded = re.sub(r"%([^%]+)%", lambda match: os.environ.get(match[1], match[0]), str(saved))
+        return Path(expanded)
+    except (ImportError, OSError, TypeError, ValueError):
+        return None
+
+
 def find_capcut(config: Config) -> CapCutInstallation:
     if os.name != "nt":
         raise CapCutUnavailable("Open in CapCut requires the Windows desktop app on this PC.")
-    local = os.environ.get("LOCALAPPDATA")
-    if not local:
-        raise CapCutUnavailable("Windows LOCALAPPDATA is unavailable.")
-    root = Path(local) / "CapCut"
-    apps = root / "Apps"
-    versions = [p for p in apps.glob("*") if p.is_dir() and re.fullmatch(r"\d+(?:\.\d+){2,3}", p.name)]
-    versions.sort(key=lambda p: tuple(int(n) for n in p.name.split(".")), reverse=True)
-    executable = Path(config.get("capcut.executable_path") or apps / "CapCut.exe")
-    if not executable.is_file() or not versions:
+    explicit_exe = config.get("capcut.executable_path")
+    version_pattern = r"\d+(?:\.\d+){2,3}"
+    candidates = []
+    if explicit_exe:
+        executable = Path(explicit_exe).expanduser().resolve()
+        apps = executable.parent.parent if re.fullmatch(version_pattern, executable.parent.name) else executable.parent
+        candidates.append((apps.parent, executable))
+    else:
+        local = os.environ.get("LOCALAPPDATA")
+        registered = _registered_local_appdata()
+        for base in (Path(local) if local else None, registered, Path.home() / "AppData" / "Local"):
+            if base is not None:
+                # Resolve junctions used to move the installed app to another drive.
+                candidates.append(((base / "CapCut").resolve(), None))
+    found = None
+    for root, configured in candidates:
+        apps = root / "Apps"
+        versions = [p for p in apps.glob("*") if p.is_dir() and re.fullmatch(version_pattern, p.name)]
+        versions.sort(key=lambda p: tuple(int(n) for n in p.name.split(".")), reverse=True)
+        if not versions:
+            continue
+        executable = configured or apps / "CapCut.exe"
+        if not executable.is_file() and not configured:
+            executable = versions[0] / "CapCut.exe"
+        if executable.is_file():
+            version = executable.parent.name if configured and re.fullmatch(version_pattern, executable.parent.name) else versions[0].name
+            found = root, executable, version
+            break
+    if found is None:
         raise CapCutUnavailable("CapCut Desktop was not found. Install it on the PC running Snooker AI.")
-    version = versions[0].name
+    root, executable, version = found
     if not version.startswith("9.5."):
         raise CapCutUnavailable(
             f"CapCut {version} uses an unverified project format. This integration supports Windows 9.5."

@@ -615,7 +615,7 @@ function renderJobs() {
         ${actions.points ? `<button class="btn-points secondary" data-job-id="${id}" title="Create a separate version from saved shots">Pots + fouls</button>` : ""}
         <details class="menu job-menu"><summary class="button icon-button" aria-label="More options for ${UI.escape(UI.title(job))}">•••</summary><div class="menu-panel">
           ${actions.editor && !job.download_url && primary ? `<a href="${editor}">Open editor</a>` : ""}
-          ${UI.finished(job) ? `<button class="btn-capcut" data-job-id="${id}" ${libraryCapcut.available ? "" : "disabled"} title="${UI.escape(libraryCapcut.reason || "Open as editable clips")}">Open in CapCut</button>` : ""}
+          ${UI.finished(job) ? `<button class="btn-capcut" data-job-id="${id}" ${UI.active(job) ? "disabled" : ""} title="${UI.escape(libraryCapcut.reason || "Open as editable clips")}">Open in CapCut</button>` : ""}
           <button class="btn-restart" data-job-id="${id}" ${actions.restart ? "" : "disabled"}>Restart analysis</button>
           <div class="menu-meta"><strong>Processing details</strong><span>${UI.escape(job.message || "")}</span>${job.error ? `<span class="error-detail">${UI.escape(job.error)}</span>` : ""}${Number.isFinite(job.checkpoint?.source_time) ? `<span>Saved through ${fmt(job.checkpoint.source_time)}${job.checkpoint.duration ? ` of ${fmt(job.checkpoint.duration)}` : ""}</span>` : ""}<span class="job-id">${id}</span></div>
         </div></details>

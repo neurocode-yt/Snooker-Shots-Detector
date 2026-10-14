@@ -144,6 +144,46 @@ def test_unsupported_capcut_version_reports_reason(config, tmp_path, monkeypatch
         find_capcut(config)
 
 
+@pytest.mark.parametrize("environment", [None, "wrong-location"])
+def test_capcut_discovery_uses_registered_folder_when_terminal_environment_is_wrong(config, tmp_path, monkeypatch, environment):
+    registered = tmp_path / "registered"
+    apps = registered / "CapCut" / "Apps"
+    (apps / "9.5.0.4050").mkdir(parents=True)
+    (apps / "CapCut.exe").touch()
+    if environment is None:
+        monkeypatch.delenv("LOCALAPPDATA", raising=False)
+    else:
+        monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / environment))
+    monkeypatch.setattr("snooker_ai.rendering.capcut._registered_local_appdata", lambda: registered)
+    monkeypatch.setattr("snooker_ai.rendering.capcut.os", SimpleNamespace(name="nt", environ=os.environ))
+    installation = find_capcut(config)
+    assert installation.executable == (apps / "CapCut.exe").resolve()
+    assert installation.projects_dir == (registered / "CapCut" / "User Data" / "Projects" / "com.lveditor.draft").resolve()
+
+
+def test_capcut_discovery_uses_version_executable_when_launcher_is_missing(config, tmp_path, monkeypatch):
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    apps = tmp_path / "CapCut" / "Apps"
+    (apps / "9.5.0.4050").mkdir(parents=True)
+    executable = apps / "9.5.0.4050" / "CapCut.exe"
+    executable.touch()
+    monkeypatch.setattr("snooker_ai.rendering.capcut.os", SimpleNamespace(name="nt", environ=os.environ))
+    assert find_capcut(config).executable == executable.resolve()
+
+
+def test_explicit_capcut_version_is_checked_at_its_own_installation(config, tmp_path, monkeypatch):
+    apps = tmp_path / "moved" / "Apps"
+    (apps / "9.5.0.4050").mkdir(parents=True)
+    (apps / "9.6.0.1000").mkdir()
+    executable = apps / "9.5.0.4050" / "CapCut.exe"
+    executable.touch()
+    config._data["capcut"] = {"executable_path": str(executable)}
+    monkeypatch.setattr("snooker_ai.rendering.capcut.os", SimpleNamespace(name="nt", environ=os.environ))
+    installation = find_capcut(config)
+    assert installation.version == "9.5.0.4050"
+    assert installation.executable == executable.resolve()
+
+
 def _saved_case(config, capcut_case, tmp_path, monkeypatch):
     result, installation = capcut_case
     config._data["paths"]["jobs_dir"] = str(tmp_path / "jobs")
@@ -160,6 +200,7 @@ def test_capcut_api_uses_saved_edits_and_preserves_job_state(config, capcut_case
     launched = []
     monkeypatch.setattr("apps.api.main.launch_capcut", launched.append)
     before = store.get_meta(result.job_id)
+    monkeypatch.setattr(JobStore, "load_analysis", lambda *args: pytest.fail("CapCut should use the saved thin timeline"))
     with TestClient(create_app(config)) as client:
         assert client.get("/api/capcut").json()["available"] is True
         response = client.post(f"/api/jobs/{result.job_id}/open-capcut")

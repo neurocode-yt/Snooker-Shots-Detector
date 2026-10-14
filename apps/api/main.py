@@ -998,7 +998,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             raise HTTPException(409, f"Job {job_id} is already processing")
         try:
             try:
-                result = await asyncio.to_thread(store.load_analysis, job_id)
+                result = await asyncio.to_thread(store.load_selection_analysis, job_id)
             except FileNotFoundError as exc:
                 raise HTTPException(404, str(exc)) from exc
             try:

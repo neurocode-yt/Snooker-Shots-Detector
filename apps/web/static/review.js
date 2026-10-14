@@ -47,16 +47,16 @@ const capCutStatus = document.getElementById("capcut-status");
 const exportStatus = document.getElementById("export-status");
 const combinedDownloadLink = document.getElementById("combined-download-link");
 
-let capcutAvailable = false;
 window.snookerCapCut.load().then((capability) => {
-  capcutAvailable = capability.available;
   openCapCutBtn.title = capability.available
     ? "Create a new CapCut project with included live shots as separate editable clips"
     : capability.reason;
   if (meta.job_id) syncJobState();
 });
 openCapCutBtn.addEventListener("click", () => {
-  window.snookerCapCut.open(jobId, openCapCutBtn, capCutStatus);
+  const request = window.snookerCapCut.open(jobId, openCapCutBtn, capCutStatus);
+  syncJobState();
+  request.finally(syncJobState);
 });
 
 let shots = [];
@@ -315,7 +315,7 @@ function render() {
 }
 
 function syncJobState() {
-  const busy = UI.active(meta) || exportBusy || editBusy || analysisRequestBusy || timelineBusy || timelineRefreshRequired;
+  const busy = UI.active(meta) || exportBusy || editBusy || analysisRequestBusy || timelineBusy || timelineRefreshRequired || window.snookerCapCut.isPending(jobId);
   const hasSelection = shots.some((shot) => shot.included);
   exportCombinedBtn.disabled = exportClipsBtn.disabled = busy || !hasSelection;
   document.getElementById("video-title").textContent = UI.title(meta);
@@ -327,7 +327,7 @@ function syncJobState() {
   document.getElementById("restart-analysis-btn").disabled = busy;
   document.getElementById("points-highlights-btn").disabled = busy || !UI.actions(meta, pointsCapabilityAvailable).points;
   document.getElementById("add-at-playhead").disabled = busy || !loadedTimelineMeta;
-  openCapCutBtn.disabled = busy || !capcutAvailable || !hasSelection;
+  openCapCutBtn.disabled = busy || !hasSelection;
   updatePreviewControls();
   document.querySelectorAll(".shot-include").forEach((checkbox) => { checkbox.disabled = busy; });
   document.querySelectorAll(".boundary-edit input, .shot-tools button, .transport button").forEach((control) => { control.disabled = busy || !currentShot(); });
