@@ -211,6 +211,14 @@ and export encodes only the selected clips. Repeated clicks return the finished
 version or resume its interrupted work. Original jobs, exports and explicit
 review choices are preserved. Use **Show more videos** to reach older results.
 
+Clicking **Pots + fouls** opens a progress dialog for score checking and export.
+If the highlights already exist, it shows **Pots + fouls highlights already
+made**, then asks **Open in CapCut?** The same prompt appears when a new version
+finishes. CapCut receives the pots + fouls version. You can also download it or
+open its editor. **Keep working in background** closes the dialog while server
+processing continues; click **Pots + fouls** again to follow that job. Failures
+show a reason, and inconclusive scores offer the editor instead of an empty video.
+
 API clients can call `POST /api/jobs/{job_id}/points-highlights` for this fast
 completed-video action, or set `selection: "pots_and_fouls"` or `"pots_only"`
 on `POST /api/jobs` for new matches. Both default workflows continue to use

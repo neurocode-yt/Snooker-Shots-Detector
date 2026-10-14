@@ -478,22 +478,14 @@ function videoName(job) {
 
 async function createPointsHighlights(jobId, button) {
   const item = button.closest(".job-item");
-  item.dataset.pointsActive = "true";
-  button.disabled = true;
-  button.textContent = "Starting…";
-  try {
-    const response = await fetch(`/api/jobs/${jobId}/points-highlights`, {method: "POST"});
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "Could not create points highlights");
-    pointsJobMessages.set(jobId, data.status === "ready"
-      ? "Points highlights are ready in the jobs list."
-      : "Creating points highlights from saved shots; the original video stays available.");
-  } catch (error) {
-    pointsJobMessages.set(jobId, error.message || String(error));
-  } finally {
-    delete item.dataset.pointsActive;
-    await refreshJobs();
-  }
+  await window.snookerPoints.open(jobId, {
+    title: item.querySelector("h3").textContent,
+    onUpdate: (state) => {
+      pointsJobMessages.set(jobId, state.message);
+      renderJobs();
+      if (["processing", "ready"].includes(state.state)) refreshJobs();
+    },
+  });
 }
 
 function escapeJobText(value) {

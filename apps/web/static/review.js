@@ -808,19 +808,10 @@ async function runSavedAnalysis(action) {
 document.getElementById("restart-analysis-btn").addEventListener("click", () => runSavedAnalysis("restart"));
 document.getElementById("continue-analysis-btn").addEventListener("click", () => runSavedAnalysis("continue"));
 document.getElementById("points-highlights-btn").addEventListener("click", async () => {
-  const button = document.getElementById("points-highlights-btn");
-  button.disabled = true;
-  try {
-    const response = await fetch(`/api/jobs/${jobId}/points-highlights`, {method: "POST"});
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || "Could not create points highlights");
-    }
-    window.location.href = "/";
-  } catch (error) {
-    button.disabled = false;
-    setExportStatus(error.message || String(error), "error");
-  }
+  await window.snookerPoints.open(jobId, {
+    title: UI.title(meta),
+    onUpdate: (state) => setExportStatus(state.message, state.state === "error" ? "error" : ""),
+  });
 });
 
 // Keyboard shortcuts
