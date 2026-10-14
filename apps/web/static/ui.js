@@ -26,6 +26,7 @@
     || Boolean(job.export_needs_update)
     || Number(job.pot_selection_summary?.unknown || 0) > 0;
   function status(job) {
+    if (job.queued) return {label: "Queued", tone: "working"};
     if (active(job)) return {label: job.status === "exporting" ? "Exporting" : "Processing", tone: "working"};
     if (stopped(job)) return {label: job.status === "interrupted" ? "Interrupted" : job.status === "cancelled" ? "Stopped" : "Needs attention", tone: "warning"};
     if (job.export_needs_update) return {label: "Edits saved", tone: "warning"};
@@ -33,6 +34,7 @@
     return {label: job.download_url ? "Ready" : "Finished", tone: "ready"};
   }
   function phase(job) {
+    if (job.queued) return job.queue_position ? `Waiting · queue position ${job.queue_position}` : "Waiting for a processing slot";
     const labels = {pending: "Queued", validating: "Checking video", proxy: "Preparing video", analyzing: "Finding shots", detecting: "Finding shots", refining: "Refining shot boundaries", segmenting: "Preparing highlights", exporting: "Creating your video"};
     return job.status === "segmenting" && job.selection && job.selection !== "all"
       ? "Checking point changes" : labels[job.status] || job.message || "";

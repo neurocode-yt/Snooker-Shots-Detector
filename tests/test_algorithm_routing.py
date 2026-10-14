@@ -120,6 +120,7 @@ def test_dl_analysis_uses_existing_exporter_to_create_download(routing, monkeypa
     with TestClient(create_app(cfg)) as client:
         response = client.post("/api/jobs", json={"source_path": str(source), "algorithm": "dl_algo"})
         job_id = response.json()["job_id"]
+        assert client.app.state.match_queue.wait_idle()
         progress = client.get(f"/api/jobs/{job_id}/progress").json()
         assert progress["status"] == "completed"
         assert progress["algorithm"] == "dl_algo"

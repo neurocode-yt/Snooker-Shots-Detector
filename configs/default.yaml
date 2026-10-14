@@ -339,7 +339,7 @@ export:
 # Job / resume
 jobs:
   checkpoint_every_seconds: 30.0
-  max_workers: 1
+  max_workers: 2  # simultaneous matches; 1–4, reduce to 1 on low-memory machines
   resume: true
 
 # API

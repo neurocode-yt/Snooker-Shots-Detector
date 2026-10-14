@@ -7,8 +7,8 @@ from pathlib import Path
 
 
 class JobLease:
-    def __init__(self, job_dir: Path):
-        self.path = Path(job_dir) / ".processing.lock"
+    def __init__(self, job_dir: Path, name: str = ".processing.lock"):
+        self.path = Path(job_dir) / name
         self.stream = None
 
     def acquire(self) -> bool:
@@ -46,8 +46,10 @@ class JobLease:
         self.release()
 
     @classmethod
-    def is_running(cls, job_dir: Path) -> bool:
-        lease = cls(job_dir)
+    def is_running(cls, job_dir: Path, name: str = ".processing.lock") -> bool:
+        lease = cls(job_dir, name)
+        if not lease.path.exists():
+            return False
         acquired = lease.acquire()
         lease.release()
         return not acquired

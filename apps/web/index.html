@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Snooker AI</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20261013ui" />
+  <link rel="stylesheet" href="/static/styles.css?v=20261014batch" />
 </head>
 <body class="home-body">
   <a class="skip-link" href="#workspace">Skip to workspace</a>
@@ -33,13 +33,16 @@
         </template>
         <p id="workflow-description" class="workflow-description muted">Detect shots and create a finished video automatically.</p>
         <p id="algorithm-status" class="notice hidden" role="status" aria-live="polite"></p>
-        <p class="field-label">2. Add your match</p>
+        <p class="field-label">2. Add your matches</p>
         <label class="file-label" id="file-drop-zone">
-          <input type="file" id="file" class="visually-hidden" aria-label="Choose a snooker video" accept="video/*,.mp4,.mov,.mkv,.avi,.webm" required />
+          <input type="file" id="file" class="visually-hidden" aria-label="Choose snooker videos" accept="video/*,.mp4,.mov,.mkv,.avi,.webm" multiple />
           <span class="upload-symbol" aria-hidden="true">↑</span>
-          <span class="file-copy"><strong id="file-name">Choose a video or drop it here</strong><small id="file-meta">MP4, MOV, MKV, AVI or WebM</small></span>
+          <span class="file-copy"><strong id="file-name">Choose videos or drop them here</strong><small id="file-meta">Select one or several matches · MP4, MOV, MKV, AVI or WebM</small></span>
           <span class="button secondary" id="file-action" aria-hidden="true">Browse files</span>
         </label>
+        <p id="queue-capacity" class="muted queue-capacity" role="status">Checking processing capacity…</p>
+        <ul id="upload-files" class="upload-files hidden" aria-label="Selected videos"></ul>
+        <p id="batch-trim-note" class="muted hidden">Each full match will be processed separately. Select one video to trim frame breaks before processing.</p>
 
         <section id="pre-editor" class="pre-editor hidden" aria-labelledby="pre-editor-heading">
           <details id="trim-options" class="trim-options"><summary><span>Trim frame breaks <small>Optional</small></span><span id="edit-summary" class="preview-count">Loading…</span></summary><div class="trim-content">
@@ -94,7 +97,7 @@
         </div>
       </form>
       <div id="progress-wrap" class="upload-progress hidden" role="status" aria-live="polite">
-        <div class="progress-bar" role="progressbar" aria-label="Match processing" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progress-fill"></div></div>
+        <div class="progress-bar" role="progressbar" aria-label="Video submissions" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progress-fill"></div></div>
         <p id="progress-text">Starting…</p>
       </div>
     </section>
@@ -114,7 +117,8 @@
   </main>
 
   <script src="/static/capcut.js?v=20261011"></script>
-  <script src="/static/ui.js?v=20261014state"></script>
-  <script src="/static/app.js?v=20261013ui"></script>
+  <script src="/static/ui.js?v=20261014batch"></script>
+  <script src="/static/batch.js?v=20261014batch"></script>
+  <script src="/static/app.js?v=20261014batch"></script>
 </body>
 </html>

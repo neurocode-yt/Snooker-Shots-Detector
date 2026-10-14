@@ -60,10 +60,14 @@ async function loadShotSelections() {
 }
 
 function updateStartAvailability() {
-  startBtn.disabled = (!sourceDuration && !previewUnavailable) || !fileInput.files[0] || workflow.disabled
+  const pending = uploadEntries.filter((entry) => !entry.jobId).length;
+  startBtn.disabled = (uploadEntries.length === 1 && !sourceDuration && !previewUnavailable) || !pending || workflow.disabled
     || (workflow.value === "pots_only" && !potsAvailable)
     || (workflow.value === "pots_and_fouls" && !pointsAvailable)
     || (workflow.value === "dl_algo" && !dlCapability?.available);
+  if (!pending && uploadEntries.length) startBtn.textContent = "Videos submitted";
+  else if (uploadEntries.length > 1) startBtn.textContent = `Submit ${pending} ${pending === 1 ? "video" : "videos"}`;
+  else if (uploadEntries[0]?.error) startBtn.textContent = "Retry submission";
   syncWorkflowChoices();
 }
 
@@ -116,6 +120,7 @@ workflow.addEventListener("change", () => {
 });
 
 let sourceDuration = 0;
+let uploadEntries = [];
 let previewUnavailable = false;
 let sections = [];
 let selectedSectionId = null;
@@ -585,11 +590,17 @@ async function refreshJobs() {
   if (libraryLoading) return;
   libraryLoading = true;
   try {
-    const [res, capcut] = await Promise.all([fetch("/api/jobs"), window.snookerCapCut.load()]);
+    const [res, capcut, queueResponse] = await Promise.all([fetch("/api/jobs"), window.snookerCapCut.load(), fetch("/api/queue")]);
     if (!res.ok) throw new Error("The video library could not be loaded. Retrying shortly.");
     libraryJobs = (await res.json()).filter((job) => DL_ALGO_VISIBLE || job.algorithm !== "dl_algo")
       .sort((left, right) => Number(right.created_at || 0) - Number(left.created_at || 0));
     libraryCapcut = capcut;
+    if (queueResponse.ok) {
+      const queue = await queueResponse.json();
+      document.getElementById("queue-capacity").textContent = `Up to ${queue.max_workers} ${queue.max_workers === 1 ? "match" : "matches"} at once · ${queue.processing} processing · ${queue.waiting} waiting. You can add more while processing continues.`;
+    } else {
+      document.getElementById("queue-capacity").textContent = "Restart the app server to enable the batch queue.";
+    }
     document.getElementById("library-status").classList.add("hidden");
     renderJobs();
   } catch (error) {
@@ -609,7 +620,7 @@ dropZone.addEventListener("drop", (event) => {
   event.preventDefault();
   if (fileInput.disabled || !event.dataTransfer.files.length) return;
   const files = new DataTransfer();
-  files.items.add(event.dataTransfer.files[0]);
+  [...event.dataTransfer.files].forEach((file) => files.items.add(file));
   fileInput.files = files.files;
   fileInput.dispatchEvent(new Event("change"));
 });
@@ -631,21 +642,35 @@ document.addEventListener("keydown", (event) => {
 
 fileInput.addEventListener("change", (event) => {
   const file = event.target.files[0];
+  uploadEntries = [...event.target.files].map((file) => ({file, state: "Selected"}));
+  renderUploadEntries();
+  const batch = uploadEntries.length > 1;
   previewUnavailable = false;
-  document.getElementById("file-name").textContent = file ? file.name : "Choose a video or drop it here";
-  document.getElementById("file-meta").textContent = file ? `${(file.size / 1024 / 1024).toFixed(1)} MB · Reading video…` : "MP4, MOV, MKV, AVI or WebM";
-  document.getElementById("file-action").textContent = file ? "Change video" : "Browse files";
+  document.getElementById("file-name").textContent = batch ? `${uploadEntries.length} videos selected` : file ? file.name : "Choose videos or drop them here";
+  document.getElementById("file-meta").textContent = batch ? "Each match gets its own progress, highlights and checkpoints" : file ? `${(file.size / 1024 / 1024).toFixed(1)} MB · Reading video…` : "Select one or several matches · MP4, MOV, MKV, AVI or WebM";
+  document.getElementById("file-action").textContent = file ? "Change selection" : "Browse files";
+  document.getElementById("batch-trim-note").classList.toggle("hidden", !batch);
   dropZone.classList.toggle("has-file", Boolean(file));
   startBtn.disabled = true;
   preEditor.classList.add("hidden");
   sourceDuration = 0;
   sections = [];
   if (localVideoUrl) URL.revokeObjectURL(localVideoUrl);
-  localVideoUrl = file ? URL.createObjectURL(file) : null;
+  sourcePreview.pause();
+  sourcePreview.removeAttribute("src");
+  localVideoUrl = file && !batch ? URL.createObjectURL(file) : null;
   if (localVideoUrl) sourcePreview.src = localVideoUrl;
+  updateWorkflow();
 });
 
+function renderUploadEntries() {
+  const list = document.getElementById("upload-files");
+  list.classList.toggle("hidden", !uploadEntries.length);
+  list.innerHTML = uploadEntries.map((entry) => `<li><div><strong>${UI.escape(entry.file.name)}</strong><small>${UI.escape(entry.error || entry.state)}</small></div>${entry.jobId ? `<a href="/review/${encodeURIComponent(entry.jobId)}?editor=classic">View progress ↗</a>` : ""}</li>`).join("");
+}
+
 sourcePreview.addEventListener("loadedmetadata", () => {
+  if (uploadEntries.length !== 1 || !localVideoUrl) return;
   if (Number.isFinite(sourcePreview.duration) && sourcePreview.duration > 0) {
     previewUnavailable = false;
     initializeEditor(sourcePreview.duration);
@@ -655,7 +680,7 @@ sourcePreview.addEventListener("loadedmetadata", () => {
   }
 });
 sourcePreview.addEventListener("error", () => {
-  if (!fileInput.files[0]) return;
+  if (uploadEntries.length !== 1 || !localVideoUrl) return;
   previewUnavailable = true;
   preEditor.classList.add("hidden");
   document.getElementById("file-meta").textContent = "Browser preview unavailable. You can still process the full match.";
@@ -712,8 +737,8 @@ window.addEventListener("beforeunload", () => {
 
 document.getElementById("upload-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  const file = fileInput.files[0];
-  if (!file || (!sourceDuration && !previewUnavailable)) return;
+  if (startBtn.disabled || !uploadEntries.length) return;
+  const batch = uploadEntries.length > 1;
   const keepRanges = mergedKeepRanges();
   const wrap = document.getElementById("progress-wrap");
   const fill = document.getElementById("progress-fill");
@@ -729,7 +754,7 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
       return;
     }
   }
-  if (!keepRanges.length && !previewUnavailable) {
+  if (!batch && !keepRanges.length && !previewUnavailable) {
     text.textContent = "Keep at least one section before starting analysis.";
     wrap.classList.remove("hidden");
     return;
@@ -740,87 +765,67 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
   workflow.disabled = true;
   fileInput.disabled = true;
   syncWorkflowChoices();
-  text.textContent = "Uploading original video…";
-  fill.style.width = "4%";
+  text.textContent = "Submitting your videos…";
+  fill.style.width = "0%";
 
   try {
-    const formData = new FormData();
-    formData.append("file", file);
-    const upload = await fetch("/api/upload", { method: "POST", body: formData });
-    if (!upload.ok) throw new Error(await upload.text());
-    let { path } = await upload.json();
-
-    const fullSourceKept = previewUnavailable || (
+    const fullSourceKept = batch || previewUnavailable || (
       keepRanges.length === 1
       && keepRanges[0].start <= 0.001
       && keepRanges[0].end >= sourceDuration - 0.001
     );
-    if (!fullSourceKept) {
-      text.textContent = "Creating cleaned match from kept sections…";
-      fill.style.width = "7%";
-      const preprocess = await fetch("/api/preprocess", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source_path: path, ranges: keepRanges }),
-      });
-      if (!preprocess.ok) throw new Error(await preprocess.text());
-      ({ path } = await preprocess.json());
+    if (!batch && !uploadEntries[0].sourcePath) uploadEntries[0].ranges = fullSourceKept ? null : keepRanges;
+    const options = {mode, algorithm, selection: ["pots_only", "pots_and_fouls"].includes(workflow.value) ? workflow.value : "all", resume: true, auto_export: autoExport};
+    async function readResponse(response) {
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Could not submit this video");
+      return data;
     }
-
-    text.textContent = "Finding shots…";
-    fill.style.width = "10%";
-    const start = await fetch("/api/jobs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source_path: path, mode, algorithm,
-        selection: ["pots_only", "pots_and_fouls"].includes(workflow.value) ? workflow.value : "all", resume: true, auto_export: autoExport }),
-    });
-    if (!start.ok) throw new Error(await start.text());
-    const { job_id: jobId } = await start.json();
-    text.textContent = "Your match is processing. You can follow it in Your videos below.";
-
-    let pollBusy = false;
-    const poll = setInterval(async () => {
-      if (pollBusy) return;
-      pollBusy = true;
-      try {
-        const response = await fetch(`/api/jobs/${jobId}/progress`);
-        if (!response.ok) throw new Error("Unable to fetch progress");
-        const metadata = await response.json();
-        const progress = Math.max(10, (metadata.progress || 0) * 100);
-        fill.style.width = `${progress}%`;
-        text.textContent = `${UI.phase(metadata)} · ${Math.round(progress)}%`;
-        fill.parentElement.setAttribute("aria-valuenow", String(Math.round(progress)));
-        if (["ready_for_review", "completed", "failed", "interrupted", "cancelled"].includes(metadata.status)) {
-          clearInterval(poll);
-          workflow.disabled = false;
-          fileInput.disabled = false;
-          updateStartAvailability();
-          refreshJobs();
-          if (["failed", "interrupted", "cancelled"].includes(metadata.status)) {
-            text.textContent = "Processing stopped. Saved work is preserved; use Continue processing in Your videos.";
-          } else if (metadata.status === "completed") {
-            text.textContent = metadata.message || "Finished video ready.";
-            if (metadata.download_url) {
-              const download = document.createElement("a");
-              download.href = metadata.download_url;
-              download.textContent = " Download finished video";
-              text.appendChild(download);
-            }
-          } else {
-            window.location.href = `/review/${jobId}?editor=classic`;
+    const result = await window.snookerBatch.submit(uploadEntries, options, {
+      upload: async (file) => {
+        const data = new FormData();
+        data.append("file", file);
+        return (await readResponse(await fetch("/api/upload", {method: "POST", body: data}))).path;
+      },
+      preprocess: async (path, ranges) => (await readResponse(await fetch("/api/preprocess", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({source_path: path, ranges}),
+      }))).path,
+      start: async (path, settings, entry) => {
+        // A stable id prevents duplicate processing after a lost HTTP response.
+        entry.requestId ||= `batch-${crypto.randomUUID()}`;
+        try {
+          return (await readResponse(await fetch("/api/jobs", {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({...settings, source_path: path, job_id: entry.requestId, submission_token: entry.requestId}),
+          }))).job_id;
+        } catch (error) {
+          const lookup = await fetch(`/api/jobs/${entry.requestId}`);
+          if (lookup.ok) {
+            const job = await lookup.json();
+            if (job.running || UI.finished(job) || UI.stopped(job)) return entry.requestId;
           }
+          throw error;
         }
-
-      } catch (error) {
-        text.textContent = "Connection lost. Your match may still be processing; checking again shortly.";
-      } finally { pollBusy = false; }
-    }, 1500);
+      },
+      changed: () => {
+        renderUploadEntries();
+        const done = uploadEntries.filter((entry) => entry.jobId || entry.error).length;
+        const percent = Math.round(done / uploadEntries.length * 100);
+        fill.style.width = `${percent}%`;
+        fill.parentElement.setAttribute("aria-valuenow", String(percent));
+        text.textContent = `${done} of ${uploadEntries.length} submissions handled. Follow processing in Your videos below.`;
+        refreshJobs();
+      },
+    });
+    text.textContent = `${result.submitted} ${result.submitted === 1 ? "video" : "videos"} submitted. ${result.failed ? `${result.failed} could not be submitted. Retry uses the same settings and trims; choose the videos again to change them.` : "You can add more videos now. Follow each match in Your videos below."}`;
   } catch (error) {
     text.textContent = `Error: ${error.message || error}`;
+  } finally {
     workflow.disabled = false;
     fileInput.disabled = false;
-    updateStartAvailability();
+    updateWorkflow();
+    refreshJobs();
   }
 });
 
@@ -863,4 +868,4 @@ document.getElementById("show-more-jobs").addEventListener("click", () => {
   visibleJobs += 20;
   renderJobs();
 });
-setInterval(refreshJobs, 10000);
+setInterval(refreshJobs, 2500);

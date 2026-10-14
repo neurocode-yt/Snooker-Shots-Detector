@@ -45,6 +45,7 @@ def test_analysis_finishes_automatically_even_with_uncertain_diagnostics(
         started = client.post("/api/jobs", json={"source_path": str(source), "auto_export": auto_export})
         assert started.status_code == 200
         job_id = started.json()["job_id"]
+        assert client.app.state.match_queue.wait_idle()
         progress = client.get(f"/api/jobs/{job_id}/progress").json()
         assert progress["status"] == ("completed" if auto_export else "ready_for_review")
         if auto_export:
@@ -75,6 +76,7 @@ def test_no_shots_does_not_offer_an_old_export_as_new_output(config, tmp_path, m
     with TestClient(create_app(config)) as client:
         response = client.post("/api/jobs", json={"source_path": str(source), "job_id": job_id})
         assert response.status_code == 200
+        assert client.app.state.match_queue.wait_idle()
         progress = client.get(f"/api/jobs/{job_id}/progress").json()
         assert progress["status"] == "completed"
         assert progress["download_url"] is None

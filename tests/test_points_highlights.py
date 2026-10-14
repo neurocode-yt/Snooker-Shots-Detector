@@ -135,6 +135,7 @@ def test_completed_video_click_uses_slim_timeline_skips_detection_and_preserves_
         assert response.status_code == 200
         child = response.json()["job_id"]
         assert child != parent
+        assert client.app.state.match_queue.wait_idle()
         progress = client.get(f"/api/jobs/{child}/progress").json()
         assert progress["status"] == "completed"
         assert progress["selection"] == "pots_and_fouls"
@@ -155,6 +156,7 @@ def test_second_click_returns_finished_variant_instead_of_scanning_or_rendering_
     store, parent, scans, exports = prepare(config, tmp_path, monkeypatch)
     with TestClient(create_app(config)) as client:
         first = client.post(f"/api/jobs/{parent}/points-highlights").json()
+        assert client.app.state.match_queue.wait_idle()
         second = client.post(f"/api/jobs/{parent}/points-highlights").json()
     assert second["job_id"] == first["job_id"]
     assert second["status"] == "ready" and second["download_url"]
@@ -173,6 +175,7 @@ def test_legacy_completed_job_without_source_fingerprint_reuses_saved_detection(
         response = client.post(f"/api/jobs/{parent}/points-highlights")
         assert response.status_code == 200
         child = response.json()["job_id"]
+        assert client.app.state.match_queue.wait_idle()
         assert client.get(f"/api/jobs/{child}/progress").json()["status"] == "completed"
     assert scans == exports == [child]
 
@@ -214,6 +217,7 @@ def test_edited_parent_starts_a_new_variant(config, tmp_path, monkeypatch):
     store, parent, scans, exports = prepare(config, tmp_path, monkeypatch)
     with TestClient(create_app(config)) as client:
         first = client.post(f"/api/jobs/{parent}/points-highlights").json()
+        assert client.app.state.match_queue.wait_idle()
         store.update_shot(parent, 1, ShotUpdate(clip_end=14))
         second = client.post(f"/api/jobs/{parent}/points-highlights").json()
     assert first["job_id"] != second["job_id"]
@@ -252,8 +256,10 @@ def test_export_retry_continues_slim_variant_without_rescanning_detector(
     monkeypatch.setattr("apps.api.main.Exporter.export", interrupted_export)
     with TestClient(create_app(config)) as client:
         first = client.post(f"/api/jobs/{parent}/points-highlights").json()
+        assert client.app.state.match_queue.wait_idle()
         assert client.get(f"/api/jobs/{first['job_id']}/progress").json()["status"] == "failed"
         second = client.post(f"/api/jobs/{parent}/points-highlights").json()
+        assert client.app.state.match_queue.wait_idle()
         assert second["job_id"] == first["job_id"]
         assert client.get(f"/api/jobs/{second['job_id']}/progress").json()["status"] == "completed"
     assert len(attempts) == 2

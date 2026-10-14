@@ -334,6 +334,7 @@ def test_full_detector_result_is_reused_for_separate_pot_variant(config, tmp_pat
             "/api/jobs", json={"job_id": old_id, "selection": "pots_only", "auto_export": False}
         )
         job = response.json()["job_id"]
+        assert client.app.state.match_queue.wait_idle()
         progress = client.get(f"/api/jobs/{job}/progress").json()
     assert progress["status"] == "ready_for_review"
     assert store.load_analysis(job).shots[0].pot_status is PotStatus.POT
@@ -354,6 +355,7 @@ def test_inconclusive_pot_job_opens_review_instead_of_creating_empty_video(
     )
     with TestClient(create_app(config)) as client:
         response = client.post("/api/jobs", json={"job_id": old_id, "selection": "pots_only"})
+        assert client.app.state.match_queue.wait_idle()
         progress = client.get(f"/api/jobs/{response.json()['job_id']}/progress").json()
     assert progress["status"] == "ready_for_review"
     assert progress["download_url"] is None

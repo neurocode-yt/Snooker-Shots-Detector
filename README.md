@@ -103,7 +103,28 @@ snooker-ai serve --host 127.0.0.1 --port 8000
 - Review: http://127.0.0.1:8000/review/`<job-id>`
 - API docs: http://127.0.0.1:8000/docs
 
-Select a video and click **Create video automatically**. The finished MP4 appears
+Select one or several videos and click **Create highlights** (or **Submit videos**
+for a batch). The queue processes **two matches at once** by default; extra matches
+wait for a free slot. Each match has separate shots, progress, checkpoints and
+exports. You can submit more matches while others process. A failed upload or
+submission does not stop the remaining files; retrying skips submissions that
+already succeeded and reuses uploads that reached the server. Batch selection
+processes full matches; select a single video to trim frame breaks first.
+
+Set `jobs.max_workers` to **1–4** in `configs/default.yaml` and restart the server
+to change the limit. Servers sharing that jobs directory also share the worker
+slots when configured with the same limit. CPU, GPU, RAM and disk bandwidth are
+shared, so simultaneous matches improve batch throughput only when resources
+are available; they do not make every individual match faster. This does not
+change the default detector, thresholds, sampling or shot selection.
+
+Waiting jobs are saved on disk and automatically requeued after a server restart.
+Matches that were already processing retain their checkpoints and offer
+**Continue processing** after an interruption. Keep the source uploads in place.
+`GET /api/queue` reports this server's configured capacity, active matches and
+waiting count; each job exposes `queued` and its local `queue_position`.
+
+The finished MP4 appears
 as a download when processing completes; reviewing shots and exporting again are
 optional. Source trimming is also optional: split/delete sections before starting
 if needed. Keeping the entire source skips that extra re-encoding step.
