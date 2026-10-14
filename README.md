@@ -24,6 +24,7 @@ The web timeline remains available for optional inspection.
 - **Selected-shots preview** — immediately play included shots as one continuous virtual timeline
 - **Export** — individual clips, one combined MP4, CSV, EDL, training labels
 - **Open in CapCut** — create a Windows CapCut 9.5 project with separate editable shots
+- **Make Shorts** — turn included shots into separate vertical videos with player names, layout preview, and a ZIP download
 - **Jobs** — progress, resume, batch CLI
 - **Automatic workflow** — upload and start once; detection, cutting, and combined export finish without review approval
 - **Adaptive analysis** — native cadence at cue contact and stop boundaries; cheaper tracking follows the roll and exits on confirmed stillness
@@ -176,6 +177,27 @@ Discovery checks Windows' registered app-data location as well as the terminal
 environment, including junctions to another drive. If a check fails, the action
 shows the reason and remains available to retry; every click checks again.
 Preparing the project reuses the saved compact timeline when available.
+
+Click **Make Shorts** on an analyzed video or in the shot editor to create one
+1080×1920 MP4 per included live shot. Enter the player or match names, choose an
+editor-style layout preset, and check the shot preview. **Canvas & video** and
+**Text size & position** adjust colors, zoom, placement, and text. Optional
+per-shot player names override the match name. Titles and filenames use the
+original editor shot number, such as `Judd Trump - Shot 03.mp4`.
+
+Shorts render directly from the analyzed source and saved trims, preserving
+original audio. Replay and excluded records stay out. No description, voiceover,
+AI request, or upload is generated. Existing completed videos work immediately
+without detecting shots again. Review flagged shots in the editor if needed.
+
+Rendering continues when the dialog closes. Reopen **Make Shorts** to see progress,
+download an individual MP4, **Download all ZIP**, or **Open Shorts folder**. Files
+are stored in `data/jobs/<job>/export/shorts/<batch>/` by default. One Shorts batch
+renders at a time per server. Completed clips are checkpointed; after a failure
+or server restart, reopen the dialog and click **Resume Shorts**. Keeping the same
+settings and shot selection reuses validated completed clips. New settings or
+edited selections create a separate batch. An in-progress batch keeps the
+selection captured when it started.
 
 API clients can set `auto_export: false` on `POST /api/jobs` to request analysis
 only. Automatic web jobs export a combined video and avoid encoding

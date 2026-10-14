@@ -43,6 +43,8 @@ const exportCombinedBtn = document.getElementById("export-combined-btn");
 const exportClipsBtn = document.getElementById("export-clips-btn");
 const openExportBtn = document.getElementById("open-export-btn");
 const openCapCutBtn = document.getElementById("open-capcut-btn");
+const makeShortsBtn = document.getElementById("make-shorts-btn");
+makeShortsBtn.addEventListener("click", () => window.snookerShorts.open(jobId, makeShortsBtn));
 const capCutStatus = document.getElementById("capcut-status");
 const exportStatus = document.getElementById("export-status");
 const combinedDownloadLink = document.getElementById("combined-download-link");
@@ -328,6 +330,7 @@ function syncJobState() {
   document.getElementById("points-highlights-btn").disabled = busy || !UI.actions(meta, pointsCapabilityAvailable).points;
   document.getElementById("add-at-playhead").disabled = busy || !loadedTimelineMeta;
   openCapCutBtn.disabled = busy || !hasSelection;
+  makeShortsBtn.disabled = busy || !hasSelection || !UI.finished(meta);
   updatePreviewControls();
   document.querySelectorAll(".shot-include").forEach((checkbox) => { checkbox.disabled = busy; });
   document.querySelectorAll(".boundary-edit input, .shot-tools button, .transport button").forEach((control) => { control.disabled = busy || !currentShot(); });

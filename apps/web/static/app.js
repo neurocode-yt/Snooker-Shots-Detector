@@ -605,6 +605,7 @@ function renderJobs() {
       <div class="job-actions">${primary}
         ${job.download_url && !UI.active(job) && actions.editor ? `<a class="button secondary" href="${editor}">Open editor</a>` : ""}
         ${actions.points ? `<button class="btn-points secondary" data-job-id="${id}" title="Create a separate version from saved shots">Pots + fouls</button>` : ""}
+        ${UI.finished(job) && !UI.active(job) ? `<button class="btn-shorts secondary" data-job-id="${id}">Make Shorts</button>` : ""}
         <details class="menu job-menu"><summary class="button icon-button" aria-label="More options for ${UI.escape(UI.title(job))}">•••</summary><div class="menu-panel">
           ${actions.editor && !job.download_url && primary ? `<a href="${editor}">Open editor</a>` : ""}
           ${UI.finished(job) ? `<button class="btn-capcut" data-job-id="${id}" ${UI.active(job) ? "disabled" : ""} title="${UI.escape(libraryCapcut.reason || "Open as editable clips")}">Open in CapCut</button>` : ""}
@@ -866,6 +867,11 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
 });
 
 document.getElementById("jobs").addEventListener("click", (event) => {
+  const shortsButton = event.target.closest(".btn-shorts");
+  if (shortsButton?.dataset.jobId) {
+    window.snookerShorts.open(shortsButton.dataset.jobId, shortsButton);
+    return;
+  }
   const pointsButton = event.target.closest(".btn-points");
   if (pointsButton?.dataset.jobId) {
     createPointsHighlights(pointsButton.dataset.jobId, pointsButton);

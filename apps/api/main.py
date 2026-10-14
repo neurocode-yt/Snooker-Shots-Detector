@@ -28,6 +28,8 @@ from snooker_ai.jobs.queue import MatchQueue
 from snooker_ai.pipeline.analyzer import Analyzer as Analyzer
 from snooker_ai.pipeline.algorithms import Algorithm, algorithm_capabilities, create_analyzer
 from snooker_ai.rendering.exporter import Exporter
+from snooker_ai.rendering.shorts import ShortsManager
+from apps.api.shorts import install_shorts_routes
 from snooker_ai.rendering.capcut import (
     CapCutUnavailable,
     create_capcut_project,
@@ -358,6 +360,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     store = JobStore(cfg)
 
     queue = MatchQueue(cfg, lambda *args: _run_analysis(*args))
+    shorts = ShortsManager(cfg, store)
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -365,6 +368,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         try:
             yield
         finally:
+            await asyncio.to_thread(shorts.close)
             await asyncio.to_thread(queue.close)
 
     app = FastAPI(
@@ -374,6 +378,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.match_queue = queue
+    app.state.shorts_manager = shorts
 
     def enqueue(job_id, source, mode, resume, force=False, auto_export=True):
         if not queue.submit(job_id, source, mode, resume, force, auto_export):
@@ -837,6 +842,8 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         finally:
             lease.release()
             lock.release()
+
+    install_shorts_routes(app, shorts, edit_review, _open_folder)
 
     @app.patch("/api/jobs/{job_id}/shots/{shot_id}")
     async def patch_shot(job_id: str, shot_id: int, body: ShotUpdate) -> dict[str, Any]:
