@@ -64,12 +64,13 @@ def _is_vfr(stream: dict[str, Any]) -> bool:
     return abs(avg - r) / max(r, 1e-6) > 0.02
 
 
-def probe_video(path: str | Path) -> VideoMetadata:
+def probe_video(path: str | Path, *, probe_data: Optional[dict[str, Any]] = None) -> VideoMetadata:
+    """Inspect media, optionally parsing an FFprobe result already read by the caller."""
     path = Path(path)
     if not path.is_file():
         raise FileNotFoundError(f"Video not found: {path}")
 
-    raw = ffprobe_json(path)
+    raw = ffprobe_json(path) if probe_data is None else probe_data
     fmt = raw.get("format") or {}
     vstream = _stream_by_type(raw, "video")
     astream = _stream_by_type(raw, "audio")

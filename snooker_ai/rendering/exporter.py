@@ -760,7 +760,10 @@ class Exporter:
     ) -> None:
         """Verify duration plus A/V stream alignment on a rendered media file."""
 
-        meta = probe_video(path)
+        # One fresh probe supplies metadata and A/V timing checks. Do not cache
+        # by filename: exporting again can replace the same file with new media.
+        raw = ffprobe_json(path) if source_has_audio and verify_timing else None
+        meta = probe_video(path, probe_data=raw) if raw is not None else probe_video(path)
         if source_has_audio and not meta.has_audio:
             raise RuntimeError(f"Audio stream missing from exported clip {path}")
         if not verify_timing:
@@ -781,7 +784,6 @@ class Exporter:
         if not source_has_audio:
             return
 
-        raw = ffprobe_json(path)
         video = next(
             (stream for stream in raw.get("streams", []) if stream.get("codec_type") == "video"),
             None,

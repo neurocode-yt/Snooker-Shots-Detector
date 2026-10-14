@@ -48,6 +48,20 @@ class TableLocalizer:
         self._mask_history: list[np.ndarray] = []
         self.use_opencl = acceleration_enabled(config)
 
+    @staticmethod
+    def _smooth_masks(history: list[np.ndarray]) -> np.ndarray:
+        """Apply the same >127 mean rule to binary masks without a float stack.
+
+        Contour masks contain only 0/255. Sum into one image, retaining ties for
+        even histories (127.5 passes), and preserve checkpoint mask history.
+        """
+        total = np.zeros(history[0].shape, dtype=np.uint32)
+        for mask in history:
+            if mask.shape != total.shape:
+                raise ValueError("All table masks must have the same shape")
+            np.add(total, mask, out=total)
+        return (total > 127 * len(history)).astype(np.uint8) * 255
+
     def reset(self) -> None:
         """Forget view-local mask history after a camera cut."""
         self._mask_history.clear()
@@ -108,8 +122,7 @@ class TableLocalizer:
         if len(self._mask_history) > self.smooth_n:
             self._mask_history.pop(0)
         if len(self._mask_history) > 1:
-            stack = np.stack(self._mask_history, axis=0).astype(np.float32)
-            clean = (np.mean(stack, axis=0) > 127).astype(np.uint8) * 255
+            clean = self._smooth_masks(self._mask_history)
 
         peri = cv2.arcLength(contour, True)
         approx = cv2.approxPolyDP(contour, self.eps * peri, True)

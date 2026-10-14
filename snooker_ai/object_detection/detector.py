@@ -284,14 +284,25 @@ class ObjectDetector:
             component_x, component_y, cw, ch, area = stats[component]
             if area < ball_area * 2.5:
                 continue
+            elongated = max(cw, ch) > 3 * diameter_prior and max(cw, ch) > 3 * min(cw, ch)
+            if elongated:
+                foreground_ids.append(component)
+                continue
+            if area <= ball_area * 6:
+                continue
             component_pixels = hsv[component_y:component_y+ch, component_x:component_x+cw][
                 labels[component_y:component_y+ch, component_x:component_x+cw] == component
             ]
             red = ((component_pixels[:, 0] < 15) | (component_pixels[:, 0] > 165)) & (component_pixels[:, 1] > 110)
-            elongated = max(cw, ch) > 3 * diameter_prior and max(cw, ch) > 3 * min(cw, ch)
-            if elongated or (area > ball_area * 6 and float(np.mean(red)) < 0.65):
+            if float(np.mean(red)) < 0.65:
                 foreground_ids.append(component)
-        foreground = np.isin(labels, foreground_ids) if foreground_ids else None
+        foreground = None
+        if foreground_ids:
+            # Connected-component ids are dense in [0, count). Indexed lookup
+            # avoids building a general set-membership search for every pixel.
+            rejected = np.zeros(count, dtype=bool)
+            rejected[foreground_ids] = True
+            foreground = rejected[labels]
         if foreground is not None:
             margin = max(1, int(round(diameter_prior * 0.35)))
             foreground = cv2.dilate(
@@ -402,6 +413,8 @@ class ObjectDetector:
                 px = int(np.clip(round(proposal.cx), 0, table_w - 1))
                 py = int(np.clip(round(proposal.cy), 0, table_h - 1))
                 in_foreground = bool(foreground[py, px])
+            if in_foreground and not proposal.cue_sphere_supported:
+                continue
             color_conf, deviation_conf, surround_conf = self._colour_scores(
                 hsv, cloth, proposal.cx, proposal.cy, proposal.radius
             )
@@ -414,8 +427,6 @@ class ObjectDetector:
                                or proposal.cue_sphere_colour_occlusion)
             if (main_table_view and in_foreground and proposal.cue_sphere_supported
                     and surround_conf < .65 and not colour_occluded):
-                continue
-            if in_foreground and not proposal.cue_sphere_supported:
                 continue
             if deviation_conf < 0.08:
                 continue
@@ -1040,8 +1051,9 @@ class ObjectDetector:
         ox0, ox1 = max(0, ix - outer_r), min(w, ix + outer_r + 1)
         oy0, oy1 = max(0, iy - outer_r), min(h, iy + outer_r + 1)
         oyy, oxx = np.ogrid[oy0:oy1, ox0:ox1]
-        outer = (oxx - cx) ** 2 + (oyy - cy) ** 2 <= float(outer_r * outer_r)
-        inner = (oxx - cx) ** 2 + (oyy - cy) ** 2 <= float(max(r, 1) * max(r, 1))
+        distance_squared = (oxx - cx) ** 2 + (oyy - cy) ** 2
+        outer = distance_squared <= float(outer_r * outer_r)
+        inner = distance_squared <= float(max(r, 1) * max(r, 1))
         annulus = outer & ~inner
         cloth_outer = cloth_mask[oy0:oy1, ox0:ox1]
         surround = (

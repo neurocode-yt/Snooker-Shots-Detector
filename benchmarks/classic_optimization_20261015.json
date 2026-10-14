@@ -1,0 +1,207 @@
+{
+  "baseline_commit": "24bf13c38dc10be40c1ab88aee29664c4de9392b",
+  "device": "cpu",
+  "method": "alternating-order paired trials on identical input; original classes loaded from baseline Git revision",
+  "ball_detection": [
+    {
+      "case": "table",
+      "source": "real_match_0.mp4",
+      "interval": [
+        8,
+        10
+      ],
+      "frames": 50,
+      "observations": 731,
+      "before_seconds": 1.6240914249792695,
+      "after_seconds": 1.5787609250110108,
+      "reduction_percent": 2.7911298139411875,
+      "observations_identical": true,
+      "trials": {
+        "before": [
+          1.6698217999655753,
+          1.5941730999620631,
+          1.5635930999997072,
+          1.6687776999897324
+        ],
+        "after": [
+          1.6259934999980032,
+          1.5849139000056311,
+          1.5325047000078484,
+          1.5716316000325605
+        ]
+      }
+    },
+    {
+      "case": "low_view",
+      "source": "real_match_1.mp4",
+      "interval": [
+        0,
+        2
+      ],
+      "frames": 50,
+      "observations": 884,
+      "before_seconds": 0.9203817999805324,
+      "after_seconds": 0.8707708249858115,
+      "reduction_percent": 5.390260324114433,
+      "observations_identical": true,
+      "trials": {
+        "before": [
+          0.9419873999431729,
+          0.9107740999897942,
+          0.9232073000166565,
+          0.9055583999725059
+        ],
+        "after": [
+          0.8726542000076734,
+          0.865098999987822,
+          0.8610331999952905,
+          0.8842968999524601
+        ]
+      }
+    },
+    {
+      "case": "handling",
+      "source": "real_match_0.mp4",
+      "interval": [
+        28,
+        30
+      ],
+      "frames": 50,
+      "observations": 562,
+      "before_seconds": 2.522801175015047,
+      "after_seconds": 2.3561575500061736,
+      "reduction_percent": 6.605499738118668,
+      "observations_identical": true,
+      "trials": {
+        "before": [
+          2.559696000011172,
+          2.469010500004515,
+          2.6430380000383593,
+          2.4194602000061423
+        ],
+        "after": [
+          2.3930572000099346,
+          2.3629238000139594,
+          2.333622000005562,
+          2.3350271999952383
+        ]
+      }
+    }
+  ],
+  "feature_scans": [
+    {
+      "case": "overhead",
+      "source": "real_match_0.mp4",
+      "interval": [
+        8,
+        10
+      ],
+      "features": 51,
+      "before_seconds": 12.113644299989877,
+      "after_seconds": 10.60550069999105,
+      "reduction_percent": 12.449957771998378,
+      "trials": {
+        "before": [
+          11.008840400027111,
+          11.866870399971958,
+          13.46522209997056
+        ],
+        "after": [
+          10.507781299995258,
+          9.829782299988437,
+          11.478938499989454
+        ]
+      },
+      "features_and_candidates_identical": true
+    },
+    {
+      "case": "low_view",
+      "source": "real_match_1.mp4",
+      "interval": [
+        0,
+        2
+      ],
+      "features": 51,
+      "before_seconds": 4.440455333310335,
+      "after_seconds": 3.605530300003011,
+      "reduction_percent": 18.80268960356577,
+      "trials": {
+        "before": [
+          6.701303999987431,
+          3.5585284999688156,
+          3.0615334999747574
+        ],
+        "after": [
+          3.779559699993115,
+          4.151946900004987,
+          2.8850843000109307
+        ]
+      },
+      "features_and_candidates_identical": true
+    }
+  ],
+  "mask_smoothing": {
+    "trials": {
+      "before": [
+        0.009508980001555756,
+        0.009566439996706321,
+        0.009494239999912679,
+        0.00959953999845311,
+        0.010031629999866709,
+        0.009955350001109763,
+        0.00994889999856241,
+        0.009948770003393292
+      ],
+      "after": [
+        0.007036780001362786,
+        0.006254999997327104,
+        0.006921990000410006,
+        0.00730420999461785,
+        0.010780759999761358,
+        0.0072023299988359215,
+        0.007141569996019825,
+        0.006709369999589399
+      ]
+    },
+    "peak_bytes": {
+      "before": 23040388,
+      "after": 5531013
+    },
+    "masks_identical": true,
+    "dimensions": [
+      1280,
+      720
+    ],
+    "history_length": 5,
+    "before_seconds": 0.009756731249945005,
+    "after_seconds": 0.007419001248490531,
+    "reduction_percent": 23.960176226721945,
+    "temporary_memory_reduction_percent": 75.99427145063703
+  },
+  "export_verification": {
+    "trials": {
+      "before": [
+        0.11103149998234585,
+        0.10918589995708317,
+        0.10964769998099655,
+        0.10857529996428639,
+        0.11119440000038594,
+        0.1088053000275977
+      ],
+      "after": [
+        0.05835000000661239,
+        0.05533499998273328,
+        0.05509179999353364,
+        0.055744700017385185,
+        0.05504790000850335,
+        0.05489500000840053
+      ]
+    },
+    "source": "real_match_0.mp4",
+    "timing_checks_passed": true,
+    "before_seconds": 0.10974001665211593,
+    "after_seconds": 0.05574406666952806,
+    "reduction_percent": 49.203519035138356
+  },
+  "limitations": "Short real-match windows and individual calculations only; full-match runtime not measured. Low-view scan timings varied; means should not be extrapolated to all videos."
+}
