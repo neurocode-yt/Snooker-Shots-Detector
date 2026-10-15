@@ -25,6 +25,7 @@ The web timeline remains available for optional inspection.
 - **Export** — individual clips, one combined MP4, CSV, EDL, training labels
 - **Open in CapCut** — create a Windows CapCut 9.5 project with separate editable shots
 - **Make Shorts** — turn included shots into separate vertical videos with player names, layout preview, and a ZIP download
+- **Current work / Pause / Resume** — see active and waiting matches, exports, and Shorts, and pause without losing saved progress
 - **Jobs** — progress, resume, batch CLI
 - **Automatic workflow** — upload and start once; detection, cutting, and combined export finish without review approval
 - **Adaptive analysis** — native cadence at cue contact and stop boundaries; cheaper tracking follows the roll and exits on confirmed stillness
@@ -198,6 +199,22 @@ or server restart, reopen the dialog and click **Resume Shorts**. Keeping the sa
 settings and shot selection reuses validated completed clips. New settings or
 edited selections create a separate batch. An in-progress batch keeps the
 selection captured when it started.
+
+**Current work** appears above the workspace on both the library and shot editor.
+It shows active, queued, paused, and interrupted match processing and Shorts
+exports, including stage, progress, and the number of Shorts already finished.
+It remains visible after closing the Shorts dialog. Use **Pause** on a task and
+wait for **Pausing…** to become **Paused**; then **Resume** continues saved work.
+Shorts also has a Pause button inside its dialog. Paused waiting videos do not
+start automatically and paused work remains available after a server restart.
+
+Pausing a detector scan saves the current streaming state; completed refinement
+windows remain reusable. Pausing an encode stops that owned FFmpeg command; the
+unfinished encode is redone on resume. Finished Shorts are kept. Resuming a
+paused Shorts batch uses its original selection and layout, and resuming a manual
+export keeps its original output/filter settings. Some analysis routines finish
+their current step before acknowledging Pause; the UI shows **Pausing…** until
+the worker has stopped.
 
 API clients can set `auto_export: false` on `POST /api/jobs` to request analysis
 only. Automatic web jobs export a combined video and avoid encoding

@@ -106,6 +106,7 @@ class JobStatus(str, Enum):
     FAILED = "failed"
     CANCELLED = "cancelled"
     INTERRUPTED = "interrupted"
+    PAUSED = "paused"
 
 
 class VideoMetadata(BaseModel):

@@ -1,0 +1,8 @@
+.work-panel { max-width: 1400px; margin: 1.2rem auto; padding: 1.1rem 1.3rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); }
+.work-heading-row, .work-title { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.work-heading-row { margin-bottom:.8rem; }.work-heading-row .eyebrow { margin-bottom:.25rem; }.work-summary { font-size:.76rem; }
+.work-items { max-height:360px; overflow-y:auto; scrollbar-width:thin; }
+.work-item { display:flex; align-items:center; gap:1.3rem; padding:1rem 0; border-top:1px solid var(--border); }.work-copy { flex:1; min-width:0; }
+.work-title strong { overflow-wrap:anywhere; font-size:.9rem; }.work-title .status-badge { flex-shrink:0; }.work-copy p { font-size:.75rem; margin:.4rem 0; }.work-copy progress { width:100%; height:6px; accent-color:var(--accent); }
+.work-actions { display:flex; flex-wrap:wrap; gap:.5rem; flex-shrink:0; }.work-message { overflow-wrap:anywhere; }.work-empty { margin:0; font-size:.8rem; }
+@media(max-width:1450px) { .work-panel { margin:1rem 1.25rem; } } @media(max-width:650px) { .work-item,.work-heading-row { align-items:stretch; flex-direction:column; gap:.6rem; } .work-panel { margin:.8rem; padding:1rem; } }

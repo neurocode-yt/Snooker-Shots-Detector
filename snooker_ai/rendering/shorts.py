@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from snooker_ai.config import Config
 from snooker_ai.jobs.lease import JobLease
 from snooker_ai.jobs.store import JobStore
+from snooker_ai.utils.work_control import WorkControl, WorkPaused, current_control, check_pause
 from snooker_ai.rendering.exporter import Exporter
 from snooker_ai.types import AnalysisResult, ExportRequest, JobStatus, ShotRecord
 from snooker_ai.utils.ffmpeg import ffprobe_json, find_ffmpeg, run_command
@@ -314,6 +315,9 @@ class ShortsManager:
         self.config, self.store = config, store
         self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="shorts")
         self.stopping = threading.Event()
+        self.pending = {}
+        self.pending_lock = threading.RLock()
+        self.indexed = False
 
     def root(self, job_id: str) -> Path:
         if not re.fullmatch(r"[A-Za-z0-9_-]+", job_id):
@@ -344,6 +348,9 @@ class ShortsManager:
                         self.save(directory, batch)
                 finally:
                     lease.release()
+        batch["pause_requested"] = (
+            batch["status"] in {"queued", "rendering"} and WorkControl(directory).requested()
+        )
         return batch
 
     @staticmethod
@@ -355,12 +362,50 @@ class ShortsManager:
             except PermissionError:
                 if attempt == 7:
                     raise
-                time.sleep(min(.05, .005 * 2**attempt))
+                time.sleep(min(0.05, 0.005 * 2**attempt))
 
-    @staticmethod
-    def save(directory: Path, batch: dict):
+    def save(self, directory: Path, batch: dict):
         batch["updated_at"] = time.time()
         atomic_text(directory / "manifest.json", json.dumps(batch, indent=2))
+        self.update_index(batch)
+
+    def update_index(self, batch):
+        index = self.store.root / ".work" / f"shorts-{batch['job_id']}-{batch['batch_id']}.json"
+        if batch["status"] in {"queued", "rendering", "paused", "interrupted"}:
+            if not index.exists():
+                atomic_text(
+                    index, json.dumps({"job_id": batch["job_id"], "batch_id": batch["batch_id"]})
+                )
+        else:
+            for attempt in range(8):
+                try:
+                    index.unlink(missing_ok=True)
+                    break
+                except PermissionError:
+                    if attempt == 7:
+                        raise
+                    time.sleep(min(.05, .005 * 2**attempt))
+
+    def work_items(self) -> list[dict]:
+        with self.pending_lock:
+            if not self.indexed:
+                for path in self.store.root.glob("*/export/shorts/*/manifest.json"):
+                    batch = self.read_manifest(path.parent)
+                    if batch["status"] in {"queued", "rendering", "paused", "interrupted"}:
+                        self.update_index(self.read(batch["job_id"], batch["batch_id"]))
+                self.indexed = True
+        items = []
+        for path in (self.store.root / ".work").glob("shorts-*.json"):
+            try:
+                entry = json.loads(path.read_text("utf-8"))
+                batch = self.read(entry["job_id"], entry["batch_id"])
+                if batch["status"] in {"queued", "rendering", "paused", "interrupted"}:
+                    items.append(batch)
+                else:
+                    path.unlink(missing_ok=True)
+            except FileNotFoundError:
+                continue
+        return items
 
     def latest(self, job_id: str) -> dict | None:
         manifests = list(self.root(job_id).glob("*/manifest.json"))
@@ -432,16 +477,74 @@ class ShortsManager:
             # Keep only the compact immutable source/selection snapshot.
             snapshot = result.model_copy(update={"shots": shots, "features": []})
             atomic_text(directory / "snapshot.json", snapshot.model_dump_json())
-            batch.update(
-                status="queued",
-                error=None,
-                completed=len(batch["clips"]),
-                message="Waiting to render Shorts",
-            )
-            self.save(directory, batch)
-            response = json.loads(json.dumps(batch))
-            self.pool.submit(self._run, directory, batch, lease)
-            return response
+            return self.enqueue(directory, batch, lease)
+        except BaseException:
+            lease.release()
+            raise
+
+    def enqueue(self, directory, batch, lease):
+        WorkControl(directory).clear()
+        batch.update(
+            status="queued",
+            error=None,
+            pause_requested=False,
+            completed=len(batch["clips"]),
+            message="Waiting to render Shorts",
+        )
+        self.save(directory, batch)
+        response = json.loads(json.dumps(batch))
+        key = (batch["job_id"], batch["batch_id"])
+        with self.pending_lock:
+            future = self.pool.submit(self._run, directory, batch, lease)
+            self.pending[key] = (future, lease)
+
+            def finished(_future):
+                with self.pending_lock:
+                    self.pending.pop(key, None)
+
+            future.add_done_callback(finished)
+        return response
+
+    def pause(self, job_id, batch_id):
+        batch = self.read(job_id, batch_id)
+        if batch["status"] == "paused":
+            return batch
+        if batch["status"] not in {"queued", "rendering"}:
+            raise ValueError("This Shorts batch is not running")
+        directory = self.directory(job_id, batch_id)
+        WorkControl(directory).request()
+        with self.pending_lock:
+            entry = self.pending.get((job_id, batch_id))
+            if entry and entry[0].cancel():
+                batch.update(status="paused", message="Shorts paused. Resume to continue.")
+                self.save(directory, batch)
+                entry[1].release()
+        return self.read(job_id, batch_id)
+
+    def load_batch_source(self, job_id, batch_id):
+        batch = self.read(job_id, batch_id)
+        result = AnalysisResult.model_validate_json(
+            (self.directory(job_id, batch_id) / "snapshot.json").read_text("utf-8")
+        )
+        if self.store.source_fingerprint(result.source_path) != batch["source_fingerprint"]:
+            raise ValueError("Source video changed; analyze it again before resuming Shorts")
+        return result, selected_shots(result, self.config)
+
+    def resume(self, job_id, batch_id):
+        if self.stopping.is_set():
+            raise ValueError("The server is stopping; retry after restart")
+        directory = self.directory(job_id, batch_id)
+        lease = JobLease(self.root(job_id), ".shorts.lock")
+        if not lease.acquire():
+            raise ValueError("Shorts are already queued or running for this video")
+        try:
+            batch = self.read_manifest(directory)
+            if batch["status"] == "completed":
+                lease.release()
+                return batch
+            self.load_batch_source(job_id, batch_id)
+            batch["clips"] = [clip for clip in batch["clips"] if self.clip_valid(directory, clip)]
+            return self.enqueue(directory, batch, lease)
         except BaseException:
             lease.release()
             raise
@@ -456,12 +559,15 @@ class ShortsManager:
             return False
 
     def _run(self, directory: Path, batch: dict, lease: JobLease):
+        token = current_control.set(WorkControl(directory))
         try:
+            check_pause()
             result = AnalysisResult.model_validate_json(
                 (directory / "snapshot.json").read_text("utf-8")
             )
             settings = ShortsSettings.model_validate(batch["settings"])
             for shot in result.shots:
+                check_pause()
                 if self.stopping.is_set():
                     batch.update(
                         status="interrupted",
@@ -493,15 +599,24 @@ class ShortsManager:
                 )
                 batch["completed"] = len(batch["clips"])
                 self.save(directory, batch)
+            check_pause()
             temporary = directory / "shorts.partial.zip"
             with zipfile.ZipFile(
                 temporary, "w", compression=zipfile.ZIP_STORED, allowZip64=True
             ) as archive:
                 for clip in batch["clips"]:
+                    check_pause()
                     archive.write(directory / clip["filename"], arcname=clip["filename"])
             temporary.replace(directory / "shorts.zip")
             batch.update(
                 status="completed", message=f"{len(batch['clips'])} Shorts ready", error=None
+            )
+            self.save(directory, batch)
+        except WorkPaused:
+            batch.update(
+                status="paused",
+                pause_requested=False,
+                message="Shorts paused. Completed clips are saved; resume to continue.",
             )
             self.save(directory, batch)
         except Exception as exc:
@@ -512,6 +627,7 @@ class ShortsManager:
             )
             self.save(directory, batch)
         finally:
+            current_control.reset(token)
             lease.release()
 
     def close(self):

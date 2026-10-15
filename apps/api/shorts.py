@@ -15,6 +15,7 @@ from snooker_ai.rendering.shorts import PRESETS, ShortsSettings, preview_png, se
 class PreviewBody(BaseModel):
     settings: ShortsSettings
     shot_id: int
+    batch_id: str | None = None
 
 
 def public_batch(batch):
@@ -43,10 +44,14 @@ def install_shorts_routes(app, manager, edit_review, open_folder):
             raise HTTPException(403, "Request Shorts from Snooker AI")
 
     @app.get("/api/jobs/{job_id}/shorts")
-    async def setup(job_id: str):
+    async def setup(job_id: str, batch_id: str | None = None):
         def load():
-            result, shots = manager.load_source(job_id)
-            batch = manager.latest(job_id)
+            result, shots = (
+                manager.load_batch_source(job_id, batch_id)
+                if batch_id
+                else manager.load_source(job_id)
+            )
+            batch = manager.read(job_id, batch_id) if batch_id else manager.latest(job_id)
             return {
                 "presets": PRESETS,
                 "defaults": ShortsSettings(player_names="Player name").model_dump(),
@@ -70,7 +75,11 @@ def install_shorts_routes(app, manager, edit_review, open_folder):
     @app.post("/api/jobs/{job_id}/shorts/preview")
     async def preview(job_id: str, body: PreviewBody):
         def render():
-            result, shots = manager.load_source(job_id)
+            result, shots = (
+                manager.load_batch_source(job_id, body.batch_id)
+                if body.batch_id
+                else manager.load_source(job_id)
+            )
             shot = next((s for s in shots if s.shot_id == body.shot_id), None)
             if shot is None:
                 raise FileNotFoundError("Included live shot not found")
@@ -90,6 +99,16 @@ def install_shorts_routes(app, manager, edit_review, open_folder):
     @app.get("/api/jobs/{job_id}/shorts/{batch_id}")
     async def status(job_id: str, batch_id: str):
         return public_batch(await call(lambda: manager.read(job_id, batch_id)))
+
+    @app.post("/api/jobs/{job_id}/shorts/{batch_id}/pause")
+    async def pause(job_id: str, batch_id: str, request: Request):
+        same_origin(request)
+        return public_batch(await call(lambda: manager.pause(job_id, batch_id)))
+
+    @app.post("/api/jobs/{job_id}/shorts/{batch_id}/resume", status_code=202)
+    async def resume(job_id: str, batch_id: str, request: Request):
+        same_origin(request)
+        return public_batch(await call(lambda: manager.resume(job_id, batch_id)))
 
     @app.get("/api/jobs/{job_id}/shorts/{batch_id}/zip")
     async def download_zip(job_id: str, batch_id: str):

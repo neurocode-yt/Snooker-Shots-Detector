@@ -590,7 +590,7 @@ function renderJobs() {
     const countText = Number.isFinite(summary.included) ? `${summary.included} of ${shotCount || Object.values(summary).filter(Number.isInteger).slice(0, 5).reduce((a, b) => a + b, 0)} shots selected` : shotCount ? `${shotCount} shots detected` : "";
     const date = job.created_at ? new Intl.DateTimeFormat("en-GB", {day: "numeric", month: "short", year: "numeric"}).format(new Date(job.created_at * 1000)) : "";
     const editor = `/review/${encodeURIComponent(job.job_id)}?editor=classic`;
-    const primary = UI.active(job) ? (actions.editor ? `<a class="button secondary" href="${editor}">View shots</a>` : "") : actions.resume ? `<button class="btn-continue primary" data-job-id="${id}">Continue processing</button>`
+    const primary = UI.active(job) ? (actions.editor ? `<a class="button secondary" href="${editor}">View shots</a>` : "") : actions.resume ? `<button class="btn-continue primary" data-job-id="${id}">${job.status === "paused" ? "Resume processing" : "Continue processing"}</button>`
       : job.download_url ? `<a class="button primary" href="${UI.escape(job.download_url)}">Download video <span aria-hidden="true">↓</span></a>`
       : actions.editor ? `<a class="button primary" href="${editor}">Review shots</a>` : "";
     return `<article class="job-item" data-library-job="${id}">
@@ -598,7 +598,7 @@ function renderJobs() {
       <div class="job-copy"><div class="job-title-row"><h3 title="${UI.escape(videoName(job))}">${UI.escape(UI.title(job))}</h3><span class="status-badge ${state.tone}">${state.label}</span></div>
         <div class="job-meta"><span class="mode-badge">${UI.escape(UI.mode(job))}</span>${countText ? `<span>${countText}</span>` : ""}<span>${date}</span></div>
         ${UI.active(job) ? `<div class="job-progress"><span>${UI.escape(UI.phase(job))}</span><span>${progress}%</span><div role="progressbar" aria-label="Video processing" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"><i style="width:${progress}%"></i></div></div>` : ""}
-        ${UI.stopped(job) ? '<p class="job-warning">Processing stopped. Saved work is preserved.</p>' : job.export_needs_update ? '<p class="job-warning">Edits saved. Open the editor to export the updated video.</p>' : unknown ? `<p class="job-warning">${unknown} ${unknown === 1 ? "shot needs" : "shots need"} a score check in the editor.</p>` : ""}
+        ${UI.stopped(job) ? `<p class="job-warning">${job.status === "paused" ? "Paused" : "Processing stopped"}. Saved work is preserved.</p>` : job.export_needs_update ? '<p class="job-warning">Edits saved. Open the editor to export the updated video.</p>' : unknown ? `<p class="job-warning">${unknown} ${unknown === 1 ? "shot needs" : "shots need"} a score check in the editor.</p>` : ""}
         ${pointsJobMessages.has(job.job_id) ? `<p class="job-feedback" role="status">${UI.escape(pointsJobMessages.get(job.job_id))}</p>` : ""}
         ${capcutJobMessages.has(job.job_id) ? `<p class="capcut-status job-feedback" role="status">${UI.escape(capcutJobMessages.get(job.job_id))}</p>` : ""}
       </div>

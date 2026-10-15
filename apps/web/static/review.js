@@ -326,6 +326,7 @@ function syncJobState() {
   document.title = `${UI.title(meta)} — Shot editor`;
   document.getElementById("continue-analysis-btn").classList.toggle("hidden", !UI.actions(meta).resume);
   document.getElementById("continue-analysis-btn").disabled = busy;
+  document.getElementById("continue-analysis-btn").textContent = meta.status === "paused" ? "Resume processing" : "Continue processing";
   document.getElementById("restart-analysis-btn").disabled = busy;
   document.getElementById("points-highlights-btn").disabled = busy || !UI.actions(meta, pointsCapabilityAvailable).points;
   document.getElementById("add-at-playhead").disabled = busy || !loadedTimelineMeta;
@@ -737,6 +738,10 @@ async function runExport({ combined, clips, button }) {
     }
 
     const data = await res.json();
+    if (data.status === "paused") {
+      setExportStatus("Export paused. Use Resume in Current work to finish.", "ready");
+      return;
+    }
     const count = Number.isFinite(data.clip_count)
       ? data.clip_count
       : (data.clips || []).length;

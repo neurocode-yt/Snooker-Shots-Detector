@@ -17,6 +17,7 @@ import time
 from zipfile import BadZipFile
 from bisect import bisect_left, bisect_right
 from concurrent.futures import ThreadPoolExecutor
+from contextvars import copy_context
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -24,6 +25,7 @@ import cv2
 import numpy as np
 
 from snooker_ai.config import Config
+from snooker_ai.utils.work_control import WorkPaused, check_pause
 from snooker_ai.event_fusion.strike import StrikeDetector
 from snooker_ai.event_fusion.rack_idle import RackIdleGate
 from snooker_ai.ingestion.probe import validate_video
@@ -1055,6 +1057,7 @@ class Analyzer:
                     prev_gray = None
                     prev_hist = hist
                     kept += 1
+                    check_pause()
                     if snapshot_enabled and (kept == 1 or kept % checkpoint_every == 0
                                              or time.monotonic() - saved_at >= checkpoint_seconds):
                         persist_snapshot(idx, locals())
@@ -1282,6 +1285,7 @@ class Analyzer:
                     scene_stream.observe(frame, t, histogram=hist)
 
                 kept += 1
+                check_pause()
                 if snapshot_enabled and (kept == 1 or kept % checkpoint_every == 0
                                          or time.monotonic() - saved_at >= checkpoint_seconds):
                     persist_snapshot(idx, locals())
@@ -1312,6 +1316,10 @@ class Analyzer:
 
             if snapshot_enabled and features:
                 persist_snapshot(idx, locals())
+        except WorkPaused:
+            if snapshot_enabled and features:
+                persist_snapshot(idx, locals())
+            raise
         finally:
             frames.close()
             cap.release()
@@ -2691,7 +2699,7 @@ class _NativeContactPrefetch:
         if key not in self.pending:
             if len(self.pending) >= self.workers:
                 return None
-            self.pending[key] = self.pool.submit(self._run, key)
+            self.pending[key] = self.pool.submit(copy_context().run, self._run, key)
         # Only one following proposal is considered. The current cache has
         # already been checked by observe(); complete known coverage also
         # prevents speculative extraction of the following request.
@@ -2699,7 +2707,7 @@ class _NativeContactPrefetch:
             if len(self.pending) >= self.workers:
                 break
             if following not in self.pending and self.eligible(following) and needed(following):
-                self.pending[following] = self.pool.submit(self._run, following)
+                self.pending[following] = self.pool.submit(copy_context().run, self._run, following)
         future = self.pending[key]
         try:
             return future.result()

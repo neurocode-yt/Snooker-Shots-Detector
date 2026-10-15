@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Optional, Sequence
 
 from snooker_ai.utils.logging import get_logger
+from snooker_ai.utils.work_control import current_control, check_pause
 
 logger = get_logger("ffmpeg")
 
@@ -115,6 +116,36 @@ def supports_encoder(encoder: str, ffmpeg: str | None = None) -> bool:
     return result.returncode == 0 and encoder in (result.stdout or "")
 
 
+def _run_process(args, *, capture, timeout, cwd):
+    options = dict(text=True, cwd=str(cwd) if cwd else None, encoding="utf-8", errors="replace")
+    if current_control.get() is None:
+        return subprocess.run(list(args), check=False, capture_output=capture, timeout=timeout, **options)
+    check_pause()
+    import time
+    started = time.monotonic()
+    process = subprocess.Popen(list(args), stdout=subprocess.PIPE if capture else None,
+                               stderr=subprocess.PIPE if capture else None, **options)
+    try:
+        while True:
+            try:
+                stdout, stderr = process.communicate(timeout=.15)
+                check_pause()
+                return subprocess.CompletedProcess(args, process.returncode, stdout, stderr)
+            except subprocess.TimeoutExpired:
+                check_pause()
+                if timeout is not None and time.monotonic() - started >= timeout:
+                    raise subprocess.TimeoutExpired(args, timeout)
+    except BaseException:
+        if process.poll() is None:
+            process.terminate()
+        try:
+            process.communicate(timeout=3)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.communicate()
+        raise
+
+
 def run_command(
     args: Sequence[str],
     *,
@@ -125,35 +156,17 @@ def run_command(
 ) -> subprocess.CompletedProcess[str]:
     logger.debug("Running: %s", " ".join(str(a) for a in args))
     try:
-        result = subprocess.run(
-            list(args),
-            check=False,
-            capture_output=capture,
-            text=True,
-            timeout=timeout,
-            cwd=str(cwd) if cwd else None,
-            encoding="utf-8",
-            errors="replace",
-        )
+        result = _run_process(args, capture=capture, timeout=timeout, cwd=cwd)
     except FileNotFoundError as exc:
         if len(args) > 0 and (Path(args[0]).is_absolute() or "\\" in str(args[0])):
             fallback_binary = "ffmpeg" if "ffmpeg" in Path(args[0]).name.lower() else "ffprobe"
             new_args = [fallback_binary] + list(args[1:])
             try:
-                result = subprocess.run(
-                    new_args,
-                    check=False,
-                    capture_output=capture,
-                    text=True,
-                    timeout=timeout,
-                    cwd=str(cwd) if cwd else None,
-                    encoding="utf-8",
-                    errors="replace",
-                )
-                return result
+                result = _run_process(new_args, capture=capture, timeout=timeout, cwd=cwd)
             except FileNotFoundError:
-                pass
-        raise FFmpegError(f"Executable not found: {args[0]}") from exc
+                raise FFmpegError(f"Executable not found: {args[0]}") from exc
+        else:
+            raise FFmpegError(f"Executable not found: {args[0]}") from exc
     except subprocess.TimeoutExpired as exc:
         raise FFmpegError(f"Command timed out after {timeout}s: {args[0]}") from exc
 

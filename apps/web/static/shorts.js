@@ -3,6 +3,7 @@
   const numberFields = ['video_zoom', 'video_y', 'title_y', 'name_size', 'shot_size', 'line_spacing'];
   const colorFields = ['background', 'name_color', 'shot_color'];
   const busy = (batch) => ['queued', 'rendering'].includes(batch?.status);
+  const resumable = (batch) => ['failed', 'interrupted', 'paused'].includes(batch?.status);
   function settingsFrom(values, overrides, shots) {
     const settings = {player_names: values.player_names.trim(), preset: values.preset, shot_names: {}};
     for (const field of numberFields) settings[field] = Number(values[field]);
@@ -16,13 +17,13 @@
   function batchLabel(batch) {
     if (!batch) return 'Create Shorts';
     if (busy(batch)) return 'Rendering Shorts…';
-    if (['failed', 'interrupted'].includes(batch.status)) return 'Resume Shorts';
+    if (resumable(batch)) return 'Resume Shorts';
     return 'Create Shorts';
   }
   if (typeof module !== 'undefined' && module.exports) module.exports = {settingsFrom, batchLabel, busy};
   if (!root.document) return;
   const escape = (value) => root.snookerUI.escape(value);
-  let dialog, jobId, setup, batch, pollTimer, previewTimer, previewController, previewUrl, session = 0, opener, submitting = false;
+  let dialog, jobId, setup, batch, selectedBatchId, pollTimer, previewTimer, previewController, previewUrl, session = 0, opener, submitting = false;
   const $ = (selector) => dialog.querySelector(selector);
   const field = (name) => $(`[name="${name}"]`);
   const base = () => `/api/jobs/${encodeURIComponent(jobId)}/shorts`;
@@ -49,8 +50,7 @@
       <label>Video position <output data-short-value="video_y"></output><input name="video_y" type="range" min="0" max="1" step="0.01" /></label></details>
       <details class="shorts-advanced"><summary>Text size &amp; position</summary><div class="shorts-fields"><label>Player font size<input name="name_size" type="number" min="32" max="180" required /></label><label>Shot font size<input name="shot_size" type="number" min="24" max="140" required /></label><label>Text top (px)<input name="title_y" type="number" min="0" max="1650" required /></label><label>Line spacing<input name="line_spacing" type="number" min="0" max="80" required /></label></div></details>
       <details class="shorts-advanced"><summary>Player names per shot <span class="muted">Optional</span></summary><p class="muted shorts-help">Override the match name for shots from a particular player.</p><div id="shorts-name-overrides"></div></details>
-      <button type="submit" id="shorts-start" class="primary">Create Shorts</button>
-      </fieldset><section class="shorts-results hidden" aria-label="Shorts export progress"><p id="shorts-batch-status" role="status" aria-live="polite"></p><progress id="shorts-progress" max="1" value="0" aria-label="Shorts rendered"></progress><p id="shorts-batch-error" class="shorts-help"></p><div class="shorts-download-actions"><a id="shorts-zip" class="button primary hidden" download>Download all ZIP</a><button type="button" id="shorts-folder">Open Shorts folder</button></div><ul id="shorts-files" aria-label="Individual Shorts"></ul></section></form>
+      </fieldset><button type="submit" id="shorts-start" class="primary">Create Shorts</button><section class="shorts-results hidden" aria-label="Shorts export progress"><p id="shorts-batch-status" role="status" aria-live="polite"></p><progress id="shorts-progress" max="1" value="0" aria-label="Shorts rendered"></progress><p id="shorts-batch-error" class="shorts-help"></p><div class="shorts-download-actions"><button type="button" id="shorts-pause" class="hidden">Pause</button><a id="shorts-zip" class="button primary hidden" download>Download all ZIP</a><button type="button" id="shorts-folder">Open Shorts folder</button></div><ul id="shorts-files" aria-label="Individual Shorts"></ul></section></form>
       <section class="shorts-preview" aria-label="Shorts layout preview"><label>Preview shot<select name="preview_shot" aria-label="Preview shot"></select></label><div class="shorts-preview-frame"><img id="shorts-preview-image" alt="Vertical Short with player name and shot number" hidden /><p id="shorts-preview-status" class="muted" role="status">Preparing preview…</p></div><p class="muted shorts-help">1080 × 1920 · one MP4 per included live shot</p></section></div>`;
     document.body.appendChild(dialog);
     $('.shorts-close').addEventListener('click', () => dialog.close());
@@ -69,6 +69,14 @@
     $('#shorts-form').addEventListener('input', () => { updateLabels(); schedulePreview(); });
     field('preview_shot').addEventListener('change', schedulePreview);
     $('#shorts-form').addEventListener('submit', start);
+    $('#shorts-pause').addEventListener('click', async () => {
+      if (!batch || batch.pause_requested) return;
+      $('#shorts-pause').disabled = true;
+      try {
+        batch = await json(`${base()}/${batch.batch_id}/pause`, {method:'POST'});
+        renderBatch(); poll(); root.snookerWork?.refresh();
+      } catch(error) { showError(error.message); $('#shorts-pause').disabled=false; }
+    });
     $('#shorts-folder').addEventListener('click', async () => {
       if (!batch) return;
       try { await json(`${base()}/${batch.batch_id}/open-folder`, {method:'POST'}); }
@@ -103,7 +111,7 @@
     $('#shorts-preview-status').textContent = 'Updating preview…';
     try {
       const response = await fetch(`${base()}/preview`, {method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({settings, shot_id:Number(field('preview_shot').value)}), signal:previewController.signal});
+        body:JSON.stringify({settings, shot_id:Number(field('preview_shot').value), batch_id:selectedBatchId}), signal:previewController.signal});
       if (!response.ok) { const error = await response.json(); throw new Error(typeof error.detail === 'string' ? error.detail : 'Check the layout settings'); }
       const blob = await response.blob();
       if (token !== session) return;
@@ -118,9 +126,13 @@
   }
   function renderBatch() {
     $('.shorts-results').classList.toggle('hidden', !batch);
-    $('#shorts-settings').disabled = submitting || busy(batch);
+    $('#shorts-settings').disabled = submitting || busy(batch) || resumable(batch);
+    $('#shorts-start').disabled = submitting || busy(batch);
     $('#shorts-start').textContent = submitting ? 'Starting…' : batchLabel(batch);
     if (!batch) return;
+    $('#shorts-pause').classList.toggle('hidden', !busy(batch));
+    $('#shorts-pause').disabled = Boolean(batch.pause_requested);
+    $('#shorts-pause').textContent = batch.pause_requested ? 'Pausing…' : 'Pause';
     $('#shorts-batch-status').textContent = batch.message;
     $('#shorts-batch-error').textContent = batch.error || '';
     $('#shorts-progress').max = batch.total;
@@ -147,24 +159,30 @@
     const token = session;
     submitting = true; renderBatch(); showError();
     try {
-      const next = await json(base(), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(values())});
+      const next = resumable(batch)
+        ? await json(`${base()}/${batch.batch_id}/resume`, {method:'POST'})
+        : await json(base(), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(values())});
       if (token !== session) return;
-      batch = next; renderBatch(); poll();
+      batch = next; renderBatch(); poll(); root.snookerWork?.refresh();
     } catch (error) { if (token === session) showError(error.message); }
     finally { if (token === session) { submitting = false; renderBatch(); } }
   }
-  async function open(id, button) {
+  async function open(id, button, batchId = null) {
     mount();
     if (dialog.open) return;
     const token = ++session;
-    jobId = id; opener = button; setup = null; batch = null; submitting = false;
+    jobId = id; opener = button; setup = null; batch = null; submitting = false; selectedBatchId = batchId;
     $('#shorts-settings').disabled = true;
     $('#shorts-summary').textContent = 'Loading saved shots…';
     $('.shorts-results').classList.add('hidden');
     $('#shorts-preview-status').textContent = 'Preparing preview…';
     showError(); dialog.showModal();
     try {
-      const data = await json(base());
+      let data = await json(base() + (batchId ? `?batch_id=${encodeURIComponent(batchId)}` : ''));
+      if (!batchId && resumable(data.batch)) {
+        selectedBatchId = data.batch.batch_id;
+        data = await json(`${base()}?batch_id=${encodeURIComponent(selectedBatchId)}`);
+      }
       if (token !== session) return;
       setup = data; batch = setup.batch;
       const settings = batch?.settings || {...setup.defaults, player_names:''};

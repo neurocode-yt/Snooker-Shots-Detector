@@ -11,6 +11,7 @@ from typing import Callable
 from snooker_ai.config import Config
 from snooker_ai.jobs.lease import JobLease
 from snooker_ai.jobs.store import JobStore
+from snooker_ai.utils.work_control import WorkControl
 from snooker_ai.types import EditMode, JobStatus
 from snooker_ai.utils.logging import get_logger
 from snooker_ai.utils.persistence import atomic_text
@@ -39,6 +40,7 @@ class MatchQueue:
         self._active: set[str] = set()
         self._threads: list[threading.Thread] = []
         self._closed = False
+        self._started = False
 
     def processing_order(self) -> str:
         """Shared, durable choice: sequential queue or configured parallel capacity."""
@@ -59,12 +61,9 @@ class MatchQueue:
 
     def start(self) -> None:
         with self._condition:
-            if self._threads or self._closed:
+            if self._started or self._closed:
                 return
-            for index in range(self.max_workers):
-                thread = threading.Thread(target=self._worker, name=f"match-worker-{index + 1}", daemon=True)
-                self._threads.append(thread)
-                thread.start()
+            self._started = True
         requests = []
         for path in self.store.root.glob("*/queued.json"):
             try:
@@ -85,6 +84,13 @@ class MatchQueue:
                             request["resume"], request["force"], request["auto_export"], recover=True)
             except (OSError, ValueError, KeyError, TypeError):
                 logger.exception("Could not recover waiting match %s", path)
+        with self._condition:
+            if self._closed:
+                return
+            for index in range(self.max_workers):
+                thread = threading.Thread(target=self._worker, name=f"match-worker-{index + 1}", daemon=True)
+                self._threads.append(thread)
+                thread.start()
 
     def submit(self, job_id: str, source: str, mode: EditMode, resume: bool,
                force: bool = False, auto_export: bool = True, *, recover: bool = False) -> bool:
@@ -100,6 +106,7 @@ class MatchQueue:
                 if JobLease.is_running(self.store.job_dir(job_id)):
                     lease.release()
                     return False
+                WorkControl(self.store.job_dir(job_id)).clear()
                 if not recover:
                     atomic_text(lease.path.parent / "queued.json", json.dumps(request))
                 meta = self.store.get_meta(job_id)
@@ -124,6 +131,23 @@ class MatchQueue:
         waiting = ((self.store.job_dir(job_id) / "queued.json").exists()
                    and JobLease.is_running(self.store.job_dir(job_id), ".queue.lock"))
         return {"queued": waiting, "queue_position": None}
+
+    def pause(self, job_id: str) -> None:
+        with self._condition:
+            WorkControl(self.store.job_dir(job_id)).request()
+            for entry in list(self._waiting):
+                if entry[0]["job_id"] == job_id:
+                    self._waiting.remove(entry)
+                    self._mark_paused(job_id)
+                    entry[1].release()
+                    break
+            self._condition.notify_all()
+
+    def _mark_paused(self, job_id: str):
+        meta = self.store.get_meta(job_id)
+        self.store.update_progress(job_id, float(meta.get("progress", 0)), JobStatus.PAUSED,
+                                   "Paused. Saved work is preserved; use Resume to continue.",
+                                   shots_detected=int(meta.get("shots_detected", 0)))
 
     def snapshot(self) -> dict:
         with self._condition:
@@ -159,6 +183,11 @@ class MatchQueue:
             with self._condition:
                 if self._closed:
                     return
+                for entry in list(self._waiting):
+                    if WorkControl(self.store.job_dir(entry[0]["job_id"])).requested():
+                        self._waiting.remove(entry)
+                        self._mark_paused(entry[0]["job_id"])
+                        entry[1].release()
                 slot = self._slot() if self._waiting else None
                 if slot is None:
                     self._condition.wait(.25)
@@ -168,7 +197,14 @@ class MatchQueue:
                 self._active.add(job_id)
             try:
                 # A crash after this point becomes interrupted, with saved checkpoints.
-                (self.store.job_dir(job_id) / "queued.json").unlink(missing_ok=True)
+                for attempt in range(8):
+                    try:
+                        (self.store.job_dir(job_id) / "queued.json").unlink(missing_ok=True)
+                        break
+                    except PermissionError:
+                        if attempt == 7:
+                            raise
+                        time.sleep(min(.1, .005 * 2**attempt))
                 self.runner(job_id, request["source"], EditMode(request["mode"]), request["resume"],
                             request["force"], self.config, request["auto_export"])
             except Exception as exc:

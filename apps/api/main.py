@@ -25,11 +25,13 @@ from snooker_ai.ingestion.probe import probe_video
 from snooker_ai.jobs.store import JobStore
 from snooker_ai.jobs.lease import JobLease
 from snooker_ai.jobs.queue import MatchQueue
+from snooker_ai.utils.work_control import WorkControl, WorkPaused, current_control, check_pause
 from snooker_ai.pipeline.analyzer import Analyzer as Analyzer
 from snooker_ai.pipeline.algorithms import Algorithm, algorithm_capabilities, create_analyzer
 from snooker_ai.rendering.exporter import Exporter
 from snooker_ai.rendering.shorts import ShortsManager
 from apps.api.shorts import install_shorts_routes
+from apps.api.work import install_work_routes
 from snooker_ai.rendering.capcut import (
     CapCutUnavailable,
     create_capcut_project,
@@ -217,8 +219,13 @@ def _run_analysis(
         lock.release()
         logger.warning("Job %s is running in another process", job_id)
         return
+    control = WorkControl(store.job_dir(job_id))
+    token = current_control.set(control)
     try:
+        check_pause()
         job_meta = store.get_meta(job_id)
+        if job_meta.pop("resume_export", None) is not None:
+            store._write_meta(job_id, job_meta)
         algorithm = Algorithm.parse(job_meta.get("algorithm"))
         selection = ShotSelection(job_meta.get("selection", "all"))
         reused_result = None
@@ -264,6 +271,7 @@ def _run_analysis(
                 logger.info("Parent analysis unavailable; running a fresh detector scan")
 
         def prog(p: float, stage: str, msg: str) -> None:
+            check_pause()
             if selection is not ShotSelection.ALL:
                 p *= .75
                 if stage == JobStatus.READY_FOR_REVIEW.value:
@@ -334,6 +342,11 @@ def _run_analysis(
              if selection is not ShotSelection.ALL else f"Detected {n_shots} shots"),
             shots_detected=n_shots,
         )
+    except WorkPaused:
+        meta = store.get_meta(job_id)
+        store.update_progress(job_id, float(meta.get("progress", 0)), JobStatus.PAUSED,
+                              "Paused. Saved checkpoints are preserved; use Resume to continue.",
+                              shots_detected=int(meta.get("shots_detected", 0)))
     except Exception as exc:
         logger.exception("Job %s failed", job_id)
         meta = store.get_meta(job_id)
@@ -343,6 +356,7 @@ def _run_analysis(
             error=str(exc), shots_detected=int(meta.get("shots_detected", 0)),
         )
     finally:
+        current_control.reset(token)
         lease.release()
         lock.release()
 
@@ -359,7 +373,13 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     cfg.ensure_dirs()
     store = JobStore(cfg)
 
-    queue = MatchQueue(cfg, lambda *args: _run_analysis(*args))
+    def run_queued(*args):
+        saved = store.get_meta(args[0]).get("resume_export")
+        if saved and not args[4]:
+            asyncio.run(perform_export(args[0], ExportBody(**saved), from_queue=True))
+        else:
+            _run_analysis(*args)
+    queue = MatchQueue(cfg, run_queued)
     shorts = ShortsManager(cfg, store)
 
     @asynccontextmanager
@@ -688,11 +708,18 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         require_algorithm(algorithm)
         mode = EditMode.from_string(meta.get("mode", "strict"))
         auto_export = bool(meta.get("auto_export", True))
-        meta["auto_export_ready"] = False
+        if not meta.get("resume_export") or meta["resume_export"].get("export_joined"):
+            meta["auto_export_ready"] = False
         store._write_meta(job_id, meta)
         store.update_progress(job_id, min(.99, float(meta.get("progress", 0))),
                               JobStatus.PENDING, "Continuing from last saved checkpoint", error=None)
-        enqueue(job_id, source, mode, True, auto_export=auto_export)
+        waiting_path = store.job_dir(job_id) / "queued.json"
+        if waiting_path.is_file():
+            waiting = json.loads(waiting_path.read_text("utf-8"))
+            enqueue(job_id, source, EditMode.from_string(waiting["mode"]), waiting["resume"],
+                    waiting["force"], waiting["auto_export"])
+        else:
+            enqueue(job_id, source, mode, True, auto_export=auto_export)
         return {"job_id": job_id, "status": "continued", "message": "Continuing from last saved checkpoint"}
 
     @app.post("/api/preprocess")
@@ -736,13 +763,25 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         running = _job_busy(store, job_id)
         queue_state = queue.job_state(job_id)
         if meta.get("status") in _ACTIVE_STATUSES and not running:
-            store.update_progress(
-                job_id, min(.99, float(meta.get("progress", 0))), JobStatus.INTERRUPTED,
-                "Processing was interrupted. Use Continue to resume saved work.",
-                error="The processing worker stopped before completion.",
-                shots_detected=int(meta.get("shots_detected", 0)),
-            )
-            meta = store.get_meta(job_id)
+            guard = _locks.setdefault(job_id, threading.Lock())
+            if guard.acquire(blocking=False):
+                queued_lease = JobLease(store.job_dir(job_id), ".queue.lock")
+                processing_lease = JobLease(store.job_dir(job_id))
+                try:
+                    if queued_lease.acquire() and processing_lease.acquire():
+                        meta = store.get_meta(job_id)
+                        if meta.get("status") in _ACTIVE_STATUSES:
+                            store.update_progress(
+                                job_id, min(.99, float(meta.get("progress", 0))), JobStatus.INTERRUPTED,
+                                "Processing was interrupted. Use Continue to resume saved work.",
+                                error="The processing worker stopped before completion.",
+                                shots_detected=int(meta.get("shots_detected", 0)),
+                            )
+                            meta = store.get_meta(job_id)
+                finally:
+                    processing_lease.release()
+                    queued_lease.release()
+                    guard.release()
         checkpoint = {}
         try:
             checkpoint = json.loads((store.job_dir(job_id) / "checkpoint.json").read_text("utf-8"))
@@ -766,6 +805,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         can_points = (not running and saved and Algorithm.parse(meta.get("algorithm")) is Algorithm.CLASSIC
                       and meta.get("status") in {JobStatus.COMPLETED.value, JobStatus.READY_FOR_REVIEW.value})
         return {**meta, **queue_state, "running": running, "can_continue": not running,
+                "pause_requested": meta.get("status") in _ACTIVE_STATUSES and WorkControl(store.job_dir(job_id)).requested(),
                 "has_saved_detection": saved, "can_create_points": can_points,
                 "timeline_revision": timeline_revision,
                 "checkpoint": checkpoint,
@@ -777,6 +817,8 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             return with_download(store.get_meta(job_id))
         except FileNotFoundError as exc:
             raise HTTPException(404, str(exc)) from exc
+
+    install_work_routes(app, store, queue, shorts, with_download, _job_busy, _ACTIVE_STATUSES)
 
     @app.get("/api/jobs/{job_id}/progress")
     async def get_progress(job_id: str) -> dict[str, Any]:
@@ -912,18 +954,26 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
 
     @app.post("/api/jobs/{job_id}/export")
     async def export_job(job_id: str, body: ExportBody) -> dict[str, Any]:
+        return await perform_export(job_id, body)
+
+    async def perform_export(job_id: str, body: ExportBody, from_queue: bool = False) -> dict[str, Any]:
         if not body.export_clips and not body.export_joined:
             raise HTTPException(400, "Select combined video, individual clips, or both")
         lock = _locks.setdefault(job_id, threading.Lock())
-        if JobLease.is_running(store.job_dir(job_id), ".queue.lock"):
+        if not from_queue and JobLease.is_running(store.job_dir(job_id), ".queue.lock"):
             raise HTTPException(409, f"Job {job_id} is queued or processing")
         if not lock.acquire(blocking=False):
             raise HTTPException(409, f"Job {job_id} is already processing")
         lease = JobLease(store.job_dir(job_id))
-        if JobLease.is_running(store.job_dir(job_id), ".queue.lock") or not lease.acquire():
+        if (not from_queue and JobLease.is_running(store.job_dir(job_id), ".queue.lock")) or not lease.acquire():
             lock.release()
             raise HTTPException(409, f"Job {job_id} is already processing")
+        control = WorkControl(store.job_dir(job_id))
+        if not from_queue:
+            control.clear()
+        token = current_control.set(control)
         try:
+            check_pause()
             try:
                 result = store.load_analysis(job_id)
             except FileNotFoundError as exc:
@@ -949,6 +999,9 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                 min_importance=body.min_importance,
             )
             n_shots = len(result.shots) if result and result.shots is not None else 0
+            meta = store.get_meta(job_id)
+            meta["resume_export"] = body.model_dump()
+            store._write_meta(job_id, meta)
             store.update_progress(
                 job_id,
                 0.1,
@@ -965,6 +1018,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                 raise HTTPException(500, str(exc)) from exc
             clip_paths = er.clip_paths if er and er.clip_paths is not None else []
             meta = store.get_meta(job_id)
+            meta.pop("resume_export", None)
             if body.export_joined:
                 meta["auto_export_ready"] = bool(er.joined_path)
             if er.joined_path:
@@ -990,7 +1044,17 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                 "metadata": str(er.metadata_path) if er.metadata_path else None,
                 "training_labels": str(er.training_labels_path) if er.training_labels_path else None,
             }
+        except WorkPaused:
+            meta = store.get_meta(job_id)
+            if body.export_joined:
+                meta["auto_export_ready"] = False
+            store._write_meta(job_id, meta)
+            store.update_progress(job_id, float(meta.get("progress", 0)), JobStatus.PAUSED,
+                                  "Export paused. Resume to finish using the saved export settings.",
+                                  shots_detected=int(meta.get("shots_detected", 0)))
+            return {"status": "paused"}
         finally:
+            current_control.reset(token)
             lease.release()
             lock.release()
 

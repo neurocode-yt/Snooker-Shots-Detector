@@ -1,7 +1,7 @@
 /* Shared presentation rules. Detection, selection and export stay on the server. */
 (function (root) {
   const activeStates = new Set(["pending", "validating", "proxy", "analyzing", "detecting", "refining", "segmenting", "exporting"]);
-  const stoppedStates = new Set(["failed", "interrupted", "cancelled"]);
+  const stoppedStates = new Set(["failed", "interrupted", "cancelled", "paused"]);
   const finishedStates = new Set(["completed", "ready_for_review"]);
   const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -26,6 +26,8 @@
     || Boolean(job.export_needs_update)
     || Number(job.pot_selection_summary?.unknown || 0) > 0;
   function status(job) {
+    if (job.pause_requested) return {label: "Pausing…", tone: "working"};
+    if (job.status === "paused") return {label: "Paused", tone: "warning"};
     if (job.queued) return {label: "Queued", tone: "working"};
     if (active(job)) return {label: job.status === "exporting" ? "Exporting" : "Processing", tone: "working"};
     if (stopped(job)) return {label: job.status === "interrupted" ? "Interrupted" : job.status === "cancelled" ? "Stopped" : "Needs attention", tone: "warning"};
