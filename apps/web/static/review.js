@@ -440,6 +440,9 @@ async function load() {
 
 window.addEventListener("pagehide", () => { clearTimeout(statusTimer); });
 window.addEventListener("pageshow", (event) => { if (event.persisted) refreshJobStatus(); });
+window.addEventListener("snooker:work-changed", (event) => {
+  if (event.detail.jobId === jobId) refreshJobStatus();
+});
 
 function seekTo(t) {
   if (!Number.isFinite(t)) return;

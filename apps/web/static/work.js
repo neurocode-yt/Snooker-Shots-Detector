@@ -10,7 +10,8 @@
   panel.setAttribute('aria-labelledby','work-heading');
   panel.innerHTML = `<div class="work-heading-row"><div><p class="eyebrow">ACTIVITY</p><h2 id="work-heading">Current work <span id="work-count" class="count-label"></span></h2></div><span class="muted work-summary">Checking work…</span></div><p class="work-error notice hidden" role="status"></p><div class="work-items" aria-label="Current tasks"><p class="muted">Checking active and paused tasks…</p></div>`;
   document.querySelector('body > header').insertAdjacentElement('afterend',panel);
-  let loading = false, items = [], pending = new Set();
+  let items = [], pending = new Set();
+  const polling = root.snookerPolling.create(loadWork, {isActive: () => items.some(active)});
   function render() {
     panel.querySelector('#work-count').textContent = items.length || '';
     panel.querySelector('.work-summary').textContent = items.length ? `${items.filter(active).length} active / queued · ${items.filter(item=>!active(item)).length} paused / interrupted` : 'Nothing is running';
@@ -25,18 +26,18 @@
     }).join('') : '<p class="work-empty muted">Active and queued matches, exports, and Shorts appear here. Paused work stays here until you resume it.</p>';
     if (focusId) [...panel.querySelectorAll('[data-task]')].find(node=>node.dataset.task===focusId&&node.dataset.workAction===action)?.focus({preventScroll:true});
   }
-  async function refresh() {
-    if (loading) return;
-    loading = true;
+  async function loadWork() {
     try {
       const response = await fetch('/api/work');
       if (!response.ok) throw new Error(response.status === 404 ? 'Restart the server to enable Current work and Pause.' : 'Could not check current work. Retrying…');
       items = (await response.json()).items;
       panel.querySelector('.work-error').classList.add('hidden'); render();
+      return true;
     } catch(error) {
       panel.querySelector('.work-error').textContent = error.message;
       panel.querySelector('.work-error').classList.remove('hidden');
-    } finally { loading = false; }
+      return false;
+    }
   }
   panel.addEventListener('click',async event=>{
     const button = event.target.closest('[data-work-action]');
@@ -49,12 +50,13 @@
     try {
       const response = await fetch(button.dataset.workAction === 'pause' ? item.pause_url : item.resume_url,{method:'POST'});
       if (!response.ok) { const error=await response.json(); throw new Error(typeof error.detail==='string'?error.detail:'Could not change this task'); }
-      await refresh();
+      await polling.refresh();
+      root.dispatchEvent(new CustomEvent('snooker:work-changed', {detail: {jobId: item.job_id}}));
     } catch(error) {
       panel.querySelector('.work-error').textContent=error.message;
       panel.querySelector('.work-error').classList.remove('hidden');
     } finally { pending.delete(item.task_id); render(); }
   });
-  root.snookerWork = {refresh};
-  refresh(); setInterval(refresh,2000);
+  root.snookerWork = {refresh: polling.refresh};
+  polling.start();
 })(typeof window !== 'undefined' ? window : globalThis);

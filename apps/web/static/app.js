@@ -517,7 +517,15 @@ async function continueJob(jobId, button) {
 let libraryJobs = [];
 let libraryFilter = "all";
 let libraryCapcut = {available: false, reason: "Checking CapCut…"};
-let libraryLoading = false;
+const libraryPolling = window.snookerPolling.create(loadJobs, {
+  isActive: () => libraryJobs.some(UI.active), activeMs: 2500,
+});
+window.addEventListener('snooker:work-changed', () => libraryPolling.refresh());
+
+function refreshJobs() {
+  window.snookerWork?.refresh();
+  return libraryPolling.refresh();
+}
 
 function showQueue(queue) {
   if (!queueSettingsBusy) {
@@ -623,9 +631,7 @@ function renderJobs() {
   }
 }
 
-async function refreshJobs() {
-  if (libraryLoading) return;
-  libraryLoading = true;
+async function loadJobs() {
   try {
     const [res, capcut, queueResponse] = await Promise.all([fetch("/api/jobs"), window.snookerCapCut.load(), fetch("/api/queue")]);
     if (!res.ok) throw new Error("The video library could not be loaded. Retrying shortly.");
@@ -640,11 +646,13 @@ async function refreshJobs() {
     }
     document.getElementById("library-status").classList.add("hidden");
     renderJobs();
+    return true;
   } catch (error) {
     const status = document.getElementById("library-status");
     status.textContent = error.message || String(error);
     status.classList.remove("hidden");
-  } finally { libraryLoading = false; }
+    return false;
+  }
 }
 
 const dropZone = document.getElementById("file-drop-zone");
@@ -905,9 +913,8 @@ document.getElementById("jobs").addEventListener("click", (event) => {
   }
 });
 
-refreshJobs();
+libraryPolling.start();
 document.getElementById("show-more-jobs").addEventListener("click", () => {
   visibleJobs += 20;
   renderJobs();
 });
-setInterval(refreshJobs, 2500);

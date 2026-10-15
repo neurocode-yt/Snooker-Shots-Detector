@@ -1,5 +1,18 @@
 # Troubleshooting
 
+## Repeated GET requests while no video is processing
+
+These are browser status checks, not video processing. The library and Current
+work panel check every 30 seconds when idle (including when all work is paused),
+and every 2–2.5 seconds while work is active. Their automatic checks stop in
+hidden tabs; returning to the tab or changing a task refreshes status immediately.
+Separate open tabs each maintain their own status checks.
+
+Successful status GETs are omitted from Uvicorn's access log. Failed requests,
+actions such as Pause/Resume, and processing logs remain visible. Connection
+failures retry after 10 seconds. Restart the server and reload existing browser
+tabs after updating to apply this behavior.
+
 ## Analysis finds no shots
 
 - Confirm the video shows a **green table** under typical broadcast lighting.
