@@ -41,13 +41,15 @@ and independently decoded source windows, not invented classifications.
 
 | Measurement | Original | Corrected |
 | --- | ---: | ---: |
-| Detected live shots | 258 | 269 |
+| Detected shot records | 258 | 269 |
+| Exported live shots | 257 | 268 |
 | Selected pots + fouls | 0 | 177 (172 pots, 5 fouls) |
 | Unknown scoring classifications | 257 | 37 |
 | Longest clip | about 40.9 s | 19.4 s |
 | Clips longer than 20 s | present | 0 |
 
 The repair contains 132 native stop corrections and 11 additional live contacts.
+Both versions retain the same excluded replay record; it is not exported.
 An initial set of 12 contact candidates lost one candidate at the final replay
 check. The shaded-white red has a measured source contact at 888.6 seconds.
 

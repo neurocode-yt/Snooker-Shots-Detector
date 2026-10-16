@@ -9,14 +9,16 @@
     "median_seconds": 9.204022255146356,
     "maximum_seconds": 40.93322219082063,
     "over_15_seconds": 61,
-    "over_20_seconds": 35
+    "over_20_seconds": 35,
+    "exported_live_shots": 257
   },
   "corrected": {
     "count": 269,
     "median_seconds": 7.1747317307117555,
     "maximum_seconds": 19.399944619055987,
     "over_15_seconds": 5,
-    "over_20_seconds": 0
+    "over_20_seconds": 0,
+    "exported_live_shots": 268
   },
   "selection": {
     "pot": 172,
@@ -180,5 +182,28 @@
     "python_skipped": 16,
     "javascript_passed": 47
   },
-  "metric_note": "Detection/classification counts; no ground-truth precision or recall percentage is claimed."
+  "metric_note": "Detection/classification counts; no ground-truth precision or recall percentage is claimed.",
+  "export_verification": [
+    {
+      "selection": "all",
+      "exported_shots": 268,
+      "duration": 2072.549,
+      "expected_duration": 2072.5666666666666,
+      "statuses": {
+        "unclassified": 268
+      },
+      "range_status": 206
+    },
+    {
+      "selection": "pots_and_fouls",
+      "exported_shots": 177,
+      "duration": 1266.622,
+      "expected_duration": 1266.6333333333332,
+      "statuses": {
+        "foul": 5,
+        "pot": 172
+      },
+      "range_status": 206
+    }
+  ]
 }
