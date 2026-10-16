@@ -264,10 +264,19 @@ on `POST /api/jobs` for new matches. Both default workflows continue to use
 `selection: "all"` and skip the additional score scan. Restart the app server
 after updating to enable these options.
 
-The workspace separates new-match creation from the searchable video library.
-Filter videos by Processing, Ready or Needs attention. Finished videos offer
-download and editing; only interrupted/failed jobs offer Continue. CapCut,
-restarting and processing details stay in each video's More menu.
+The video library groups versions of the same source match together. Each match
+shows **All shots**, **Pots + fouls**, and **Pots only**, with independent statuses
+and actions. **Not created** identifies a missing version; **Create** reuses saved
+shot detection and cached score evidence, then exports the new selection. Existing
+videos and edits are preserved. Earlier runs remain under an expandable history.
+
+Each ready version has its own **Download MP4**, **Open editor**, **Open in CapCut**,
+and **Make Shorts** actions. **Shots ready** means detection is saved but its MP4
+has not been exported; choose **Export video** for that version. Paused/interrupted
+versions offer Resume/Continue. Filter matches by Processing, Ready, Needs attention,
+or Missing versions, and search across their saved versions. Restart analysis and
+processing details remain in each version's More menu. Restart the app server after
+updating to enable creating versions from the library.
 
 The editor shows one player at a time: **Highlights preview** or **Source & trim**.
 Filter the shot list and use its checkboxes to include/exclude shots, then export

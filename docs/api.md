@@ -26,7 +26,25 @@ Start analysis.
 `strict` is the only mode; legacy names (`action_only`, `natural`, `full_sequence`) coerce to strict.
 
 ### `GET /api/jobs`
-List jobs.
+List jobs. Each job includes `selection`, `source_fingerprint` when available,
+`has_saved_detection`, `can_create_variants`, and its own `download_url` when ready.
+The library groups jobs by source path and fingerprint revision, preserving separate
+versions and earlier runs. Different revisions of a replaced source stay separate.
+
+### `POST /api/jobs/{job_id}/versions/{selection}`
+Create `all`, `pots_and_fouls`, or `pots_only` from a finished classical job's saved
+shots, without rerunning detection. The source must still match its saved identity.
+Score-based selections reuse cached score evidence. Returns `{job_id, status}`:
+`started` queues a version, `running` identifies an existing active version, and
+`ready` includes its `download_url`. Repeated requests reuse the same version while
+the parent analysis, source, and relevant settings remain unchanged. Original job
+files and manual review choices are preserved. An All shots version restores the
+base selection before the score filter.
+
+`POST /api/jobs/{job_id}/points-highlights` remains a compatible shortcut for
+`pots_and_fouls`. Version creation returns 409 for unfinished/busy jobs, missing
+detection, or changed source media; an invalid selection returns 422. Export,
+CapCut, Shorts, and editor actions use the returned version's own job ID.
 
 ### `GET /api/jobs/{job_id}`
 ### `GET /api/jobs/{job_id}/progress`

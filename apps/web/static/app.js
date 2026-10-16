@@ -469,28 +469,9 @@ async function restartJob(jobId) {
 }
 
 const capcutJobMessages = new Map();
-const pointsJobMessages = new Map();
+const libraryMessages = new Map();
+const libraryPending = new Map();
 let visibleJobs = 20;
-
-function videoName(job) {
-  return UI.filename(job);
-}
-
-async function createPointsHighlights(jobId, button) {
-  const item = button.closest(".job-item");
-  await window.snookerPoints.open(jobId, {
-    title: item.querySelector("h3").textContent,
-    onUpdate: (state) => {
-      pointsJobMessages.set(jobId, state.message);
-      renderJobs();
-      if (["processing", "ready"].includes(state.state)) refreshJobs();
-    },
-  });
-}
-
-function escapeJobText(value) {
-  return UI.escape(value);
-}
 
 async function continueJob(jobId, button) {
   const item = button.closest(".job-item");
@@ -518,13 +499,49 @@ let libraryJobs = [];
 let libraryFilter = "all";
 let libraryCapcut = {available: false, reason: "Checking CapCut…"};
 const libraryPolling = window.snookerPolling.create(loadJobs, {
-  isActive: () => libraryJobs.some(UI.active), activeMs: 2500,
+  isActive: () => libraryPending.size>0 || libraryJobs.some(UI.active), activeMs: 2500,
 });
 window.addEventListener('snooker:work-changed', () => libraryPolling.refresh());
 
 function refreshJobs() {
   window.snookerWork?.refresh();
   return libraryPolling.refresh();
+}
+
+async function libraryResponse(response) {
+  const data = await response.json();
+  if (!response.ok) throw new Error(typeof data.detail==='string' ? data.detail : 'Could not complete this action. Please retry.');
+  return data;
+}
+
+async function createLibraryVersion(button) {
+  const group = window.snookerLibrary.groups(libraryJobs).find(item=>item.key===button.dataset.family);
+  if (!group?.base) return;
+  const selection = button.dataset.selection;
+  const key = window.snookerLibraryView.actionKey(group.key,selection);
+  if (libraryPending.has(key)) return;
+  libraryPending.set(key,true); libraryMessages.delete(key); renderJobs();
+  try {
+    const response = await fetch(`/api/jobs/${encodeURIComponent(group.base.job_id)}/versions/${encodeURIComponent(selection)}`,{method:'POST'});
+    if (response.status===404) throw new Error('Restart the app server to enable highlight versions.');
+    const data = await libraryResponse(response);
+    libraryMessages.set(key,data.status==='ready'?'This version is ready.':'Version queued. Follow its progress here or under Current work.');
+  } catch(error) { libraryMessages.set(key,error.message); }
+  finally { libraryPending.delete(key); await refreshJobs(); renderJobs(); }
+}
+
+async function exportLibraryVersion(jobId) {
+  const job = libraryJobs.find(job=>job.job_id===jobId);
+  if (!job || UI.active(job) || libraryPending.has(jobId)) return;
+  libraryPending.set(jobId,true); libraryMessages.set(jobId,'Creating the MP4 for this version…'); renderJobs();
+  try {
+    const request = fetch(`/api/jobs/${encodeURIComponent(jobId)}/export`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({mode:job.mode||'strict',export_clips:false,export_joined:true})});
+    refreshJobs();
+    const data = await libraryResponse(await request);
+    libraryMessages.set(jobId,data.status==='paused'?'Export paused. Resume it under Current work.':'This version is ready to download.');
+  } catch(error) { libraryMessages.set(jobId,error.message); }
+  finally { libraryPending.delete(jobId); await refreshJobs(); renderJobs(); }
 }
 
 function showQueue(queue) {
@@ -568,76 +585,20 @@ processingOrder.addEventListener("change", async () => {
 });
 
 function renderJobs() {
-  const el = document.getElementById("jobs");
-  if (el.querySelector("[data-capcut-active], [data-points-active], [data-continue-active], .menu[open]")) return;
-  const query = document.getElementById("job-search").value;
-  const jobs = libraryJobs.filter((job) => UI.matches(job, libraryFilter, query));
-  document.getElementById("jobs-count").textContent = libraryJobs.length;
-  document.querySelectorAll("[data-filter-count]").forEach((count) => {
-    count.textContent = libraryJobs.filter((job) => UI.matches(job, count.dataset.filterCount)).length;
-  });
-  document.querySelectorAll("[data-job-filter]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.jobFilter === libraryFilter)));
-  const more = document.getElementById("show-more-jobs");
-  more.classList.toggle("hidden", jobs.length <= visibleJobs);
-  more.textContent = `Show ${Math.min(20, jobs.length - visibleJobs)} more videos`;
-  if (!jobs.length) {
-    el.innerHTML = `<div class="empty-state"><strong>${libraryJobs.length ? "No matching videos" : "Your highlights will appear here"}</strong><p>${libraryJobs.length ? "Try another name or switch the filter." : "Choose a match above to create your first video."}</p></div>`;
-    return;
-  }
-  const focused = document.activeElement?.closest("[data-job-id]");
-  const focusId = focused?.dataset.jobId;
-  const focusClass = focused?.className;
-  el.innerHTML = jobs.slice(0, visibleJobs).map((job) => {
-    const id = UI.escape(job.job_id);
-    const state = UI.status(job);
-    const actions = UI.actions(job, pointsAvailable);
-    const progress = Math.max(0, Math.min(100, Math.round(Number(job.progress || 0) * 100)));
-    const summary = job.pot_selection_summary || {};
-    const unknown = Number(summary.unknown || 0);
-    const shotCount = Number(job.shots_detected || 0);
-    const countText = Number.isFinite(summary.included) ? `${summary.included} of ${shotCount || Object.values(summary).filter(Number.isInteger).slice(0, 5).reduce((a, b) => a + b, 0)} shots selected` : shotCount ? `${shotCount} shots detected` : "";
-    const date = job.created_at ? new Intl.DateTimeFormat("en-GB", {day: "numeric", month: "short", year: "numeric"}).format(new Date(job.created_at * 1000)) : "";
-    const editor = `/review/${encodeURIComponent(job.job_id)}?editor=classic`;
-    const primary = UI.active(job) ? (actions.editor ? `<a class="button secondary" href="${editor}">View shots</a>` : "") : actions.resume ? `<button class="btn-continue primary" data-job-id="${id}">${job.status === "paused" ? "Resume processing" : "Continue processing"}</button>`
-      : job.download_url ? `<a class="button primary" href="${UI.escape(job.download_url)}">Download video <span aria-hidden="true">↓</span></a>`
-      : actions.editor ? `<a class="button primary" href="${editor}">Review shots</a>` : "";
-    return `<article class="job-item" data-library-job="${id}">
-      <div class="job-icon ${state.tone}" aria-hidden="true">${UI.active(job) ? "◷" : UI.stopped(job) ? "!" : "▶"}</div>
-      <div class="job-copy"><div class="job-title-row"><h3 title="${UI.escape(videoName(job))}">${UI.escape(UI.title(job))}</h3><span class="status-badge ${state.tone}">${state.label}</span></div>
-        <div class="job-meta"><span class="mode-badge">${UI.escape(UI.mode(job))}</span>${countText ? `<span>${countText}</span>` : ""}<span>${date}</span></div>
-        ${UI.active(job) ? `<div class="job-progress"><span>${UI.escape(UI.phase(job))}</span><span>${progress}%</span><div role="progressbar" aria-label="Video processing" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"><i style="width:${progress}%"></i></div></div>` : ""}
-        ${UI.stopped(job) ? `<p class="job-warning">${job.status === "paused" ? "Paused" : "Processing stopped"}. Saved work is preserved.</p>` : job.export_needs_update ? '<p class="job-warning">Edits saved. Open the editor to export the updated video.</p>' : unknown ? `<p class="job-warning">${unknown} ${unknown === 1 ? "shot needs" : "shots need"} a score check in the editor.</p>` : ""}
-        ${pointsJobMessages.has(job.job_id) ? `<p class="job-feedback" role="status">${UI.escape(pointsJobMessages.get(job.job_id))}</p>` : ""}
-        ${capcutJobMessages.has(job.job_id) ? `<p class="capcut-status job-feedback" role="status">${UI.escape(capcutJobMessages.get(job.job_id))}</p>` : ""}
-      </div>
-      <div class="job-actions">${primary}
-        ${job.download_url && !UI.active(job) && actions.editor ? `<a class="button secondary" href="${editor}">Open editor</a>` : ""}
-        ${actions.points ? `<button class="btn-points secondary" data-job-id="${id}" title="Create a separate version from saved shots">Pots + fouls</button>` : ""}
-        ${UI.finished(job) && !UI.active(job) ? `<button class="btn-shorts secondary" data-job-id="${id}">Make Shorts</button>` : ""}
-        <details class="menu job-menu"><summary class="button icon-button" aria-label="More options for ${UI.escape(UI.title(job))}">•••</summary><div class="menu-panel">
-          ${actions.editor && !job.download_url && primary ? `<a href="${editor}">Open editor</a>` : ""}
-          ${UI.finished(job) ? `<button class="btn-capcut" data-job-id="${id}" ${UI.active(job) ? "disabled" : ""} title="${UI.escape(libraryCapcut.reason || "Open as editable clips")}">Open in CapCut</button>` : ""}
-          <button class="btn-restart" data-job-id="${id}" ${actions.restart ? "" : "disabled"}>Restart analysis</button>
-          <div class="menu-meta"><strong>Processing details</strong><span>${UI.escape(job.message || "")}</span>${job.error ? `<span class="error-detail">${UI.escape(job.error)}</span>` : ""}${Number.isFinite(job.checkpoint?.source_time) ? `<span>Saved through ${fmt(job.checkpoint.source_time)}${job.checkpoint.duration ? ` of ${fmt(job.checkpoint.duration)}` : ""}</span>` : ""}<span class="job-id">${id}</span></div>
-        </div></details>
-      </div></article>`;
-  }).join("");
-  el.querySelectorAll(".job-item").forEach((item) => item.querySelectorAll("a, button, summary").forEach((control) => {
-    control.dataset.jobId = item.dataset.libraryJob;
-  }));
-  el.querySelectorAll(".menu").forEach((menu) => menu.addEventListener("toggle", () => { if (!menu.open) renderJobs(); }));
-  if (focusId && focusClass) {
-    [...el.querySelectorAll("[data-job-id]")].find((node) => node.dataset.jobId === focusId && node.className === focusClass)?.focus({preventScroll: true});
-  }
+  window.snookerLibraryView.render({jobs:libraryJobs,filter:libraryFilter,visible:visibleJobs,
+    pointsAvailable,potsAvailable,capcut:libraryCapcut,pending:libraryPending,
+    messages:libraryMessages,capcutMessages:capcutJobMessages,refresh:renderJobs});
 }
 
 async function loadJobs() {
   try {
+    const hadActive = libraryJobs.some(UI.active);
     const [res, capcut, queueResponse] = await Promise.all([fetch("/api/jobs"), window.snookerCapCut.load(), fetch("/api/queue")]);
     if (!res.ok) throw new Error("The video library could not be loaded. Retrying shortly.");
     libraryJobs = (await res.json()).filter((job) => DL_ALGO_VISIBLE || job.algorithm !== "dl_algo")
       .sort((left, right) => Number(right.created_at || 0) - Number(left.created_at || 0));
     libraryCapcut = capcut;
+    if (hadActive!==libraryJobs.some(UI.active)) window.snookerWork?.refresh();
     if (queueResponse.ok) {
       const queue = await queueResponse.json();
       showQueue(queue);
@@ -875,14 +836,13 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
 });
 
 document.getElementById("jobs").addEventListener("click", (event) => {
+  const createButton = event.target.closest('.btn-create-version');
+  if (createButton) { createLibraryVersion(createButton); return; }
+  const exportButton = event.target.closest('.btn-export-version');
+  if (exportButton?.dataset.jobId) { exportLibraryVersion(exportButton.dataset.jobId); return; }
   const shortsButton = event.target.closest(".btn-shorts");
   if (shortsButton?.dataset.jobId) {
     window.snookerShorts.open(shortsButton.dataset.jobId, shortsButton);
-    return;
-  }
-  const pointsButton = event.target.closest(".btn-points");
-  if (pointsButton?.dataset.jobId) {
-    createPointsHighlights(pointsButton.dataset.jobId, pointsButton);
     return;
   }
   const continueButton = event.target.closest(".btn-continue");

@@ -635,12 +635,19 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
 
     @app.post("/api/jobs/{job_id}/points-highlights")
     async def points_highlights(job_id: str) -> dict[str, Any]:
+        return await create_saved_version(job_id, ShotSelection.POTS_AND_FOULS)
+
+    @app.post("/api/jobs/{job_id}/versions/{selection}")
+    async def create_highlight_version(job_id: str, selection: ShotSelection) -> dict[str, Any]:
+        return await create_saved_version(job_id, selection)
+
+    async def create_saved_version(job_id: str, selection: ShotSelection) -> dict[str, Any]:
         try:
             parent = store.get_meta(job_id)
         except FileNotFoundError as exc:
             raise HTTPException(404, str(exc)) from exc
         if Algorithm.parse(parent.get("algorithm")) is not Algorithm.CLASSIC:
-            raise HTTPException(400, "Points highlights uses saved results from the current algorithm")
+            raise HTTPException(400, "Highlight versions use saved results from the current algorithm")
         if parent.get("status") not in {JobStatus.COMPLETED.value, JobStatus.READY_FOR_REVIEW.value}:
             raise HTTPException(409, "Wait until this video's analysis has finished")
         if _job_busy(store, job_id):
@@ -654,7 +661,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             fingerprint = store.validate_saved_source(job_id)
         except (OSError, ValueError, KeyError) as exc:
             raise HTTPException(409, str(exc)) from exc
-        if (parent.get("selection") == ShotSelection.POTS_AND_FOULS.value
+        if (parent.get("selection", "all") == selection.value
                 and (store.job_dir(job_id)/"export"/"highlights.mp4").is_file()
                 and parent.get("auto_export_ready") is not False and not parent.get("export_needs_update")):
             return {"job_id": job_id, "status": "ready",
@@ -662,12 +669,18 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         stat = analysis_path.stat()
         identity = [stat.st_size, stat.st_mtime_ns]
         templates = Path(__file__).resolve().parents[2]/"snooker_ai"/"pot_detection"/"assets"/"score_digits.npz"
-        key = hashlib.sha256(json.dumps({
+        identity_payload = {
             "version": 1, "parent": job_id, "analysis": identity, "source": fingerprint,
-            "scores": cfg.get("pot_selection", {}), "export": cfg.get("export", {}),
-            "templates": hashlib.sha256(templates.read_bytes()).hexdigest(),
-        }, sort_keys=True, default=str).encode()).hexdigest()
-        existing = next((meta for meta in store.list_jobs() if meta.get("points_variant_key") == key), None)
+            "export": cfg.get("export", {}),
+        }
+        if selection is not ShotSelection.ALL:
+            identity_payload.update(scores=cfg.get("pot_selection", {}),
+                                    templates=hashlib.sha256(templates.read_bytes()).hexdigest())
+        if selection is not ShotSelection.POTS_AND_FOULS:
+            identity_payload["selection"] = selection.value
+        key = hashlib.sha256(json.dumps(identity_payload, sort_keys=True, default=str).encode()).hexdigest()
+        key_field = "points_variant_key" if selection is ShotSelection.POTS_AND_FOULS else "selection_variant_key"
+        existing = next((meta for meta in store.list_jobs() if meta.get(key_field) == key), None)
         if existing is not None:
             variant_id = existing["job_id"]
             if (existing.get("status") == JobStatus.COMPLETED.value
@@ -681,15 +694,15 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             meta = existing
         else:
             variant_id = store.create(fingerprint["path"], mode=parent.get("mode", "strict"),
-                                      selection=ShotSelection.POTS_AND_FOULS)
+                                      selection=selection)
             meta = store.get_meta(variant_id)
             meta.update(derived_from_job_id=job_id, reuse_saved_detection=True,
                         parent_analysis_identity=identity, parent_analysis_file=analysis_path.name,
-                        points_variant_key=key)
+                        **{key_field: key})
         meta.update(auto_export=True, auto_export_ready=False)
         store._write_meta(variant_id, meta)
         store.update_progress(variant_id, min(.9, float(meta.get("progress", 0))), JobStatus.PENDING,
-                              "Creating pots + fouls highlights from saved detection")
+                              f"Creating {selection.value.replace('_', ' ')} highlights from saved detection")
         enqueue(variant_id, fingerprint["path"], EditMode.from_string(meta.get("mode", "strict")), True)
         return {"job_id": variant_id, "status": "started", "derived_from_job_id": job_id}
 
@@ -806,7 +819,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                       and meta.get("status") in {JobStatus.COMPLETED.value, JobStatus.READY_FOR_REVIEW.value})
         return {**meta, **queue_state, "running": running, "can_continue": not running,
                 "pause_requested": meta.get("status") in _ACTIVE_STATUSES and WorkControl(store.job_dir(job_id)).requested(),
-                "has_saved_detection": saved, "can_create_points": can_points,
+                "has_saved_detection": saved, "can_create_points": can_points, "can_create_variants": can_points,
                 "timeline_revision": timeline_revision,
                 "checkpoint": checkpoint,
                 "download_url": f"/api/jobs/{job_id}/download/highlights" if available else None}

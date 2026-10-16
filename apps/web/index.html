@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Snooker AI</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20261015points" />
+  <link rel="stylesheet" href="/static/styles.css?v=20261016versions" />
   <link rel="stylesheet" href="/static/shorts.css?v=20261015shorts" />
   <link rel="stylesheet" href="/static/work.css?v=20261015pause" />
 </head>
@@ -114,6 +114,7 @@
         <button type="button" data-job-filter="processing" aria-pressed="false">Processing <span data-filter-count="processing">0</span></button>
         <button type="button" data-job-filter="ready" aria-pressed="false">Ready <span data-filter-count="ready">0</span></button>
         <button type="button" data-job-filter="attention" aria-pressed="false">Needs attention <span data-filter-count="attention">0</span></button>
+        <button type="button" data-job-filter="missing" aria-pressed="false">Missing versions <span data-filter-count="missing">0</span></button>
       </div>
       <p id="library-status" class="notice hidden" role="status"></p>
       <div id="jobs" class="jobs" aria-label="Video library"><p class="empty-state">Loading your videos…</p></div>
@@ -128,6 +129,8 @@
   <script src="/static/shorts.js?v=20261015pause"></script>
   <script src="/static/polling.js?v=20261015idle"></script>
   <script src="/static/work.js?v=20261015idle"></script>
-  <script src="/static/app.js?v=20261015idle"></script>
+  <script src="/static/library.js?v=20261016versions"></script>
+  <script src="/static/library-view.js?v=20261016versions"></script>
+  <script src="/static/app.js?v=20261016versions"></script>
 </body>
 </html>
