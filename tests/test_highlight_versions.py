@@ -19,6 +19,9 @@ def prepare_versions(config, tmp_path, monkeypatch):
                     shot(50, 55).model_copy(update={"shot_id": 3})]
     store.save_analysis(result)
     store.update_progress(parent, 1, "completed", "All shots ready", shots_detected=3)
+    meta=store.get_meta(parent)
+    meta['scoring_gaps_unresolved']=[{'start':20,'end':26,'points':1}]
+    store._write_meta(parent,meta)
     output = store.job_dir(parent) / "export" / "highlights.mp4"
     output.parent.mkdir()
     output.write_bytes(b"original all shots")
@@ -61,6 +64,7 @@ def test_all_three_versions_export_their_own_shots_and_keep_original(config, tmp
         for child, selection, included in [(points, "pots_and_fouls", [1, 2]), (pots, "pots_only", [1])]:
             meta = client.get(f"/api/jobs/{child}/progress").json()
             assert meta["status"] == "completed" and meta["selection"] == selection
+            assert meta['scoring_gaps_unresolved']==[{'start':20,'end':26,'points':1}]
             assert client.get(meta["download_url"]).content == f"{selection}:{included}".encode()
         # Restoring All shots from a filtered version includes the miss and foul.
         restored = client.post(f"/api/jobs/{pots}/versions/all").json()["job_id"]
@@ -88,3 +92,21 @@ def test_variants_reject_changed_sources_and_unfinished_parents(config, tmp_path
         assert client.post(f"/api/jobs/{parent}/versions/not-a-selection").status_code == 422
     assert not scans and not exports
     assert len(store.list_jobs()) == 1
+
+
+def test_score_recheck_preserves_previous_export_and_uses_new_reader(config, tmp_path, monkeypatch):
+    store, parent, scans, exports = prepare_versions(config, tmp_path, monkeypatch)
+    with TestClient(create_app(config)) as client:
+        points=client.post(f'/api/jobs/{parent}/versions/pots_and_fouls').json()['job_id']
+        assert client.app.state.match_queue.wait_idle()
+        original=(store.job_dir(points)/'export'/'highlights.mp4').read_bytes()
+        response=client.post(f'/api/jobs/{points}/recheck-scores')
+        assert response.status_code==200
+        refreshed=response.json()['job_id']
+        assert refreshed!=points
+        assert client.app.state.match_queue.wait_idle()
+        assert client.get(f'/api/jobs/{refreshed}/progress').json()['status']=='completed'
+        assert client.post(f'/api/jobs/{points}/recheck-scores').json()['job_id']==refreshed
+        assert client.post(f'/api/jobs/{parent}/recheck-scores').status_code==400
+    assert scans==[points,refreshed]
+    assert (store.job_dir(points)/'export'/'highlights.mp4').read_bytes()==original

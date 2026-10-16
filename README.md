@@ -80,6 +80,12 @@ Automatic tracking follows longer rolls beyond seven seconds, with a configurabl
 60-second safety horizon. Uncertainty remains in the diagnostics and does not
 block automatic export. A video that ends during a shot keeps its remaining footage.
 
+Native contact frames use decoded presentation timestamps and source-frame
+identity rather than average-FPS timing. Native stop refinement retains the
+observed launch when checking a later tail, so a quiet end window can finish
+without decoding the entire safety horizon. Table localisation also keeps
+separate green arena lights from joining the enclosed playing surface.
+
 Camera cuts inside a shot retain their original timing; mix transitions join
 separate shots. When contact or the final stop is hidden, the editor records a
 bounded estimate rather than pretending to observe the exact instant. The
@@ -235,8 +241,18 @@ uses the pre-shot turn indicator to exclude foul points awarded to the opponent,
 and waits for delayed updates. Centre frame/match counters are not points scores.
 Unreadable scores, corrections and ambiguous outcomes are excluded automatically
 and flagged in the classic editor for review. This filter does not recover shots
-which the original detector did not find, and it does not guarantee accuracy on
+outside the detector's saved shot list, and it does not guarantee accuracy on
 unsupported broadcast overlays.
+
+The default classical detector also reads supported score graphics during its
+coarse pass. Stable points changes without a corresponding detected contact
+request an additional native visual check. A score change alone never creates
+a shot: cue motion/contact, replay, handling, and match-context checks still apply.
+This helps recover rapid red/colour sequences while preserving non-scoring shots
+in **All shots**. Disable with `analysis.scoreboard_recall: false` if needed.
+Supported graphics include paired score boxes, older outer-point layouts, and
+white points beside a neutral grey frame-count panel. Glyph matching remains
+classical; no DL mode or neural training is used.
 
 Choose **Pots + fouls** to also keep foul points and confirmed point
 increases whose pot/foul type is uncertain. Unchanged scores are skipped;
@@ -257,6 +273,11 @@ finishes. CapCut receives the pots + fouls version. You can also download it or
 open its editor. **Keep working in background** closes the dialog while server
 processing continues; click **Pots + fouls** again to follow that job. Failures
 show a reason, and inconclusive scores offer the editor instead of an empty video.
+
+Filtered versions with unresolved scores also offer **Recheck scores** in the
+library. It creates a separate version, preserving the earlier result and edits.
+The summary records readable score counts and layouts; a completely unreadable
+scoreboard is shown as **Score check needed**, rather than claiming no pots occurred.
 
 API clients can call `POST /api/jobs/{job_id}/points-highlights` for this fast
 completed-video action, or set `selection: "pots_and_fouls"` or `"pots_only"`
@@ -369,6 +390,7 @@ Template: [docs/benchmark_report_template.md](docs/benchmark_report_template.md)
 
 - [Architecture](docs/architecture.md)
 - [Classical performance and parity checks](docs/classic_performance.md)
+- [Murphy–Day detection and score repair](docs/classic_murphy_day_repair_20261017.md)
 - [API](docs/api.md)
 - [Windows setup](docs/windows_setup.md)
 - [Troubleshooting](docs/troubleshooting.md)

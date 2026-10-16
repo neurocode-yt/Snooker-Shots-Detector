@@ -76,14 +76,17 @@ def sampled_frames(
     start_idx: int = 0,
     prefetch: int = 8,
     next_sample_time: float | None = None,
+    presentation_timestamps: bool = False,
 ) -> Iterator[tuple[int, float, np.ndarray]]:
     """Yield ``(frame_idx, source_t, frame)`` for each sampled frame.
 
-    Sampling decisions are identical to the previous inline analyzer loop:
+    Proxy sampling retains the previous inline analyzer decisions:
     unsampled frames are ``grab``-advanced without BGR retrieval, and the
     next-sample clock only moves forward from ``start_time`` in
     ``sample_period`` steps.  The caller keeps ownership of ``cap`` and must
-    release it after the iterator is exhausted or closed.
+    release it after the iterator is exhausted or closed. Native observations
+    opt into decoded presentation timestamps; at source cadence every original
+    image is retained, including small timestamp quantization differences.
     """
     out: queue.Queue = queue.Queue(maxsize=max(2, int(prefetch)))
     stop = threading.Event()
@@ -94,8 +97,36 @@ def sampled_frames(
         produced = 0
         next_sample_t = start_time if next_sample_time is None else next_sample_time
         ended_early = False
+        previous_pts = None
+        source_t = start_time
         try:
             while not stop.is_set():
+                if presentation_timestamps:
+                    if not cap.grab():
+                        ended_early = True
+                        break
+                    pts = float(cap.get(cv2.CAP_PROP_POS_MSEC))/1000
+                    if (not np.isfinite(pts) or pts < 0
+                            or previous_pts is not None and pts <= previous_pts):
+                        raise IncompleteVideoError("Native video presentation timestamps are invalid; saved work is preserved.")
+                    previous_pts = pts
+                    source_t = to_source(pts)
+                    if source_t > end_time+1e-6:
+                        break
+                    every_native_frame = proxy_fps > 0 and sample_period <= 1.001/proxy_fps
+                    if source_t < start_time-1e-6 or (not every_native_frame and source_t+1e-6 < next_sample_t):
+                        idx += 1
+                        continue
+                    ok, frame = cap.retrieve()
+                    if not ok:
+                        ended_early = True
+                        break
+                    while next_sample_t <= source_t+1e-9:
+                        next_sample_t += sample_period
+                    out.put((idx, source_t, frame))
+                    idx += 1
+                    produced += 1
+                    continue
                 video_t = (
                     idx / proxy_fps
                     if proxy_fps > 0
@@ -120,7 +151,8 @@ def sampled_frames(
                 idx += 1
                 produced += 1
             if ended_early and not stop.is_set():
-                reached = to_source(idx / proxy_fps) if proxy_fps > 0 else source_t
+                reached = (source_t if presentation_timestamps else
+                           to_source(idx / proxy_fps) if proxy_fps > 0 else source_t)
                 frame_period = abs(to_source(1 / proxy_fps) - to_source(0)) if proxy_fps > 0 else sample_period
                 if reached + max(.1, 2 * frame_period) < end_time:
                     raise IncompleteVideoError(

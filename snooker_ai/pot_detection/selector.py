@@ -15,7 +15,7 @@ from snooker_ai.types import AnalysisResult, PotStatus, ShotRecord, ShotSelectio
 from snooker_ai.utils.persistence import atomic_text
 from snooker_ai.utils.video import open_capture, sampled_frames
 
-_POLICY = 4
+_POLICY = 5
 
 
 @dataclass
@@ -393,6 +393,8 @@ class PotSelector:
             "method": "stable_score_and_striker",
             "policy": _POLICY,
             "selection": selection.value,
+            "score_readings": len(readings),
+            "score_layouts": sorted({item.layout for item in readings}),
         }
         result.edited_duration = sum(shot.duration() for shot in shots if shot.included)
         result.pause_removed_seconds = max(0.0, result.original_duration - result.edited_duration)

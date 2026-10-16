@@ -274,7 +274,53 @@ class ScoreboardReader:
                 min(item[1] for item in readings),
                 "paired_boxes",
             )
-        return self._read_outer_scores(frame, t)
+        return self._read_outer_scores(frame, t) or self._read_central_panel(frame, t)
+
+    def _read_central_panel(self, frame: np.ndarray, t: float) -> ScoreReading | None:
+        """White points flank a neutral frame-count panel on a dark name bar."""
+        h, w = frame.shape[:2]
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        neutral = cv2.inRange(hsv, (0, 0, 105), (179, 45, 225))
+        neutral[:round(h*.74)] = 0
+        neutral[:, :round(w*.42)] = 0
+        neutral[:, round(w*.58):] = 0
+        neutral = cv2.morphologyEx(neutral, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
+        contours, _ = cv2.findContours(neutral, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        for contour in sorted(contours, key=cv2.contourArea, reverse=True):
+            x, y, bw, bh = cv2.boundingRect(contour)
+            if not (.045*w <= bw <= .13*w and .018*h <= bh <= .065*h
+                    and 1.5 <= bw/bh <= 5 and abs((x+bw/2)/w-.5) < .035
+                    and cv2.contourArea(contour)/(bw*bh) >= .75):
+                continue
+            readings = []
+            # Leave a measured gap beside the neutral panel. Its frame counts
+            # are dark digits and must never be mistaken for white points.
+            gap = max(1, round(bh*.06))
+            for x0, x1 in ((max(0, x-round(bh*2.5)), x-gap),
+                           (x+bw+gap, min(w, x+bw+round(bh*2.5)))):
+                crop = gray[y:y+bh, x0:x1]
+                reading = read_digits((crop > 180).astype(np.uint8)*255,
+                                      min_confidence=self.min_confidence)
+                if reading is None:
+                    break
+                readings.append(reading)
+            if len(readings) != 2:
+                continue
+            indicators = []
+            for x0, x1 in ((max(0, x-round(bh*7)), max(0, x-round(bh*2.5))),
+                           (min(w, x+bw+round(bh*2.5)), min(w, x+bw+round(bh*7)))):
+                area = hsv[y:y+bh, x0:x1]
+                marker = cv2.inRange(area, (45, 80, 40), (100, 255, 245))
+                shapes, _ = cv2.findContours(marker, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                indicators.append(any(
+                    .20*bh <= cv2.boundingRect(c)[2] <= 1.2*bh
+                    and .25*bh <= cv2.boundingRect(c)[3] <= bh
+                    and .035*bh*bh <= cv2.contourArea(c) <= .6*bh*bh for c in shapes))
+            active = indicators.index(True) if sum(indicators) == 1 else None
+            return ScoreReading(t, readings[0][0], readings[1][0], active,
+                                min(item[1] for item in readings), 'central_panel')
+        return None
 
     def _read_outer_scores(self, frame: np.ndarray, t: float) -> ScoreReading | None:
         """Older Eurosport layout: frame count in yellow, points outside it."""

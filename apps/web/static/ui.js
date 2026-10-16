@@ -23,6 +23,7 @@
   const stopped = (job) => stoppedStates.has(job.status);
   const finished = (job) => finishedStates.has(job.status);
   const needsAttention = (job) => stopped(job) || job.status === "ready_for_review"
+    || Number(job.scoring_gaps_unresolved?.length || 0) > 0
     || Boolean(job.export_needs_update)
     || Number(job.pot_selection_summary?.unknown || 0) > 0;
   function status(job) {

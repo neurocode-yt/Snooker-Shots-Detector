@@ -100,7 +100,10 @@ class SegmentBuilder:
                 cand.timestamp <= refined_end <= refined_confirmation <= duration
                 and refined_confirmation - refined_end + 1e-6 >= self.ball_stop.confirm_s
                 and (next_strike is None or refined_confirmation < next_strike)
-                and (refined_confidence >= 0.70 or cand.evidence.get("refined_stop_upper_bound", 0) >= 0.5)
+                and (refined_confidence >= 0.70 or cand.evidence.get("refined_stop_upper_bound", 0) >= 0.5
+                     or refined_confidence >= .60
+                     and cand.evidence.get("native_table_coverage_stop_revalidated", 0) >= .5
+                     and cand.evidence.get("refined_stop_review_required", 0) >= .5)
             ):
                 refined_motion_start = float(cand.evidence.get("refined_ball_motion_start", cand.timestamp))
                 # A separate end-window tracker may reacquire the rolling ball
@@ -515,6 +518,8 @@ class SegmentBuilder:
         evidence = candidate.evidence
         return bool(evidence.get("dense_transition_confirmed", 0) >= 0.5
                     or evidence.get("cue_ball_motion_confirmed", 0) >= 0.5
+                    or evidence.get("score_assisted_proposal", 0) >= .5
+                    and evidence.get("score_supported_object_launch", 0) >= .5
                     or (evidence.get("occlusion_inferred", 0) >= 0.5
                         and evidence.get("ball_onset_run", 0) >= 2))
 

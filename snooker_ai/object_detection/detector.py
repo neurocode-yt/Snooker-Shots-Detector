@@ -47,6 +47,7 @@ class Detection:
     cue_sphere_red_occlusion: bool = False
     cue_sphere_black_occlusion: bool = False
     cue_sphere_colour_occlusion: bool = False
+    object_sphere_supported: bool = False
 
     def __post_init__(self) -> None:
         _, _, w, h = self.bbox
@@ -81,6 +82,8 @@ class _Proposal:
     cue_sphere_red_occlusion: bool = False
     cue_sphere_black_occlusion: bool = False
     cue_sphere_colour_occlusion: bool = False
+    object_sphere_supported: bool = False
+    cue_body_measured: bool = False
 
 
 class ObjectDetector:
@@ -231,8 +234,10 @@ class ObjectDetector:
                 anchor=(upper_ball_margin, 0),
             )
             warm_spheres = self._warm_cue_spheres(hsv, upper_mask)
+            colour_spheres = self._closeup_colour_spheres(hsv, upper_mask) if allow_closeup_scale else []
         else:
             warm_spheres = []
+            colour_spheres = []
         diameter_prior = self._diameter_prior(table_w, table_h)
         if partial_view and allow_closeup_scale:
             # A close-up can show a 50px white ball on only a fraction of the
@@ -240,6 +245,7 @@ class ObjectDetector:
             # from an enclosed, circular white component with a cloth annulus.
             observed = max(
                 self._closeup_diameter(roi, roi_mask, hsv=hsv),
+                max((2*p.radius for p in colour_spheres),default=0.),
                 max((p.radius * 2 for p in warm_spheres), default=0.0),
             )
             if observed > diameter_prior and (
@@ -316,7 +322,7 @@ class ObjectDetector:
             cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)),
         )
 
-        proposals: list[_Proposal] = list(warm_spheres)
+        proposals: list[_Proposal] = list(warm_spheres)+list(colour_spheres)
 
         # The cue ball is often motion-blurred at the exact impact frame and can
         # lose the crisp circular edge required by HoughCircles.  A dedicated
@@ -392,19 +398,41 @@ class ObjectDetector:
                 ix, iy = int(round(float(cx))), int(round(float(cy)))
                 if not (0 <= ix < table_w and 0 <= iy < table_h):
                     continue
-                if inner_mask[iy, ix] == 0:
+                measured = _Proposal(float(cx),float(cy),float(radius),.58)
+                blurred = (partial_view and bool(colour_spheres)
+                           and self._blurred_ivory_circle(hsv,cloth,measured))
+                if inner_mask[iy, ix] == 0 and not blurred:
                     continue
                 local_r = max(2, int(round(float(radius) * 0.8)))
                 yy0, yy1 = max(0, iy - local_r), min(table_h, iy + local_r + 1)
                 xx0, xx1 = max(0, ix - local_r), min(table_w, ix + local_r + 1)
                 patch = deviation[yy0:yy1, xx0:xx1]
-                if patch.size == 0 or np.count_nonzero(patch) / patch.size < 0.08:
+                if patch.size == 0 or np.count_nonzero(patch) / patch.size < 0.08 and not blurred:
                     continue
-                proposals.append(
-                    _Proposal(float(cx), float(cy), float(radius), 0.58)
-                )
+                if blurred:
+                    measured.cue_sphere_supported=True
+                    measured.shape_confidence=.85
+                    measured.cue_body_measured=True
+                proposals.append(measured)
 
         proposals = self._merge_proposals(proposals, diameter_prior)
+        colour_cache = {}
+
+        def colours(proposal):
+            key = (proposal.cx, proposal.cy, proposal.radius)
+            if key not in colour_cache:
+                colour_cache[key] = self._colour_scores(hsv, cloth, *key)
+            return colour_cache[key]
+
+        if main_table_view and not partial_view and not any(
+            colours(p)[0] >= .65 and colours(p)[2] >= .80 for p in proposals
+        ):
+            # The same ivory ball can turn yellow-green under arena lighting
+            # in a full-table view. Keep its sphere proof available there too,
+            # bounded by the measured table/ball scale to exclude hands.
+            ivory = [p for p in self._warm_cue_spheres(hsv, roi_mask)
+                     if .5*diameter_prior <= 2*p.radius <= 2.2*diameter_prior]
+            proposals = self._merge_proposals(proposals+ivory, diameter_prior)
         detections: list[Detection] = []
         plausible_diameters: list[float] = []
         for proposal in proposals:
@@ -413,11 +441,16 @@ class ObjectDetector:
                 px = int(np.clip(round(proposal.cx), 0, table_w - 1))
                 py = int(np.clip(round(proposal.cy), 0, table_h - 1))
                 in_foreground = bool(foreground[py, px])
-            if in_foreground and not proposal.cue_sphere_supported:
+            blurred_ivory = (partial_view and bool(colour_spheres)
+                             and self._blurred_ivory_circle(hsv, cloth, proposal))
+            if blurred_ivory:
+                proposal.cue_sphere_supported = True
+                proposal.shape_confidence = max(.85, proposal.shape_confidence)
+            if in_foreground and not (proposal.cue_sphere_supported or proposal.object_sphere_supported):
                 continue
-            color_conf, deviation_conf, surround_conf = self._colour_scores(
-                hsv, cloth, proposal.cx, proposal.cy, proposal.radius
-            )
+            color_conf, deviation_conf, surround_conf = colours(proposal)
+            if blurred_ivory:
+                color_conf = max(.60, color_conf)
             # In a main camera, a rounded wrist can fit the ivory recovery mask
             # while remaining attached to broad foreground. A real overlapping
             # colour provides separate occlusion proof; close-up recovery retains
@@ -479,6 +512,7 @@ class ObjectDetector:
                     cue_sphere_red_occlusion=proposal.cue_sphere_red_occlusion and cue_ball,
                     cue_sphere_black_occlusion=proposal.cue_sphere_black_occlusion and cue_ball,
                     cue_sphere_colour_occlusion=proposal.cue_sphere_colour_occlusion and cue_ball,
+                    object_sphere_supported=proposal.object_sphere_supported and not cue_ball,
                 )
             )
             if shape >= 0.45 and 0.40 * diameter_prior <= diameter <= 2.2 * diameter_prior:
@@ -547,6 +581,66 @@ class ObjectDetector:
                 if score > best[0]:
                     best = (score, radius * 2)
         return best[1]
+
+    def _blurred_ivory_circle(self, hsv, cloth, proposal):
+        """A measured circular edge and ivory pixels can survive defocus.
+
+        Called only with an independently measured large coloured reference in
+        the same close-up. Pale skin, glove white and saturated yellow fail the
+        warm-body and highlight tests; cloth support is still required.
+        """
+        if proposal.radius < 20:
+            return False
+        x, y, radius = proposal.cx, proposal.cy, proposal.radius
+        r=max(2,round(radius*.60))
+        x0,x1=max(0,round(x)-r),min(hsv.shape[1],round(x)+r+1)
+        y0,y1=max(0,round(y)-r),min(hsv.shape[0],round(y)+r+1)
+        yy,xx=np.ogrid[y0:y1,x0:x1]
+        pixels=hsv[y0:y1,x0:x1][(xx-x)**2+(yy-y)**2<=r*r]
+        if len(pixels)<30:
+            return False
+        hue,sat,value=np.median(pixels,axis=0)
+        cap=np.mean((pixels[:,1]<145)&(pixels[:,2]>=200))
+        if not (25<=hue<=55 and 35<=sat<=210 and value>=115 and cap>=.08):
+            return False
+        return self._colour_scores(hsv,cloth,x,y,radius)[2]>=.50
+
+    def _closeup_colour_spheres(self, hsv, mask):
+        """A sharp coloured sphere supplies scale when the white is out of focus."""
+        hue, sat, value = cv2.split(hsv)
+        contours = []
+        families = [((hue < 15) | (hue >= 140)) & (sat >= 110) & (value >= 55),
+                    (hue >= 16) & (hue <= 34) & (sat >= 110) & (value >= 55),
+                    (hue >= 95) & (hue <= 135) & (sat >= 110) & (value >= 55)]
+        for family in families:
+            coloured = family.astype(np.uint8)*255
+            found, _ = cv2.findContours(coloured,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+            contours.extend(found)
+        cloth = cv2.inRange(hsv, self.cloth_lower, self.cloth_upper)
+        spheres = []
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            perimeter = cv2.arcLength(contour, True)
+            if area < 100 or perimeter <= 0:
+                continue
+            (x, y), radius = cv2.minEnclosingCircle(contour)
+            _, _, width, height = cv2.boundingRect(contour)
+            hull = cv2.convexHull(contour)
+            hull_area = cv2.contourArea(hull)
+            hull_perimeter = cv2.arcLength(hull, True)
+            if (not 12 <= radius <= min(min(hsv.shape[:2])*.38,max(hsv.shape[:2])*.18)
+                    or not .70 <= width/max(height,1) <= 1.45
+                    or 4*np.pi*area/perimeter**2 < .65
+                    or 4*np.pi*hull_area/max(1,hull_perimeter**2)<.85
+                    or area/max(1,hull_area)<.90
+                    or area/max(1,np.pi*radius**2) < .65
+                    or mask[min(mask.shape[0]-1,round(y)),min(mask.shape[1]-1,round(x))] == 0):
+                continue
+            _, _, surround = self._colour_scores(hsv, cloth, x, y, radius)
+            if surround >= .25:
+                spheres.append(_Proposal(x,y,radius,.80+.15*4*np.pi*hull_area/hull_perimeter**2,
+                                         object_sphere_supported=True))
+        return spheres
 
     def _warm_cue_spheres(
         self, hsv: np.ndarray, mask: np.ndarray, *, green_cast_only: bool = False,
@@ -634,6 +728,10 @@ class ObjectDetector:
             # Proposal merging mutates its inputs. Each occurrence owns a copy.
             proposals.extend(replace(p) for p in contour_cache[key])
         if not green_cast_only and not strong_green_cast:
+            # A green shadow can leave only the pale upper cap in the ivory
+            # mask. Fit an independent circular image edge before treating
+            # that cap's displaced centre as the ball's position.
+            proposals = [self._shaded_sphere_body(hsv, cloth, p, contour_cache) for p in proposals]
             proposals.extend(self._warm_cue_spheres(
                 hsv, mask, green_cast_only=True, _contour_cache=contour_cache,
             ))
@@ -647,6 +745,35 @@ class ObjectDetector:
                            <= .80*(recovered.radius+prior.radius) for prior in proposals)
             )
         return proposals
+
+    def _shaded_sphere_body(self, hsv, cloth, proposal, cache):
+        if (proposal.radius < 12 or proposal.cue_sphere_red_occlusion
+                or proposal.cue_sphere_black_occlusion or proposal.cue_sphere_colour_occlusion):
+            return proposal
+        key = ('shaded_body', proposal.cx, proposal.cy, proposal.radius)
+        if key in cache:
+            return replace(cache[key])
+        radius = proposal.radius
+        x0, x1 = max(0, round(proposal.cx-2*radius)), min(hsv.shape[1], round(proposal.cx+2*radius))
+        y0, y1 = max(0, round(proposal.cy-1.5*radius)), min(hsv.shape[0], round(proposal.cy+2.5*radius))
+        patch = cv2.cvtColor(cv2.cvtColor(hsv[y0:y1,x0:x1], cv2.COLOR_HSV2BGR), cv2.COLOR_BGR2GRAY)
+        circles = cv2.HoughCircles(patch, cv2.HOUGH_GRADIENT, dp=1, minDist=max(8, radius*.7),
+            param1=80, param2=max(18, radius), minRadius=round(radius*1.2), maxRadius=round(radius*1.7))
+        choices = []
+        if circles is not None:
+            for x, y, r in circles[0]:
+                x, y = float(x+x0), float(y+y0)
+                distance = float(np.hypot(x-proposal.cx,y-proposal.cy))
+                if (not .3*radius <= y-proposal.cy <= radius
+                        or distance > radius or abs(x-proposal.cx) > .35*radius
+                        or distance+.5*radius > 1.1*r):
+                    continue
+                _, _, surround = self._colour_scores(hsv, cloth, x, y, float(r))
+                if surround >= .55:
+                    choices.append((distance, replace(proposal,cx=x,cy=y,radius=float(r))))
+        answer = min(choices,key=lambda item:item[0])[1] if choices else proposal
+        cache[key] = replace(answer)
+        return answer
 
     @staticmethod
     def _warm_mask_contours(original_mask: np.ndarray, *, strong_green_cast: bool) -> list[np.ndarray]:
@@ -1000,7 +1127,7 @@ class ObjectDetector:
         proposals: list[_Proposal], diameter_prior: float
     ) -> list[_Proposal]:
         merged: list[_Proposal] = []
-        for proposal in sorted(proposals, key=lambda p: p.shape_confidence, reverse=True):
+        for proposal in sorted(proposals, key=lambda p: (p.cue_body_measured, p.shape_confidence), reverse=True):
             match: Optional[_Proposal] = None
             for current in merged:
                 distance = float(np.hypot(proposal.cx - current.cx, proposal.cy - current.cy))
@@ -1014,7 +1141,8 @@ class ObjectDetector:
             # A Hough edge can be displaced into the shaded lower hemisphere.
             # Preserve the independently fitted ivory component when combining
             # it with weaker ordinary circular proposals.
-            if proposal.cue_sphere_supported and not match.cue_sphere_supported:
+            if (proposal.cue_body_measured and not match.cue_body_measured
+                    or proposal.cue_sphere_supported and not match.cue_sphere_supported):
                 match.cx, match.cy, match.radius = proposal.cx, proposal.cy, proposal.radius
             elif not match.cue_sphere_supported:
                 match.cx = (match.cx * match.source_count + proposal.cx * proposal.source_count) / total
@@ -1026,6 +1154,8 @@ class ObjectDetector:
             match.cue_sphere_red_occlusion |= proposal.cue_sphere_red_occlusion
             match.cue_sphere_black_occlusion |= proposal.cue_sphere_black_occlusion
             match.cue_sphere_colour_occlusion |= proposal.cue_sphere_colour_occlusion
+            match.object_sphere_supported |= proposal.object_sphere_supported
+            match.cue_body_measured |= proposal.cue_body_measured
             match.shape_confidence = min(
                 1.0, max(match.shape_confidence, proposal.shape_confidence) + 0.08
             )

@@ -1,0 +1,184 @@
+{
+  "date": "2026-10-17",
+  "algorithm": "classic",
+  "source": "Shaun Murphy vs Ryan Day",
+  "source_size_bytes": 1508386565,
+  "source_duration_seconds": 7784.456446,
+  "original": {
+    "count": 258,
+    "median_seconds": 9.204022255146356,
+    "maximum_seconds": 40.93322219082063,
+    "over_15_seconds": 61,
+    "over_20_seconds": 35
+  },
+  "corrected": {
+    "count": 269,
+    "median_seconds": 7.1747317307117555,
+    "maximum_seconds": 19.399944619055987,
+    "over_15_seconds": 5,
+    "over_20_seconds": 0
+  },
+  "selection": {
+    "pot": 172,
+    "no_pot": 55,
+    "foul": 5,
+    "points": 0,
+    "unknown": 37,
+    "included": 177,
+    "method": "stable_score_and_striker",
+    "policy": 5,
+    "selection": "pots_and_fouls",
+    "score_readings": 7709,
+    "score_layouts": [
+      "central_panel"
+    ]
+  },
+  "native_stop_corrections": 132,
+  "additional_live_contacts_seconds": [
+    888.6,
+    969.1333333333333,
+    1272.1000000000001,
+    1525.0666666666668,
+    1901.3333333333335,
+    2024.0666666666668,
+    2737.4666666666667,
+    2971.0333333333333,
+    3566.0333333333333,
+    3621.8333333333335,
+    7492.400000000001
+  ],
+  "unresolved_score_intervals": [
+    {
+      "start": 593.9316035828235,
+      "end": 605.7316035828235,
+      "score_update_time": 605.9316035828235,
+      "points": 1.0
+    },
+    {
+      "start": 1073.1635688545946,
+      "end": 1084.9635688545945,
+      "score_update_time": 1085.1635688545946,
+      "points": 6.0
+    },
+    {
+      "start": 1108.1634689405207,
+      "end": 1119.9634689405207,
+      "score_update_time": 1120.1634689405207,
+      "points": 7.0
+    },
+    {
+      "start": 1124.1634232655156,
+      "end": 1135.9634232655155,
+      "score_update_time": 1136.1634232655156,
+      "points": 1.0
+    },
+    {
+      "start": 1176.6632733944048,
+      "end": 1188.4632733944047,
+      "score_update_time": 1188.6632733944048,
+      "points": 5.0
+    },
+    {
+      "start": 1290.829659825883,
+      "end": 1299.462956524056,
+      "score_update_time": 1299.662956524056,
+      "points": 5.0
+    },
+    {
+      "start": 1300.1629208404581,
+      "end": 1311.962920840458,
+      "score_update_time": 1312.1629208404581,
+      "points": 6.0
+    },
+    {
+      "start": 1637.5286244306087,
+      "end": 1649.3286244306087,
+      "score_update_time": 1649.5286244306087,
+      "points": 5.0
+    },
+    {
+      "start": 1807.5281391336785,
+      "end": 1819.3281391336784,
+      "score_update_time": 1819.5281391336785,
+      "points": 1.0
+    },
+    {
+      "start": 2403.4597712633804,
+      "end": 2415.2597712633806,
+      "score_update_time": 2415.4597712633804,
+      "points": 1.0
+    },
+    {
+      "start": 2591.959233154725,
+      "end": 2603.7592331547253,
+      "score_update_time": 2603.959233154725,
+      "points": 7.0
+    },
+    {
+      "start": 2758.4587578492024,
+      "end": 2770.2587578492025,
+      "score_update_time": 2770.4587578492024,
+      "points": 1.0
+    },
+    {
+      "start": 3249.2240692052455,
+      "end": 3259.5573610504493,
+      "score_update_time": 3259.757361050449,
+      "points": 4.0
+    },
+    {
+      "start": 3672.9561472371856,
+      "end": 3684.756147237186,
+      "score_update_time": 3684.9561472371856,
+      "points": 1.0
+    },
+    {
+      "start": 3743.95594455435,
+      "end": 3755.75594455435,
+      "score_update_time": 3755.95594455435,
+      "points": 1.0
+    },
+    {
+      "start": 3785.9558246574616,
+      "end": 3797.7558246574617,
+      "score_update_time": 3797.9558246574616,
+      "points": 1.0
+    },
+    {
+      "start": 3805.0558158079293,
+      "end": 3815.7557732730806,
+      "score_update_time": 3815.9557732730805,
+      "points": 6.0
+    },
+    {
+      "start": 3914.955456402732,
+      "end": 3926.7554564027323,
+      "score_update_time": 3926.955456402732,
+      "points": 1.0
+    },
+    {
+      "start": 6004.016159436218,
+      "end": 6015.816159436218,
+      "score_update_time": 6016.016159436218,
+      "points": 7.0
+    },
+    {
+      "start": 7565.61170155571,
+      "end": 7577.41170155571,
+      "score_update_time": 7577.61170155571,
+      "points": 5.0
+    },
+    {
+      "start": 7658.611436069742,
+      "end": 7670.411436069742,
+      "score_update_time": 7670.611436069742,
+      "points": 6.0
+    }
+  ],
+  "validation": {
+    "python_passed": 1438,
+    "python_skipped": 16,
+    "javascript_passed": 47
+  },
+  "metric_note": "Detection/classification counts; no ground-truth precision or recall percentage is claimed."
+}

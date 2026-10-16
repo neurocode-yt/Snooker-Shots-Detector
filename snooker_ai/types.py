@@ -149,6 +149,8 @@ class FrameFeatures(BaseModel):
 
     t: float
     observation_fps: float = 0.0
+    source_frame_index: int | None = None
+    scoreboard_reading: dict[str, Any] | None = None
     contact_window: bool = False
     # Coordinates/identities are local to a continuous camera view. Legacy
     # observations default to a full table; new extraction measures coverage.
@@ -199,6 +201,7 @@ class FrameFeatures(BaseModel):
     cue_ball_quality: bool = False  # measured ball shape/cloth support, not just a bright track
     cue_ball_observations: int = 0  # distinguishes a measured rest from tracker bootstrap zero speed
     object_ball_launch_count: int = 0  # independently observed high-resolution colour departures
+    scoring_object_launch_count: int = 0
     # Optional cue geometry evidence.  When the cue is occluded these remain
     # unset and the detector falls back to stationary-ball acceleration with a
     # reduced confidence/manual-review flag.

@@ -164,7 +164,8 @@ def test_confirmed_shot_refines_strike_and_stop_edges_not_entire_roll(
 
     def detect_stop(_candidate, features, *_args, **_kwargs):
         # Native tracking can resolve a later stop than the coarse travel pass.
-        end = native_stop if features and features[0].t == 102 else 105.0
+        native_tail = features and features[-1].observation_fps == 30 and features[-1].t >= 102
+        end = native_stop if native_tail else 105.0
         return StopDetection(
             motion_start=100.0,
             last_ball_motion_timestamp=end - 0.1,
@@ -182,7 +183,7 @@ def test_confirmed_shot_refines_strike_and_stop_edges_not_entire_roll(
         calls.append((start_time, float(end_time), sample_fps))
         features = []
         for i in range(int((float(end_time) - start_time) * sample_fps) + 1):
-            features.append(FrameFeatures(t=start_time + i / sample_fps))
+            features.append(FrameFeatures(t=start_time + i / sample_fps, observation_fps=sample_fps))
             if stop_when and stop_when(features):
                 break
         decoded_ends.append(features[-1].t)

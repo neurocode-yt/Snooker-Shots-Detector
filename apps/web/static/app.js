@@ -544,6 +544,18 @@ async function exportLibraryVersion(jobId) {
   finally { libraryPending.delete(jobId); await refreshJobs(); renderJobs(); }
 }
 
+async function recheckLibraryScores(jobId) {
+  if (libraryPending.has(jobId)) return;
+  libraryPending.set(jobId,true); renderJobs();
+  try {
+    const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/recheck-scores`,{method:'POST'});
+    if (response.status===404) throw new Error('Restart the app server to enable score rechecks.');
+    const data = await libraryResponse(response);
+    libraryMessages.set(jobId,data.status==='ready'?'Rechecked version is ready.':'Score recheck queued as a separate version. Follow Current work.');
+  } catch(error) { libraryMessages.set(jobId,error.message); }
+  finally { libraryPending.delete(jobId); await refreshJobs(); renderJobs(); }
+}
+
 function showQueue(queue) {
   if (!queueSettingsBusy) {
     processingOrder.value = queue.processing_order || "parallel";
@@ -836,6 +848,8 @@ document.getElementById("upload-form").addEventListener("submit", async (event) 
 });
 
 document.getElementById("jobs").addEventListener("click", (event) => {
+  const recheckButton = event.target.closest('.btn-recheck-scores');
+  if (recheckButton?.dataset.jobId) { recheckLibraryScores(recheckButton.dataset.jobId); return; }
   const createButton = event.target.closest('.btn-create-version');
   if (createButton) { createLibraryVersion(createButton); return; }
   const exportButton = event.target.closest('.btn-export-version');

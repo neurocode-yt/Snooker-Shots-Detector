@@ -292,6 +292,13 @@ def _run_analysis(
                 source, job_id, mode=mode, progress=prog, resume=resume,
                 force_reanalyze=force_reanalyze,
             )
+            try:
+                diagnostics = json.loads((store.job_dir(job_id)/'detection_diagnostics.json').read_text('utf-8'))
+                current = store.get_meta(job_id)
+                current['scoring_gaps_unresolved'] = diagnostics.get('unresolved_scoring_gaps',[])
+                store._write_meta(job_id,current)
+            except (OSError, ValueError):
+                pass
         if selection is not ShotSelection.ALL:
             from snooker_ai.pot_detection.selector import PotSelector
             result = PotSelector(cfg, store.job_dir(job_id)).apply(result, progress=lambda frac, msg:
@@ -324,8 +331,11 @@ def _run_analysis(
                            else f"Finished video ready: {n_shots} detected shots")
             else:
                 if selection is not ShotSelection.ALL and unknown:
+                    message = ("Scoreboard could not be read. Scoring highlights need a score recheck; saved shots are preserved."
+                               if result.pot_selection_summary.get("score_readings") == 0
+                               else f"No confirmed scoring shots; {unknown} shots need review because scores were inconclusive")
                     store.update_progress(job_id, 1., JobStatus.READY_FOR_REVIEW,
-                        f"No confirmed scoring shots; {unknown} shots need review because scores were inconclusive",
+                        message,
                         shots_detected=n_shots)
                     return
                 message = ("Analysis complete; no scoring shots detected" if selection is not ShotSelection.ALL
@@ -641,7 +651,18 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     async def create_highlight_version(job_id: str, selection: ShotSelection) -> dict[str, Any]:
         return await create_saved_version(job_id, selection)
 
-    async def create_saved_version(job_id: str, selection: ShotSelection) -> dict[str, Any]:
+    @app.post("/api/jobs/{job_id}/recheck-scores")
+    async def recheck_scores(job_id: str) -> dict[str, Any]:
+        try:
+            selection = ShotSelection(store.get_meta(job_id).get('selection', 'all'))
+        except FileNotFoundError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        if selection is ShotSelection.ALL:
+            raise HTTPException(400, "Create a scoring version before rechecking scores")
+        return await create_saved_version(job_id, selection, refresh_scores=True)
+
+    async def create_saved_version(job_id: str, selection: ShotSelection,
+                                   refresh_scores: bool = False) -> dict[str, Any]:
         try:
             parent = store.get_meta(job_id)
         except FileNotFoundError as exc:
@@ -661,7 +682,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             fingerprint = store.validate_saved_source(job_id)
         except (OSError, ValueError, KeyError) as exc:
             raise HTTPException(409, str(exc)) from exc
-        if (parent.get("selection", "all") == selection.value
+        if (not refresh_scores and parent.get("selection", "all") == selection.value
                 and (store.job_dir(job_id)/"export"/"highlights.mp4").is_file()
                 and parent.get("auto_export_ready") is not False and not parent.get("export_needs_update")):
             return {"job_id": job_id, "status": "ready",
@@ -678,6 +699,8 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                                     templates=hashlib.sha256(templates.read_bytes()).hexdigest())
         if selection is not ShotSelection.POTS_AND_FOULS:
             identity_payload["selection"] = selection.value
+        if refresh_scores:
+            identity_payload["score_recheck"] = True
         key = hashlib.sha256(json.dumps(identity_payload, sort_keys=True, default=str).encode()).hexdigest()
         key_field = "points_variant_key" if selection is ShotSelection.POTS_AND_FOULS else "selection_variant_key"
         existing = next((meta for meta in store.list_jobs() if meta.get(key_field) == key), None)
@@ -699,6 +722,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             meta.update(derived_from_job_id=job_id, reuse_saved_detection=True,
                         parent_analysis_identity=identity, parent_analysis_file=analysis_path.name,
                         **{key_field: key})
+            meta['scoring_gaps_unresolved'] = parent.get('scoring_gaps_unresolved',[])
         meta.update(auto_export=True, auto_export_ready=False)
         store._write_meta(variant_id, meta)
         store.update_progress(variant_id, min(.9, float(meta.get("progress", 0))), JobStatus.PENDING,

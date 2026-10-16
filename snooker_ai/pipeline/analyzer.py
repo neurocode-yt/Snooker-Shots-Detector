@@ -14,6 +14,7 @@ import json
 import os
 import threading
 import time
+from dataclasses import asdict
 from zipfile import BadZipFile
 from bisect import bisect_left, bisect_right
 from concurrent.futures import ThreadPoolExecutor
@@ -42,6 +43,8 @@ from snooker_ai.scene_detection.table_context import (
 from snooker_ai.segmentation.builder import SegmentBuilder
 from snooker_ai.segmentation.visual_tail import VisualTailDetector
 from snooker_ai.segmentation.portrait import PortraitCutawayDetector
+from snooker_ai.pot_detection.scoreboard import ScoreboardReader, ScoreReading
+from snooker_ai.pot_detection.recall import scoring_gap_proposals, scoring_object_contact
 from snooker_ai.table_detection.localizer import TableLocalizer, TableObservation
 from snooker_ai.temporal_model.state_machine import ShotStateMachine
 from snooker_ai.tracking.tracker import BallTracker
@@ -67,7 +70,7 @@ from snooker_ai.pipeline.checkpoints import load_snapshot, save_snapshot
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 38
+_CACHE_VERSION = 45
 
 
 class Analyzer:
@@ -336,6 +339,44 @@ class Analyzer:
             })
             features = self.state_machine.label(features)
 
+        if self.config.get("analysis.scoreboard_recall", True):
+            readings = [ScoreReading(**f.scoreboard_reading) for f in rack_reference
+                        if f.scoreboard_reading and f.match_context_valid and not f.broadcast_replay]
+            preliminary = self.segmenter.build(candidates, features, metadata.duration, mode)
+            accepted_contact_times = {shot.cue_strike for shot in preliminary}
+            proposals = scoring_gap_proposals(readings, preliminary, metadata.duration)
+            if proposals:
+                review_ranges = [{'start':p.uncertainty_start,'end':p.uncertainty_end,
+                                  'score_update_time':p.evidence['score_update_time'],
+                                  'points':p.evidence['score_delta']} for p in proposals]
+                report(.915, JobStatus.REFINING.value, f"Visually checking {len(proposals)} scoring gaps")
+                proposed, observed = self._refine_candidate_windows(
+                    proxy.proxy_path, proxy.audio_path, proxy.mapper, metadata.duration,
+                    proposals, rack_reference, signature=f"{analysis_signature}:score-recall",
+                    resume=resume, existing_dense=dense_features,
+                )
+                self._annotate_scenes(observed, scenes)
+                self._apply_match_context(observed, rack_reference)
+                observed = ContactVisibilityDetector(self.config).revalidate(source, observed, proposed)
+                observed = self.strike_det.score_frames(observed)
+                proposed = self.strike_det.refine_boundaries(proposed, observed)
+                features = self._merge_feature_layers(features, observed)
+                recovered = self._screen_scoring_contacts(
+                    source, candidates, proposed, features, rack_reference, preparation_intervals
+                )
+                resolved = {c.evidence.get('score_update_time') for c in recovered}
+                self._detection_diagnostics['unresolved_scoring_gaps'] = [
+                    gap for gap in review_ranges if gap['score_update_time'] not in resolved]
+                # Recanonicalizing independently decoded scene IDs can change
+                # the nearest context row. A recovery window must not revive
+                # old candidates already rejected at segmentation.
+                candidates = self._deduplicate_candidates(
+                    [c for c in candidates if c.timestamp in accepted_contact_times]+recovered
+                )
+                self._record_detection_stage('score_assisted_recall', candidates, extra={
+                    'scoring_gaps_checked':len(proposals), 'visually_confirmed':len(recovered),
+                })
+
         report(0.92, JobStatus.SEGMENTING.value, "Building shot segments")
         shots = self.segmenter.build(candidates, features, metadata.duration, mode)
         tail_detector = VisualTailDetector(self.config)
@@ -437,6 +478,20 @@ class Analyzer:
 
         report(1.0, JobStatus.READY_FOR_REVIEW.value, f"Detected {len(shots)} shots")
         return result
+
+    def _screen_scoring_contacts(self, source, existing, proposed, features,
+                                 rack_reference, preparation_intervals):
+        recovered = [c for c in proposed if self.segmenter._candidate_supported(c)
+                     and not any(lo <= c.timestamp <= hi for lo, hi in preparation_intervals)
+                     and self._rack_candidate_supported(c, rack_reference)]
+        # Replay pairing owns annotations on the whole feature list. Passing
+        # only new contacts erases earlier paired wipes and extends old clips.
+        self.replay_det.mark_candidates(existing+recovered, features)
+        promotions = PromotionDetector().detect(source, recovered, features)
+        recovered = [c for c in recovered if not c.possible_replay and c.timestamp not in promotions]
+        for candidate in recovered:
+            candidate.evidence['score_assisted_recovered'] = 1.
+        return recovered
 
     def _record_visual_tail_boundaries(
         self, candidates, shots, entries, duration: float, source_fps: float,
@@ -822,6 +877,8 @@ class Analyzer:
         scene_stream = (
             self.scene_det.start_stream() if collect_scene_observations else None
         )
+        score_reader = (ScoreboardReader() if collect_scene_observations and sample_fps <= 3
+                        and self.config.get('analysis.scoreboard_recall', True) else None)
         prev_gray: Optional[np.ndarray] = None
         prev_hist: Optional[np.ndarray] = None
         prev_image: Optional[np.ndarray] = None
@@ -1024,6 +1081,7 @@ class Analyzer:
             start_idx=idx,
             prefetch=int(self.config.get("analysis.decode_prefetch_frames", 8)),
             next_sample_time=next_sample_t,
+            presentation_timestamps=resize_to is not None,
         )
         try:
             for idx, t, frame in frames:
@@ -1232,12 +1290,15 @@ class Analyzer:
                     and (residual is None or residual.observation_valid)
                 )
 
+                score_reading = score_reader.read(frame, t) if score_reader and context_valid else None
                 feat = FrameFeatures(
                     t=t,
                     observation_fps=sample_fps,
                     camera_scene_id=camera_scene_id,
                     view_classified=True,
                     table_full_view=geometry.full_table,
+                    source_frame_index=idx if resize_to is not None else None,
+                    scoreboard_reading=asdict(score_reading) if score_reading else None,
                     table_handling=handling,
                     handling_score=handling_score,
                     match_context_valid=context_valid,
@@ -1279,6 +1340,8 @@ class Analyzer:
                     cue_ball_observations=cue.hits if cue is not None and cue.visible else 0,
                     object_ball_launch_count=(self.tracker.object_ball_launch_count(t)
                                               if dense_pass and diameter >= 50 else 0),
+                    scoring_object_launch_count=(self.tracker.object_ball_launch_count(t, measured_spheres_only=True)
+                                                 if dense_pass and diameter >= 50 else 0),
                     cue_tip_visible=bool(cue_geometry["visible"]),
                     cue_tip_distance_to_ball=float(cue_geometry["distance"]),
                     cue_approach_speed=float(cue_geometry["approach_speed"]),
@@ -1739,10 +1802,15 @@ class Analyzer:
             known[lo:hi] = merged
             known_times[lo:hi] = [feature.t for feature in merged]
 
-        def settled(part: list[FrameFeatures], candidate: StrikeCandidate) -> bool:
+        def with_history(part, history):
+            if not part:
+                return list(history or [])
+            return [f for f in history or [] if f.t < part[0].t-1e-6]+part
+
+        def settled(part: list[FrameFeatures], candidate: StrikeCandidate, history=None) -> bool:
             if not part or part[-1].t < candidate.timestamp + stop_detector.min_travel_s + stop_detector.confirm_s:
                 return False
-            stop = stop_detector.detect_stop(candidate, part, duration)
+            stop = stop_detector.detect_stop(candidate, with_history(part, history), duration)
             bounded = stop.confirmed or stop.reason == "unconfirmed_ball_handling_boundary"
             return bounded and part[-1].t + 1e-6 >= stop.stop_confirmation_timestamp + tail
 
@@ -1755,7 +1823,7 @@ class Analyzer:
                         and all(b.t-a.t <= max_gap for a, b in zip(part, part[1:]))
                         and all(f.observation_fps <= 0 or f.observation_fps+1e-3 >= fps for f in part))
 
-        def observe(start: float, end: float, fps: float, candidate: StrikeCandidate | None = None, priority: int = 0) -> list[FrameFeatures]:
+        def observe(start: float, end: float, fps: float, candidate: StrikeCandidate | None = None, priority: int = 0, history=None) -> list[FrameFeatures]:
             nonlocal window_index
             start, end = max(0.0, start), min(duration, end)
             index = window_index
@@ -1767,8 +1835,8 @@ class Analyzer:
             # A previously observed stop may cover less than the planned safety
             # horizon. Reuse it only when the entire required interval is dense.
             required_end = end
-            if candidate is not None and settled(covered, candidate):
-                stop = stop_detector.detect_stop(candidate, covered, duration)
+            if candidate is not None and settled(covered, candidate, history):
+                stop = stop_detector.detect_stop(candidate, with_history(covered, history), duration)
                 required_end = min(end, stop.stop_confirmation_timestamp + tail)
                 covered = covered[:bisect_right([feature.t for feature in covered], required_end + 2.0 / fps)]
             # Timestamp sampling from a faster proxy alternates adjacent and
@@ -1799,7 +1867,7 @@ class Analyzer:
                         proxy_path, audio_path, mapper, duration,
                         sample_fps=fps, start_time=start, end_time=end,
                         collect_scene_observations=False, checkpoint_stage="adaptive_refinement",
-                        stop_when=(lambda features: settled(features, candidate)) if candidate is not None else None,
+                        stop_when=(lambda features: settled(features, candidate, history)) if candidate is not None else None,
                     )
                 if signature:
                     self._save_dense_window(signature, index, start, end, part)
@@ -1836,6 +1904,16 @@ class Analyzer:
                     candidate.timestamp = launch.timestamp
                     candidate.confidence = launch.confidence
                     candidate.evidence.update(launch.evidence)
+                    verified = True
+            if not verified:
+                object_contact = scoring_object_contact(candidate, contact)
+                if object_contact is not None:
+                    candidate.timestamp = object_contact.timestamp
+                    candidate.confidence = object_contact.confidence
+                    candidate.uncertainty_start = object_contact.uncertainty_start
+                    candidate.uncertainty_end = object_contact.uncertainty_end
+                    candidate.camera_view = object_contact.camera_view
+                    candidate.evidence.update(object_contact.evidence)
                     verified = True
             if verified and not self._rack_candidate_supported(candidate, rack_features or []):
                 verified = False
@@ -1879,8 +1957,9 @@ class Analyzer:
                     stop_features = observe(
                         max(start, stop.physical_stop_timestamp - stop_warmup),
                         candidate.timestamp + horizon, native_fps, candidate, priority=3,
+                        history=contact,
                     )
-                    refined_stop = stop_detector.detect_stop(candidate, stop_features, duration)
+                    refined_stop = stop_detector.detect_stop(candidate, with_history(stop_features, contact), duration)
                     if refined_stop.confirmed:
                         # Preserve the dedicated boundary observation. A later
                         # rejected proposal starts a different tracker and must
@@ -2075,7 +2154,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 59,
+            "result_policy_version": 60,
             "visual_tail": self.config.get("visual_tail", {}),
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")

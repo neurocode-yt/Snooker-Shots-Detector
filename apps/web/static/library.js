@@ -58,6 +58,10 @@
     return group.jobs.some(job=>UI.matches(job,filter,query));
   }
   function state(job) {
+    if (UI.finished(job) && !UI.active(job) && (job.pot_selection_summary?.score_readings===0
+        || job.pot_selection_summary?.included===0 && Number(job.pot_selection_summary?.unknown||0)>0)) {
+      return {label:'Score check needed',tone:'warning'};
+    }
     if (UI.finished(job) && !UI.active(job) && !job.download_url && !job.export_needs_update) {
       return {label:'Shots ready',tone:'warning'};
     }

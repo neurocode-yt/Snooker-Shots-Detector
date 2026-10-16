@@ -46,6 +46,15 @@ base selection before the score filter.
 detection, or changed source media; an invalid selection returns 422. Export,
 CapCut, Shorts, and editor actions use the returned version's own job ID.
 
+### `POST /api/jobs/{job_id}/recheck-scores`
+Recheck a completed `pots_only` or `pots_and_fouls` version using the current
+reader and saved shot detection. Returns a separate version with the same response
+shape and idempotent behavior as `/versions/{selection}`; the original is preserved.
+All-shots jobs return 400. The pot selection summary includes `score_readings`
+and `score_layouts`; zero readings means the scoreboard could not be recognized,
+not evidence that all shots failed to score. Inconclusive selections remain
+`ready_for_review` without exporting an empty video.
+
 ### `GET /api/jobs/{job_id}`
 ### `GET /api/jobs/{job_id}/progress`
 Job status and progress `0..1`.

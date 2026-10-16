@@ -36,6 +36,7 @@ class Track:
     cue_sphere_red_occlusion: bool = False
     cue_sphere_black_occlusion: bool = False
     cue_sphere_colour_occlusion: bool = False
+    object_sphere_supported: bool = False
     predicted_position: Optional[tuple[float, float]] = None
     last_update_t: float = 0.0
     _stable_speed_key: tuple | None = field(default=None, repr=False)
@@ -307,7 +308,9 @@ class BallTracker:
             )
             # Promote only with meaningful white-colour support; never demote on one
             # missed/poorly lit observation.
-            if detection.color_confidence >= 0.45 or track.label == "cue_ball":
+            sphere_proof = (detection.cue_sphere_supported and detection.shape_confidence >= .80
+                            and detection.cloth_surround_confidence >= .65)
+            if detection.color_confidence >= 0.45 or track.label == "cue_ball" or sphere_proof:
                 track.label = "cue_ball"
         track.shape_confidence = (
             float(detection.shape_confidence)
@@ -324,6 +327,7 @@ class BallTracker:
         track.cue_sphere_red_occlusion = bool(getattr(detection, "cue_sphere_red_occlusion", False))
         track.cue_sphere_black_occlusion = bool(getattr(detection, "cue_sphere_black_occlusion", False))
         track.cue_sphere_colour_occlusion = bool(getattr(detection, "cue_sphere_colour_occlusion", False))
+        track.object_sphere_supported = bool(detection.object_sphere_supported)
 
     def _mark_missed(self, track: Track, t: float) -> None:
         if track.visible:
@@ -371,6 +375,7 @@ class BallTracker:
             cue_sphere_red_occlusion=bool(getattr(detection, "cue_sphere_red_occlusion", False)),
             cue_sphere_black_occlusion=bool(getattr(detection, "cue_sphere_black_occlusion", False)),
             cue_sphere_colour_occlusion=bool(getattr(detection, "cue_sphere_colour_occlusion", False)),
+            object_sphere_supported=bool(detection.object_sphere_supported),
             predicted_position=(float(detection.cx), float(detection.cy)),
             last_update_t=t,
         )
@@ -526,16 +531,23 @@ class BallTracker:
                 count += 1
         return count
 
-    def object_ball_launch_count(self, t: float) -> int:
+    def object_ball_launch_count(self, t: float, *, measured_spheres_only: bool = False) -> int:
         """Verify large coloured-ball travel even in a crowded cloth annulus."""
         count = 0
         for track in self.tracks:
+            if measured_spheres_only and not track.object_sphere_supported:
+                continue
             if (not track.visible or track.label == "cue_ball" or track.hits < 8
                     or track.diameter < 50 or track.shape_confidence < .55):
                 continue
-            before = [p for p in track.positions if t-.70 <= p[0] <= t-.30]
-            after = [p for p in track.positions if t-.30 < p[0] <= t]
-            if len(before) < 4 or len(after) < 4 or after[-1][0]-after[0][0] < .12:
+            # A broadcast can cut to a measured coloured sphere immediately
+            # before impact. Score-corroborated recovery uses a shorter native
+            # rest/departure window; ordinary strike evidence keeps its window.
+            history, split = (.40,.15) if measured_spheres_only else (.70,.30)
+            before = [p for p in track.positions if t-history <= p[0] <= t-split]
+            after = [p for p in track.positions if t-split < p[0] <= t]
+            minimum_before, minimum_after = (3,.08) if measured_spheres_only else (4,.12)
+            if len(before) < minimum_before or len(after) < 4 or after[-1][0]-after[0][0] < minimum_after:
                 continue
             rows = before+after
             if any(b[0]-a[0] > .12 for a, b in zip(rows, rows[1:])):

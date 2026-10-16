@@ -82,6 +82,28 @@ def test_user_edit_is_preserved_during_stop_revalidation(config, monkeypatch):
     assert detector.revalidated_stops('source', TimeMapper(12.), [shot], [r.context for r in rows]) == {}
 
 
+def test_measured_native_enclosure_can_correct_bad_closeup_classification(config, monkeypatch):
+    rows = measure_rows()
+    for row in rows:
+        row.context.view_type = 'ball_closeup'
+        row.context.table_confidence = .73
+        row.measured_table_confidence = .79
+    detector, shot = setup_measurement(config, monkeypatch, rows)
+    measured = detector.revalidated_stops('source', TimeMapper(12.), [shot], [r.context for r in rows])
+    assert measured[3.].physical_stop_timestamp == pytest.approx(6.)
+
+
+def test_long_unresolved_edit_revalidation_starts_at_contact_not_twenty_seconds_before_end(config, monkeypatch):
+    rows = measure_rows()
+    detector, shot = setup_measurement(config, monkeypatch, rows)
+    shot.clip_end = 50.
+    starts = []
+    monkeypatch.setattr(detector, '_observe_window', lambda cap, start, *a, **k: starts.append(start) or rows)
+    measured = detector.revalidated_stops('source', TimeMapper(60.), [shot], [r.context for r in rows])
+    assert starts == [3.]
+    assert measured[3.].physical_stop_timestamp == pytest.approx(6.)
+
+
 def test_source_break_stillness_survives_rounded_cushions_without_changing_raw_tracks(config, monkeypatch):
     data=json.loads((Path(__file__).parent/'fixtures/classic_hard/revalidated-break-stop.json').read_text())
     rows=[TailObservation(t=r['t'],full_table=r['full_table'],reset=r['reset'],

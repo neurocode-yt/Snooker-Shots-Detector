@@ -9,6 +9,7 @@ from __future__ import annotations
 from bisect import bisect_left, bisect_right
 from dataclasses import dataclass, field, replace
 from pathlib import Path
+from typing import Callable
 
 import cv2
 import numpy as np
@@ -57,6 +58,8 @@ class TailObservation:
     full_table: bool = False
     reset: bool = False
     components: list[HandComponent] = field(default_factory=list)
+    measured_table_confidence: float = 0.0
+    context_frame_matched: bool = False
 
 
 class _TailPixels:
@@ -86,7 +89,7 @@ class _TailPixels:
         self.surface_history.clear()
 
     def observe(self, frame: np.ndarray, t: float,
-                context: FrameFeatures | None) -> TailObservation:
+                context: FrameFeatures | None, *, geometry_only: bool = False) -> TailObservation:
         small = cv2.resize(frame, (640, 360))
         thumb = cv2.resize(small, (64, 36))
         change = (float(np.mean(cv2.absdiff(thumb, self.thumbnail)))
@@ -145,9 +148,12 @@ class _TailPixels:
                 1, np.count_nonzero(polygon))
             if coverage >= .75:
                 self.geometry, self.geometry_t = geometry, t
+                result.measured_table_confidence = table.confidence
         if self.geometry is None or t-self.geometry_t > 1:
             return result
         result.full_table = True
+        if geometry_only:
+            return result
         cloth = self._polygon(self.geometry, small.shape[:2])
         # A fitted corner can clip a real patch beside the cushion. Foreground
         # clearance must also include cloth actually observed in this stable
@@ -384,7 +390,8 @@ class VisualTailDetector:
 
     def _observe_window(self, capture: cv2.VideoCapture, start: float, end: float,
                         mapper: TimeMapper, features: list[FrameFeatures], times: list[float],
-                        *, native: bool) -> list[TailObservation]:
+                        *, native: bool, geometry_only: bool = False,
+                        stop_when: Callable[[list[TailObservation]], bool] | None = None) -> list[TailObservation]:
         pixels = _TailPixels(self.config)
         rows = []
         fps = float(capture.get(cv2.CAP_PROP_FPS))
@@ -418,7 +425,12 @@ class VisualTailDetector:
                 while next_sample <= t+1e-6:
                     next_sample += .2
             context = self._context(features, times, t)
-            rows.append(pixels.observe(frame, t, context))
+            row = pixels.observe(frame, t, context, geometry_only=geometry_only)
+            if native and context is not None and context.source_frame_index is not None:
+                row.context_frame_matched = context.source_frame_index == round(capture.get(cv2.CAP_PROP_POS_FRAMES))-1
+            rows.append(row)
+            if stop_when and len(rows) % max(1, round(fps*.25)) == 0 and stop_when(rows):
+                break
         return rows
 
     def revalidated_stops(
@@ -447,39 +459,56 @@ class VisualTailDetector:
             if not capture.isOpened():
                 return {}
             for shot in eligible:
-                start = max(shot.cue_strike, shot.clip_end-20)
+                # A failed full-table label can stretch an edit far past its
+                # real stop. Searching only its final 20s misses that stop and
+                # the launch needed to verify stillness.
+                start = shot.cue_strike
                 end = min(time_mapper.source_duration, shot.clip_end+.6)
                 context_window = ordered[bisect_left(times, start):bisect_right(times, end)]
                 if not any(not f.table_full_view and f.observation_fps >= 10
-                           and f.view_type == CameraViewType.MAIN_TABLE
-                           and f.table_confidence >= .80 for f in context_window):
+                           and f.view_type in {CameraViewType.MAIN_TABLE, CameraViewType.BALL_CLOSEUP}
+                           and f.table_confidence >= .60 for f in context_window):
                     continue
-                rows = self._observe_window(capture, start, end, time_mapper,
-                                            ordered, times, native=True)
                 measured = []
                 recovered = False
-                for row in rows:
-                    context = row.context
-                    # A nearby sparse or differently timed frame cannot prove
-                    # native stillness. Missing evidence stays explicitly unknown.
-                    exact = (context is not None and context.observation_fps >= 10
-                             and abs(context.t-row.t) <= .001)
-                    if not exact:
-                        measured.append(FrameFeatures(t=row.t, observation_valid=False,
-                            table_observable=False, table_full_view=False))
-                        continue
-                    full = bool(row.full_table and not row.reset
-                                and context.view_type == CameraViewType.MAIN_TABLE
-                                and context.table_confidence >= .80)
-                    recovered |= full and not context.table_full_view
-                    measured.append(context.model_copy(update={'t': row.t, 'table_full_view': full}))
-                if not recovered:
-                    continue
+                processed = 0
                 candidate = StrikeCandidate(timestamp=shot.cue_strike, confidence=shot.strike_confidence)
-                stop = detector.detect_stop(candidate, measured, time_mapper.source_duration)
+                stop = None
+
+                def settled(rows):
+                    nonlocal processed, recovered, stop
+                    for row in rows[processed:]:
+                        context = row.context
+                        # Timestamp or decoded source-frame identity must match.
+                        # A nearby sparse observation supplies no native proof.
+                        exact = (context is not None and context.observation_fps >= 10
+                                 and (abs(context.t-row.t) <= .001 or row.context_frame_matched))
+                        if not exact:
+                            measured.append(FrameFeatures(t=row.t, observation_valid=False,
+                                table_observable=False, table_full_view=False))
+                            continue
+                        native_geometry = row.measured_table_confidence >= .75
+                        full = bool(row.full_table and not row.reset
+                                    and context.table_confidence >= .60
+                                    and (context.view_type == CameraViewType.MAIN_TABLE
+                                         or native_geometry and context.view_type == CameraViewType.BALL_CLOSEUP))
+                        recovered |= full and not context.table_full_view
+                        measured.append(context.model_copy(update={
+                            't': row.t, 'table_full_view': full,
+                            'view_type': CameraViewType.MAIN_TABLE if full else context.view_type,
+                        }))
+                    processed = len(rows)
+                    if recovered:
+                        stop = detector.detect_stop(candidate, measured, time_mapper.source_duration)
+                    return bool(stop and stop.confirmed)
+
+                rows = self._observe_window(capture, start, end, time_mapper,
+                                            ordered, times, native=True, geometry_only=True,
+                                            stop_when=settled)
+                settled(rows)
                 # Only shorten an unresolved edit using a confirmed ordinary
                 # stop. Unknown gaps retain the detector's timing review flag.
-                if (stop.confirmed and stop.physical_stop_timestamp < shot.clip_end
+                if (stop and stop.confirmed and stop.physical_stop_timestamp < shot.clip_end
                         and stop.physical_stop_timestamp >= shot.cue_strike+.2):
                     stops[shot.cue_strike] = replace(stop, manual_review_required=True)
         finally:

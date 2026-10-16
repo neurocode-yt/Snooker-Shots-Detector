@@ -1,6 +1,7 @@
 """Analysis can create the finished video without a review/export request."""
 
 from pathlib import Path
+import json
 
 import pytest
 from fastapi.testclient import TestClient
@@ -27,6 +28,8 @@ def test_analysis_finishes_automatically_even_with_uncertain_diagnostics(
             shots=[ShotRecord(shot_id=1, cue_strike=2, clip_start=0, clip_end=5, manual_review_required=True)],
         )
         JobStore(config).save_analysis(result)
+        (JobStore(config).job_dir(job_id)/'detection_diagnostics.json').write_text(
+            json.dumps({'unresolved_scoring_gaps':[{'start':10,'end':22,'points':1}]}))
         progress(1.0, "ready_for_review", "Detected one shot")
         return result
 
@@ -47,6 +50,7 @@ def test_analysis_finishes_automatically_even_with_uncertain_diagnostics(
         job_id = started.json()["job_id"]
         assert client.app.state.match_queue.wait_idle()
         progress = client.get(f"/api/jobs/{job_id}/progress").json()
+        assert progress['scoring_gaps_unresolved']==[{'start':10,'end':22,'points':1}]
         assert progress["status"] == ("completed" if auto_export else "ready_for_review")
         if auto_export:
             assert len(exports) == 1

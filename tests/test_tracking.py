@@ -33,6 +33,20 @@ def _d(
     )
 
 
+@pytest.mark.parametrize('sphere_proof',[False,True])
+def test_measured_ivory_sphere_can_promote_existing_tinted_object_track(sphere_proof):
+    tracker=BallTracker()
+    previous=_d(100,100,color=.2)
+    previous.cloth_surround_confidence=.9
+    track=tracker.update(0,[previous])[0]
+    detected=_d(100,100,label='cue_ball',color=.2)
+    detected.cloth_surround_confidence=.9
+    detected.cue_sphere_supported=sphere_proof
+    updated=tracker.update(.04,[detected])[0]
+    assert updated.track_id==track.track_id
+    assert updated.label==('cue_ball' if sphere_proof else 'object_ball')
+
+
 def test_prediction_and_label_awareness_preserve_identity() -> None:
     tracker = BallTracker(max_distance=25.0)
     first = tracker.update(

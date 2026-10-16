@@ -119,3 +119,25 @@ test('untrusted filenames and messages cannot become markup',()=>{
   assert.doesNotMatch(html,/<script>|<img |<unsafe>/);
   assert.match(html,/&lt;img onerror=&quot;bad&quot;&gt;/);
 });
+
+test('unreadable scoreboard is distinguished from zero scoring shots and can be rechecked',()=>{
+  const failed=job('scores','pots_and_fouls',{download_url:undefined,
+    pot_selection_summary:{included:0,unknown:20,score_readings:0}});
+  const html=view.run(failed,'Pots + fouls',{});
+  assert.equal(library.state(failed).label,'Score check needed');
+  assert.match(html,/Scoreboard could not be read/);
+  assert.match(html,/btn-recheck-scores secondary" data-job-id="scores" >Recheck scores/);
+  assert.match(view.run(failed,'Pots + fouls',{pending:new Map([['scores',true]])}),/data-job-id="scores" disabled>Recheck scores/);
+});
+
+test('unresolved scoring gaps expose bounded source intervals for review',()=>{
+  const gap=job('gap','all',{scoring_gaps_unresolved:[{start:120,end:132},
+    {start:-1,end:5},{start:3,end:2},{start:'<bad>',end:6}]});
+  const html=view.run(gap,'All shots',{expanded:new Set(['gaps:gap'])});
+  assert.match(html,/1 scoring gap to review/);
+  assert.match(html,/data-history="gaps:gap" open/);
+  assert.match(html,/\/api\/jobs\/gap\/video#t=120.000,132.000/);
+  assert.doesNotMatch(html,/<bad>|#t=-1|#t=3.000/);
+  const [group]=library.groups([gap]);
+  assert.equal(library.matches(group,'attention'),true);
+});

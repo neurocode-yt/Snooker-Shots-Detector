@@ -33,6 +33,44 @@ _CANONICAL_CORNERS = np.array(
 )
 
 
+def _detach_border_attachment(source: np.ndarray, closed: np.ndarray,
+                              kernel: np.ndarray) -> np.ndarray:
+    """Do not join enclosed cloth to a separate green arena light by closing.
+
+    Restore only an already measured dominant, enclosed component. A genuinely
+    cropped table has no such component and keeps its original partial-view mask.
+    """
+    contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return closed
+    dominant = max(contours, key=cv2.contourArea)
+    h, w = source.shape
+    x, y, bw, bh = cv2.boundingRect(dominant)
+    margin = max(2, round(min(h, w)*.006))
+    if x > margin and y > margin and x+bw < w-margin and y+bh < h-margin:
+        return closed
+    raw, _ = cv2.findContours(source, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not raw:
+        return closed
+    cloth = max(raw, key=cv2.contourArea)
+    area = cv2.contourArea(cloth)
+    x, y, bw, bh = cv2.boundingRect(cloth)
+    hull = cv2.convexHull(cloth)
+    if (area < .09*h*w or area < .9*cv2.contourArea(dominant)
+            or x <= margin or y <= margin or x+bw >= w-margin or y+bh >= h-margin
+            or bw < .25*w or bh < .20*h
+            or area/max(1, cv2.contourArea(hull)) < .70):
+        return closed
+    quad = cv2.approxPolyDP(hull, .025*cv2.arcLength(hull, True), True)
+    if len(quad) != 4:
+        return closed
+    region = np.zeros_like(source)
+    cv2.drawContours(region, [cloth], -1, 255, -1)
+    isolated = cv2.bitwise_and(source, region)
+    isolated = cv2.morphologyEx(isolated, cv2.MORPH_CLOSE, kernel, iterations=2)
+    return cv2.morphologyEx(isolated, cv2.MORPH_OPEN, kernel)
+
+
 class TableLocalizer:
     def __init__(self, config: Config):
         cfg = config.section("table_detection")
@@ -97,10 +135,12 @@ class TableLocalizer:
             hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
             mask = cv2.inRange(hsv, self.hsv_lower, self.hsv_upper)
             mask = playing_surface_mask(hsv, mask)
+            surface = mask
             k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (self.morph_k, self.morph_k))
             mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k, iterations=2)
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k, iterations=1)
 
+        mask = _detach_border_attachment(surface, mask, k)
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if not contours:
             fb = self._fallback_mask(h, w)
