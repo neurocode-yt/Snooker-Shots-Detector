@@ -189,6 +189,14 @@ class SplitShotBody(BaseModel):
     at_time: float
 
 
+class EndTrimBody(BaseModel):
+    seconds: float = Field(default=2., ge=0, le=3600, allow_inf_nan=False)
+    long_seconds: float | None = Field(default=None, ge=0, le=3600, allow_inf_nan=False)
+    long_threshold: float = Field(default=7., ge=0, le=3600, allow_inf_nan=False)
+    shot_ids: list[int] | None = Field(default=None, min_length=1, max_length=10000)
+    reset: bool = False
+
+
 class SourceRangeBody(BaseModel):
     start: float
     end: float
@@ -923,6 +931,16 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             lock.release()
 
     install_shorts_routes(app, shorts, edit_review, _open_folder)
+
+    @app.post('/api/jobs/{job_id}/trim-ends')
+    async def trim_saved_shot_ends(job_id: str, body: EndTrimBody) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(edit_review, job_id,
+                lambda: store.trim_ends(job_id, **body.model_dump()))
+        except (FileNotFoundError, KeyError) as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
 
     @app.patch("/api/jobs/{job_id}/shots/{shot_id}")
     async def patch_shot(job_id: str, shot_id: int, body: ShotUpdate) -> dict[str, Any]:

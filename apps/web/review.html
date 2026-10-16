@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Review — Snooker AI</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20261015points" />
+  <link rel="stylesheet" href="/static/styles.css?v=20261017trim" />
   <link rel="stylesheet" href="/static/shorts.css?v=20261015shorts" />
   <link rel="stylesheet" href="/static/work.css?v=20261015pause" />
 </head>
@@ -72,12 +72,29 @@
             <label>Cue strike <input type="number" id="edit-strike" step="0.01" /></label>
             <label>Clip end <input type="number" id="edit-end" step="0.01" /></label>
           </div>
-          <div class="shot-tools"><button id="apply-bounds" class="primary" title="Save boundaries (A)">Save trim</button><button id="toggle-include" title="Include or exclude this shot (X)">Exclude shot</button>
+          <div class="shot-end-trim">
+            <label>Trim ending (seconds)<input id="shot-end-trim" type="number" min="0" max="3600" step="0.1" value="0" /></label>
+            <button id="apply-shot-end-trim">Apply to this shot</button><button id="reset-shot-end-trim" class="secondary">Restore previous ending</button>
+            <p id="shot-end-trim-detail" class="muted" role="status"></p>
+          </div>
+          <div class="shot-tools"><button id="apply-bounds" class="primary" title="Save boundary timestamps (A)">Save boundaries</button><button id="toggle-include" title="Include or exclude this shot (X)">Exclude shot</button>
             <details class="menu shot-menu"><summary class="button secondary">Shot tools <span aria-hidden="true">⌄</span></summary><div class="menu-panel">
             <button id="mark-replay">Toggle replay</button><button id="split-shot">Split at playhead</button><button id="merge-next">Merge with next</button><button id="delete-shot" class="danger">Delete shot</button></div></details>
           </div>
         </div>
       </section>
+      <details class="end-trim-panel" id="end-trim-panel">
+        <summary>Trim shot endings</summary>
+        <p class="muted">Change completed shots without rerunning detection. These settings replace the previous trim; repeated clicks do not cut more off. Preview your changes, then export the video.</p>
+        <div class="end-trim-fields">
+          <label>Normal shots (seconds)<input id="end-trim-normal" type="number" min="0" max="3600" step="0.1" value="2" /></label>
+          <label>Long shots (seconds)<input id="end-trim-long" type="number" min="0" max="3600" step="0.1" value="3" /></label>
+          <label>Long if contact to ending is at least (seconds)<input id="end-trim-threshold" type="number" min="0" max="3600" step="0.1" value="7" /></label>
+        </div>
+        <div class="shot-tools"><button id="apply-all-end-trim" class="primary">Apply to included shots</button><button id="reset-all-end-trim">Restore previous endings</button></div>
+        <p class="muted">Cue contact and minimum playback are protected. To change just one shot, select it and use Trim ending in Source &amp; trim.</p>
+        <p id="end-trim-feedback" role="status" aria-live="polite"></p>
+      </details>
       <div class="stats" id="stats"></div>
       <details class="keyboard-help"><summary>Keyboard shortcuts</summary><p class="hint muted">
         Shortcuts: J/K navigate · Space play · I/O/S set in/out/strike · A apply ·
@@ -112,6 +129,7 @@
   <script src="/static/shorts.js?v=20261015pause"></script>
   <script src="/static/polling.js?v=20261015idle"></script>
   <script src="/static/work.js?v=20261015idle"></script>
-  <script src="/static/review.js?v=20261015idle"></script>
+  <script src="/static/end-trim.js?v=20261017trim"></script>
+  <script src="/static/review.js?v=20261017trim"></script>
 </body>
 </html>

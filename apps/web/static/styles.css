@@ -444,6 +444,14 @@ h3 { font-size: 1rem; }
 .boundary-edit label { display: grid; gap: .4rem; font-size: .72rem; }
 .boundary-edit input { font-size: .83rem; font-variant-numeric: tabular-nums; }
 .shot-tools { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .85rem; }
+.end-trim-panel { margin-top: 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
+.end-trim-panel summary { cursor: pointer; font-weight: 650; }
+.end-trim-panel p, .shot-end-trim p { font-size: .75rem; line-height: 1.5; }
+.end-trim-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: .75rem; }
+.end-trim-fields label, .shot-end-trim label { display: grid; gap: .4rem; font-size: .75rem; }
+.shot-end-trim { display: flex; flex-wrap: wrap; align-items: end; gap: .6rem; margin-top: 1rem; }
+.shot-end-trim input { max-width: 150px; }
+.shot-end-trim p { flex-basis: 100%; margin: 0; }
 .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 1.2rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 10px; }
 .stats strong { display: block; font-size: 1rem; font-weight: 650; }
 .stats span { font-size: .72rem; color: var(--muted); }

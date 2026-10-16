@@ -78,6 +78,33 @@ Update boundaries / include / replay flags.
 ### `POST /api/jobs/{job_id}/shots`
 Add a missed shot.
 
+### `POST /api/jobs/{job_id}/trim-ends`
+Edit completed shot endings without rerunning detection:
+
+```json
+{"seconds": 2, "long_seconds": 3, "long_threshold": 7}
+```
+
+Without `shot_ids`, this applies to included live shots. With
+`{"seconds": 10, "shot_ids": [56]}`, it affects just shot 56. Long-shot duration
+is measured from cue contact to the saved reference ending, excluding pre-roll.
+Amounts and threshold must be finite numbers between 0 and 3600 seconds.
+
+Offsets replace earlier settings instead of accumulating. Confirmed automatic
+shots can change their existing automatic trim from the known usable stop;
+uncertain or manually edited shots use their saved ending as the reference.
+`{"reset": true}` restores the endings saved before the first end-trim edit;
+`shot_ids` can restrict restoration to specific shots. Zero removes the manual
+offset from the reference ending and can undo the automatic 2/3-second trim on
+confirmed shots. Cue contact, minimum playback, source and next-shot limits are protected.
+Physical stop evidence and scoring/review flags remain unchanged.
+
+Returns `shots`, `changed_shots`, `limited_shots`, `affected_shots`, `settings`,
+`edited_duration` and `export_needs_update`. Changed clips invalidate the current
+download until a new export is made; the previous MP4 file is preserved. Invalid
+settings return 422, missing shots return 404, and active work returns 409. A
+single save updates the whole selection under the normal edit lease.
+
 ### `DELETE /api/jobs/{job_id}/shots/{shot_id}`
 Delete a false positive.
 

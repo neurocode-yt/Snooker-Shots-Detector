@@ -312,6 +312,9 @@ function render() {
     document.getElementById("edit-strike").value = active.cue_strike.toFixed(3);
     document.getElementById("edit-end").value = active.clip_end.toFixed(3);
   }
+  const endTrimState = window.snookerEndTrim.state(active);
+  document.getElementById('shot-end-trim').value = endTrimState.seconds;
+  document.getElementById('shot-end-trim-detail').textContent = endTrimState.description;
   refreshPreviewPlaylist();
   if (focusedShot) shotList.querySelector(`li[data-id="${focusedShot}"] .shot-open`)?.focus({preventScroll: true});
 }
@@ -335,6 +338,8 @@ function syncJobState() {
   updatePreviewControls();
   document.querySelectorAll(".shot-include").forEach((checkbox) => { checkbox.disabled = busy; });
   document.querySelectorAll(".boundary-edit input, .shot-tools button, .transport button").forEach((control) => { control.disabled = busy || !currentShot(); });
+  document.querySelectorAll('.shot-end-trim input, .shot-end-trim button').forEach(control=>{control.disabled=busy||!currentShot();});
+  document.querySelectorAll('.end-trim-panel input, .end-trim-panel button').forEach(control=>{control.disabled=busy||!hasSelection;});
   if (meta.download_url && !meta.export_needs_update && !busy) {
     combinedDownloadLink.href = meta.download_url;
     combinedDownloadLink.classList.remove("hidden");
@@ -422,6 +427,10 @@ async function load() {
   const response = await fetch(`/api/jobs/${jobId}`);
   if (!response.ok) { setExportStatus("This video could not be loaded. Return to Your videos and try again.", "error"); return; }
   meta = await response.json();
+  if (meta.end_trim_settings) {
+    for (const [name,key] of [['normal','seconds'],['long','long_seconds'],['threshold','long_threshold']])
+      if (Number.isFinite(meta.end_trim_settings[key])) document.getElementById('end-trim-'+name).value=meta.end_trim_settings[key];
+  }
   syncJobState();
   try {
     const capabilityResponse = await fetch("/api/shot-selections");
@@ -559,7 +568,7 @@ function markReviewChanged(message) {
   syncJobState();
 }
 
-async function reviewRequest(path, options, message, {refreshShots = false} = {}) {
+async function reviewRequest(path, options, message, {refreshShots = false, missingMessage = ''} = {}) {
   if (editBusy || exportBusy || analysisRequestBusy || timelineBusy || timelineRefreshRequired || UI.active(meta)) return null;
   editBusy = true;
   metadataEpoch += 1;
@@ -570,12 +579,14 @@ async function reviewRequest(path, options, message, {refreshShots = false} = {}
     if (!response.ok) {
       let detail = "Your change could not be saved. Try again.";
       try { detail = (await response.json()).detail || detail; } catch (error) { /* Keep a readable fallback. */ }
+      if(response.status===404 && missingMessage) detail=missingMessage;
       throw new Error(detail);
     }
     const data = await response.json();
     saved = true;
-    markReviewChanged(message);
-    if (refreshShots) {
+    if(data.export_needs_update!==false) markReviewChanged(message);
+    if (Array.isArray(data.shots)) shots=data.shots;
+    else if (refreshShots) {
       timelineRefreshRequired = true;
       const stateResponse = await fetch(`/api/jobs/${jobId}`);
       if (stateResponse.ok) meta = await stateResponse.json();
@@ -609,6 +620,28 @@ async function applyBounds() {
   }, "PATCH"), "Trim saved.");
 }
 document.getElementById("apply-bounds").addEventListener("click", applyBounds);
+
+async function applyEndTrim(single=false,reset=false) {
+  const shot=currentShot();
+  if(single&&!shot)return;
+  try {
+    const body=window.snookerEndTrim.payload({normal:document.getElementById(single?'shot-end-trim':'end-trim-normal').value,
+      long:document.getElementById('end-trim-long').value,threshold:document.getElementById('end-trim-threshold').value,
+      ...(single?{shotId:shot.shot_id}:{}),reset});
+    const data=await reviewRequest(`/api/jobs/${jobId}/trim-ends`,jsonRequest(body),reset?'Previous endings restored.':'End trim saved.',
+      {missingMessage:'Restart the app server to enable saved end trimming.'});
+    if(data) {
+      const message=window.snookerEndTrim.message(data,reset);
+      document.getElementById('end-trim-feedback').textContent=message;
+      showToast(message);
+      if(data.export_needs_update)setExportStatus(`${message} Export video to update your highlights.`,'ready');
+    }
+  }catch(error){showToast(error.message);}
+}
+document.getElementById('apply-shot-end-trim').addEventListener('click',()=>applyEndTrim(true));
+document.getElementById('reset-shot-end-trim').addEventListener('click',()=>applyEndTrim(true,true));
+document.getElementById('apply-all-end-trim').addEventListener('click',()=>applyEndTrim());
+document.getElementById('reset-all-end-trim').addEventListener('click',()=>applyEndTrim(false,true));
 
 document.getElementById("mark-replay").addEventListener("click", async () => {
   const shot = currentShot();

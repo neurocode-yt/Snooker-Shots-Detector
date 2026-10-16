@@ -80,6 +80,17 @@ Automatic tracking follows longer rolls beyond seven seconds, with a configurabl
 60-second safety horizon. Uncertainty remains in the diagnostics and does not
 block automatic export. A video that ends during a shot keeps its remaining footage.
 
+Completed highlights have editable end offsets. In the editor, open **Trim shot
+endings** to change the normal-shot trim, long-shot trim and long-shot threshold,
+then apply them to included shots. For one shot, select it and use **Trim ending
+(seconds)** in **Source & trim**. The initial bulk values are the existing 2/3
+seconds with a 7-second threshold. Settings are absolute: applying them twice
+does not remove extra footage. **Restore previous endings** undoes these edits.
+The controls work on saved detections, including uncertain endings; no detector
+run is required. Minimum playback and cue contact are protected. Physical stop
+measurements, point classifications and review flags are preserved. Export again
+to update an MP4; CapCut and Shorts use the edited source ranges.
+
 Native contact frames use decoded presentation timestamps and source-frame
 identity rather than average-FPS timing. Native stop refinement retains the
 observed launch when checking a later tail, so a quiet end window can finish

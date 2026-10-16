@@ -11,6 +11,7 @@ from typing import Any, Optional
 
 from snooker_ai.config import Config
 from snooker_ai.pipeline.algorithms import Algorithm
+from snooker_ai.segmentation.end_trim import trim_saved_end
 from snooker_ai.types import (
     AnalysisResult,
     JobProgress,
@@ -210,13 +211,17 @@ class JobStore:
                 shot.clip_start_timestamp = shot.clip_start
                 shot.clip_end_timestamp = shot.clip_end
                 shot.cue_strike_timestamp = shot.cue_strike
-                shot.physical_stop_timestamp = shot.ball_motion_end
-                shot.last_ball_motion_timestamp = min(
-                    shot.last_ball_motion_timestamp, shot.physical_stop_timestamp
-                )
-                shot.stop_confirmation_timestamp = max(
-                    shot.stop_confirmation_timestamp, shot.physical_stop_timestamp
-                )
+                if not shot.evidence.get('end_trim'):
+                    # End offsets edit footage, not the measured stop. Older
+                    # records can explicitly distinguish legacy motion-end and
+                    # physical-stop fields, so retain both during end trimming.
+                    shot.physical_stop_timestamp = shot.ball_motion_end
+                    shot.last_ball_motion_timestamp = min(
+                        shot.last_ball_motion_timestamp, shot.physical_stop_timestamp
+                    )
+                    shot.stop_confirmation_timestamp = max(
+                        shot.stop_confirmation_timestamp, shot.physical_stop_timestamp
+                    )
 
     def save_analysis(self, result: AnalysisResult) -> None:
         self._sync_review_timestamps(result)
@@ -245,6 +250,12 @@ class JobStore:
         for s in result.shots:
             if s.shot_id == shot_id:
                 data = update.model_dump(exclude_unset=True)
+                # The editor displays milliseconds. Saving those same rounded
+                # timestamps must not turn the next offset into a second cut.
+                if any(value is None or abs(value-getattr(s, field)) > .001
+                       for field, value in data.items()
+                       if field in {'clip_start', 'clip_end', 'cue_strike', 'ball_motion_end'}):
+                    s.evidence.pop('end_trim', None)
                 if "included" in data and result.selection is not ShotSelection.ALL:
                     s.evidence["pots_only_manual_override"] = True
                 for k, v in data.items():
@@ -261,6 +272,42 @@ class JobStore:
         self.save_analysis(result)
         self._export_corrections(job_id, result)
         return found
+
+    def trim_ends(self, job_id: str, *, seconds: float, long_seconds: float | None = None,
+                  long_threshold: float = 7., shot_ids: list[int] | None = None,
+                  reset: bool = False) -> dict[str, Any]:
+        result = self.load_analysis(job_id)
+        requested = set(shot_ids) if shot_ids is not None else None
+        if requested is not None and requested - {s.shot_id for s in result.shots}:
+            raise KeyError('One or more selected shots no longer exist; refresh the editor')
+        targets = [s for s in result.shots if s.shot_id in requested] if requested is not None else [
+            s for s in result.shots if s.included and not s.possible_replay]
+        changed = limited = 0
+        ordered = sorted(result.shots, key=lambda s: s.cue_strike)
+        next_starts = {s.shot_id: ordered[i+1].clip_start for i, s in enumerate(ordered[:-1])}
+        for shot in targets:
+            reference = shot.evidence.get('end_trim', {}).get('reference_end',
+                max(shot.clip_end, shot.physical_stop_timestamp)
+                if shot.evidence.get('stop_confirmed') and not shot.user_modified else shot.clip_end)
+            amount = long_seconds if long_seconds is not None and reference-shot.cue_strike >= long_threshold else seconds
+            modified, bounded = trim_saved_end(shot, amount, self.config,
+                duration=result.original_duration or result.metadata.duration,
+                next_start=next_starts.get(shot.shot_id), reset=reset)
+            changed += modified
+            limited += bounded
+        self._recompute_durations(result)
+        self.save_analysis(result)
+        self._export_corrections(job_id, result, invalidate_export=bool(changed))
+        settings = {'seconds': seconds, 'long_seconds': long_seconds,
+                    'long_threshold': long_threshold}
+        meta = self.get_meta(job_id)
+        if requested is None and not reset:
+            meta['end_trim_settings'] = settings
+            self._write_meta(job_id, meta)
+        return {'shots': [s.model_dump() for s in result.shots], 'changed_shots': changed,
+                'limited_shots': limited, 'affected_shots': len(targets),
+                'export_needs_update': bool(meta.get('export_needs_update')),
+                'settings': settings, 'edited_duration': result.edited_duration}
 
     def delete_shot(self, job_id: str, shot_id: int) -> None:
         result = self.load_analysis(job_id)
@@ -300,6 +347,7 @@ class JobStore:
             raise KeyError(f"Could not find shots to merge: {shot_ids}")
         selected.sort(key=lambda s: s.clip_start)
         keep = selected[0]
+        keep.evidence.pop('end_trim', None)
         keep.clip_start = min(s.clip_start for s in selected)
         keep.clip_end = max(s.clip_end for s in selected)
         keep.cue_strike = selected[0].cue_strike
@@ -341,6 +389,8 @@ class JobStore:
             raise ValueError("Split time must be strictly inside the clip bounds")
         left = target.model_copy(deep=True)
         right = target.model_copy(deep=True)
+        left.evidence.pop('end_trim', None)
+        right.evidence.pop('end_trim', None)
         left.clip_end = at_time
         left.cue_strike = min(left.cue_strike, at_time)
         left.ball_motion_start = min(left.ball_motion_start, at_time)
@@ -371,10 +421,12 @@ class JobStore:
         result.pause_removed_seconds = max(0.0, result.original_duration - result.edited_duration)
 
     def _export_corrections(
-        self, job_id: str, result: AnalysisResult, *, deleted_strikes: Optional[list[float]] = None
+        self, job_id: str, result: AnalysisResult, *, deleted_strikes: Optional[list[float]] = None,
+        invalidate_export: bool = True,
     ) -> None:
         meta = self.get_meta(job_id)
-        meta["export_needs_update"] = True
+        if invalidate_export:
+            meta["export_needs_update"] = True
         meta["shots_detected"] = len(result.shots)
         if result.pot_selection_summary:
             meta["pot_selection_summary"] = result.pot_selection_summary
