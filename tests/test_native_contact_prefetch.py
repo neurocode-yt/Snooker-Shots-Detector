@@ -122,6 +122,64 @@ def test_parent_learning_invalidates_outstanding_unknown_requests(tmp_path, monk
         assert not pool.eligible(pool.plans[0])
 
 
+@pytest.mark.parametrize("unsafe", ["foreign", "missing", "return"])
+def test_native_prefetch_validates_the_complete_decoder_warmup(tmp_path, monkeypatch, unsafe):
+    analyzer = ready_analyzer(tmp_path, monkeypatch)
+    analyzer._native_source = tmp_path / "source.mp4"
+    if unsafe == "foreign":
+        analyzer._coarse_context_reference[0].match_context_valid = False
+    elif unsafe == "missing":
+        analyzer._coarse_context_reference = analyzer._coarse_context_reference[1:]
+    else:
+        analyzer._confirmed_target_returns = [(.1, .2)]
+    with prefetch(analyzer) as pool:
+        # Contact begins at 1s, but source extraction warms up from 0s. Its
+        # early identity evidence must not be lost in a worker-local slice.
+        assert pool._decode_start(pool.plans[0]) == 0
+        assert not pool.eligible(pool.plans[0])
+
+
+def test_parallel_work_resumes_with_exact_newly_learned_context(tmp_path, monkeypatch):
+    analyzer = ready_analyzer(tmp_path, monkeypatch)
+    analyzer.broadcast_context.reset_observations(preserve_target=False)
+    with prefetch(analyzer) as pool:
+        def run(key):
+            rows = still_features(key)
+            for row in rows:
+                row.ball_count = int(pool.context_guard.target_ready)
+            return rows
+
+        monkeypatch.setattr(pool, "_run", run)
+        unknown = pool.pull(0, pool.plans[0], lambda _: True)
+        assert unknown[0].ball_count == 0
+        assert analyzer.broadcast_context.restore_target([1.] * 3072)
+        expected_target = analyzer.broadcast_context.export_target()
+        learned = pool.pull(1, pool.plans[1], lambda _: True)
+        assert learned[0].ball_count == 1  # an old speculative result cannot leak through
+        assert pool.context_guard.export_target() == expected_target
+        assert pool.target == expected_target
+        assert len(pool.pending) <= 2
+
+
+def test_contact_worker_reuses_pure_caches_but_resets_chronological_context(tmp_path, monkeypatch):
+    analyzer = ready_analyzer(tmp_path, monkeypatch)
+    seen = []
+
+    def extract(worker, *args, **kwargs):
+        assert worker._confirmed_target_returns == []
+        assert worker.broadcast_context.export_target() == analyzer.broadcast_context.export_target()
+        seen.append(worker)
+        worker._confirmed_target_returns = [(2, 4)]
+        return still_features((kwargs['start_time'], kwargs['end_time'], kwargs['sample_fps'])), [], []
+
+    monkeypatch.setattr(Analyzer, "_extract_features", extract)
+    with prefetch(analyzer) as pool:
+        assert pool._run(pool.plans[0]) is None  # newly found context still forces parent fallback
+        assert pool._run(pool.plans[1]) is None
+    assert seen[0] is seen[1]
+    assert analyzer._confirmed_target_returns == []
+
+
 def test_complete_native_coverage_skips_extraction(tmp_path, monkeypatch):
     analyzer = ready_analyzer(tmp_path, monkeypatch)
     candidate = proposals()[0]

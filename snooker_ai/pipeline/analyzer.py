@@ -96,6 +96,7 @@ class Analyzer:
         self._coarse_context_reference: list[FrameFeatures] = []
         self._confirmed_target_returns: list[tuple[float, float]] = []
         self._detection_diagnostics: dict = {"stages": [], "native_proposals": []}
+        self._proxy_capture_info: dict[tuple, tuple[float, int, int]] = {}
 
     def analyze(
         self,
@@ -754,19 +755,33 @@ class Analyzer:
         resume: bool = True,
     ) -> tuple[list[FrameFeatures], list[SceneObservation], list[float]]:
         sample_fps = float(sample_fps or self.config.get("analysis.sample_fps", 10.0))
+        proxy_path = Path(proxy_path)
         start_time = max(0.0, float(start_time))
         requested_start = start_time
         end_time = duration if end_time is None else min(duration, float(end_time))
         # Sound is preserved in preview/export, but never analysed for strikes.
 
-        cap = open_capture(
-            proxy_path,
-            prefer_hwaccel=bool(self.config.get("analysis.hwaccel_decode", True)),
-        )
-        if not cap.isOpened():
-            raise RuntimeError(f"Cannot open proxy video: {proxy_path}")
-
-        proxy_fps = cap.get(cv2.CAP_PROP_FPS) or float(self.config.get("proxy.target_fps", 15.0))
+        # Native windows need only the proxy's geometry/cadence. Reopening its
+        # decoder thousands of times costs time without contributing an image.
+        prefer_hwaccel = bool(self.config.get("analysis.hwaccel_decode", True))
+        try:
+            stat = proxy_path.stat()
+            info_key = (str(proxy_path.resolve()), stat.st_size, stat.st_mtime_ns, prefer_hwaccel)
+        except OSError:
+            info_key = None
+        info = self._proxy_capture_info.get(info_key) if info_key is not None else None
+        cap = None
+        if info is None:
+            cap = open_capture(proxy_path, prefer_hwaccel=prefer_hwaccel)
+            if not cap.isOpened():
+                cap.release()
+                raise RuntimeError(f"Cannot open proxy video: {proxy_path}")
+            info = (cap.get(cv2.CAP_PROP_FPS), int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                    int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+            if info_key is not None:
+                self._proxy_capture_info.clear()  # one proxy per analyzer, bounded across replacements
+                self._proxy_capture_info[info_key] = info
+        proxy_fps = info[0] or float(self.config.get("proxy.target_fps", 15.0))
         resize_to = None
         to_source = mapper.to_source
         to_decode = mapper.to_proxy
@@ -777,8 +792,9 @@ class Analyzer:
             # Confirmation must see the original images, including tiny white
             # arcs lost to proxy compression. Keep proxy geometry so camera-local
             # coordinates and lower-rate travel observations remain compatible.
-            resize_to = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-            cap.release()
+            resize_to = info[1:]
+            if cap is not None:
+                cap.release()
             cap = open_capture(self._native_source,
                                prefer_hwaccel=bool(self.config.get("analysis.hwaccel_decode", True)))
             if not cap.isOpened():
@@ -791,6 +807,11 @@ class Analyzer:
             # A canonical warmup prevents seek-local Hough/track state from
             # changing the same contact when proposal windows begin differently.
             start_time = max(0., float(np.floor(requested_start-1.)))
+        elif cap is None:
+            cap = open_capture(proxy_path, prefer_hwaccel=prefer_hwaccel)
+            if not cap.isOpened():
+                cap.release()
+                raise RuntimeError(f"Cannot open proxy video: {proxy_path}")
         # Timestamp-based sampling avoids the old ``round(proxy_fps / fps)``
         # drift (15fps/10fps silently became 7.5fps).  The dense refinement pass
         # below can then use the native presentation timestamps.
@@ -1006,6 +1027,7 @@ class Analyzer:
         )
         try:
             for idx, t, frame in frames:
+                frame_classification = None
                 while next_sample_t <= t + 1e-9:
                     next_sample_t += sample_period
                 if resize_to is not None and frame.shape[1::-1] != resize_to:
@@ -1053,7 +1075,7 @@ class Analyzer:
                         table_full_view=False,
                     ))
                     if scene_stream is not None and kept % scene_step == 0:
-                        scene_stream.observe(frame, t, histogram=hist)
+                        scene_stream.observe(frame, t, histogram=hist, thumbnail=cut_image)
                     prev_gray = None
                     prev_hist = hist
                     kept += 1
@@ -1098,7 +1120,8 @@ class Analyzer:
                         prev_sample_t = None
                         last_flow_t = None
                     geometry = view_geometry(table_obs, frame.shape)
-                    current_view, _, current_view_extra = self.scene_det.classifier.classify(frame)
+                    frame_classification = self.scene_det.classifier.classify(frame)
+                    current_view, _, current_view_extra = frame_classification
                     if geometry.full_table:
                         current_view = CameraViewType.MAIN_TABLE
                     last_table_t = t
@@ -1282,7 +1305,8 @@ class Analyzer:
                 features.append(feat)
 
                 if scene_stream is not None and kept % scene_step == 0:
-                    scene_stream.observe(frame, t, histogram=hist)
+                    scene_stream.observe(frame, t, histogram=hist, thumbnail=cut_image,
+                                         classification=frame_classification)
 
                 kept += 1
                 check_pause()
@@ -2618,6 +2642,7 @@ class _NativeContactPrefetch:
         self.pool = None
         self.pending = {}
         self.discarded = set()
+        self.local = threading.local()
 
     def __enter__(self):
         return self
@@ -2629,9 +2654,16 @@ class _NativeContactPrefetch:
             self.pool.shutdown(wait=True, cancel_futures=True)
         self.pending.clear()
 
+    def _decode_start(self, key):
+        start = key[0]
+        if (self.parent._native_source is not None
+                and self.parent.config.get("analysis.native_source_contacts", True)):
+            return max(0., float(np.floor(start-1.)))
+        return start
+
     def _context(self, key):
         start, end, _ = key
-        lo, hi = bisect_left(self.times, start-.76), bisect_right(self.times, end)
+        lo, hi = bisect_left(self.times, self._decode_start(key)-.76), bisect_right(self.times, end)
         return self.reference[lo:hi]
 
     def eligible(self, key):
@@ -2643,6 +2675,7 @@ class _NativeContactPrefetch:
         if not self.target and self.parent.broadcast_context.target_ready:
             return False
         start, end, _ = key
+        start = self._decode_start(key)
         rows = self._context(key)
         if (end <= start or len(rows) < 2 or rows[0][0] > start+1e-6
                 or start-rows[0][0] > .76
@@ -2654,10 +2687,14 @@ class _NativeContactPrefetch:
 
     def _run(self, key):
         start, end, fps = key
-        worker = Analyzer(Config(self.config_data),
-                          self.parent.job_dir/"contact_workers"/str(threading.get_ident()))
+        worker = getattr(self.local, "analyzer", None)
+        if worker is None:
+            worker = Analyzer(Config(self.config_data),
+                              self.parent.job_dir/"contact_workers"/str(threading.get_ident()))
+            self.local.analyzer = worker
         worker._native_source = self.parent._native_source
         worker.broadcast_context = copy.deepcopy(self.context_guard)
+        worker._confirmed_target_returns = []
         worker._coarse_context_reference = [FrameFeatures(t=t, match_context_valid=valid)
                                             for t, valid in self._context(key)]
         features, _, _ = worker._extract_features(
@@ -2671,6 +2708,23 @@ class _NativeContactPrefetch:
             # order. Repeat this uncommon window synchronously to preserve it.
             return None
         return features
+
+    def _refresh_learned_context(self):
+        # Learning the overlay used to disable prefetch for the rest of a long
+        # match. Drain speculative unknown-context work, then take the exact
+        # newly learned parent guard for subsequent independent windows.
+        if self.target or not self.parent.broadcast_context.target_ready:
+            return
+        for future in self.pending.values():
+            if not future.cancel():
+                try:
+                    future.result()
+                except Exception:
+                    pass  # obsolete context; subsequent requests retain normal retry behavior
+        self.pending.clear()
+        self.discarded.clear()
+        self.target = self.parent.broadcast_context.export_target()
+        self.context_guard = copy.deepcopy(self.parent.broadcast_context)
 
     def _reap(self):
         for key in list(self.discarded):
@@ -2691,6 +2745,7 @@ class _NativeContactPrefetch:
         self._reap()
 
     def pull(self, number, key, needed):
+        self._refresh_learned_context()
         self._reap()
         if not self.eligible(key):
             return None

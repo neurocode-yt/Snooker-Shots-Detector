@@ -48,6 +48,9 @@ class SceneObservationStream:
         frame_bgr: np.ndarray,
         timestamp: float,
         histogram: np.ndarray | None = None,
+        *,
+        thumbnail: np.ndarray | None = None,
+        classification: tuple[CameraViewType, float, dict] | None = None,
     ) -> SceneObservation:
         # Feature extraction already computes this histogram for online cut
         # handling; accepting it avoids a duplicate full-frame HSV conversion.
@@ -58,7 +61,7 @@ class SceneObservationStream:
             if self._previous_hist is not None
             else 0.0
         )
-        image = self.detector.cut_thumbnail(frame_bgr)
+        image = self.detector.cut_thumbnail(frame_bgr) if thumbnail is None else thumbnail
         if self._previous_image is not None:
             adjacent = max(adjacent, self.detector.structural_cut_score(self._previous_image, image))
         self._previous_image = image
@@ -77,7 +80,8 @@ class SceneObservationStream:
             self.observations[-1].cut_score = lookahead * 0.8 if confirmed else 0.0
             self.observations[-1].cut_confirmed = confirmed
 
-        view, table_ratio, extra = self.detector.classifier.classify(frame_bgr)
+        view, table_ratio, extra = (self.detector.classifier.classify(frame_bgr)
+                                   if classification is None else classification)
         observation = SceneObservation(
             timestamp=float(timestamp),
             cut_score=float(adjacent),

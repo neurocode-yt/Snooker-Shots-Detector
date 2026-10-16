@@ -13,6 +13,11 @@ actions such as Pause/Resume, and processing logs remain visible. Connection
 failures retry after 10 seconds. Restart the server and reload existing browser
 tabs after updating to apply this behavior.
 
+## Slow processing
+
+For slow processing, see [Classical analysis performance](classic_performance.md)
+for checkpoint-preserving restart steps and exact-output timing comparisons.
+
 ## Analysis finds no shots
 
 - Confirm the video shows a **green table** under typical broadcast lighting.

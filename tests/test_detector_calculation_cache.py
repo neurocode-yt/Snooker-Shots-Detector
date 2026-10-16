@@ -77,9 +77,10 @@ def test_repeated_contours_are_evaluated_once_without_dropping_proposals(config,
     evaluated = []
     evaluate = detector._ivory_contour_proposals
 
-    def counted(_hsv, _cloth, contour, *, strong_green_cast):
+    def counted(_hsv, _cloth, contour, *, strong_green_cast, _evidence_cache=None):
         evaluated.append((strong_green_cast, contour.shape, contour.tobytes()))
-        return evaluate(_hsv, _cloth, contour, strong_green_cast=strong_green_cast)
+        return evaluate(_hsv, _cloth, contour, strong_green_cast=strong_green_cast,
+                        _evidence_cache=_evidence_cache)
 
     monkeypatch.setattr(detector, "_ivory_contour_proposals", counted)
     cached = detector._compute_warm_cue_spheres(hsv, mask)

@@ -359,6 +359,7 @@ Template: [docs/benchmark_report_template.md](docs/benchmark_report_template.md)
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [Classical performance and parity checks](docs/classic_performance.md)
 - [API](docs/api.md)
 - [Windows setup](docs/windows_setup.md)
 - [Troubleshooting](docs/troubleshooting.md)

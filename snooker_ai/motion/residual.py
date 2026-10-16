@@ -177,7 +177,7 @@ class ResidualMotionAnalyzer:
             # 25/30 fps.  Estimate that frame's table-wide optical-flow floor and
             # remove it before converting a local patch to ball diameters/second;
             # otherwise a quiet table reports ``1.0`` on nearly every frame.
-            table_noise_floor = max(0.12, float(np.percentile(region, 95)) * 0.75)
+            table_noise_floor = max(0.12, residual_max * 0.75)
             for cx, cy, diameter in ball_regions:
                 radius = max(2, int(round(float(diameter) * 0.75 * scale)))
                 ix, iy = int(round(float(cx) * scale)), int(round(float(cy) * scale))

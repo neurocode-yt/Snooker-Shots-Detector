@@ -610,12 +610,51 @@ class ObjectDetector:
         # that cast joins the white ball to the bridge instead of its outline.
         neutral = cv2.inRange(hsv, (0, 0, 150), (139, 25, 255))
         candidate_mask = cv2.bitwise_and(cv2.bitwise_or(warm, neutral), mask)
-        original_mask = candidate_mask
+        # Broad/cooler colour passes often produce identical measured masks.
+        # Reuse only byte-identical masks with the same opening policy. Keep
+        # their contour order and duplicates: both affect proposal merging.
+        contour_key = ("mask", strong_green_cast, candidate_mask.shape, candidate_mask.tobytes())
+        contours = contour_cache.get(contour_key)
+        if contours is None:
+            contours = self._warm_mask_contours(candidate_mask, strong_green_cast=strong_green_cast)
+            contour_cache[contour_key] = contours
+        cloth = cv2.inRange(hsv, self.cloth_lower, self.cloth_upper)
+        proposals = []
+        for contour in contours:
+            # Tiny codec fragments need only this cheap necessary gate. Do not
+            # retain their byte keys or build proposal copies for them.
+            if cv2.contourArea(contour) < 30:
+                continue
+            key = (strong_green_cast, contour.shape, contour.tobytes())
+            if key not in contour_cache:
+                contour_cache[key] = self._ivory_contour_proposals(
+                    hsv, cloth, contour, strong_green_cast=strong_green_cast,
+                    _evidence_cache=contour_cache,
+                )
+            # Proposal merging mutates its inputs. Each occurrence owns a copy.
+            proposals.extend(replace(p) for p in contour_cache[key])
+        if not green_cast_only and not strong_green_cast:
+            proposals.extend(self._warm_cue_spheres(
+                hsv, mask, green_cast_only=True, _contour_cache=contour_cache,
+            ))
+            # Broader colour recovery must not pull an already measured ivory
+            # centre towards a joined bridge/fingertip component.
+            proposals.extend(
+                recovered for recovered in self._warm_cue_spheres(
+                    hsv, mask, strong_green_cast=True, _contour_cache=contour_cache,
+                )
+                if not any(np.hypot(recovered.cx-prior.cx, recovered.cy-prior.cy)
+                           <= .80*(recovered.radius+prior.radius) for prior in proposals)
+            )
+        return proposals
+
+    @staticmethod
+    def _warm_mask_contours(original_mask: np.ndarray, *, strong_green_cast: bool) -> list[np.ndarray]:
+        """Measured outlines only; independent of colour, scale and temporal state."""
         candidate_mask = cv2.morphologyEx(
-            candidate_mask, cv2.MORPH_OPEN,
+            original_mask, cv2.MORPH_OPEN,
             cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)),
         )
-        cloth = cv2.inRange(hsv, self.cloth_lower, self.cloth_upper)
         contours, _ = cv2.findContours(
             candidate_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
@@ -647,8 +686,8 @@ class ObjectDetector:
             ):
                 continue
             size = min(25 if strong_green_cast else 13, max(3, int(round(radius * .75)) | 1))
-            x0, x1 = max(0, x-size), min(hsv.shape[1], x+bw+size)
-            y0, y1 = max(0, y-size), min(hsv.shape[0], y+bh+size)
+            x0, x1 = max(0, x-size), min(original_mask.shape[1], x+bw+size)
+            y0, y1 = max(0, y-size), min(original_mask.shape[0], y+bh+size)
             # Re-open the original measured pixels rather than filling its
             # outline or applying successive openings to its shaded edge.
             patch = original_mask[y0:y1, x0:x1]
@@ -660,38 +699,11 @@ class ObjectDetector:
                 )
                 separated, _ = cv2.findContours(opened, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 detached_contours.extend(c + offset for c in separated)
-        contours = list(contours) + detached_contours
-        proposals = []
-        for contour in contours:
-            # Tiny codec fragments need only this cheap necessary gate. Do not
-            # retain their byte keys or build proposal copies for them.
-            if cv2.contourArea(contour) < 30:
-                continue
-            key = (strong_green_cast, contour.shape, contour.tobytes())
-            if key not in contour_cache:
-                contour_cache[key] = self._ivory_contour_proposals(
-                    hsv, cloth, contour, strong_green_cast=strong_green_cast,
-                )
-            # Proposal merging mutates its inputs. Each occurrence owns a copy.
-            proposals.extend(replace(p) for p in contour_cache[key])
-        if not green_cast_only and not strong_green_cast:
-            proposals.extend(self._warm_cue_spheres(
-                hsv, mask, green_cast_only=True, _contour_cache=contour_cache,
-            ))
-            # Broader colour recovery must not pull an already measured ivory
-            # centre towards a joined bridge/fingertip component.
-            proposals.extend(
-                recovered for recovered in self._warm_cue_spheres(
-                    hsv, mask, strong_green_cast=True, _contour_cache=contour_cache,
-                )
-                if not any(np.hypot(recovered.cx-prior.cx, recovered.cy-prior.cy)
-                           <= .80*(recovered.radius+prior.radius) for prior in proposals)
-            )
-        return proposals
+        return list(contours) + detached_contours
 
     def _ivory_contour_proposals(
         self, hsv: np.ndarray, cloth: np.ndarray, contour: np.ndarray, *,
-        strong_green_cast: bool,
+        strong_green_cast: bool, _evidence_cache: dict | None = None,
     ) -> list[_Proposal]:
         """Evaluate one measured outline, independently of its mask/retry."""
         area = float(cv2.contourArea(contour))
@@ -702,7 +714,15 @@ class ObjectDetector:
         # A low-camera ball can occupy much of a shallow cloth strip's height.
         if not 4 <= radius <= min(min(hsv.shape[:2]) * .48, max(hsv.shape[:2]) * .18):
             return []
-        occluded = self._occluded_cue_sphere(hsv, cloth, contour)
+        if _evidence_cache is None:
+            occluded = self._occluded_cue_sphere(hsv, cloth, contour)
+        else:
+            # Occlusion proof is identical across the colour passes for this
+            # exact contour/image. Only the ordinary ivory gates below vary.
+            evidence_key = ("occlusion", contour.shape, contour.tobytes())
+            if evidence_key not in _evidence_cache:
+                _evidence_cache[evidence_key] = self._occluded_cue_sphere(hsv, cloth, contour)
+            occluded = _evidence_cache[evidence_key]
         proposals = [occluded] if occluded is not None else []
         _, _, bw, bh = cv2.boundingRect(contour)
         circularity = 4 * np.pi * area / perimeter**2
