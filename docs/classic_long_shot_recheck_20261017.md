@@ -44,8 +44,10 @@ and existing configured end-trim behavior. They are not fixed duration caps.
 
 There are now 270 shot records, with **269 live shots exported** and the same
 excluded replay. Pots + fouls selects **178 shots: 173 pots and 5 fouls**.
-Thirty-six scoring classifications remain unknown. The unchanged 21 unresolved
-scoring intervals still require review; this is not a claim of 100% accuracy.
+Thirty-six scoring classifications remain unknown. The repair initially carried
+21 unresolved scoring intervals from the previous version. The
+[October 18 mini audit](classic_mini_audit_20261018.md) recomputed that list as
+20: the recovered blue's warning was stale. Complete coverage is not established.
 Only the four source-audited records were replaced and the recovered blue was
 added. Other accepted clips, exclusions and prior files were preserved.
 

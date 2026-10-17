@@ -16,7 +16,7 @@ from snooker_ai.jobs.store import JobStore
 from snooker_ai.rendering.capcut import (
     CapCutInstallation, CapCutUnavailable, create_capcut_project, find_capcut,
 )
-from snooker_ai.types import AnalysisResult, ShotRecord, VideoMetadata
+from snooker_ai.types import AnalysisResult, ShotRecord, ShotSelection, VideoMetadata
 
 
 @pytest.fixture
@@ -134,14 +134,54 @@ def test_empty_selection_and_missing_source_fail_without_writing(config, capcut_
     assert not installation.projects_dir.exists()
 
 
-def test_unsupported_capcut_version_reports_reason(config, tmp_path, monkeypatch):
+@pytest.mark.parametrize("version", ["9.7.0.1000", "10.0.0.1000"])
+def test_unsupported_capcut_version_reports_reason(config, tmp_path, monkeypatch, version):
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
     apps = tmp_path / "CapCut" / "Apps"
-    (apps / "9.6.0.1000").mkdir(parents=True)
+    (apps / version).mkdir(parents=True)
     (apps / "CapCut.exe").touch()
     monkeypatch.setattr("snooker_ai.rendering.capcut.os", SimpleNamespace(name="nt", environ=os.environ))
     with pytest.raises(CapCutUnavailable, match="unverified project format"):
         find_capcut(config)
+
+
+def test_capcut_96_uses_native_launcher(config, tmp_path, monkeypatch):
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    apps = tmp_path / "CapCut" / "Apps"
+    (apps / "9.6.0.4097").mkdir(parents=True)
+    (apps / "CapCut.exe").touch()
+    monkeypatch.setattr("snooker_ai.rendering.capcut.os", SimpleNamespace(name="nt", environ=os.environ))
+    installation = find_capcut(config)
+    assert installation.version == "9.6.0.4097"
+    assert installation.executable == (apps / "CapCut.exe").resolve()
+
+
+def test_capcut_preserves_saved_project_root_alias(config, tmp_path, monkeypatch):
+    apps = tmp_path / "CapCut" / "Apps"
+    (apps / "9.6.0.4097").mkdir(parents=True)
+    (apps / "CapCut.exe").touch()
+    projects = apps.parent / "User Data" / "Projects" / "com.lveditor.draft"
+    projects.mkdir(parents=True)
+    alias = tmp_path / "project-alias"
+    try:
+        alias.symlink_to(projects, target_is_directory=True)
+    except OSError:
+        pytest.skip("Creating a directory alias requires Windows developer mode")
+    (projects / "root_meta_info.json").write_text(json.dumps({"root_path": str(alias)}))
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    monkeypatch.setattr("snooker_ai.rendering.capcut.os", SimpleNamespace(name="nt", environ=os.environ))
+    assert find_capcut(config).projects_dir == alias.absolute()
+
+
+def test_points_project_identifies_selection_and_keeps_saved_clip_list(config, capcut_case):
+    result, installation = capcut_case
+    result.selection = ShotSelection.POTS_AND_FOULS
+    payload = create_capcut_project(result, config, installation)
+    assert "Pots + fouls" in payload["project_name"]
+    folder = Path(payload["project_path"])
+    manifest = json.loads((folder / "snooker_shots.json").read_text())
+    assert [s["shot_id"] for s in manifest["shots"]] == [1, 3]
+    assert payload["shot_count"] == 2
 
 
 @pytest.mark.parametrize("environment", [None, "wrong-location"])

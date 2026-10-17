@@ -1,7 +1,8 @@
-"""Editable, local CapCut Desktop 9.5 projects built from the retained shot list.
+"""Editable, local CapCut Desktop projects built from the retained shot list.
 
 CapCut's private draft schema is version-specific. The bundled neutral schema
-matches Windows 9.5; no user's draft, effects, or account identifiers are copied.
+matches Windows 9.5 and opens in Windows 9.6. No user's draft, effects, or
+account identifiers are copied.
 Media stays at its original path so trims can be extended without re-encoding.
 """
 
@@ -23,10 +24,11 @@ from typing import Any
 
 from snooker_ai.config import Config
 from snooker_ai.rendering.exporter import Exporter
-from snooker_ai.types import AnalysisResult, ExportRequest
+from snooker_ai.types import AnalysisResult, ExportRequest, ShotSelection
 
 _store_lock = threading.Lock()
 _SCHEMA = Path(__file__).with_name("assets") / "capcut_9_5.json"
+_SUPPORTED_VERSIONS = ("9.5.", "9.6.")
 
 
 class CapCutUnavailable(RuntimeError):
@@ -87,9 +89,9 @@ def find_capcut(config: Config) -> CapCutInstallation:
     if found is None:
         raise CapCutUnavailable("CapCut Desktop was not found. Install it on the PC running Snooker AI.")
     root, executable, version = found
-    if not version.startswith("9.5."):
+    if not version.startswith(_SUPPORTED_VERSIONS):
         raise CapCutUnavailable(
-            f"CapCut {version} uses an unverified project format. This integration supports Windows 9.5."
+            f"CapCut {version} uses an unverified project format. This integration supports Windows 9.5 and 9.6."
         )
     # Respect CapCut's configured location when its local index records one.
     projects = root / "User Data" / "Projects" / "com.lveditor.draft"
@@ -105,7 +107,9 @@ def find_capcut(config: Config) -> CapCutInstallation:
                     projects = Path(saved)
             except (OSError, ValueError, AttributeError):
                 pass
-    return CapCutInstallation(executable.resolve(), projects.resolve(), version)
+    # Keep the path spelling saved by CapCut. Resolving a moved AppData junction
+    # makes the app register the same draft again under its original C: alias.
+    return CapCutInstallation(executable.resolve(), projects.absolute(), version)
 
 
 def _id() -> str:
@@ -189,7 +193,8 @@ def create_capcut_project(
     display_name = re.sub(r"^\d{8}-\d{6}_[0-9a-f]{8}_", "", source.stem)
     display_name = re.sub(r"_cleaned_[0-9a-f]{8}$", "", display_name).replace("_", " ")
     name_stem = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", display_name).strip(" .")[:65] or "match"
-    project_name = f"Snooker - {name_stem} - {uuid.uuid4().hex[:8]}"
+    selection_label = " - Pots + fouls" if result.selection is ShotSelection.POTS_AND_FOULS else ""
+    project_name = f"Snooker - {name_stem}{selection_label} - {uuid.uuid4().hex[:8]}"
     project = installation.projects_dir / project_name
     timestamp = time.time_ns() // 1000
     platform = {

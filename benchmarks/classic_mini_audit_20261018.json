@@ -1,0 +1,67 @@
+{
+  "result": "incomplete_shot_coverage",
+  "algorithm": "classic",
+  "native_fps": 30,
+  "total_frames": 1098,
+  "cases": [
+    {
+      "name": "red_gap_10m",
+      "source_start": 592.5,
+      "source_end": 607.0,
+      "frames": 436,
+      "source_shot_visible": true,
+      "accepted_contacts": [],
+      "passed": false
+    },
+    {
+      "name": "blue_positive",
+      "source_start": 1294.0,
+      "source_end": 1301.0,
+      "frames": 211,
+      "source_shot_visible": true,
+      "accepted_contacts": [
+        1297.2666666666667
+      ],
+      "passed": true
+    },
+    {
+      "name": "red_gap_46m",
+      "source_start": 2757.0,
+      "source_end": 2772.0,
+      "frames": 451,
+      "source_shot_visible": true,
+      "accepted_contacts": [],
+      "passed": false
+    }
+  ],
+  "unresolved_score_intervals": 20,
+  "prior_gap_diagnostics": 21,
+  "stale_blue_warning_removed": true,
+  "selection": {
+    "job_id": "20261017-195643-e37b5c36",
+    "included": 178,
+    "pots": 173,
+    "fouls": 5,
+    "unknown_excluded": 36
+  },
+  "capcut": {
+    "project_name": "Snooker - Shaun Murphy vs Ryan Day - Pots + fouls - a910dce1",
+    "shot_count": 178,
+    "duration": 1275.363024,
+    "opened_with_version": "9.6.0.4097",
+    "preview_and_playback_verified": true,
+    "preserved_existing_projects": 103,
+    "all_other_index_entries_preserved": true,
+    "duplicate_aliases_removed": 1
+  },
+  "validation": {
+    "targeted_python_passed": 82,
+    "targeted_python_skipped": 1,
+    "capcut_frontend_passed": 4
+  },
+  "limitations": [
+    "Two visible red strokes were not detected by the current classical pipeline.",
+    "This source sample cannot establish full-match recall or a 100% accuracy guarantee.",
+    "No detection-policy change is included in this task."
+  ]
+}
