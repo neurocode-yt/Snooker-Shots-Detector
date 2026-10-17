@@ -79,6 +79,7 @@ def test_api_dispatches_only_selected_algorithm(routing, algorithm):
         body["algorithm"] = algorithm
     with TestClient(create_app(cfg)) as client:
         response = client.post("/api/jobs", json=body)
+        assert client.app.state.match_queue.wait_idle()
     assert response.status_code == 200
     selected = algorithm or "classic"
     job_id = response.json()["job_id"]

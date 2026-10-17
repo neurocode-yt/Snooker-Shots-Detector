@@ -1,0 +1,197 @@
+{
+  "source_fingerprint": {
+    "path": "G:\\2026 AI START\\Grok\\snooker\\data\\uploads\\20261015-064558_31b36d31_Shaun_Murphy_vs_Ryan_Day.mp4",
+    "size": 1508386565,
+    "mtime_ns": 1792028759921957500
+  },
+  "before_shots": 269,
+  "after_shots": 270,
+  "exported_live_shots": 269,
+  "repairs": [
+    {
+      "old_shot_id": 43,
+      "old_contact": 1286.829659825883,
+      "old_duration": 16.337006840783715,
+      "contacts": [
+        1286.8333333333335,
+        1297.2666666666667
+      ],
+      "new_clips": [
+        {
+          "contact": 1286.8333333333335,
+          "duration": 6.899999999999864,
+          "clip_start": 1284.8333333333335,
+          "clip_end": 1291.7333333333333,
+          "end_reason": "non_table_cutaway_clip_boundary",
+          "stop_reason": "unobserved_stop_before_next_strike"
+        },
+        {
+          "contact": 1297.2666666666667,
+          "duration": 4.480000000000018,
+          "clip_start": 1295.2666666666667,
+          "clip_end": 1299.7466666666667,
+          "end_reason": "non_table_cutaway_clip_boundary",
+          "stop_reason": "confirmed_stationary_after_unseen_interval_upper_bound"
+        }
+      ]
+    },
+    {
+      "old_shot_id": 56,
+      "old_contact": 1720.828420891367,
+      "old_duration": 19.399944619055987,
+      "contacts": [
+        1723.4666666666667
+      ],
+      "new_clips": [
+        {
+          "contact": 1723.4666666666667,
+          "duration": 5.033333428489641,
+          "clip_start": 1721.4666666666667,
+          "clip_end": 1726.5000000951563,
+          "end_reason": "visual_hand_entry_clip_boundary",
+          "stop_reason": "confirmed_stationary_after_unseen_interval_upper_bound"
+        }
+      ]
+    },
+    {
+      "old_shot_id": 105,
+      "old_contact": 2753.258806949833,
+      "old_duration": 18.674526383500506,
+      "contacts": [
+        2753.1333333333337
+      ],
+      "new_clips": [
+        {
+          "contact": 2753.1333333333337,
+          "duration": 5.100000095156247,
+          "clip_start": 2751.1333333333337,
+          "clip_end": 2756.23333342849,
+          "end_reason": "visual_hand_entry_clip_boundary",
+          "stop_reason": "confirmed_after_unknown_gap"
+        }
+      ]
+    },
+    {
+      "old_shot_id": 171,
+      "old_contact": 5335.551435289461,
+      "old_duration": 18.399953183119578,
+      "contacts": [
+        5335.566666666667
+      ],
+      "new_clips": [
+        {
+          "contact": 5335.566666666667,
+          "duration": 12.33333333333394,
+          "clip_start": 5333.566666666667,
+          "clip_end": 5345.900000000001,
+          "end_reason": "non_table_cutaway_clip_boundary",
+          "stop_reason": "confirmed_stale_occlusion_override"
+        }
+      ]
+    }
+  ],
+  "max_duration": 16.633291559734857,
+  "median_duration": 7.040597181661724,
+  "referee_entries": [
+    {
+      "strike_timestamp": 1723.4666666666667,
+      "entry_timestamp": 1726.5333333333333,
+      "confirmation_timestamp": 1726.7,
+      "source_entry_pts": 1726.5333333333333,
+      "source_confirmation_pts": 1726.7,
+      "confidence": 0.85
+    },
+    {
+      "strike_timestamp": 2753.1333333333337,
+      "entry_timestamp": 2756.266666666667,
+      "confirmation_timestamp": 2756.5,
+      "source_entry_pts": 2756.266666666667,
+      "source_confirmation_pts": 2756.5,
+      "confidence": 0.85
+    }
+  ],
+  "unchanged_long_roll": {
+    "shot_id": 17,
+    "contact": 534.9984727420133,
+    "duration": 16.633291559734857,
+    "reason": "Eleven seconds of real white-ball travel, followed by an unconfirmed end; retained conservatively."
+  },
+  "points_summary": {
+    "pot": 173,
+    "no_pot": 56,
+    "foul": 5,
+    "points": 0,
+    "unknown": 36,
+    "included": 178,
+    "method": "stable_score_and_striker",
+    "policy": 5,
+    "selection": "pots_and_fouls",
+    "score_readings": 7709,
+    "score_layouts": [
+      "central_panel"
+    ]
+  },
+  "result_policy_version": 61,
+  "validation": {
+    "python_passed": 1475,
+    "python_skipped": 16,
+    "javascript_passed": 50
+  },
+  "scope": "Four source-audited records replaced; one additional live stroke recovered; all other clips and original files preserved.",
+  "exports": [
+    {
+      "selection": "all",
+      "job_id": "20261017-195119-223b313f",
+      "file_size_bytes": 738278002,
+      "exported_shots": 269,
+      "duration_seconds": 2033.413,
+      "expected_mix_duration_seconds": 2033.4333333333334,
+      "http_status": 206,
+      "content_range": "bytes 0-63/738278002",
+      "source_frame_checks": [
+        {
+          "source_contact": 1286.8333333333335,
+          "clip_duration": 6.899999999999864,
+          "output_contact_timestamp": 374.4999999999998,
+          "source_output_luma_correlation": 0.9999169996796181
+        },
+        {
+          "source_contact": 1297.2666666666667,
+          "clip_duration": 4.480000000000018,
+          "output_contact_timestamp": 381.1666666666665,
+          "source_output_luma_correlation": 0.9999420643901995
+        },
+        {
+          "source_contact": 1723.4666666666667,
+          "clip_duration": 5.033333428489641,
+          "output_contact_timestamp": 465.63333333333276,
+          "source_output_luma_correlation": 0.9999133597128517
+        },
+        {
+          "source_contact": 2753.1333333333337,
+          "clip_duration": 5.100000095156247,
+          "output_contact_timestamp": 819.4666666666658,
+          "source_output_luma_correlation": 0.9999253256520348
+        },
+        {
+          "source_contact": 5335.566666666667,
+          "clip_duration": 12.33333333333394,
+          "output_contact_timestamp": 1288.866666666665,
+          "source_output_luma_correlation": 0.9999192674764993
+        }
+      ]
+    },
+    {
+      "selection": "pots_and_fouls",
+      "job_id": "20261017-195643-e37b5c36",
+      "file_size_bytes": 490936951,
+      "exported_shots": 178,
+      "duration_seconds": 1233.521,
+      "expected_mix_duration_seconds": 1233.5333333333333,
+      "http_status": 206,
+      "content_range": "bytes 0-63/490936951"
+    }
+  ],
+  "preserved_prior_exports": true,
+  "unresolved_scoring_intervals": 21
+}

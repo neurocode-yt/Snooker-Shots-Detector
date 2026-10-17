@@ -90,7 +90,11 @@ class PortraitCutawayDetector:
             if not capture.isOpened():
                 return []
             for shot in eligible:
-                start = max(shot.cue_strike + 2.0, shot.clip_end - 12.0)
+                # An uncertain stop can follow activity from the next stroke.
+                # Its first portrait may then lie far before the final twelve
+                # seconds. Search from this stroke, as the hand-entry pass
+                # does, so later activity cannot hide an earlier edit boundary.
+                start = shot.cue_strike + 2.0
                 capture.set(cv2.CAP_PROP_POS_MSEC, start * 1000)
                 next_sample = start
                 previous_pts = None

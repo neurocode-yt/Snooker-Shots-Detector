@@ -484,9 +484,46 @@ class SegmentBuilder:
             "ball_stop.non_table_cutaway_boundary_confirmation_seconds", 3.0)))
         spans = []
         start = None
+        native_start = None
+        native_confirmed = False
         confirmed = False
         previous = None
-        for f in features:
+
+        def quiet_return(index):
+            # A brief reaction during a still-rolling shot must not cut away
+            # its finish. Look for measured stillness in the first second of
+            # the returning table view before accepting the shorter boundary.
+            quiet_start = None
+            previous_row = None
+            for row_index in range(index, len(features)):
+                row = features[row_index]
+                if row.t-features[index].t > 1.0:
+                    break
+                quiet = bool(
+                    row.source_frame_index is not None and row.observation_fps >= 10
+                    and row.table_observable and row.observation_valid
+                    and row.match_context_valid and not row.broadcast_replay
+                    and not row.table_handling and row.ball_kinematics_valid
+                    and row.cue_ball_detected and row.cue_ball_quality
+                    and row.cue_ball_stable_normalized_speed is not None
+                    and row.cue_ball_stable_normalized_speed <= self.ball_stop.speed_stop
+                    and row.max_ball_normalized_speed <= self.ball_stop.speed_stop
+                    and row.moving_ball_count == 0 and not row.ambiguous_ball_motion)
+                continuous = (previous_row is not None
+                              and min(row.observation_fps, previous_row.observation_fps) > 0
+                              and row.camera_scene_id == previous_row.camera_scene_id
+                              and 0 < row.t-previous_row.t <= 2/min(
+                                  row.observation_fps, previous_row.observation_fps)+1e-9)
+                if not quiet or not continuous:
+                    quiet_start = None
+                if quiet:
+                    quiet_start = row.t if quiet_start is None else quiet_start
+                    if row.t-quiet_start >= .30-1e-9:
+                        return True
+                previous_row = row
+            return False
+
+        for index, f in enumerate(features):
             non_table = bool(f.view_classified and not f.table_observable
                              and f.match_context_valid and not f.broadcast_replay
                              and f.view_type not in {
@@ -499,13 +536,34 @@ class SegmentBuilder:
             max_gap = min(.76, 2.0 / cadence) if cadence > 0 else self.ball_stop.max_observation_gap_s
             continuous = previous is not None and 0 < f.t-previous.t <= max_gap + 1e-9
             if start is not None and (not non_table or not continuous):
-                if confirmed:
+                if confirmed or native_confirmed and continuous and not non_table and quiet_return(index):
                     spans.append((start, f.t, "non_table_cutaway_clip_boundary"))
                 start = None
+                native_start = None
+                native_confirmed = False
                 confirmed = False
             if non_table:
                 if start is None:
                     start = f.t
+                # Native source observations can establish that the table has
+                # disappeared sooner than coarse view labels. Require a full
+                # second of empty portrait/audience images without measured
+                # table geometry, followed by a visibly quiet returning table;
+                # partial table cameras and sparse/cached labels keep the
+                # ordinary confirmation period. This bounds usable footage,
+                # not the physical stopping time of an unseen ball.
+                native_empty = bool(
+                    f.source_frame_index is not None and f.observation_fps >= 10
+                    and f.view_type in {CameraViewType.PLAYER_CLOSEUP, CameraViewType.AUDIENCE}
+                    and f.table_confidence <= .20
+                    and not f.cue_ball_detected and f.ball_count == 0
+                    and f.moving_ball_count == 0)
+                if not native_empty:
+                    native_start = None
+                elif native_start is None:
+                    native_start = f.t
+                if native_start is not None and f.t-native_start >= 1.0-1e-9:
+                    native_confirmed = True
                 if f.t-start >= confirmation-1e-9:
                     confirmed = True
             previous = f

@@ -1551,11 +1551,101 @@ class StrikeDetector:
                          + self._micro_contact_candidates(features)
                          + self._pack_occlusion_candidates(features)
                          + self._occluded_launch_candidates(features)
+                         + self._brief_identity_interruption_candidates(features)
                          + self._interrupted_departure_candidates(features)):
             if not any(abs(c.timestamp-inferred.timestamp) < self.min_dist for c in candidates):
                 candidates.append(inferred)
         candidates.sort(key=lambda c: c.timestamp)
         return candidates
+
+    def _brief_identity_interruption_candidates(self, features: list[FrameFeatures]) -> list[StrikeCandidate]:
+        """Preserve a measured launch across a brief jump back to the bridge.
+
+        Fast white-ball blur can briefly leave a rounded finger as the sole
+        white detection. Two actual departure frames and a nearby continuous
+        roll on the same ray are required; the identity jump proves no motion.
+        """
+        times = [f.t for f in features]
+        recovered = []
+
+        def positioned(f):
+            return (self._valid(f) and f.observation_fps >= 20 and f.cue_ball_quality
+                    and f.cue_ball_detected and f.cue_ball_x is not None
+                    and f.cue_ball_y is not None and self._track_conf(f) >= .55)
+
+        def xy(f):
+            return np.asarray([f.cue_ball_x, f.cue_ball_y])
+
+        for i, current in enumerate(features[:-3]):
+            if (not positioned(current) or self._cue_speed(current) < self.start_speed
+                    or recovered and current.t-recovered[-1].timestamp < self.min_dist):
+                continue
+            pre = features[bisect_left(times, current.t-.5):i]
+            if (len(pre) < 8 or not all(positioned(f) and self._same_view(f, current) for f in pre)
+                    or self._stationary_ratio(pre) < .90
+                    or sum(f.max_ball_normalized_speed <= self.pre_quiet_max_ball_speed
+                           for f in pre)/len(pre) < .90):
+                continue
+            anchor = xy(pre[-1])
+            diameter = max(1., float(np.median([self._image_diameter(f) for f in pre])))
+            if max(np.linalg.norm(xy(f)-anchor) for f in pre) > .15*diameter:
+                continue
+            history = features[bisect_left(times, current.t-2):i]
+            if max((f.cue_contact_score for f in history
+                    if positioned(f) and self._same_view(f, current) and f.cue_tip_visible), default=0) < .75:
+                continue
+            post = features[i:bisect_right(times, current.t+.8)]
+            if (len(post) < 10 or any(not self._valid(f) or not self._same_view(f, current)
+                                      or f.observation_fps < 20 for f in pre+post)
+                    or any(not 0 < b.t-a.t <= 2/min(a.observation_fps, b.observation_fps)+.005
+                           for a, b in zip(pre+post, (pre+post)[1:]))):
+                continue
+            first, second, swapped = post[:3]
+            if not positioned(second) or not positioned(swapped):
+                continue
+            first_leg, full_leg = xy(first)-anchor, xy(second)-anchor
+            distance = float(np.linalg.norm(full_leg))
+            direction = full_leg/max(distance, 1e-6)
+            initial_path = np.linalg.norm(first_leg)+np.linalg.norm(xy(second)-xy(first))
+            if (np.linalg.norm(first_leg) < .30*diameter or distance < 1.2*diameter
+                    or distance/max(initial_path, 1e-6) < .97
+                    or any((f.cue_ball_stable_normalized_speed or 0) < .30 for f in post[:2])
+                    or np.dot(xy(swapped)-anchor, direction) > -.5*diameter):
+                continue
+            returned = next((j for j in range(3, len(post)) if positioned(post[j])
+                             and np.dot(xy(post[j])-anchor, direction) >= distance), None)
+            if returned is None or not .06 <= post[returned].t-second.t <= .25:
+                continue
+            # All intervening detections must be the remote bridge identity,
+            # and the returning white must remain close to its original ray.
+            if any(not positioned(f) or np.dot(xy(f)-anchor, direction) > -.5*diameter
+                   for f in post[2:returned]):
+                continue
+            offset = xy(post[returned])-anchor
+            if np.linalg.norm(offset-np.dot(offset, direction)*direction) > .5*diameter:
+                continue
+            tail = [f for f in post[returned:] if f.t-post[returned].t <= .30+1e-6]
+            if len(tail) < 7 or tail[-1].t-tail[0].t < .20 or not all(positioned(f) for f in tail):
+                continue
+            points = np.asarray([xy(f) for f in tail])
+            steps = np.linalg.norm(np.diff(points, axis=0), axis=1)
+            travel = float(np.linalg.norm(points[-1]-points[0]))
+            if (travel < .30*diameter or travel/max(float(np.sum(steps)), 1e-6) < .80
+                    or max(steps, default=0) > .75*diameter
+                    or sum((f.cue_ball_stable_normalized_speed or 0) >= self.continue_speed
+                           for f in tail) < 4):
+                continue
+            recovered.append(StrikeCandidate(
+                timestamp=current.t, confidence=.82, uncertainty_start=pre[-1].t,
+                uncertainty_end=current.t, camera_view=current.view_type,
+                evidence={"cue_ball_motion_confirmed": 1., "cue_geometry_confirmed": 1.,
+                          "occlusion_inferred": 1., "ball_onset_run": float(len(tail)),
+                          "brief_bridge_identity_interruption": 1.,
+                          "initial_launch_displacement": distance/diameter,
+                          "cue_displacement_diameters": travel/diameter,
+                          "identity_interruption_seconds": post[returned].t-second.t},
+            ))
+        return recovered
 
     def _interrupted_departure_candidates(self, features: list[FrameFeatures]) -> list[StrikeCandidate]:
         """Join a visible departure to its roll behind a nearby object ball.

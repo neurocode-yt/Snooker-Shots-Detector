@@ -164,3 +164,17 @@ def test_native_backtrace_uses_observed_first_portrait_and_rejects_bad_timestamp
     )
     start = PortraitCutawayDetector(config)._native_start(capture, 5.04, 4.0)
     assert start == pytest.approx(5.04 if broken_pts else 4.92)
+
+
+def test_overextended_clip_searches_from_contact_instead_of_only_final_twelve_seconds(config, monkeypatch):
+    capture = Capture()
+    seeks = []
+    capture.set = lambda prop, value: seeks.append((prop, value))
+    monkeypatch.setattr("snooker_ai.segmentation.portrait.open_capture", lambda _: capture)
+    monkeypatch.setattr("snooker_ai.segmentation.portrait._face_cascade", lambda: object())
+    monkeypatch.setattr("snooker_ai.segmentation.portrait.portrait_frame", lambda *_: True)
+    features = [FrameFeatures(t=t, table_full_view=False) for t in capture.times]
+    shot = ShotRecord(shot_id=1, cue_strike=1, clip_end=61, manual_review_required=True)
+    found = PortraitCutawayDetector(config).detect("unused", [shot], features)
+    assert seeks[0] == (cv2.CAP_PROP_POS_MSEC, 3000)
+    assert found[0].start_timestamp == 5
