@@ -45,6 +45,7 @@ from snooker_ai.segmentation.visual_tail import VisualTailDetector
 from snooker_ai.segmentation.portrait import PortraitCutawayDetector
 from snooker_ai.pot_detection.scoreboard import ScoreboardReader, ScoreReading
 from snooker_ai.pot_detection.recall import scoring_gap_proposals, scoring_object_contact
+from snooker_ai.pot_detection.depth_launch import scoring_depth_contact
 from snooker_ai.table_detection.localizer import TableLocalizer, TableObservation
 from snooker_ai.temporal_model.state_machine import ShotStateMachine
 from snooker_ai.tracking.tracker import BallTracker
@@ -360,6 +361,7 @@ class Analyzer:
                 observed = ContactVisibilityDetector(self.config).revalidate(source, observed, proposed)
                 observed = self.strike_det.score_frames(observed)
                 proposed = self.strike_det.refine_boundaries(proposed, observed)
+                proposed = self._recover_scoring_depth(source, proposals, proposed, observed)
                 features = self._merge_feature_layers(features, observed)
                 recovered = self._screen_scoring_contacts(
                     source, candidates, proposed, features, rack_reference, preparation_intervals
@@ -478,6 +480,19 @@ class Analyzer:
 
         report(1.0, JobStatus.READY_FOR_REVIEW.value, f"Detected {len(shots)} shots")
         return result
+
+    def _recover_scoring_depth(self, source, hints, proposed, observed):
+        """A measured growing sphere can reveal a contact hidden along the lens axis."""
+        recovered = list(proposed)
+        for hint in hints:
+            update = hint.evidence.get('score_update_time')
+            if any(self.segmenter._candidate_supported(c)
+                   and c.evidence.get('score_update_time') == update for c in proposed):
+                continue
+            contact = scoring_depth_contact(source, hint, observed, self.config)
+            if contact is not None:
+                recovered.append(contact)
+        return self._deduplicate_candidates(recovered)
 
     def _screen_scoring_contacts(self, source, existing, proposed, features,
                                  rack_reference, preparation_intervals):
@@ -2154,7 +2169,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 61,
+            "result_policy_version": 62,
             "visual_tail": self.config.get("visual_tail", {}),
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")

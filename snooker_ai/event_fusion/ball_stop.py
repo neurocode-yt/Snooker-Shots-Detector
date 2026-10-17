@@ -357,6 +357,29 @@ class BallStopDetector:
             )
 
         baseline = self._baseline(features, strike_t, times)
+        depth_start = float(strike.evidence.get('depth_launch_motion_start', -1.))
+        depth_end = float(strike.evidence.get('object_launch_confirmation_time', -1.))
+        depth_motion = bool(
+            strike.evidence.get('native_scoring_depth_launch', 0) >= .5
+            and strike.evidence.get('score_assisted_proposal', 0) >= .5
+            and strike.evidence.get('score_supported_object_launch', 0) >= .5
+            and 1 <= strike.evidence.get('score_delta', 0) <= 7
+            and strike.evidence.get('depth_launch_rest_frames', 0) >= 7
+            and strike.evidence.get('depth_launch_growth_frames', 0) >= 4
+            and strike.evidence.get('depth_launch_area_ratio', 0) >= 1.6
+            and strike_t <= depth_start <= strike_t+.75
+            and .095 <= depth_end-depth_start <= .4)
+        if depth_motion:
+            depth_rows = [f for f in window if depth_start-1e-6 <= f.t <= depth_end+1e-6]
+            # Merged feature layers renumber scene IDs. Bind the measured
+            # interval to the current continuous scene, not its old ID value.
+            depth_motion = bool(len(depth_rows) >= 4
+                and len({f.camera_scene_id for f in depth_rows}) == 1
+                and all(self._is_valid_observation(f) and f.observation_fps >= 20
+                        and f.camera_motion_magnitude <= 1.5
+                        and f.view_type == CameraViewType.BALL_CLOSEUP for f in depth_rows)
+                and all(0 < b.t-a.t <= 1.5/min(a.observation_fps, b.observation_fps)
+                        for a, b in zip(depth_rows, depth_rows[1:])))
         moving = False
         motion_run = 0
         motion_start = strike_t
@@ -443,6 +466,13 @@ class BallStopDetector:
             valid_after_strike += 1
             saw_ball_tracks = saw_ball_tracks or self._has_track_evidence(f)
             is_moving = self._moving_evidence(f, already_moving=moving, baseline=baseline)
+            # Perspective motion can change a measured ball's size without
+            # moving its centre. The source verifier bounds this actual motion
+            # interval; it supplies neither a fake speed nor a physical stop.
+            if (depth_motion and depth_start-1e-6 <= f.t <= depth_end+1e-6
+                    and f.observation_fps >= 20 and f.camera_motion_magnitude <= 1.5
+                    and f.view_type == CameraViewType.BALL_CLOSEUP):
+                is_moving = True
 
             # Player/cue edges can leave one or two pseudo-ball tracks marked as
             # occluded after every real ball has settled.  A short occlusion is

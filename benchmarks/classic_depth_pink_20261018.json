@@ -1,0 +1,140 @@
+{
+  "source_fingerprint": {
+    "path": "G:\\2026 AI START\\Grok\\snooker\\data\\uploads\\20261015-064558_31b36d31_Shaun_Murphy_vs_Ryan_Day.mp4",
+    "size": 1508386565,
+    "mtime_ns": 1792028759921957500
+  },
+  "reported_timeline": "CapCut",
+  "reported_time_seconds": 1231,
+  "reason": "hidden white and head-on pink growth with little centre displacement",
+  "result_policy": 62,
+  "feature_cache_version": 45,
+  "source_contact": {
+    "timestamp": 7668.583333333334,
+    "confidence": 0.78,
+    "evidence": {
+      "sparse_proposal": 1.0,
+      "score_assisted_proposal": 1.0,
+      "score_update_time": 7670.611436069742,
+      "score_delta": 6.0,
+      "score_supported_object_launch": 1.0,
+      "native_scoring_depth_launch": 1.0,
+      "contact_time_upper_bound": 1.0,
+      "object_launch_confirmation_time": 7668.833333333334,
+      "depth_launch_motion_start": 7668.733333333334,
+      "depth_launch_scene_id": 7662934.0,
+      "depth_launch_area_ratio": 1.611919611919612,
+      "depth_launch_rest_frames": 16.0,
+      "depth_launch_growth_frames": 4.0,
+      "score_assisted_recovered": 1.0
+    },
+    "uncertainty_start": 7668.383333333333,
+    "uncertainty_end": 7668.733333333334,
+    "camera_view": "ball_closeup",
+    "possible_replay": false
+  },
+  "new_shot": {
+    "shot_id": 263,
+    "cue_strike": 7668.583333333334,
+    "clip_start": 7666.583333333334,
+    "clip_end": 7671.0633333333335
+  },
+  "new_clip_seconds": 4.479999999999563,
+  "all_shots": {
+    "records": 271,
+    "included": 270
+  },
+  "points_summary": {
+    "pot": 174,
+    "no_pot": 56,
+    "foul": 5,
+    "points": 0,
+    "unknown": 36,
+    "included": 179,
+    "method": "stable_score_and_striker",
+    "policy": 5,
+    "selection": "pots_and_fouls",
+    "score_readings": 7709,
+    "score_layouts": [
+      "central_panel"
+    ]
+  },
+  "old_records_unchanged": true,
+  "unresolved_score_intervals": 19,
+  "additional_source_checks": [
+    {
+      "case": "still_address",
+      "contact": null,
+      "seconds": 7.45
+    },
+    {
+      "case": "referee_reset",
+      "contact": null,
+      "seconds": 0.0
+    },
+    {
+      "case": "red_10m",
+      "contact": null,
+      "seconds": 7.36
+    },
+    {
+      "case": "red_46m",
+      "contact": null,
+      "seconds": 8.86
+    }
+  ],
+  "validation": {
+    "full_python_passed": 1504,
+    "full_python_skipped": 17,
+    "capcut_frontend_passed": 4
+  },
+  "limitation": "The previously identified two red omissions remain unresolved; full-match recall is not established.",
+  "exports": [
+    {
+      "selection": "all",
+      "job_id": "20261018-022858-7b48f3a4",
+      "included_shots": 270,
+      "duration_seconds": 2037.646,
+      "expected_duration_seconds": 2037.6666666666667,
+      "file_size_bytes": 739915283,
+      "pink_shot_id": 263,
+      "pink_output_start": 1984.1333333333305,
+      "source_check_timestamp": 7669.1,
+      "output_check_timestamp": 1986.649999999996,
+      "source_output_luma_correlation": 0.9999494007243956,
+      "all_existing_clip_ranges_and_selections_preserved": true,
+      "http_status": 206
+    },
+    {
+      "selection": "pots_and_fouls",
+      "job_id": "20261018-023315-5fe56536",
+      "included_shots": 179,
+      "duration_seconds": 1237.754,
+      "expected_duration_seconds": 1237.7666666666667,
+      "file_size_bytes": 492788009,
+      "pink_shot_id": 263,
+      "pink_output_start": 1190.666666666665,
+      "source_check_timestamp": 7669.1,
+      "output_check_timestamp": 1193.1833333333307,
+      "source_output_luma_correlation": 0.999949866630376,
+      "all_existing_clip_ranges_and_selections_preserved": true,
+      "http_status": 206
+    }
+  ],
+  "prior_exports_preserved": true,
+  "capcut": {
+    "project_name": "Snooker - Shaun Murphy vs Ryan Day - Pots + fouls - 59ac2792",
+    "project_path": "C:\\Users\\husky\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft\\Snooker - Shaun Murphy vs Ryan Day - Pots + fouls - 59ac2792",
+    "project_id": "6357683B-5631-4F54-98F6-BF76423EBE50",
+    "shot_count": 179,
+    "duration": 1279.863011,
+    "source_path": "G:\\2026 AI START\\Grok\\snooker\\data\\uploads\\20261015-064558_31b36d31_Shaun_Murphy_vs_Ryan_Day.mp4",
+    "capcut_version": "9.6.0.4097",
+    "pink_timeline_start": 1231.196483,
+    "pink_duration": 4.499987,
+    "preserved_prior_project_entries": 104,
+    "opened_in_capcut": true,
+    "visible_at_20m31": true,
+    "playback_verified": true
+  }
+}
