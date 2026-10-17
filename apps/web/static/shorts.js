@@ -190,8 +190,7 @@
       for (const name of ['player_names','preset', ...numberFields, ...colorFields]) field(name).value = settings[name];
       field('preview_shot').innerHTML = setup.shots.map((shot) => `<option value="${shot.shot_id}">Shot ${String(shot.shot_id).padStart(2,'0')} · ${(shot.end-shot.start).toFixed(1)}s</option>`).join('');
       $('#shorts-name-overrides').innerHTML = setup.shots.map((shot) => `<label>Shot ${String(shot.shot_id).padStart(2,'0')} player name<input type="text" data-short-shot="${shot.shot_id}" maxlength="160" placeholder="Use match names" value="${escape(settings.shot_names?.[shot.shot_id] || '')}" /></label>`).join('');
-      const review = setup.shots.filter((shot) => shot.needs_review).length;
-      $('#shorts-summary').textContent = `${setup.shots.length} included live shots · individual vertical videos${review ? ` · ${review} flagged for review in the editor` : ''}${setup.selection_changed ? ' · Selection changed since the previous batch; create again to use your edits.' : ''}`;
+      $('#shorts-summary').textContent = `${setup.shots.length} included live shots · individual vertical videos${setup.selection_changed ? ' · Selection changed since the previous batch; create again to use your edits.' : ''}`;
       updateLabels(); renderBatch(); renderPreview(); poll();
     } catch (error) { if (token === session) showError(error.message); }
   }

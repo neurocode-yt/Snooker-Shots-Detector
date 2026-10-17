@@ -334,14 +334,15 @@ def _run_analysis(
                 meta["export_needs_update"] = False
                 store._write_meta(job_id, meta)
                 label = "Pots + fouls highlights" if selection is ShotSelection.POTS_AND_FOULS else "Pots-only video"
-                message = (f"{label} ready: {kept} kept from {n_shots} shots; {unknown} need review"
+                message = (f"{label} ready: {kept} kept from {n_shots} shots"
+                           + (f"; {unknown} shots have unconfirmed scores" if unknown else "")
                            if selection is not ShotSelection.ALL
                            else f"Finished video ready: {n_shots} detected shots")
             else:
                 if selection is not ShotSelection.ALL and unknown:
-                    message = ("Scoreboard could not be read. Scoring highlights need a score recheck; saved shots are preserved."
+                    message = ("Scoreboard could not be read. Saved shots are preserved."
                                if result.pot_selection_summary.get("score_readings") == 0
-                               else f"No confirmed scoring shots; {unknown} shots need review because scores were inconclusive")
+                               else f"No confirmed scoring shots; {unknown} shots have unconfirmed scores")
                     store.update_progress(job_id, 1., JobStatus.READY_FOR_REVIEW,
                         message,
                         shots_detected=n_shots)
@@ -356,7 +357,8 @@ def _run_analysis(
             job_id,
             1.0,
             JobStatus.READY_FOR_REVIEW,
-            (f"{'Pots + fouls' if selection is ShotSelection.POTS_AND_FOULS else 'Pots only'}: {kept} kept from {n_shots} shots; {unknown} need review"
+            (f"{'Pots + fouls' if selection is ShotSelection.POTS_AND_FOULS else 'Pots only'}: {kept} kept from {n_shots} shots"
+             + (f"; {unknown} shots have unconfirmed scores" if unknown else "")
              if selection is not ShotSelection.ALL else f"Detected {n_shots} shots"),
             shots_detected=n_shots,
         )
@@ -488,7 +490,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         return {"selections": [
             {"id": "all", "label": "All shots", "available": True},
             {"id": "pots_only", "label": "Potted shots only", "available": True,
-             "reason": "Requires readable scores; ambiguous shots can be reviewed"},
+             "reason": "Automatically selects confirmed pots using readable scores"},
             {"id": "pots_and_fouls", "label": "Pots + fouls highlights", "available": True,
              "reason": "Keep confirmed pots, fouls and points increases"},
         ]}
@@ -1223,7 +1225,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             try:
                 meta = store.get_meta(job_id)
                 if meta.get("export_needs_update"):
-                    raise HTTPException(409, "Review changes are saved. Export video to update your highlights.")
+                    raise HTTPException(409, "Edits are saved. Export video to update your highlights.")
                 if meta.get("auto_export_ready") is False:
                     raise HTTPException(404, "No finished video for the current analysis")
             except FileNotFoundError:

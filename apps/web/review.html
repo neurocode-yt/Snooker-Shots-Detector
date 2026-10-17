@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Review — Snooker AI</title>
+  <title>Shot editor — Snooker AI</title>
   <link rel="stylesheet" href="/static/styles.css?v=20261017trim" />
   <link rel="stylesheet" href="/static/shorts.css?v=20261015shorts" />
   <link rel="stylesheet" href="/static/work.css?v=20261015pause" />
@@ -25,7 +25,7 @@
       </button>
       <button id="continue-analysis-btn" class="hidden" title="Resume processing from the last saved checkpoint">Continue processing</button>
       <button id="restart-analysis-btn" title="Re-run analysis from last valid checkpoint">Restart analysis</button>
-      <button id="save-labels-btn">Save review labels</button>
+      <button id="save-labels-btn">Save shot labels</button>
       <div class="menu-meta">Job <span id="job-label">{{JOB_ID}}</span></div></div></details>
     </div>
   </header>
@@ -104,10 +104,9 @@
 
     <aside class="shots-col">
       <div class="shots-heading"><h2>Shots <span id="shot-total" class="count-label">0</span></h2><span id="shot-included-count" class="muted"></span></div>
-      <label class="shot-filter-label"><span class="visually-hidden">Filter shots</span><select id="shot-filter" aria-label="Filter shots"><option value="all">All shots</option><option value="included">Included</option><option value="review">Needs review</option><option value="excluded">Excluded</option></select></label>
+      <label class="shot-filter-label"><span class="visually-hidden">Filter shots</span><select id="shot-filter" aria-label="Filter shots"><option value="all">All shots</option><option value="included">Included</option><option value="excluded">Excluded</option></select></label>
       <div class="timeline-legend">
         <span class="lg strike"></span> Strike
-        <span class="lg review"></span> Needs review
         <span class="lg replay"></span> Replay
         <span class="lg excluded"></span> Excluded
       </div>
@@ -123,13 +122,13 @@
   <script>
     window.SNOOKER_JOB_ID = "{{JOB_ID}}";
   </script>
-  <script src="/static/capcut.js?v=20261015fix"></script>
-  <script src="/static/points.js?v=20261015points"></script>
-  <script src="/static/ui.js?v=20261015pause"></script>
-  <script src="/static/shorts.js?v=20261015pause"></script>
+  <script src="/static/capcut.js?v=20261017labels"></script>
+  <script src="/static/points.js?v=20261017labels"></script>
+  <script src="/static/ui.js?v=20261017labels"></script>
+  <script src="/static/shorts.js?v=20261017labels"></script>
   <script src="/static/polling.js?v=20261015idle"></script>
-  <script src="/static/work.js?v=20261015idle"></script>
+  <script src="/static/work.js?v=20261017labels"></script>
   <script src="/static/end-trim.js?v=20261017trim"></script>
-  <script src="/static/review.js?v=20261017trim"></script>
+  <script src="/static/review.js?v=20261017labels"></script>
 </body>
 </html>

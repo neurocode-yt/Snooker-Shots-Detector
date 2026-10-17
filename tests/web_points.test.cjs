@@ -82,15 +82,16 @@ test('interrupted score checks show a reason instead of waiting forever', async 
   assert.match(states.at(-1).message, /Worker stopped/);
 });
 
-test('no scoring shots or inconclusive scores finish with an editor option', async () => {
+test('no scoring shots finish with factual scores and an optional editor', async () => {
   for (const status of ['completed','ready_for_review']) {
     const states = [];
     const api = create(async (url, options) => response(options ? {job_id:'points',status:'started'}
       : {status,message:'No confirmed scoring shots; 3 need review'}));
     await api.run('original', state => states.push(state));
-    assert.equal(states.at(-1).state, 'review');
+    assert.equal(states.at(-1).state, 'finished');
     assert.equal(states.at(-1).jobId, 'points');
-    assert.match(states.at(-1).message, /3 need review/);
+    assert.match(states.at(-1).message, /3 shots have unconfirmed scores/);
+    assert.doesNotMatch(states.at(-1).message, /\breview\b|check the scores/i);
   }
 });
 

@@ -46,9 +46,10 @@ function create(fetcher = (...args) => root.fetch(...args), now = () => Date.now
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || "Could not create CapCut project");
-      status.textContent = data.message;
+      status.textContent = root.snookerUI?.message(data.message) ?? data.message;
     } catch (error) {
-      status.textContent = `Could not open in CapCut: ${error.message || error}`;
+      const detail = error.message || String(error);
+      status.textContent = `Could not open in CapCut: ${root.snookerUI?.message(detail) ?? detail}`;
     } finally {
       pending.delete(jobId);
       button.textContent = oldLabel;

@@ -17,15 +17,21 @@
     if (job.selection === "pots_and_fouls") return "Pots + fouls";
     if (job.selection === "pots_only") return "Pots only";
     if (job.algorithm === "dl_algo") return "DL Algo";
-    return job.auto_export === false ? "Review & edit" : "All shots";
+    return job.auto_export === false ? "Edit shots" : "All shots";
   }
   const active = (job) => Boolean(job.running) || activeStates.has(job.status);
   const stopped = (job) => stoppedStates.has(job.status);
   const finished = (job) => finishedStates.has(job.status);
-  const needsAttention = (job) => stopped(job) || job.status === "ready_for_review"
-    || Number(job.scoring_gaps_unresolved?.length || 0) > 0
-    || Boolean(job.export_needs_update)
-    || Number(job.pot_selection_summary?.unknown || 0) > 0;
+  const needsAttention = (job) => stopped(job) || Boolean(job.export_needs_update);
+  function message(value) {
+    // Older saved jobs and a running older backend can still send these
+    // phrases. Change their presentation without rewriting detector evidence.
+    return String(value ?? "")
+      .replace(/\b(\d+)\s+(?:shots\s+)?need review(?: because scores were inconclusive)?\b/gi, "$1 shots have unconfirmed scores")
+      .replace(/\b(?:Shots are |Shots )?ready (?:to|for) review\b/gi, "Shots ready")
+      .replace(/\bReview changes are saved\b/gi, "Edits are saved")
+      .replace(/Scoring highlights need a score recheck; saved shots are preserved\./gi, "Saved shots are preserved.");
+  }
   function status(job) {
     if (job.pause_requested) return {label: "Pausing…", tone: "working"};
     if (job.status === "paused") return {label: "Paused", tone: "warning"};
@@ -33,14 +39,14 @@
     if (active(job)) return {label: job.status === "exporting" ? "Exporting" : "Processing", tone: "working"};
     if (stopped(job)) return {label: job.status === "interrupted" ? "Interrupted" : job.status === "cancelled" ? "Stopped" : "Needs attention", tone: "warning"};
     if (job.export_needs_update) return {label: "Edits saved", tone: "warning"};
-    if (job.status === "ready_for_review") return {label: "Ready to review", tone: "warning"};
+    if (job.status === "ready_for_review") return {label: job.download_url ? "Ready" : "Shots ready", tone: "ready"};
     return {label: job.download_url ? "Ready" : "Finished", tone: "ready"};
   }
   function phase(job) {
     if (job.queued) return job.queue_position ? `Waiting · queue position ${job.queue_position}` : "Waiting for a processing slot";
     const labels = {pending: "Queued", validating: "Checking video", proxy: "Preparing video", analyzing: "Finding shots", detecting: "Finding shots", refining: "Refining shot boundaries", segmenting: "Preparing highlights", exporting: "Creating your video"};
     return job.status === "segmenting" && job.selection && job.selection !== "all"
-      ? "Checking point changes" : labels[job.status] || job.message || "";
+      ? "Checking point changes" : labels[job.status] || message(job.message);
   }
   function actions(job, pointsAvailable = false) {
     return {
@@ -68,7 +74,7 @@
     if (!loaded || active(loaded)) return true;
     return Boolean(next.timeline_revision && next.timeline_revision !== loaded.timeline_revision);
   }
-  const api = Object.freeze({escape, filename, title, mode, active, stopped, finished, needsAttention, status, phase, actions, matches, time, needsTimelineRefresh});
+  const api = Object.freeze({escape, filename, title, mode, active, stopped, finished, needsAttention, status, phase, actions, matches, time, needsTimelineRefresh, message});
   root.snookerUI = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(globalThis);

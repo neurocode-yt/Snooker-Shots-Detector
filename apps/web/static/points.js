@@ -1,5 +1,6 @@
 /* Pots + fouls creation, progress and completed-video handoff. */
 (function (root) {
+const message = value => (root.snookerUI || (typeof module !== "undefined" ? require('./ui.js') : null)).message(value);
 function create(fetcher = (...args) => root.fetch(...args), wait = (ms) => new Promise((done) => setTimeout(done, ms))) {
   const requests = new Map();
   async function read(url, options) {
@@ -44,14 +45,14 @@ function create(fetcher = (...args) => root.fetch(...args), wait = (ms) => new P
           return;
         }
         if (["completed", "ready_for_review"].includes(job.status) && !job.running) {
-          update({state: "review", jobId: variantId,
-            message: job.message || "No confirmed scoring shots. Open the editor to check the scores."});
+          update({state: "finished", jobId: variantId,
+            message: message(job.message) || "No confirmed scoring shots were selected automatically."});
           return;
         }
         const progress = Math.max(0, Math.min(100, Math.round(Number(job.progress || 0) * 100)));
         update({state: "processing", jobId: variantId, progress,
           message: job.queued ? "Pots + fouls highlights are queued. Processing starts when a slot is free."
-            : job.message || "Creating pots + fouls highlights…"});
+            : message(job.message) || "Creating pots + fouls highlights…"});
         await wait(2500);
       }
     } catch (error) {
@@ -110,7 +111,7 @@ function createDialog(api = create()) {
       const processing = ["starting", "processing"].includes(state.state);
       dialog.querySelector("h2").textContent = ready ? state.message
         : state.state === "error" ? "Highlights could not finish"
-        : state.state === "review" ? "Check the scoring shots" : "Creating pots + fouls highlights";
+        : state.state === "finished" ? "No scoring video created" : "Creating pots + fouls highlights";
       dialog.querySelector("#points-dialog-message").textContent = ready
         ? "Your saved highlights are available below." : state.message;
       const progress = dialog.querySelector("progress");
@@ -119,7 +120,7 @@ function createDialog(api = create()) {
       dialog.querySelector(".points-dialog-progress-label").textContent = processing && Number.isFinite(state.progress)
         ? `${state.progress}% complete` : "";
       dialog.querySelector(".points-dialog-question").classList.toggle("hidden", !ready);
-      dialog.querySelector(".points-dialog-links").classList.toggle("hidden", !ready && state.state !== "review");
+      dialog.querySelector(".points-dialog-links").classList.toggle("hidden", !ready && state.state !== "finished");
       dialog.querySelector(".points-download").classList.toggle("hidden", !ready);
       capcut.classList.toggle("hidden", !ready);
       close.textContent = ready ? "Not now" : processing ? "Keep working in background" : "Close";

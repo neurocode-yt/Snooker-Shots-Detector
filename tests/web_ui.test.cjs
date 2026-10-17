@@ -23,12 +23,12 @@ test('only stopped jobs with a resumable checkpoint offer Continue', () => {
   }
   assert.equal(ui.actions({status: 'refining', can_continue: true}).resume, false);
 });
-test('library search reaches old videos and attention includes unresolved exported shots', () => {
+test('library search reaches old videos without asking for manual score checks', () => {
   const job = {source_path: 'G:\\matches\\20261012-174918_dff74362_David_Lilley_vs_Liu.mp4', job_id: 'older-job', status: 'completed', pot_selection_summary: {unknown: 22}};
   assert.equal(ui.title(job), 'David Lilley vs Liu');
   assert.equal(ui.matches(job, 'ready', 'LIU'), true);
   assert.equal(ui.matches(job, 'ready', 'David Lilley'), true);
-  assert.equal(ui.matches(job, 'attention'), true);
+  assert.equal(ui.matches(job, 'attention'), false);
   assert.equal(ui.matches(job, 'processing'), false);
   assert.equal(ui.matches(job, 'all', 'older-job'), true);
 });
@@ -41,7 +41,25 @@ test('long-match clocks and mode labels remain clear', () => {
   assert.equal(ui.time(-4), '00:00');
   assert.equal(ui.mode({selection: 'pots_only'}), 'Pots only');
   assert.equal(ui.mode({selection: 'pots_and_fouls'}), 'Pots + fouls');
-  assert.equal(ui.mode({auto_export: false}), 'Review & edit');
+  assert.equal(ui.mode({auto_export: false}), 'Edit shots');
+});
+
+test('legacy status messages keep score facts without requesting manual work', () => {
+  assert.equal(ui.message('No confirmed scoring shots; 3 need review'),
+    'No confirmed scoring shots; 3 shots have unconfirmed scores');
+  assert.equal(ui.message('No confirmed scoring shots; 3 shots need review because scores were inconclusive'),
+    'No confirmed scoring shots; 3 shots have unconfirmed scores');
+  assert.equal(ui.message('Shots are ready to review.'), 'Shots ready.');
+  assert.equal(ui.message('Review changes are saved. Export video.'), 'Edits are saved. Export video.');
+  assert.equal(ui.message('Preview ready'), 'Preview ready');
+  assert.equal(ui.message('Decoder failed'), 'Decoder failed');
+  assert.equal(ui.message(null), '');
+  const job = {status:'ready_for_review',has_saved_detection:true,
+    scoring_gaps_unresolved:[{start:3,end:7}],pot_selection_summary:{unknown:12}};
+  assert.deepEqual(ui.status(job), {label:'Shots ready',tone:'ready'});
+  assert.equal(ui.needsAttention(job), false);
+  assert.equal(ui.actions(job).editor, true);
+  assert.equal(ui.needsAttention({...job,status:'failed'}), true);
 });
 test('saved edits require a fresh export and remain easy to find', () => {
   const job = {status: 'completed', export_needs_update: true, can_continue: true};

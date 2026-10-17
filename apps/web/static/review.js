@@ -87,13 +87,13 @@ let previewFinished = false;
 let previewAdvancing = false;
 
 function showToast(msg) {
-  toast.textContent = msg;
+  toast.textContent = UI.message(msg);
   toast.classList.remove("hidden");
   setTimeout(() => toast.classList.add("hidden"), 2200);
 }
 
 function setExportStatus(message, state = "") {
-  exportStatus.textContent = message;
+  exportStatus.textContent = UI.message(message);
   exportStatus.classList.toggle("hidden", !message);
   exportStatus.dataset.state = state;
 }
@@ -261,14 +261,12 @@ monitorPreview();
 function confClass(s) {
   if (!s.included) return "excluded";
   if (s.possible_replay) return "replay";
-  if (s.manual_review_required) return "needs-review";
   return "";
 }
 
 function visibleShots() {
   return shots.filter((shot) => shotFilter.value === "included" ? shot.included
-    : shotFilter.value === "excluded" ? !shot.included
-    : shotFilter.value === "review" ? shot.manual_review_required : true);
+    : shotFilter.value === "excluded" ? !shot.included : true);
 }
 shotFilter.addEventListener("change", render);
 
@@ -276,10 +274,10 @@ function render() {
   const focusedShot = document.activeElement?.closest(".shot-open")?.closest("[data-id]")?.dataset.id;
   const list = visibleShots();
   shotList.innerHTML = list.map((shot) => {
-    const classes = [confClass(shot), shot.manual_review_required ? "needs-review" : "", shot.shot_id === activeId ? "active" : ""].filter(Boolean).join(" ");
+    const classes = [confClass(shot), shot.shot_id === activeId ? "active" : ""].filter(Boolean).join(" ");
     const outcome = {pot: "Pot", no_pot: "No points", foul: "Foul", points: "Points", unknown: "Unconfirmed"}[shot.pot_status];
     return `<li class="${classes}" data-id="${shot.shot_id}">
-      <button class="shot-open" aria-label="Edit shot ${shot.shot_id}" ${shot.shot_id === activeId ? 'aria-current="true"' : ""}><span class="shot-number">${String(shot.shot_id).padStart(2, "0")}</span><span class="shot-copy"><strong>${UI.time(shot.clip_start)} → ${UI.time(shot.clip_end)}</strong><small>Strike ${fmt(shot.cue_strike)} · ${(shot.clip_end - shot.clip_start).toFixed(1)}s</small><span class="shot-badges">${outcome ? `<span class="shot-badge ${shot.pot_status}">${outcome}</span>` : ""}${shot.manual_review_required ? '<span class="shot-badge warning">Review</span>' : ""}${shot.possible_replay ? '<span class="shot-badge">Replay</span>' : ""}${!shot.included ? '<span class="shot-badge">Excluded</span>' : ""}</span></span></button>
+      <button class="shot-open" aria-label="Edit shot ${shot.shot_id}" ${shot.shot_id === activeId ? 'aria-current="true"' : ""}><span class="shot-number">${String(shot.shot_id).padStart(2, "0")}</span><span class="shot-copy"><strong>${UI.time(shot.clip_start)} → ${UI.time(shot.clip_end)}</strong><small>Strike ${fmt(shot.cue_strike)} · ${(shot.clip_end - shot.clip_start).toFixed(1)}s</small><span class="shot-badges">${outcome ? `<span class="shot-badge ${shot.pot_status}">${outcome}</span>` : ""}${shot.possible_replay ? '<span class="shot-badge">Replay</span>' : ""}${!shot.included ? '<span class="shot-badge">Excluded</span>' : ""}</span></span></button>
       <label class="shot-include-label"><input type="checkbox" class="shot-include" data-shot-id="${shot.shot_id}" aria-label="Include shot ${shot.shot_id}" ${shot.included ? "checked" : ""} ${UI.active(meta) || exportBusy ? "disabled" : ""} /></label></li>`;
   }).join("") || '<li class="empty-state">No shots in this filter.</li>';
 
@@ -412,7 +410,7 @@ async function refreshJobStatus() {
     } else if (meta.export_needs_update) {
       setExportStatus("Edits saved. Export video to update your highlights.", "ready");
     } else if (wasActive) {
-      setExportStatus(meta.download_url ? "Your highlights are ready to download." : "Shots are ready to review.", "ready");
+      setExportStatus(meta.download_url ? "Your highlights are ready to download." : "Shots are ready.", "ready");
     }
     if (timelineRefreshRequired || UI.needsTimelineRefresh(meta, loadedTimelineMeta)) await readSavedShots(meta);
   } catch (error) {

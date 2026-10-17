@@ -81,7 +81,7 @@ test('filters count matches and search every saved version',()=>{
 
 test('detected shots and finished video exports have distinct status and actions',()=>{
   const detected=job('review','pots_only',{status:'ready_for_review',download_url:undefined});
-  assert.deepEqual(library.state(detected),{label:'Shots ready',tone:'warning'});
+  assert.deepEqual(library.state(detected),{label:'Shots ready',tone:'ready'});
   const html=view.run(detected,'Pots only',{});
   assert.match(html,/btn-export-version primary" data-job-id="review" >Export video/);
   assert.match(html,/btn-capcut secondary" data-job-id="review"\s+title=/);
@@ -124,20 +124,36 @@ test('unreadable scoreboard is distinguished from zero scoring shots and can be 
   const failed=job('scores','pots_and_fouls',{download_url:undefined,
     pot_selection_summary:{included:0,unknown:20,score_readings:0}});
   const html=view.run(failed,'Pots + fouls',{});
-  assert.equal(library.state(failed).label,'Score check needed');
+  assert.equal(library.state(failed).label,'Scores unavailable');
   assert.match(html,/Scoreboard could not be read/);
   assert.match(html,/btn-recheck-scores secondary" data-job-id="scores" >Recheck scores/);
   assert.match(view.run(failed,'Pots + fouls',{pending:new Map([['scores',true]])}),/data-job-id="scores" disabled>Recheck scores/);
 });
 
-test('unresolved scoring gaps expose bounded source intervals for review',()=>{
+test('scoring details retain bounded evidence without a manual-work prompt',()=>{
   const gap=job('gap','all',{scoring_gaps_unresolved:[{start:120,end:132},
     {start:-1,end:5},{start:3,end:2},{start:'<bad>',end:6}]});
   const html=view.run(gap,'All shots',{expanded:new Set(['gaps:gap'])});
-  assert.match(html,/1 scoring gap to review/);
+  assert.match(html,/Scoring details \(1\)/);
   assert.match(html,/data-history="gaps:gap" open/);
   assert.match(html,/\/api\/jobs\/gap\/video#t=120.000,132.000/);
   assert.doesNotMatch(html,/<bad>|#t=-1|#t=3.000/);
   const [group]=library.groups([gap]);
-  assert.equal(library.matches(group,'attention'),true);
+  assert.equal(library.matches(group,'attention'),false);
+});
+
+test('saved uncertain scoring results stay usable without review labels or demands',()=>{
+  const saved=job('saved','pots_and_fouls',{
+    message:'Pots + fouls highlights ready: 18 kept from 20 shots; 2 need review',
+    pot_selection_summary:{included:18,unknown:2,score_readings:100},
+    scoring_gaps_unresolved:[{start:120,end:132}],
+  });
+  const html=view.run(saved,'Pots + fouls',{});
+  assert.match(html,/2 shots have unconfirmed scores/);
+  assert.match(html,/Scoring details \(1\)/);
+  assert.match(html,/Download MP4/);
+  assert.match(html,/Open in CapCut/);
+  assert.doesNotMatch(html.replace(/<[^>]*>/g,''),/\breview\b|need a score check|check these source/i);
+  assert.equal(saved.pot_selection_summary.unknown,2);
+  assert.equal(saved.scoring_gaps_unresolved.length,1);
 });
