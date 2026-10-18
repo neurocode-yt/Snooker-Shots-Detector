@@ -1,0 +1,91 @@
+{
+  "baseline_commit": "66051a234eadfb8243dcda49239a561175745180",
+  "hardware": {
+    "cpu": "Intel Core i5-10300H",
+    "physical_cores": 4,
+    "logical_cpus": 8,
+    "ram_gib": 24,
+    "gpu": "NVIDIA GeForce RTX 3050 Laptop GPU"
+  },
+  "source": "20261019-023041_2d5d8471_Jimmy_Robertson_vs_Steven_Hallworth_-_2026_Qualifying_Round_2.mp4",
+  "window_seconds": 2,
+  "baseline_backend": "thread",
+  "baseline_workers": 2,
+  "optimized_backend": "process",
+  "optimized_workers": 4,
+  "optimized_inner_opencv_threads": 1,
+  "native_observation_fps": 25.000245617261392,
+  "sampling_and_thresholds_changed": false,
+  "active_job_checkpoint_signature_preserved": true,
+  "trials": [
+    {
+      "trial": 1,
+      "thread_seconds": 31.771132199966814,
+      "process_seconds": 22.299986800004262,
+      "time_reduction_percent": 29.810537881846223,
+      "returned_observations": 408,
+      "all_features_identical": true
+    },
+    {
+      "trial": 2,
+      "thread_seconds": 36.3813048999873,
+      "process_seconds": 25.880406800017226,
+      "time_reduction_percent": 28.863445466942938,
+      "returned_observations": 408,
+      "all_features_identical": true
+    }
+  ],
+  "windows": [
+    {
+      "start": 1800.0,
+      "frames": 51,
+      "sha256": "588dae302aa6154773d11effe9e640c7c7ba48a1664528467b1e6992e82a38a6"
+    },
+    {
+      "start": 2000.0,
+      "frames": 51,
+      "sha256": "17c2dce89016d2e07589b5c9e586d898c825dd9812db3d2574e2a7479fdfff68"
+    },
+    {
+      "start": 3000.0,
+      "frames": 51,
+      "sha256": "da5bd1d8d1a2e85bc730781e703598020eff4f9b7b26957ee13aa6289c95286e"
+    },
+    {
+      "start": 4000.0,
+      "frames": 51,
+      "sha256": "29f329380fb931e9769fc7f8fe51324786ef72c1747b3c0b7edcef070bce2d44"
+    },
+    {
+      "start": 1810.0,
+      "frames": 51,
+      "sha256": "02e08c2a7a72244edc40dd56b06842e72022ebb018c63b1d2e276ecfac7ae0e7"
+    },
+    {
+      "start": 2010.0,
+      "frames": 51,
+      "sha256": "76149a27c6a109f93e569acd6289c5dfd1e4d65b672d2d27336845016d9792d2"
+    },
+    {
+      "start": 3010.0,
+      "frames": 51,
+      "sha256": "6ad5d251d914803ef26a50830ff0d9e48fa5a1328ac35a9a1dfb409a28c991f3"
+    },
+    {
+      "start": 4010.0,
+      "frames": 51,
+      "sha256": "fa3673894aafe3f7c5772194a8f5c49f6f604b8d077e62d9214d5ccd3c8d46ae"
+    }
+  ],
+  "limitations": [
+    "Native contact throughput only; does not measure full-match runtime or accuracy.",
+    "An independent live match analysis also ran during these measurements.",
+    "Trial 1 used the saved template with valid coarse references for the selected windows; trial 2 used the saved complete coarse context through the committed benchmark CLI.",
+    "Coarse, travel/stop and unsafe-identity processing remain chronological."
+  ],
+  "validation": {
+    "pytest_passed": 1518,
+    "pytest_skipped": 17,
+    "pytest_seconds": 179.5
+  }
+}

@@ -13,8 +13,11 @@ from snooker_ai.utils.timebase import TimeMapper
 
 
 def ready_analyzer(tmp_path, monkeypatch, *, workers=2):
-    monkeypatch.setattr("snooker_ai.pipeline.analyzer.os.cpu_count", lambda: 8)
-    analyzer = Analyzer(load_config(overrides={"analysis": {"native_contact_workers": workers}}), tmp_path)
+    monkeypatch.setattr("snooker_ai.pipeline.contact_workers.os.cpu_count", lambda: 8)
+    monkeypatch.setattr("snooker_ai.pipeline.contact_workers.available_memory", lambda: 8 * 1024**3)
+    analyzer = Analyzer(load_config(overrides={"analysis": {
+        "native_contact_workers": workers, "native_contact_backend": "thread",
+    }}), tmp_path)
     assert analyzer.broadcast_context.restore_target([1.] * 3072)
     analyzer._coarse_context_reference = [FrameFeatures(t=i*.5, match_context_valid=True)
                                           for i in range(61)]
@@ -74,7 +77,7 @@ def test_unsafe_or_serial_context_stays_on_parent(tmp_path, monkeypatch, reason)
     if reason == "serial":
         analyzer.config = load_config(overrides={"analysis": {"native_contact_workers": 1}})
     elif reason == "small_cpu":
-        monkeypatch.setattr("snooker_ai.pipeline.analyzer.os.cpu_count", lambda: 2)
+        monkeypatch.setattr("snooker_ai.pipeline.contact_workers.os.cpu_count", lambda: 2)
     elif reason == "foreign":
         analyzer._coarse_context_reference[5].match_context_valid = False
     elif reason == "return":

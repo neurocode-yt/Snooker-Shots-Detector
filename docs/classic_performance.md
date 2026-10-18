@@ -57,8 +57,8 @@ windows (normally four seconds plus the original decoder warm-up).
 
 The optional `--opencv-threads` argument tests a CPU thread budget for the new
 pass. It does not change the app's configuration. A two-thread experiment did
-not establish a material gain, so the production OpenCV thread policy remains
-unchanged.
+not establish a material gain for the parent, whose OpenCV thread policy remains
+unchanged. The isolated process workers below use their own inner thread budget.
 
 Validation on Shaun Murphy / Ryan Day, Michael Holt / Ian Burns and David Lilley
 / Liu Wenwei found exact equality for all six native windows (320 complete
@@ -80,3 +80,55 @@ parallelism, serial fallback and fade look-ahead. Exact agreement on these
 inputs is evidence of unchanged behavior, not a guarantee of perfect detection
 on every unseen broadcast. Measure full-match runtime and accuracy on labelled
 footage before claiming a universal percentage or speedup.
+
+## Single-video CPU workers (19 October 2026)
+
+The default `analysis.native_contact_backend: process` executes independent
+contact windows in persistent spawned processes. Python contour/shape checks can
+then execute on separate CPU cores. Each child keeps its decoder and bounded
+pure-pixel cache and runs OpenCV with one inner CPU thread, avoiding a separate
+eight-thread OpenCV team for every active window. The parent retains its existing
+OpenCV policy, GPU motion path, chronological confirmation, merging and stop scans.
+
+`analysis.native_contact_workers: auto` selects up to four children, capped by
+half the logical CPU count and available physical RAM. The memory budget reserves
+1.5 GiB for the parent/other work plus 768 MiB per child. Unknown RAM availability
+limits the pool to two. `native_contact_workers: 1` keeps the synchronous path;
+`native_contact_backend: thread` retains the previous two-thread backend.
+Changing either scheduling option preserves saved detection signatures.
+
+All source frames, masks, circle/contour gates, thresholds, timestamps, warm-up,
+context eligibility and proposal order are unchanged. The thread and process
+paths share the same extraction helper. Children receive the exact learned
+float32 broadcast template and the complete relevant coarse context. New identity
+evidence still forces parent fallback. Queue lookahead and retained results stay
+bounded by the worker count. Pause requests reach children through the job's
+existing pause file; a failed pool falls back to synchronous extraction.
+
+On the user's i5-10300H (4 cores / 8 logical CPUs), RTX 3050 laptop and 24 GB RAM,
+eight native windows from Robertson/Hallworth produced identical SHA-256 hashes
+for all 408 complete returned frame-feature records. Two paired measurements
+took 31.77 / 22.30 seconds and 36.38 / 25.88 seconds for two threads / four
+processes: about 29–30% less time in this contact stage. The normal match job was
+also running, and timings include child startup. These are bounded throughput
+checks, not full-match runtime or ground-truth accuracy measurements. Coarse
+scanning, travel/stop tracking and unsafe identity intervals remain chronological.
+Full regression validation passed 1,518 tests with 17 skips; real spawn tests
+also compare every feature field and exercise cross-process pause propagation.
+Results: [classic_contact_workers_20261019.json](../benchmarks/classic_contact_workers_20261019.json).
+
+To reproduce on a job with a completed coarse checkpoint, run the commands below
+from the repository root. They read the saved context and source video, use
+temporary worker directories and write reports outside the existing job. Hashes
+for corresponding windows must match; the tool rejects windows that require
+chronological parent context.
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.benchmark_contact_workers data\jobs\YOUR_JOB_ID --starts 1800 2000 3000 4000 1810 2010 3010 4010 --backend thread --workers 2 --output data\contact-thread.json
+.\.venv\Scripts\python.exe -m scripts.benchmark_contact_workers data\jobs\YOUR_JOB_ID --starts 1800 2000 3000 4000 1810 2010 3010 4010 --backend process --workers auto --output data\contact-process.json
+```
+
+The benchmark does not replace the active job's code. To apply this change to an
+already running job, use **Pause**, wait for **Paused**, restart the same server
+command, then use **Continue/Resume**. Existing coarse and completed native-window
+checkpoints remain compatible; processing need not restart from the beginning.

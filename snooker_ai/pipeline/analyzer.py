@@ -11,13 +11,14 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-import os
+import multiprocessing
 import threading
 import time
 from dataclasses import asdict
 from zipfile import BadZipFile
 from bisect import bisect_left, bisect_right
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 from contextvars import copy_context
 from pathlib import Path
 from typing import Callable, Optional
@@ -26,7 +27,7 @@ import cv2
 import numpy as np
 
 from snooker_ai.config import Config
-from snooker_ai.utils.work_control import WorkPaused, check_pause
+from snooker_ai.utils.work_control import WorkPaused, check_pause, current_control
 from snooker_ai.event_fusion.strike import StrikeDetector
 from snooker_ai.event_fusion.rack_idle import RackIdleGate
 from snooker_ai.ingestion.probe import validate_video
@@ -67,6 +68,9 @@ from snooker_ai.utils.timebase import TimeMapper
 from snooker_ai.utils.video import IncompleteVideoError, open_capture, sampled_frames
 from snooker_ai.utils.persistence import atomic_text
 from snooker_ai.pipeline.checkpoints import load_snapshot, save_snapshot
+from snooker_ai.pipeline.contact_workers import (
+    contact_worker_count, extract_contact, extract_contact_process, init_contact_process,
+)
 
 logger = get_logger("pipeline")
 
@@ -2154,10 +2158,11 @@ class Analyzer:
             # strike candidates and therefore must not discard expensive caches.
             "config": {key: self.config.get(key) for key in analysis_keys},
         }
-        # Thread count changes scheduling only. Preserve extracted observations
+        # Worker count/backend change scheduling only. Preserve extracted observations
         # when the user selects serial or parallel native refinement.
         payload["config"]["analysis"] = dict(payload["config"].get("analysis") or {})
         payload["config"]["analysis"].pop("native_contact_workers", None)
+        payload["config"]["analysis"].pop("native_contact_backend", None)
         payload["config"]["analysis"].pop("checkpoint_every_samples", None)
         payload["config"]["analysis"].pop("checkpoint_seconds", None)
         encoded = json.dumps(
@@ -2727,8 +2732,12 @@ class _NativeContactPrefetch:
         self.context_guard = copy.deepcopy(parent.broadcast_context)
         self.reference = [(f.t, f.match_context_valid) for f in parent._coarse_context_reference]
         self.times = [t for t, _ in self.reference]
-        requested = max(1, int(parent.config.get("analysis.native_contact_workers", 2)))
-        self.workers = min(requested, 2, max(1, (os.cpu_count() or 1)//2))
+        self.backend = parent.config.get("analysis.native_contact_backend", "process")
+        if self.backend not in {"process", "thread"}:
+            raise ValueError("analysis.native_contact_backend must be process or thread")
+        self.workers = contact_worker_count(parent.config.get("analysis.native_contact_workers", "auto"),
+                                           self.backend)
+        self.disabled = False
         fps = min(float(parent.config.get("analysis.refine_fps", 30)), mapper.source_fps or 30,
                   float(parent.config.get("proxy.target_fps", 30)))
         self.plans = [(max(0., start), min(duration, end), fps)
@@ -2761,7 +2770,7 @@ class _NativeContactPrefetch:
         return self.reference[lo:hi]
 
     def eligible(self, key):
-        if self.workers < 2:
+        if self.disabled or self.workers < 2:
             return False
         # An unrecognised overlay can be checked independently while its
         # context remains unknown. A newly learned target changes the parent
@@ -2780,28 +2789,14 @@ class _NativeContactPrefetch:
                        for lo, hi in self.parent._confirmed_target_returns)
 
     def _run(self, key):
-        start, end, fps = key
         worker = getattr(self.local, "analyzer", None)
         if worker is None:
             worker = Analyzer(Config(self.config_data),
                               self.parent.job_dir/"contact_workers"/str(threading.get_ident()))
             self.local.analyzer = worker
         worker._native_source = self.parent._native_source
-        worker.broadcast_context = copy.deepcopy(self.context_guard)
-        worker._confirmed_target_returns = []
-        worker._coarse_context_reference = [FrameFeatures(t=t, match_context_valid=valid)
-                                            for t, valid in self._context(key)]
-        features, _, _ = worker._extract_features(
-            self.proxy, self.audio, self.mapper, self.duration, sample_fps=fps,
-            start_time=start, end_time=end, collect_scene_observations=False,
-            checkpoint_stage="contact_prefetch",
-        )
-        if (worker._confirmed_target_returns
-                or not self.target and worker.broadcast_context.target_ready):
-            # A newly discovered context correction must be applied in parent
-            # order. Repeat this uncommon window synchronously to preserve it.
-            return None
-        return features
+        return extract_contact(worker, (self.proxy, self.audio, self.mapper, self.duration),
+                               key, self.context_guard, self._context(key), bool(self.target))
 
     def _refresh_learned_context(self):
         # Learning the overlay used to disable prefetch for the rest of a long
@@ -2833,34 +2828,57 @@ class _NativeContactPrefetch:
             if future.cancel() or future.done():
                 self.pending.pop(key, None)
             else:
-                # A running result remains counted against the two-job limit
+                # A running result remains counted against the worker limit
                 # until it finishes, even when parent coverage supersedes it.
                 self.discarded.add(key)
         self._reap()
+
+    def _submit(self, key):
+        if self.backend == "process":
+            return self.pool.submit(extract_contact_process, key, self.context_guard,
+                                    self._context(key), bool(self.target))
+        return self.pool.submit(copy_context().run, self._run, key)
+
+    def _start_pool(self):
+        if self.backend == "thread":
+            self.pool = ThreadPoolExecutor(max_workers=self.workers, thread_name_prefix="snooker-contact")
+        else:
+            control = current_control.get()
+            self.pool = ProcessPoolExecutor(
+                max_workers=self.workers, mp_context=multiprocessing.get_context("spawn"),
+                initializer=init_contact_process,
+                initargs=(self.config_data, self.parent.job_dir/"contact_workers",
+                          self.parent._native_source, self.proxy, self.audio, self.mapper, self.duration,
+                          control.path.parent if control is not None else None),
+            )
+        logger.info("Native contact extraction: %s workers=%d (unchanged source cadence)",
+                    self.backend, self.workers)
 
     def pull(self, number, key, needed):
         self._refresh_learned_context()
         self._reap()
         if not self.eligible(key):
             return None
-        if self.pool is None:
-            self.pool = ThreadPoolExecutor(max_workers=self.workers, thread_name_prefix="snooker-contact")
-        if key not in self.pending:
-            if len(self.pending) >= self.workers:
-                return None
-            self.pending[key] = self.pool.submit(copy_context().run, self._run, key)
-        # Only one following proposal is considered. The current cache has
-        # already been checked by observe(); complete known coverage also
-        # prevents speculative extraction of the following request.
-        for following in self.plans[number+1:number+self.workers]:
-            if len(self.pending) >= self.workers:
-                break
-            if following not in self.pending and self.eligible(following) and needed(following):
-                self.pending[following] = self.pool.submit(copy_context().run, self._run, following)
-        future = self.pending[key]
         try:
-            return future.result()
+            if self.pool is None:
+                self._start_pool()
+            if key not in self.pending:
+                if len(self.pending) >= self.workers:
+                    return None
+                self.pending[key] = self._submit(key)
+            # Bounded lookahead only; existing coverage/cache/context gates still
+            # determine which windows can run independently of the parent.
+            for following in self.plans[number+1:number+self.workers]:
+                if len(self.pending) >= self.workers:
+                    break
+                if following not in self.pending and self.eligible(following) and needed(following):
+                    self.pending[following] = self._submit(following)
+            return self.pending[key].result()
         except Exception as exc:
+            if isinstance(exc, (BrokenProcessPool, OSError)):
+                self.disabled = True
+                for future in self.pending.values():
+                    future.cancel()
             logger.warning("Contact prefetch failed for %.3f-%.3f; retrying synchronously: %s",
                            key[0], key[1], exc)
             return None
