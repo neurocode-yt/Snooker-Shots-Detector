@@ -1,7 +1,8 @@
-"""Native pixel evidence for a scored ball travelling straight at the camera.
+"""Native pixel evidence for scored balls with unreliable ordinary centre tracks.
 
-Its centre can barely move while its image grows. This is a bounded fallback
-for an observed score gap, not an alternative source of ordinary cue strikes.
+A ball may approach the camera, or the white may hit a red before travelling
+far enough for ordinary confirmation. This is a bounded fallback for an
+observed score gap, not an alternative source of ordinary cue strikes.
 """
 
 from bisect import bisect_left
@@ -13,6 +14,7 @@ import numpy as np
 
 from snooker_ai.config import Config
 from snooker_ai.object_detection.detector import ObjectDetector
+from snooker_ai.pot_detection.red_launch import RedLaunchPixels
 from snooker_ai.types import CameraViewType, FrameFeatures, StrikeCandidate
 from snooker_ai.utils.video import open_capture
 from snooker_ai.utils.work_control import check_pause
@@ -159,6 +161,7 @@ def scoring_depth_contact(source: str | Path, proposal: StrikeCandidate,
         if not np.isfinite(source_fps) or source_fps <= 0:
             source_fps = max(f.observation_fps for f in rows)
         pixels = DepthLaunchPixels(config)
+        red_pixels = RedLaunchPixels(config) if proposal.evidence.get('score_delta') == 1 else None
         while True:
             check_pause()
             ok, frame = cap.read()
@@ -191,5 +194,20 @@ def scoring_depth_contact(source: str | Path, proposal: StrikeCandidate,
                               'depth_launch_area_ratio': launch['area_ratio'],
                               'depth_launch_rest_frames': float(launch['rest_frames']),
                               'depth_launch_growth_frames': float(launch['growth_frames'])})
+            red = red_pixels.observe(frame, context) if red_pixels is not None else None
+            if red is not None:
+                upper = red['upper']
+                return StrikeCandidate(
+                    timestamp=max(proposal.uncertainty_start, upper-.30), confidence=.78,
+                    uncertainty_start=max(proposal.uncertainty_start, upper-.70), uncertainty_end=upper,
+                    camera_view=context.view_type,
+                    evidence={**proposal.evidence, 'score_supported_object_launch': 1.,
+                              'native_scoring_red_launch': 1., 'contact_time_upper_bound': 1.,
+                              'object_launch_confirmation_time': red['confirmed'],
+                              'red_launch_motion_start': upper,
+                              'red_launch_rest_frames': float(red['rest_frames']),
+                              'red_launch_moving_frames': float(red['moving_frames']),
+                              'red_launch_travel_diameters': red['travel_diameters'],
+                              'red_launch_direction_consistency': red['direction_consistency']})
     finally:
         cap.release()

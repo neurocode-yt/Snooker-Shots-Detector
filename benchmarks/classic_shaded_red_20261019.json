@@ -1,0 +1,153 @@
+{
+  "source_fingerprint": {
+    "path": "G:\\2026 AI START\\Grok\\snooker\\data\\uploads\\20261019-023041_2d5d8471_Jimmy_Robertson_vs_Steven_Hallworth_-_2026_Qualifying_Round_2.mp4",
+    "size": 1393174654,
+    "mtime_ns": 1792359043109839000
+  },
+  "reported_timeline": "CapCut",
+  "reported_time_seconds": 115,
+  "result_policy": 63,
+  "feature_cache_version": 45,
+  "reason": "short white collision and shaded red failing full-colour sphere checks",
+  "source_contact": {
+    "timestamp": 610.6600000000001,
+    "confidence": 0.78,
+    "evidence": {
+      "sparse_proposal": 1.0,
+      "score_assisted_proposal": 1.0,
+      "score_update_time": 614.5107879728233,
+      "score_delta": 1.0,
+      "score_supported_object_launch": 1.0,
+      "native_scoring_red_launch": 1.0,
+      "contact_time_upper_bound": 1.0,
+      "object_launch_confirmation_time": 611.2,
+      "red_launch_motion_start": 610.96,
+      "red_launch_rest_frames": 16.0,
+      "red_launch_moving_frames": 7.0,
+      "red_launch_travel_diameters": 0.6780510687288663,
+      "red_launch_direction_consistency": 0.999468789346695,
+      "score_assisted_recovered": 1.0,
+      "visual_hand_entry_timestamp": 614.0400000000001,
+      "visual_hand_entry_confirmation_timestamp": 614.32,
+      "visual_hand_entry_source_pts": 614.0400000000001,
+      "visual_hand_entry_confidence": 0.85,
+      "visual_hand_entry_clip_cap_timestamp": 614.0000003929838
+    },
+    "uncertainty_start": 610.26,
+    "uncertainty_end": 610.96,
+    "camera_view": "ball_closeup",
+    "possible_replay": false
+  },
+  "new_shot": {
+    "shot_id": 27,
+    "cue_strike": 610.6600000000001,
+    "clip_start": 608.6600000000001,
+    "clip_end": 614.0000003929838
+  },
+  "points_summary": {
+    "pot": 151,
+    "no_pot": 54,
+    "foul": 6,
+    "points": 0,
+    "unknown": 41,
+    "included": 157,
+    "method": "stable_score_and_striker",
+    "policy": 5,
+    "selection": "pots_and_fouls",
+    "score_readings": 9387,
+    "score_layouts": [
+      "paired_boxes"
+    ]
+  },
+  "source_score_cache": {
+    "signature": "77cda01044fa668d3e823d46af8ebf0f1cad7a700534f84bf84bcecfe91010a5",
+    "old_readings": 9339,
+    "new_window_readings": 48,
+    "merged_readings": 9387
+  },
+  "unresolved_score_intervals": [
+    {
+      "start": 1645.5351521711793,
+      "end": 1657.3351521711793,
+      "score_update_time": 1657.5351521711793,
+      "points": 1.0
+    },
+    {
+      "start": 1954.0105278690517,
+      "end": 1965.8105278690516,
+      "score_update_time": 1966.0105278690517,
+      "points": 1.0
+    },
+    {
+      "start": 3576.04,
+      "end": 3585.826242487767,
+      "score_update_time": 3586.026242487767,
+      "points": 4.0
+    },
+    {
+      "start": 3824.022494836276,
+      "end": 3835.8224948362763,
+      "score_update_time": 3836.022494836276,
+      "points": 1.0
+    }
+  ],
+  "validation": {
+    "python_passed": 1565,
+    "python_skipped": 17,
+    "new_source_regressions": 35
+  },
+  "exports": [
+    {
+      "selection": "pots_and_fouls",
+      "job_id": "20261019-084359-992d29d3",
+      "included_shots": 157,
+      "duration_seconds": 928.72,
+      "expected_duration_seconds": 928.7199999999999,
+      "file_size_bytes": 333342813,
+      "red_shot_id": 27,
+      "red_output_start": 110.56000000000003,
+      "source_check_timestamp": 611.52,
+      "output_check_timestamp": 113.41999999999996,
+      "source_output_luma_correlation": 0.9999422838456811,
+      "all_existing_clip_ranges_and_selections_preserved": true,
+      "http_status": 206
+    },
+    {
+      "selection": "all",
+      "job_id": "20261019-084648-dafa08f0",
+      "included_shots": 252,
+      "duration_seconds": 1708.36,
+      "expected_duration_seconds": 1708.36,
+      "file_size_bytes": 597223230,
+      "red_shot_id": 27,
+      "red_output_start": 167.28,
+      "source_check_timestamp": 611.52,
+      "output_check_timestamp": 170.13999999999987,
+      "source_output_luma_correlation": 0.9999418012345823,
+      "all_existing_clip_ranges_and_selections_preserved": true,
+      "http_status": 206
+    }
+  ],
+  "prior_exports_preserved": true,
+  "capcut": {
+    "project_name": "Snooker - Jimmy Robertson vs Steven Hallworth - 2026 Qualifying Round 2 - Pots + fouls - 4a0ea893",
+    "project_path": "C:\\Users\\husky\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft\\Snooker - Jimmy Robertson vs Steven Hallworth - 2026 Qualifying Round 2 - Pots + fouls - 4a0ea893",
+    "project_id": "A024B75D-76D2-4756-B315-3830BFFEACE4",
+    "shot_count": 157,
+    "duration": 963.910531,
+    "source_path": "G:\\2026 AI START\\Grok\\snooker\\data\\uploads\\20261019-023041_2d5d8471_Jimmy_Robertson_vs_Steven_Hallworth_-_2026_Qualifying_Round_2.mp4",
+    "capcut_version": "9.6.0.4097",
+    "launched": true,
+    "launch_error": null,
+    "message": "157 editable shots ready. Open \u201cSnooker - Jimmy Robertson vs Steven Hallworth - 2026 Qualifying Round 2 - Pots + fouls - 4a0ea893\u201d on CapCut\u2019s Home screen.",
+    "restored_red": {
+      "shot_id": 27,
+      "source_start_us": 608674020,
+      "duration_us": 5319948,
+      "timeline_start_us": 115038871
+    },
+    "ui_verified": true,
+    "ui_paused_timeline_seconds": 117.56,
+    "previous_draft_preserved": true
+  }
+}

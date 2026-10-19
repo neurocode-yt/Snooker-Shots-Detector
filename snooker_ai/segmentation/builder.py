@@ -574,10 +574,23 @@ class SegmentBuilder:
     @staticmethod
     def _candidate_supported(candidate: StrikeCandidate) -> bool:
         evidence = candidate.evidence
+        scoring_object = (evidence.get("score_assisted_proposal", 0) >= .5
+                          and evidence.get("score_supported_object_launch", 0) >= .5)
+        if "native_scoring_red_launch" in evidence or "red_launch_motion_start" in evidence:
+            scoring_object = bool(
+                scoring_object and evidence.get("native_scoring_red_launch", 0) >= .5
+                and evidence.get("score_delta", 0) == 1
+                and evidence.get("contact_time_upper_bound", 0) >= .5
+                and evidence.get("red_launch_rest_frames", 0) >= 7
+                and evidence.get("red_launch_moving_frames", 0) >= 4
+                and evidence.get("red_launch_travel_diameters", 0) >= .65
+                and evidence.get("red_launch_direction_consistency", 0) >= .90
+                and evidence.get("object_launch_confirmation_time", 0)
+                    - evidence.get("red_launch_motion_start", 0) >= .095
+                and 0 <= evidence.get("red_launch_motion_start", -1)-candidate.timestamp <= .70)
         return bool(evidence.get("dense_transition_confirmed", 0) >= 0.5
                     or evidence.get("cue_ball_motion_confirmed", 0) >= 0.5
-                    or evidence.get("score_assisted_proposal", 0) >= .5
-                    and evidence.get("score_supported_object_launch", 0) >= .5
+                    or scoring_object
                     or (evidence.get("occlusion_inferred", 0) >= 0.5
                         and evidence.get("ball_onset_run", 0) >= 2))
 
