@@ -574,6 +574,14 @@ class SegmentBuilder:
     @staticmethod
     def _candidate_supported(candidate: StrikeCandidate) -> bool:
         evidence = candidate.evidence
+        if 'frame_opening_cut_contact' in evidence or any(k.startswith('opening_') for k in evidence):
+            return bool(evidence.get('frame_opening_cut_contact', 0) >= .5
+                        and evidence.get('opening_rest_samples', 0) >= 6
+                        and evidence.get('opening_post_samples', 0) >= 4
+                        and .45 <= evidence.get('opening_departure_diameters', 0) <= 3
+                        and evidence.get('opening_post_travel_diameters', 0) >= 1.5
+                        and evidence.get('opening_post_direction_consistency', 0) >= .98
+                        and abs(candidate.timestamp-evidence.get('opening_rack_timestamp', -10)) <= 3)
         scoring_object = (evidence.get("score_assisted_proposal", 0) >= .5
                           and evidence.get("score_supported_object_launch", 0) >= .5)
         if "native_scoring_red_launch" in evidence or "red_launch_motion_start" in evidence:

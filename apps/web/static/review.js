@@ -276,8 +276,11 @@ function render() {
   shotList.innerHTML = list.map((shot) => {
     const classes = [confClass(shot), shot.shot_id === activeId ? "active" : ""].filter(Boolean).join(" ");
     const outcome = {pot: "Pot", no_pot: "No points", foul: "Foul", points: "Points", unknown: "Unconfirmed"}[shot.pot_status];
+    const frame = Number.isInteger(shot.evidence?.frame_context?.frame) ? shot.evidence.frame_context : null;
+    const frameLabel = frame?.first && frame?.last ? `Frame ${frame.frame} · first + last`
+      : frame?.first ? `Frame ${frame.frame} · opening shot` : frame?.last ? `Frame ${frame.frame} · final shot` : '';
     return `<li class="${classes}" data-id="${shot.shot_id}">
-      <button class="shot-open" aria-label="Edit shot ${shot.shot_id}" ${shot.shot_id === activeId ? 'aria-current="true"' : ""}><span class="shot-number">${String(shot.shot_id).padStart(2, "0")}</span><span class="shot-copy"><strong>${UI.time(shot.clip_start)} → ${UI.time(shot.clip_end)}</strong><small>Strike ${fmt(shot.cue_strike)} · ${(shot.clip_end - shot.clip_start).toFixed(1)}s</small><span class="shot-badges">${outcome ? `<span class="shot-badge ${shot.pot_status}">${outcome}</span>` : ""}${shot.possible_replay ? '<span class="shot-badge">Replay</span>' : ""}${!shot.included ? '<span class="shot-badge">Excluded</span>' : ""}</span></span></button>
+      <button class="shot-open" aria-label="Edit shot ${shot.shot_id}" ${shot.shot_id === activeId ? 'aria-current="true"' : ""}><span class="shot-number">${String(shot.shot_id).padStart(2, "0")}</span><span class="shot-copy"><strong>${UI.time(shot.clip_start)} → ${UI.time(shot.clip_end)}</strong><small>Strike ${fmt(shot.cue_strike)} · ${(shot.clip_end - shot.clip_start).toFixed(1)}s</small><span class="shot-badges">${frameLabel ? `<span class="shot-badge">${frameLabel}</span>` : ''}${outcome ? `<span class="shot-badge ${shot.pot_status}">${outcome}</span>` : ""}${shot.possible_replay ? '<span class="shot-badge">Replay</span>' : ""}${!shot.included ? '<span class="shot-badge">Excluded</span>' : ""}</span></span></button>
       <label class="shot-include-label"><input type="checkbox" class="shot-include" data-shot-id="${shot.shot_id}" aria-label="Include shot ${shot.shot_id}" ${shot.included ? "checked" : ""} ${UI.active(meta) || exportBusy ? "disabled" : ""} /></label></li>`;
   }).join("") || '<li class="empty-state">No shots in this filter.</li>';
 

@@ -247,13 +247,16 @@ and incomplete proxies cannot silently finish as a successful full-video scan.
 API clients can resume with `POST /api/jobs/{job_id}/continue`.
 
 Choose **Pots only** to run the original detector and keep confirmed
-scoring pots. It compares repeated stable points scores before/after a stroke,
+scoring pots, plus the opening and final live shot of each identified snooker frame.
+It compares repeated stable points scores before/after a stroke,
 uses the pre-shot turn indicator to exclude foul points awarded to the opponent,
 and waits for delayed updates. Centre frame/match counters are not points scores.
-Unreadable scores, corrections and ambiguous outcomes are excluded automatically
-and flagged in the classic editor for review. This filter does not recover shots
-outside the detector's saved shot list, and it does not guarantee accuracy on
-unsupported broadcast overlays.
+Other unreadable scores, corrections and ambiguous outcomes are excluded automatically.
+Frame context is labelled separately in the editor; a non-scoring opening or final
+shot keeps its actual score status. Frame identification requires a stable score
+reset and a visually intact opening rack. A bounded native check can recover an
+opening contact obscured by a camera cut. Unsupported overlays or missing source
+footage can prevent frame identification.
 
 The default classical detector also reads supported score graphics during its
 coarse pass. Stable points changes without a corresponding detected contact
@@ -266,12 +269,18 @@ white points beside a neutral grey frame-count panel. Glyph matching remains
 classical; no DL mode or neural training is used.
 
 Choose **Pots + fouls** to also keep foul points and confirmed point
-increases whose pot/foul type is uncertain. Unchanged scores are skipped;
-unreadable, corrected and ambiguously timed updates remain flagged for review.
+increases whose pot/foul type is uncertain. It also retains each identified frame's
+opening and final shot. Other unchanged scores are skipped; unconfirmed scoring
+outcomes remain recorded in the saved result.
+
+Older filtered exports offer **Update frame shots**. This creates a new version
+using saved detection and compatible score observations, preserving the earlier
+export and explicit inclusion/exclusion choices. Opening-rack checks have their
+own source-bound checkpoints, so completed frame checks are reused on Continue.
 
 Completed videos in Your videos have a one-click **Pots + fouls** button. The
 editor offers **Create pots + fouls version** under More. It creates a separate version from the saved
-shot timeline without rerunning detection or uploading the match. Compatible
+shot timeline without a new full-match scan or upload. Compatible
 score checkpoints are reused; the first score check on a video still takes time,
 and export encodes only the selected clips. Repeated clicks return the finished
 version or resume its interrupted work. Original jobs, exports and explicit

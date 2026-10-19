@@ -10,12 +10,14 @@ from pathlib import Path
 import cv2
 
 from snooker_ai.config import Config
+from snooker_ai.pot_detection.frame_context import FrameContextDetector
 from snooker_ai.pot_detection.scoreboard import ScoreboardReader, ScoreReading
 from snooker_ai.types import AnalysisResult, PotStatus, ShotRecord, ShotSelection
 from snooker_ai.utils.persistence import atomic_text
 from snooker_ai.utils.video import open_capture, sampled_frames
 
-_POLICY = 5
+SELECTION_POLICY = 6
+_SCORE_SCAN_POLICY = 5  # Selection changes do not invalidate native score observations.
 
 
 @dataclass
@@ -162,7 +164,7 @@ class PotSelector:
         return hashlib.sha256(
             json.dumps(
                 {
-                    "policy": _POLICY,
+                    "policy": _SCORE_SCAN_POLICY,
                     "source": str(source.resolve()),
                     "size": stat.st_size,
                     "mtime": stat.st_mtime_ns,
@@ -323,6 +325,7 @@ class PotSelector:
         selection = ShotSelection(selection)
         include_fouls = selection is ShotSelection.POTS_AND_FOULS
         readings = self.scan(result, progress)
+        frames = FrameContextDetector(self.config, self.job_dir).identify(result, readings, progress)
         grace = float(self.settings.get("score_update_grace_seconds", 8))
         baseline = float(self.settings.get("baseline_seconds", 6))
         counts = {status.value: 0 for status in PotStatus}
@@ -384,17 +387,27 @@ class PotSelector:
                     if include_fouls
                     else {PotStatus.POT}
                 )
-                shot.included = bool(base_included and status in kept_statuses)
+                context = shot.evidence.get('frame_context', {})
+                bookend = not shot.possible_replay and (context.get('first') or context.get('last'))
+                shot.included = bool(base_included and (status in kept_statuses or bookend))
                 shot.manual_review_required = bool(base_review or status is PotStatus.UNKNOWN)
         result.selection = selection
         result.pot_selection_summary = {
             **counts,
             "included": sum(shot.included for shot in shots),
             "method": "stable_score_and_striker",
-            "policy": _POLICY,
+            "policy": SELECTION_POLICY,
             "selection": selection.value,
             "score_readings": len(readings),
             "score_layouts": sorted({item.layout for item in readings}),
+            "frames": frames,
+            "frame_context_shots": sum(s.included and bool(
+                s.evidence.get('frame_context', {}).get('first') or
+                s.evidence.get('frame_context', {}).get('last')) for s in shots),
+            "non_scoring_context_shots": sum(s.included and s.pot_status not in (
+                {PotStatus.POT, PotStatus.FOUL, PotStatus.POINTS} if include_fouls else {PotStatus.POT})
+                and bool(s.evidence.get('frame_context', {}).get('first') or
+                         s.evidence.get('frame_context', {}).get('last')) for s in shots),
         }
         result.edited_duration = sum(shot.duration() for shot in shots if shot.included)
         result.pause_removed_seconds = max(0.0, result.original_duration - result.edited_duration)
@@ -410,6 +423,7 @@ class PotSelector:
                             "status": shot.pot_status.value,
                             "included": shot.included,
                             "evidence": shot.evidence["pot_confirmation"],
+                            "frame_context": shot.evidence.get("frame_context"),
                         }
                         for shot in shots
                     ],

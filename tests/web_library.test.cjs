@@ -157,3 +157,13 @@ test('saved uncertain scoring results stay usable without review labels or deman
   assert.equal(saved.pot_selection_summary.unknown,2);
   assert.equal(saved.scoring_gaps_unresolved.length,1);
 });
+
+test('frame context is visible and older scoring exports can be updated',()=>{
+  const saved=job('bookends','pots_and_fouls',{pot_selection_summary:{policy:6,included:176,
+    frames:Array(6).fill({}),frame_context_shots:12,non_scoring_context_shots:11}});
+  const html=view.run(saved,'Pots + fouls',{});
+  assert.match(html,/Includes opening and final shots from 6 frames · 11 additional context shots/);
+  assert.doesNotMatch(html,/Update frame shots/);
+  const old=view.run({...saved,pot_selection_summary:{policy:5,included:165,unknown:0}},'Pots + fouls',{});
+  assert.match(old,/btn-recheck-scores.*Update frame shots/);
+});

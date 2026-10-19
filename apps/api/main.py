@@ -490,9 +490,9 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         return {"selections": [
             {"id": "all", "label": "All shots", "available": True},
             {"id": "pots_only", "label": "Potted shots only", "available": True,
-             "reason": "Automatically selects confirmed pots using readable scores"},
+             "reason": "Confirmed pots plus each identified frame's opening and final shot"},
             {"id": "pots_and_fouls", "label": "Pots + fouls highlights", "available": True,
-             "reason": "Keep confirmed pots, fouls and points increases"},
+             "reason": "Pots, fouls and points increases plus each identified frame's opening and final shot"},
         ]}
 
     @app.get("/api/capcut")
@@ -692,7 +692,10 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             fingerprint = store.validate_saved_source(job_id)
         except (OSError, ValueError, KeyError) as exc:
             raise HTTPException(409, str(exc)) from exc
-        if (not refresh_scores and parent.get("selection", "all") == selection.value
+        from snooker_ai.pot_detection.selector import SELECTION_POLICY
+        current_selection = selection is ShotSelection.ALL or (
+            parent.get('pot_selection_summary', {}).get('policy') == SELECTION_POLICY)
+        if (not refresh_scores and current_selection and parent.get("selection", "all") == selection.value
                 and (store.job_dir(job_id)/"export"/"highlights.mp4").is_file()
                 and parent.get("auto_export_ready") is not False and not parent.get("export_needs_update")):
             return {"job_id": job_id, "status": "ready",
@@ -706,6 +709,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         }
         if selection is not ShotSelection.ALL:
             identity_payload.update(scores=cfg.get("pot_selection", {}),
+                                    selection_policy=SELECTION_POLICY,
                                     templates=hashlib.sha256(templates.read_bytes()).hexdigest())
         if selection is not ShotSelection.POTS_AND_FOULS:
             identity_payload["selection"] = selection.value

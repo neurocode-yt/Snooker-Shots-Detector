@@ -98,8 +98,8 @@ function updateWorkflow() {
     ? "Prepare your match" : dl ? "DL Algo" : "Create highlights";
   document.getElementById("workflow-description").textContent = classic
     ? "Detect shots, then choose and trim your highlights in the editor."
-    : points ? "Automatically keep pots, fouls and confirmed points increases. Shots without confirmed points are skipped."
-    : pots ? "Automatically keep confirmed scoring pots using stable scores and the player's turn. Misses and fouls are excluded."
+    : points ? "Keep pots, fouls and confirmed points increases, plus the opening and final shot of each identified frame."
+    : pots ? "Keep confirmed scoring pots, plus the opening and final shot of each identified frame."
     : dl ? "Create highlights with DL Algo. Results are saved as a separate job."
       : "Detect shots and create a finished highlights video automatically.";
   const status = document.getElementById("algorithm-status");

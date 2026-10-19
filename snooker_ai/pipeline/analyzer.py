@@ -47,6 +47,7 @@ from snooker_ai.segmentation.portrait import PortraitCutawayDetector
 from snooker_ai.pot_detection.scoreboard import ScoreboardReader, ScoreReading
 from snooker_ai.pot_detection.recall import scoring_gap_proposals, scoring_object_contact
 from snooker_ai.pot_detection.depth_launch import scoring_depth_contact
+from snooker_ai.pot_detection.frame_context import frame_ranges, rack_cut_contact
 from snooker_ai.table_detection.localizer import TableLocalizer, TableObservation
 from snooker_ai.temporal_model.state_machine import ShotStateMachine
 from snooker_ai.tracking.tracker import BallTracker
@@ -383,6 +384,7 @@ class Analyzer:
                     'scoring_gaps_checked':len(proposals), 'visually_confirmed':len(recovered),
                 })
 
+        candidates = self._recover_frame_openings(candidates, features, rack_reference, metadata.duration)
         report(0.92, JobStatus.SEGMENTING.value, "Building shot segments")
         shots = self.segmenter.build(candidates, features, metadata.duration, mode)
         tail_detector = VisualTailDetector(self.config)
@@ -484,6 +486,34 @@ class Analyzer:
 
         report(1.0, JobStatus.READY_FOR_REVIEW.value, f"Detected {len(shots)} shots")
         return result
+
+    def _recover_frame_openings(self, candidates, features, reference, duration):
+        """Retain native cross-camera break-offs even when they score no points."""
+        readings = [ScoreReading(**f.scoreboard_reading) for f in reference
+                    if f.scoreboard_reading and f.match_context_valid and not f.broadcast_replay]
+        recovered = []
+        for interval in frame_ranges(readings, duration):
+            racks = [f.t for f in reference if interval.start <= f.t < interval.opening_end
+                     and f.rack_observation_valid and f.red_rack_intact
+                     and f.match_context_valid and not f.broadcast_replay and not f.table_handling]
+            groups = []
+            for t in racks:
+                if groups and t-groups[-1][-1] <= .8:
+                    groups[-1].append(t)
+                else:
+                    groups.append([t])
+            for group in groups:
+                if len(group) < 2 or any(group[0]-1 <= c.timestamp <= group[-1]+1 for c in candidates):
+                    continue
+                contact = rack_cut_contact(features, group[0])
+                if contact is not None:
+                    recovered.append(contact)
+                    break
+        if recovered:
+            combined = self.replay_det.mark_candidates(candidates+recovered, features)
+            candidates = self._deduplicate_candidates([c for c in combined
+                if c not in recovered or not c.possible_replay])
+        return candidates
 
     def _recover_scoring_depth(self, source, hints, proposed, observed):
         """Check scored gaps for measured depth, red departure or registered red flow."""
@@ -2174,7 +2204,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 64,
+            "result_policy_version": 65,
             "visual_tail": self.config.get("visual_tail", {}),
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")

@@ -79,6 +79,23 @@ def test_all_three_versions_export_their_own_shots_and_keep_original(config, tmp
                       for p in store.job_dir(parent).rglob("*") if p.is_file()}
 
 
+def test_old_selection_policy_creates_an_updated_version_without_overwriting_export(config, tmp_path, monkeypatch):
+    store, parent, _, _ = prepare_versions(config, tmp_path, monkeypatch)
+    with TestClient(create_app(config)) as client:
+        child = client.post(f'/api/jobs/{parent}/versions/pots_and_fouls').json()['job_id']
+        assert client.app.state.match_queue.wait_idle()
+        old_export = (store.job_dir(child)/'export/highlights.mp4').read_bytes()
+        meta = store.get_meta(child)
+        meta['pot_selection_summary']['policy'] = 5
+        store._write_meta(child, meta)
+        updated = client.post(f'/api/jobs/{child}/versions/pots_and_fouls').json()['job_id']
+        assert updated != child
+        assert client.app.state.match_queue.wait_idle()
+        assert store.get_meta(updated)['pot_selection_summary']['policy'] == 6
+        assert (store.job_dir(child)/'export/highlights.mp4').read_bytes() == old_export
+        assert client.post(f'/api/jobs/{updated}/versions/pots_and_fouls').json()['job_id'] == updated
+
+
 @pytest.mark.parametrize("selection", ["all", "pots_only", "pots_and_fouls"])
 def test_variants_reject_changed_sources_and_unfinished_parents(config, tmp_path, monkeypatch, selection):
     store, parent, scans, exports = prepare_versions(config, tmp_path, monkeypatch)

@@ -33,13 +33,22 @@ versions and earlier runs. Different revisions of a replaced source stay separat
 
 ### `POST /api/jobs/{job_id}/versions/{selection}`
 Create `all`, `pots_and_fouls`, or `pots_only` from a finished classical job's saved
-shots, without rerunning detection. The source must still match its saved identity.
+shots, without a new full-match scan. The source must still match its saved identity.
 Score-based selections reuse cached score evidence. Returns `{job_id, status}`:
 `started` queues a version, `running` identifies an existing active version, and
 `ready` includes its `download_url`. Repeated requests reuse the same version while
 the parent analysis, source, and relevant settings remain unchanged. Original job
 files and manual review choices are preserved. An All shots version restores the
 base selection before the score filter.
+
+Filtered selection policy 6 also keeps each identified frame's opening and final
+live contact, including non-scoring contacts. `pot_status` remains the actual
+scoring classification. `shots[].evidence.frame_context` contains `frame`, `first`
+and `last`; `pot_selection_summary` includes `frames`, `frame_context_shots`, and
+`non_scoring_context_shots`. Frame numbers are relative to identified frames in
+this source. Manual inclusion/exclusion overrides are preserved. The selection
+policy participates in version identity, so an older finished selection creates
+an updated version instead of returning its obsolete export.
 
 `POST /api/jobs/{job_id}/points-highlights` remains a compatible shortcut for
 `pots_and_fouls`. Version creation returns 409 for unfinished/busy jobs, missing
