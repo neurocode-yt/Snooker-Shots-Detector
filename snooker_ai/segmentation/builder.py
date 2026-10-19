@@ -588,6 +588,24 @@ class SegmentBuilder:
                 and evidence.get("object_launch_confirmation_time", 0)
                     - evidence.get("red_launch_motion_start", 0) >= .095
                 and 0 <= evidence.get("red_launch_motion_start", -1)-candidate.timestamp <= .70)
+        if "native_scoring_red_flow" in evidence or "red_flow_motion_start" in evidence:
+            scoring_object = bool(
+                scoring_object and evidence.get("native_scoring_red_flow", 0) >= .5
+                and evidence.get("score_delta", 0) == 1
+                and evidence.get("contact_time_upper_bound", 0) >= .5
+                and evidence.get("red_flow_rest_frames", 0) >= 7
+                and evidence.get("red_flow_moving_frames", 0) >= 4
+                and evidence.get("red_flow_feature_count", 0) >= 4
+                and evidence.get("red_flow_reference_points", 0) >= 6
+                and evidence.get("red_flow_reference_spheres", 0) >= 2
+                and evidence.get("red_flow_travel_diameters", 0) >= .65
+                and evidence.get("red_flow_direction_consistency", 0) >= .90
+                and 0 <= evidence.get("red_flow_registration_residual_diameters", 1) <= .1
+                and 0 <= evidence.get("red_flow_feature_spread_diameters", 1) <= .1
+                and evidence.get("red_flow_contact_score", 0) >= .6
+                and evidence.get("object_launch_confirmation_time", 0)
+                    - evidence.get("red_flow_motion_start", 0) >= .095
+                and 0 <= evidence.get("red_flow_motion_start", -1)-candidate.timestamp <= .35)
         return bool(evidence.get("dense_transition_confirmed", 0) >= 0.5
                     or evidence.get("cue_ball_motion_confirmed", 0) >= 0.5
                     or scoring_object

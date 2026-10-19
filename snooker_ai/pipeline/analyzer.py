@@ -486,7 +486,7 @@ class Analyzer:
         return result
 
     def _recover_scoring_depth(self, source, hints, proposed, observed):
-        """Check scored gaps for measured depth motion or a shaded red's departure."""
+        """Check scored gaps for measured depth, red departure or registered red flow."""
         recovered = list(proposed)
         for hint in hints:
             update = hint.evidence.get('score_update_time')
@@ -2174,7 +2174,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 63,
+            "result_policy_version": 64,
             "visual_tail": self.config.get("visual_tail", {}),
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")

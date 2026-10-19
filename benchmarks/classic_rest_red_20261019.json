@@ -1,0 +1,232 @@
+{
+  "source_fingerprint": {
+    "path": "G:\\2026 AI START\\Grok\\snooker\\data\\uploads\\20261019-023041_2d5d8471_Jimmy_Robertson_vs_Steven_Hallworth_-_2026_Qualifying_Round_2.mp4",
+    "size": 1393174654,
+    "mtime_ns": 1792359043109839000
+  },
+  "reported_timeline": "CapCut",
+  "reported_time_seconds": 355,
+  "cause": "mechanical-rest white occlusion, touching red colour components and zoom",
+  "result_policy": 64,
+  "feature_cache_version": 45,
+  "source_contact": {
+    "timestamp": 1961.13,
+    "confidence": 0.78,
+    "evidence": {
+      "sparse_proposal": 1.0,
+      "score_assisted_proposal": 1.0,
+      "score_update_time": 1966.0105278690517,
+      "score_delta": 1.0,
+      "score_supported_object_launch": 1.0,
+      "native_scoring_red_flow": 1.0,
+      "contact_time_upper_bound": 1.0,
+      "object_launch_confirmation_time": 1961.6000000000001,
+      "red_flow_motion_start": 1961.2800000000002,
+      "red_flow_rest_frames": 16.0,
+      "red_flow_moving_frames": 9.0,
+      "red_flow_feature_count": 5.0,
+      "red_flow_reference_points": 12.0,
+      "red_flow_reference_spheres": 2.0,
+      "red_flow_travel_diameters": 0.6999532231685275,
+      "red_flow_direction_consistency": 0.996851572536234,
+      "red_flow_registration_residual_diameters": 0.02501179121369433,
+      "red_flow_feature_spread_diameters": 0.05585751039495021,
+      "red_flow_contact_score": 1.0,
+      "score_assisted_recovered": 1.0
+    },
+    "uncertainty_start": 1960.9300000000003,
+    "uncertainty_end": 1961.2800000000002,
+    "camera_view": "ball_closeup",
+    "possible_replay": false
+  },
+  "new_shot": {
+    "shot_id": 79,
+    "cue_strike": 1961.13,
+    "clip_start": 1959.13,
+    "clip_end": 1963.6100000000001
+  },
+  "points_summary": {
+    "pot": 159,
+    "no_pot": 60,
+    "foul": 6,
+    "points": 0,
+    "unknown": 28,
+    "included": 165,
+    "method": "stable_score_and_striker",
+    "policy": 5,
+    "selection": "pots_and_fouls",
+    "score_readings": 9928,
+    "score_layouts": [
+      "paired_boxes"
+    ]
+  },
+  "score_cache": {
+    "signature": "73c83c81a61210976f02b27f42a27fab326e179981b9f33e72e559999b0a2b92",
+    "old_readings": 9882,
+    "fresh_readings": 46,
+    "merged_readings": 9928
+  },
+  "remaining_source_audit": [
+    {
+      "gap": {
+        "start": 1645.5351521711793,
+        "end": 1657.3351521711793,
+        "score_update_time": 1657.5351521711793,
+        "points": 1.0
+      },
+      "contact": null,
+      "seconds": 4.7189999999827705
+    },
+    {
+      "gap": {
+        "start": 1954.0105278690517,
+        "end": 1965.8105278690516,
+        "score_update_time": 1966.0105278690517,
+        "points": 1.0
+      },
+      "contact": {
+        "timestamp": 1961.13,
+        "confidence": 0.78,
+        "evidence": {
+          "sparse_proposal": 1.0,
+          "score_assisted_proposal": 1.0,
+          "score_update_time": 1966.0105278690517,
+          "score_delta": 1.0,
+          "score_supported_object_launch": 1.0,
+          "native_scoring_red_flow": 1.0,
+          "contact_time_upper_bound": 1.0,
+          "object_launch_confirmation_time": 1961.6000000000001,
+          "red_flow_motion_start": 1961.2800000000002,
+          "red_flow_rest_frames": 16.0,
+          "red_flow_moving_frames": 9.0,
+          "red_flow_feature_count": 5.0,
+          "red_flow_reference_points": 12.0,
+          "red_flow_reference_spheres": 2.0,
+          "red_flow_travel_diameters": 0.6999532231685275,
+          "red_flow_direction_consistency": 0.996851572536234,
+          "red_flow_registration_residual_diameters": 0.02501179121369433,
+          "red_flow_feature_spread_diameters": 0.05585751039495021,
+          "red_flow_contact_score": 1.0
+        },
+        "uncertainty_start": 1960.9300000000003,
+        "uncertainty_end": 1961.2800000000002,
+        "camera_view": "ball_closeup",
+        "possible_replay": false
+      },
+      "seconds": 17.78200000000652
+    },
+    {
+      "gap": {
+        "start": 3576.04,
+        "end": 3585.826242487767,
+        "score_update_time": 3586.026242487767,
+        "points": 4.0
+      },
+      "contact": null,
+      "seconds": 2.73499999998603
+    },
+    {
+      "gap": {
+        "start": 3824.022494836276,
+        "end": 3835.8224948362763,
+        "score_update_time": 3836.022494836276,
+        "points": 1.0
+      },
+      "contact": null,
+      "seconds": 4.875
+    }
+  ],
+  "unresolved_score_intervals": [
+    {
+      "start": 1645.5351521711793,
+      "end": 1657.3351521711793,
+      "score_update_time": 1657.5351521711793,
+      "points": 1.0
+    },
+    {
+      "start": 3576.04,
+      "end": 3585.826242487767,
+      "score_update_time": 3586.026242487767,
+      "points": 4.0
+    },
+    {
+      "start": 3824.022494836276,
+      "end": 3835.8224948362763,
+      "score_update_time": 3836.022494836276,
+      "points": 1.0
+    }
+  ],
+  "exports": [
+    {
+      "selection": "pots_and_fouls",
+      "job_id": "20261019-210533-0a6b0434",
+      "included_shots": 165,
+      "duration": 972.08,
+      "expected_duration": 972.08,
+      "size_bytes": 350913523,
+      "red_shot_id": 79,
+      "red_output_start": 342.6399999999997,
+      "source_timestamp": 1962.08,
+      "output_timestamp": 345.5899999999997,
+      "source_output_luma_correlation": 0.9998758856001173,
+      "prior_ranges_and_selections_preserved": true,
+      "http_status": 206
+    },
+    {
+      "selection": "all",
+      "job_id": "20261019-210538-8148b050",
+      "included_shots": 253,
+      "duration": 1712.6,
+      "expected_duration": 1712.6,
+      "size_bytes": 601622492,
+      "red_shot_id": 79,
+      "red_output_start": 495.9599999999996,
+      "source_timestamp": 1962.08,
+      "output_timestamp": 498.9099999999994,
+      "source_output_luma_correlation": 0.9998758856001173,
+      "prior_ranges_and_selections_preserved": true,
+      "http_status": 206
+    }
+  ],
+  "prior_exports_preserved": true,
+  "capcut": {
+    "project_name": "Snooker - Jimmy Robertson vs Steven Hallworth - 2026 Qualifying Round 2 - Pots + fouls - 694f5adf",
+    "project_path": "C:\\Users\\husky\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft\\Snooker - Jimmy Robertson vs Steven Hallworth - 2026 Qualifying Round 2 - Pots + fouls - 694f5adf",
+    "project_id": "89343468-95AB-4D7F-86AA-C2E0E8704E4F",
+    "shot_count": 165,
+    "duration": 1000.92,
+    "source_path": "G:\\2026 AI START\\Grok\\snooker\\data\\uploads\\20261019-023041_2d5d8471_Jimmy_Robertson_vs_Steven_Hallworth_-_2026_Qualifying_Round_2.mp4",
+    "capcut_version": "9.6.0.4097",
+    "user_segments_preserved": 164,
+    "manual_trim_preserved": true,
+    "added_shot_ids": [
+      79
+    ],
+    "prior_project": "Snooker - Jimmy Robertson vs Steven Hallworth - 2026 Qualifying Round 2 - Pots + fouls - f7421a6b",
+    "prior_project_path": "C:\\Users\\husky\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft\\Snooker - Jimmy Robertson vs Steven Hallworth - 2026 Qualifying Round 2 - Pots + fouls - f7421a6b",
+    "prior_content_sha256": "7e98d9a574272c085cb063aecc08570b3fd038080c4527e1be71977b32520bbb",
+    "red": {
+      "shot_id": 79,
+      "source_start_us": 1959120000,
+      "duration_us": 4480000,
+      "timeline_start_us": 355720000
+    },
+    "source_fps": 25.0,
+    "manual_trim": {
+      "old_shot_id": 147,
+      "new_shot_id": 148,
+      "source_range": {
+        "start": 3898640000,
+        "duration": 8040000
+      }
+    },
+    "ui_verified": true,
+    "ui_paused_timeline_seconds": 358.16
+  },
+  "tests": {
+    "python_passed": 1623,
+    "python_skipped": 17,
+    "targeted_passed": 119,
+    "new_native_regressions": 43
+  }
+}

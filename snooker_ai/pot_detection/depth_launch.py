@@ -14,6 +14,7 @@ import numpy as np
 
 from snooker_ai.config import Config
 from snooker_ai.object_detection.detector import ObjectDetector
+from snooker_ai.pot_detection.cluster_flow import ClusterRedFlow
 from snooker_ai.pot_detection.red_launch import RedLaunchPixels
 from snooker_ai.types import CameraViewType, FrameFeatures, StrikeCandidate
 from snooker_ai.utils.video import open_capture
@@ -162,6 +163,7 @@ def scoring_depth_contact(source: str | Path, proposal: StrikeCandidate,
             source_fps = max(f.observation_fps for f in rows)
         pixels = DepthLaunchPixels(config)
         red_pixels = RedLaunchPixels(config) if proposal.evidence.get('score_delta') == 1 else None
+        red_flow = ClusterRedFlow(config) if proposal.evidence.get('score_delta') == 1 else None
         while True:
             check_pause()
             ok, frame = cap.read()
@@ -209,5 +211,18 @@ def scoring_depth_contact(source: str | Path, proposal: StrikeCandidate,
                               'red_launch_moving_frames': float(red['moving_frames']),
                               'red_launch_travel_diameters': red['travel_diameters'],
                               'red_launch_direction_consistency': red['direction_consistency']})
+            flow = red_flow.observe(frame, context) if red_flow is not None else None
+            if flow is not None:
+                upper = flow['upper']
+                return StrikeCandidate(
+                    timestamp=max(proposal.uncertainty_start, upper-.15), confidence=.78,
+                    uncertainty_start=max(proposal.uncertainty_start, upper-.35), uncertainty_end=upper,
+                    camera_view=context.view_type,
+                    evidence={**proposal.evidence, 'score_supported_object_launch': 1.,
+                              'native_scoring_red_flow': 1., 'contact_time_upper_bound': 1.,
+                              'object_launch_confirmation_time': flow['confirmed'],
+                              'red_flow_motion_start': upper,
+                              **{'red_flow_'+key: float(value) for key, value in flow.items()
+                                 if key not in {'upper', 'confirmed'}}})
     finally:
         cap.release()
