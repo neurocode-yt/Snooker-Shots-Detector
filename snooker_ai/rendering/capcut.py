@@ -29,6 +29,7 @@ from snooker_ai.types import AnalysisResult, ExportRequest, ShotSelection
 _store_lock = threading.Lock()
 _SCHEMA = Path(__file__).with_name("assets") / "capcut_9_5.json"
 _SUPPORTED_VERSIONS = ("9.5.", "9.6.")
+_VERSION_PATTERN = r"\d+(?:\.\d+){2,3}"
 
 
 class CapCutUnavailable(RuntimeError):
@@ -55,11 +56,69 @@ def _registered_local_appdata() -> Path | None:
         return None
 
 
+def _registry_executable(value: str) -> Path | None:
+    """Read a registry command/icon path; never execute the registry command."""
+    match = re.match(r'^\s*(?:"([^"]+\.exe)"|(.+?\.exe))(?:\s|,|$)',
+                     str(value), flags=re.IGNORECASE)
+    if match is None:
+        return None
+    path = match[1] or match[2]
+    return Path(re.sub(r"%([^%]+)%", lambda m: os.environ.get(m[1], m[0]), path))
+
+
+def _capcut_root(path: Path) -> Path:
+    if path.suffix.lower() == ".exe":
+        path = path.parent
+    if re.fullmatch(_VERSION_PATTERN, path.name) and path.parent.name.lower() == "apps":
+        path = path.parent
+    return path.parent if path.name.lower() == "apps" else path
+
+
+def _registered_capcut_roots() -> list[Path]:
+    """Find moved/custom installs from Windows registration, in both registry views."""
+    try:
+        import winreg
+    except ImportError:
+        return []
+    roots = []
+    for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+        for view in (winreg.KEY_WOW64_64KEY, winreg.KEY_WOW64_32KEY):
+            try:
+                with winreg.OpenKey(hive, r"Software\Microsoft\Windows\CurrentVersion\Uninstall",
+                                    0, winreg.KEY_READ | view) as uninstall:
+                    for index in range(winreg.QueryInfoKey(uninstall)[0]):
+                        try:
+                            name = winreg.EnumKey(uninstall, index)
+                            with winreg.OpenKey(uninstall, name) as entry:
+                                display = str(winreg.QueryValueEx(entry, "DisplayName")[0])
+                                if display.strip().casefold() != "capcut":
+                                    continue
+                                for field in ("InstallLocation", "DisplayIcon", "UninstallString"):
+                                    try:
+                                        value = str(winreg.QueryValueEx(entry, field)[0]).strip()
+                                    except OSError:
+                                        continue
+                                    if field == "InstallLocation":
+                                        expanded = re.sub(r"%([^%]+)%", lambda m: os.environ.get(m[1], m[0]), value)
+                                        path = Path(expanded.strip('"')) if value else None
+                                    else:
+                                        path = _registry_executable(value)
+                                    if path is not None:
+                                        root = _capcut_root(path)
+                                        if root not in roots:
+                                            roots.append(root)
+                        except OSError:
+                            continue
+            except OSError:
+                continue
+    return roots
+
+
 def find_capcut(config: Config) -> CapCutInstallation:
     if os.name != "nt":
         raise CapCutUnavailable("Open in CapCut requires the Windows desktop app on this PC.")
     explicit_exe = config.get("capcut.executable_path")
-    version_pattern = r"\d+(?:\.\d+){2,3}"
+    version_pattern = _VERSION_PATTERN
     candidates = []
     if explicit_exe:
         executable = Path(explicit_exe).expanduser().resolve()
@@ -72,6 +131,8 @@ def find_capcut(config: Config) -> CapCutInstallation:
             if base is not None:
                 # Resolve junctions used to move the installed app to another drive.
                 candidates.append(((base / "CapCut").resolve(), None))
+        for root in _registered_capcut_roots():
+            candidates.append((root.resolve(), None))
     found = None
     for root, configured in candidates:
         apps = root / "Apps"
@@ -81,13 +142,22 @@ def find_capcut(config: Config) -> CapCutInstallation:
             continue
         executable = configured or apps / "CapCut.exe"
         if not executable.is_file() and not configured:
-            executable = versions[0] / "CapCut.exe"
+            # An update can leave a newer version folder incomplete. Look for
+            # an actual executable rather than reporting the whole app absent.
+            installed = next((p for p in versions if (p / "CapCut.exe").is_file()), None)
+            if installed is None:
+                continue
+            executable = installed / "CapCut.exe"
         if executable.is_file():
-            version = executable.parent.name if configured and re.fullmatch(version_pattern, executable.parent.name) else versions[0].name
+            version = executable.parent.name if re.fullmatch(version_pattern, executable.parent.name) else versions[0].name
             found = root, executable, version
             break
     if found is None:
-        raise CapCutUnavailable("CapCut Desktop was not found. Install it on the PC running Snooker AI.")
+        raise CapCutUnavailable(
+            "This server could not locate an accessible CapCut installation. "
+            "If CapCut is installed, restart Snooker AI or set capcut.executable_path "
+            "to its CapCut.exe in the configuration."
+        )
     root, executable, version = found
     if not version.startswith(_SUPPORTED_VERSIONS):
         raise CapCutUnavailable(

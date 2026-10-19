@@ -61,3 +61,34 @@ Open http://127.0.0.1:8000
 | librosa / soundfile issues | `pip install soundfile`; install [VC++ redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) |
 | Export fails on no-audio | Pipeline retries without audio automatically |
 | CUDA not used | Phase 1 is CPU CV; GPU reserved for optional torch models |
+
+## Open in CapCut
+
+The editable-project integration supports Windows CapCut 9.5 and 9.6. Discovery
+checks Local AppData, the registered Windows user folder, and CapCut's Windows
+installation registration for both per-user/machine and 32/64-bit registry views.
+Custom drive installations are supported without an AppData directory junction.
+Registry uninstall commands are read only as paths and are never executed.
+If the shared launcher is missing, discovery checks actual executables in version
+folders, so an incomplete newer update directory cannot hide a usable version.
+The project-directory spelling saved by CapCut is preserved across junctions.
+
+If an already installed CapCut is reported missing, check
+`http://127.0.0.1:8007/api/capcut` (use your server's port). After a code update,
+the running Python process must be restarted to load the updated detector. Pause
+and save active work first. A completed video does not need another analysis or
+export: restart the server, refresh the page, and retry **Open in CapCut**.
+
+For an unusual installation, the existing configuration overrides are:
+
+```yaml
+capcut:
+  executable_path: 'D:\Your CapCut Folder\Apps\CapCut.exe'
+  # Optional: use only when CapCut's own project index does not record this path.
+  # projects_dir: 'D:\Your Projects\com.lveditor.draft'
+```
+
+Set these to the actual local paths and restart the server. The integration
+creates a fresh named project, keeps the source media at its existing path,
+backs up the project index and preserves previous drafts. It does not require
+reinstalling CapCut just because a server cannot discover its executable.
