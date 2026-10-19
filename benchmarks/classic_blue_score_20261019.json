@@ -1,0 +1,516 @@
+{
+  "source_fingerprint": {
+    "path": "G:\\2026 AI START\\Grok\\snooker\\data\\uploads\\20261019-023041_2d5d8471_Jimmy_Robertson_vs_Steven_Hallworth_-_2026_Qualifying_Round_2.mp4",
+    "size": 1393174654,
+    "mtime_ns": 1792359043109839000
+  },
+  "reported_timeline": "CapCut",
+  "reported_time_seconds": 602,
+  "cause": "detected blue excluded because small native six in baseline 26 was below digit confidence threshold",
+  "source_blue_contact": 3996.0,
+  "blue_clip": [
+    3994.0,
+    3998.48
+  ],
+  "blue_score_evidence": {
+    "score_before": [
+      26,
+      1
+    ],
+    "active_player": 0,
+    "baseline_end": 3995.560744852485,
+    "score_after": [
+      31,
+      1
+    ],
+    "score_delta": [
+      5,
+      0
+    ],
+    "confirmation_time": 4007.040632066147,
+    "confidence": 0.7807672973779531,
+    "score_update_time": 3999.040710662898,
+    "points": 5,
+    "scoring_player": 0,
+    "reason": "striker_score_increased"
+  },
+  "before": {
+    "pot": 151,
+    "no_pot": 54,
+    "foul": 6,
+    "points": 0,
+    "unknown": 41,
+    "included": 157,
+    "method": "stable_score_and_striker",
+    "policy": 5,
+    "selection": "pots_and_fouls",
+    "score_readings": 9387,
+    "score_layouts": [
+      "paired_boxes"
+    ]
+  },
+  "after": {
+    "pot": 158,
+    "no_pot": 60,
+    "foul": 6,
+    "points": 0,
+    "unknown": 28,
+    "included": 164,
+    "method": "stable_score_and_striker",
+    "policy": 5,
+    "selection": "pots_and_fouls",
+    "score_readings": 9882,
+    "score_layouts": [
+      "paired_boxes"
+    ]
+  },
+  "classification_changes": [
+    {
+      "shot_id": 30,
+      "source_contact": 658.76,
+      "old": "unknown",
+      "new": "pot",
+      "before_included": false,
+      "included": true,
+      "score_evidence": {
+        "score_before": [
+          0,
+          81
+        ],
+        "active_player": 1,
+        "baseline_end": 658.2335330592902,
+        "score_after": [
+          0,
+          86
+        ],
+        "score_delta": [
+          0,
+          5
+        ],
+        "confirmation_time": 664.7534690029377,
+        "confidence": 0.9153420925140381,
+        "score_update_time": 661.2335035855084,
+        "points": 5,
+        "scoring_player": 1,
+        "reason": "striker_score_increased"
+      }
+    },
+    {
+      "shot_id": 59,
+      "source_contact": 1365.8400000000001,
+      "old": "unknown",
+      "new": "pot",
+      "before_included": false,
+      "included": true,
+      "score_evidence": {
+        "score_before": [
+          13,
+          56
+        ],
+        "active_player": 1,
+        "baseline_end": 1365.3865854994451,
+        "score_after": [
+          13,
+          63
+        ],
+        "score_delta": [
+          0,
+          7
+        ],
+        "confirmation_time": 1382.8664137655433,
+        "confidence": 0.7821756144191908,
+        "score_update_time": 1369.3865462010695,
+        "points": 7,
+        "scoring_player": 1,
+        "reason": "striker_score_increased"
+      }
+    },
+    {
+      "shot_id": 60,
+      "source_contact": 1383.0,
+      "old": "unknown",
+      "new": "pot",
+      "before_included": false,
+      "included": true,
+      "score_evidence": {
+        "score_before": [
+          13,
+          63
+        ],
+        "active_player": 1,
+        "baseline_end": 1382.8664137655433,
+        "score_after": [
+          13,
+          64
+        ],
+        "score_delta": [
+          0,
+          1
+        ],
+        "confirmation_time": 1392.8663155196039,
+        "confidence": 0.7821756144191908,
+        "score_update_time": 1386.3863791829726,
+        "points": 1,
+        "scoring_player": 1,
+        "reason": "striker_score_increased"
+      }
+    },
+    {
+      "shot_id": 89,
+      "source_contact": 2182.28,
+      "old": "unknown",
+      "new": "pot",
+      "before_included": false,
+      "included": true,
+      "score_evidence": {
+        "score_before": [
+          68,
+          1
+        ],
+        "active_player": 0,
+        "baseline_end": 2181.7385650939427,
+        "score_after": [
+          69,
+          1
+        ],
+        "score_delta": [
+          1,
+          0
+        ],
+        "confirmation_time": 2194.7384373742216,
+        "confidence": 0.8221607193946838,
+        "score_update_time": 2184.7385356201607,
+        "points": 1,
+        "scoring_player": 0,
+        "reason": "striker_score_increased"
+      }
+    },
+    {
+      "shot_id": 90,
+      "source_contact": 2195.32,
+      "old": "unknown",
+      "new": "pot",
+      "before_included": false,
+      "included": true,
+      "score_evidence": {
+        "score_before": [
+          69,
+          1
+        ],
+        "active_player": 0,
+        "baseline_end": 2195.258432265433,
+        "score_after": [
+          76,
+          1
+        ],
+        "score_delta": [
+          7,
+          0
+        ],
+        "confirmation_time": 2199.7383882512518,
+        "confidence": 0.8996224403381348,
+        "score_update_time": 2197.258412616245,
+        "points": 7,
+        "scoring_player": 0,
+        "reason": "striker_score_increased"
+      }
+    },
+    {
+      "shot_id": 91,
+      "source_contact": 2209.52,
+      "old": "unknown",
+      "new": "pot",
+      "before_included": false,
+      "included": true,
+      "score_evidence": {
+        "score_before": [
+          76,
+          1
+        ],
+        "active_player": 0,
+        "baseline_end": 2199.7383882512518,
+        "score_after": [
+          77,
+          1
+        ],
+        "score_delta": [
+          1,
+          0
+        ],
+        "confirmation_time": 2217.7382114085613,
+        "confidence": 0.7879361510276794,
+        "score_update_time": 2211.7382703561248,
+        "points": 1,
+        "scoring_player": 0,
+        "reason": "striker_score_increased"
+      }
+    },
+    {
+      "shot_id": 150,
+      "source_contact": 3996.0,
+      "old": "unknown",
+      "new": "pot",
+      "before_included": false,
+      "included": true,
+      "score_evidence": {
+        "score_before": [
+          26,
+          1
+        ],
+        "active_player": 0,
+        "baseline_end": 3995.560744852485,
+        "score_after": [
+          31,
+          1
+        ],
+        "score_delta": [
+          5,
+          0
+        ],
+        "confirmation_time": 4007.040632066147,
+        "confidence": 0.7807672973779531,
+        "score_update_time": 3999.040710662898,
+        "points": 5,
+        "scoring_player": 0,
+        "reason": "striker_score_increased"
+      }
+    },
+    {
+      "shot_id": 187,
+      "source_contact": 5099.240000000001,
+      "old": "unknown",
+      "new": "no_pot",
+      "before_included": false,
+      "included": false,
+      "score_evidence": {
+        "score_before": [
+          68,
+          29
+        ],
+        "active_player": 0,
+        "baseline_end": 5098.749906360459,
+        "score_after": [
+          68,
+          29
+        ],
+        "confirmation_time": 5114.2697538827615,
+        "reason": "score_unchanged"
+      }
+    },
+    {
+      "shot_id": 188,
+      "source_contact": 5121.52,
+      "old": "unknown",
+      "new": "no_pot",
+      "before_included": false,
+      "included": false,
+      "score_evidence": {
+        "score_before": [
+          68,
+          29
+        ],
+        "active_player": 1,
+        "baseline_end": 5121.269685110604,
+        "score_after": [
+          68,
+          29
+        ],
+        "confirmation_time": 5139.269508267913,
+        "reason": "score_unchanged"
+      }
+    },
+    {
+      "shot_id": 189,
+      "source_contact": 5152.12,
+      "old": "unknown",
+      "new": "no_pot",
+      "before_included": false,
+      "included": false,
+      "score_evidence": {
+        "score_before": [
+          68,
+          29
+        ],
+        "active_player": 0,
+        "baseline_end": 5151.629386835932,
+        "score_after": [
+          68,
+          29
+        ],
+        "confirmation_time": 5166.629239467023,
+        "reason": "score_unchanged"
+      }
+    },
+    {
+      "shot_id": 190,
+      "source_contact": 5169.16,
+      "old": "unknown",
+      "new": "no_pot",
+      "before_included": false,
+      "included": false,
+      "score_evidence": {
+        "score_before": [
+          68,
+          29
+        ],
+        "active_player": 1,
+        "baseline_end": 5168.629219817835,
+        "score_after": [
+          68,
+          29
+        ],
+        "confirmation_time": 5184.149067340138,
+        "reason": "score_unchanged"
+      }
+    },
+    {
+      "shot_id": 191,
+      "source_contact": 5184.84,
+      "old": "unknown",
+      "new": "no_pot",
+      "before_included": false,
+      "included": false,
+      "score_evidence": {
+        "score_before": [
+          68,
+          29
+        ],
+        "active_player": 0,
+        "baseline_end": 5184.629062624333,
+        "score_after": [
+          68,
+          29
+        ],
+        "confirmation_time": 5199.628915255424,
+        "reason": "score_unchanged"
+      }
+    },
+    {
+      "shot_id": 193,
+      "source_contact": 5228.320000000001,
+      "old": "unknown",
+      "new": "no_pot",
+      "before_included": false,
+      "included": false,
+      "score_evidence": {
+        "score_before": [
+          68,
+          29
+        ],
+        "active_player": 0,
+        "baseline_end": 5228.188634665021,
+        "score_after": [
+          68,
+          29
+        ],
+        "confirmation_time": 5245.1884676469235,
+        "reason": "score_unchanged"
+      }
+    }
+  ],
+  "existing_selections_and_clip_ranges_preserved": true,
+  "prior_exports_preserved": true,
+  "template_count_before": 536,
+  "template_count_after": 537,
+  "existing_templates_preserved": true,
+  "new_label": 6,
+  "digit_confidence_threshold": 0.78,
+  "digit_margin_threshold": 0.025,
+  "source_rescan_seconds": 234.46899999998277,
+  "export": {
+    "job_id": "20261019-090335-be5394fe",
+    "duration": 967.84,
+    "expected_duration": 967.84,
+    "size_bytes": 349376753,
+    "video_codec": "h264",
+    "has_audio": true,
+    "http_status": 206,
+    "source_checks": [
+      {
+        "shot_id": 30,
+        "source_timestamp": 659.41,
+        "output_timestamp": 128.89,
+        "output_start": 126.24000000000004,
+        "source_output_luma_correlation": 0.9998966467938742
+      },
+      {
+        "shot_id": 59,
+        "source_timestamp": 1366.4900000000002,
+        "output_timestamp": 257.16999999999985,
+        "output_start": 254.5199999999998,
+        "source_output_luma_correlation": 0.9999017396852334
+      },
+      {
+        "shot_id": 60,
+        "source_timestamp": 1383.65,
+        "output_timestamp": 266.3299999999999,
+        "output_start": 263.6799999999998,
+        "source_output_luma_correlation": 0.9999242824888177
+      },
+      {
+        "shot_id": 89,
+        "source_timestamp": 2182.9300000000003,
+        "output_timestamp": 389.92999999999984,
+        "output_start": 387.27999999999963,
+        "source_output_luma_correlation": 0.9999025023367407
+      },
+      {
+        "shot_id": 90,
+        "source_timestamp": 2195.9700000000003,
+        "output_timestamp": 394.52999999999975,
+        "output_start": 391.8799999999996,
+        "source_output_luma_correlation": 0.9999151115564433
+      },
+      {
+        "shot_id": 91,
+        "source_timestamp": 2210.17,
+        "output_timestamp": 398.7699999999995,
+        "output_start": 396.11999999999955,
+        "source_output_luma_correlation": 0.9999349681285522
+      },
+      {
+        "shot_id": 150,
+        "source_timestamp": 3996.65,
+        "output_timestamp": 625.7699999999995,
+        "output_start": 623.1199999999995,
+        "source_output_luma_correlation": 0.9998995712631341
+      }
+    ]
+  },
+  "capcut": {
+    "project_name": "Snooker - Jimmy Robertson vs Steven Hallworth - 2026 Qualifying Round 2 - Pots + fouls - f7421a6b",
+    "project_path": "C:\\Users\\husky\\AppData\\Local\\CapCut\\User Data\\Projects\\com.lveditor.draft\\Snooker - Jimmy Robertson vs Steven Hallworth - 2026 Qualifying Round 2 - Pots + fouls - f7421a6b",
+    "project_id": "DF298933-E6C1-4634-A1BA-57D1FFD3B23F",
+    "shot_count": 164,
+    "duration": 996.44,
+    "source_path": "G:\\2026 AI START\\Grok\\snooker\\data\\uploads\\20261019-023041_2d5d8471_Jimmy_Robertson_vs_Steven_Hallworth_-_2026_Qualifying_Round_2.mp4",
+    "capcut_version": "9.6.0.4097",
+    "user_segments_preserved": 157,
+    "manual_trim_preserved": true,
+    "added_shot_ids": [
+      30,
+      59,
+      60,
+      89,
+      90,
+      91,
+      150
+    ],
+    "prior_project": "Snooker - Jimmy Robertson vs Steven Hallworth - 2026 Qualifying Round 2 - Pots + fouls - 4a0ea893",
+    "prior_content_sha256": "f64200ee0b24e6d848341dedad3ffa11a0b8c8f6acf6d91dd0634edf1d557284",
+    "blue": {
+      "shot_id": 150,
+      "source_start_us": 3994000000,
+      "duration_us": 4480000,
+      "timeline_start_us": 638400000
+    },
+    "source_fps": 25.0,
+    "ui_verified": true,
+    "ui_paused_timeline_seconds": 640.84
+  },
+  "tests": {
+    "python_passed": 1580,
+    "python_skipped": 17,
+    "targeted_score_passed": 80
+  }
+}

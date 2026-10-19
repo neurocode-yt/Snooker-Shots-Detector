@@ -1,0 +1,78 @@
+{
+  "source_fingerprint": {
+    "path": "G:\\2026 AI START\\Grok\\snooker\\data\\uploads\\20261019-023041_2d5d8471_Jimmy_Robertson_vs_Steven_Hallworth_-_2026_Qualifying_Round_2.mp4",
+    "size": 1393174654,
+    "mtime_ns": 1792359043109839000
+  },
+  "training_source_time": 3988.0,
+  "training_label": 6,
+  "training_shape": [
+    12,
+    8
+  ],
+  "old_template_sha256": "cec3c89cca8bc90d76970cbd648961dd35d331f377b5ee25e3c52b32b84d7395",
+  "new_template_sha256": "81a36b98f859b12e412498323218d15c0c171e3f7640445154c1467000588cb7",
+  "fixture_region": [
+    0,
+    600,
+    1280,
+    58
+  ],
+  "heldout_frames": [
+    {
+      "name": "before_3993",
+      "source_time": 3993.48,
+      "score": [
+        26,
+        1
+      ],
+      "active_player": 0
+    },
+    {
+      "name": "before_3994",
+      "source_time": 3993.96,
+      "score": [
+        26,
+        1
+      ],
+      "active_player": 0
+    },
+    {
+      "name": "before_3995",
+      "source_time": 3995.12,
+      "score": [
+        26,
+        1
+      ],
+      "active_player": 0
+    },
+    {
+      "name": "after_4000",
+      "source_time": 4000.24,
+      "score": [
+        31,
+        1
+      ],
+      "active_player": 0
+    },
+    {
+      "name": "after_4001",
+      "source_time": 4000.76,
+      "score": [
+        31,
+        1
+      ],
+      "active_player": 0
+    },
+    {
+      "name": "after_4002",
+      "source_time": 4002.28,
+      "score": [
+        31,
+        1
+      ],
+      "active_player": 0
+    }
+  ],
+  "note": "Lossless source overlay pixels. Regression times differ from the labelled exemplar; same-video temporal holdout."
+}
