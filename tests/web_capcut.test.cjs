@@ -15,17 +15,17 @@ test('unavailable capability expires and can recover on a fresh click', async ()
   assert.equal(calls,2);
 });
 
-test('clicking unavailable CapCut explains the reason and permits retry', async () => {
-  const api=create(async () => response({available:false,reason:'Install CapCut on this PC'}));
+test('opening reports an actual server failure and permits retry', async () => {
+  const api=create(async () => response({detail:'Installation drive unavailable'},false));
   const {button,status}=elements();
   await api.open('job',button,status);
-  assert.match(status.textContent,/Install CapCut/);
+  assert.match(status.textContent,/Installation drive unavailable/);
   assert.equal(button.disabled,false);
   assert.equal(button.textContent,'Open in CapCut');
   assert.equal(api.isPending('job'),false);
 });
 
-test('an old failed check cannot stop a newly available CapCut handoff', async () => {
+test('an old failed check cannot stop a real CapCut handoff', async () => {
   let checks=0, posts=0;
   const api=create(async (url) => url==='/api/capcut'
     ? response({available:++checks>1,reason:'Earlier failure'})
@@ -34,9 +34,25 @@ test('an old failed check cannot stop a newly available CapCut handoff', async (
   const {button,status}=elements();
   await api.open('job',button,status);
   assert.equal(posts,1);
-  assert.equal(checks,2);
+  assert.equal(checks,1);
   assert.equal(status.textContent,'3 editable shots ready');
   assert.match(button.title,/editable clips/);
+});
+
+test('an in-flight negative precheck cannot veto a successful opening', async () => {
+  let resolve;
+  const waiting=new Promise(done=>{resolve=done;});
+  let posts=0;
+  const api=create(async url=>url==='/api/capcut' ? (await waiting,response({available:false}))
+    : (posts++,response({message:'176 editable shots ready'})));
+  const oldCheck=api.load();
+  const {button,status}=elements();
+  await api.open('job',button,status);
+  assert.equal(posts,1);
+  assert.equal(status.textContent,'176 editable shots ready');
+  resolve();assert.equal((await oldCheck).available,true);
+  assert.equal((await api.load()).available,true);
+  assert.equal(button.disabled,false);
 });
 
 test('one in-flight project blocks duplicate clicks and restores the button on failure', async () => {

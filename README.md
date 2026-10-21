@@ -23,7 +23,7 @@ The web timeline remains available for optional inspection.
 - **Review UI** — move boundaries, add/delete shots, mark replays, export labels
 - **Selected-shots preview** — immediately play included shots as one continuous virtual timeline
 - **Export** — individual clips, one combined MP4, CSV, EDL, training labels
-- **Open in CapCut** — create a Windows CapCut 9.5 project with separate editable shots
+- **Open in CapCut** — create a Windows CapCut 9.5/9.6 project with separate editable shots
 - **Make Shorts** — turn included shots into separate vertical videos with player names, layout preview, and a ZIP download
 - **Current work / Pause / Resume** — see active and waiting matches, exports, and Shorts, and pause without losing saved progress
 - **Jobs** — progress, resume, batch CLI
@@ -187,13 +187,16 @@ transitions are not included. Keep the source video in its current location.
 
 The integration creates a fresh project on every click, preserves existing
 CapCut edits, and backs up CapCut's project index. Its private draft format is
-verified against **Windows CapCut 9.5.0**; unsupported versions show a reason
+verified against **Windows CapCut 9.5 and 9.6**; unsupported versions show a reason
 instead of writing an unverified draft. CapCut must be installed on the PC
 running Snooker AI. For a custom installation or project location, configure
 `capcut.executable_path` and `capcut.projects_dir` in the YAML configuration.
-Discovery checks Windows' registered app-data location as well as the terminal
-environment, including junctions to another drive. If a check fails, the action
-shows the reason and remains available to retry; every click checks again.
+Discovery checks Windows' registered app-data and installation locations as well
+as the terminal environment, including junctions to another drive. It remembers
+the last verified executable in `data/capcut_installation.json` and rechecks that
+file on each request. A stale configured path falls back to automatic discovery.
+Every click checks again; an earlier browser status check cannot block opening.
+If opening fails, the action shows the actual reason and remains available to retry.
 Preparing the project reuses the saved compact timeline when available.
 
 Click **Make Shorts** on an analyzed video or in the shot editor to create one

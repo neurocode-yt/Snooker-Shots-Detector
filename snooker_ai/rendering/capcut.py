@@ -25,6 +25,7 @@ from typing import Any
 from snooker_ai.config import Config
 from snooker_ai.rendering.exporter import Exporter
 from snooker_ai.types import AnalysisResult, ExportRequest, ShotSelection
+from snooker_ai.utils.persistence import atomic_text
 
 _store_lock = threading.Lock()
 _SCHEMA = Path(__file__).with_name("assets") / "capcut_9_5.json"
@@ -114,6 +115,43 @@ def _registered_capcut_roots() -> list[Path]:
     return roots
 
 
+def _app_path_executables() -> list[Path]:
+    """Read Windows' registered application path without launching a command."""
+    try:
+        import winreg
+    except ImportError:
+        return []
+    paths = []
+    for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+        for view in (winreg.KEY_WOW64_64KEY, winreg.KEY_WOW64_32KEY):
+            try:
+                with winreg.OpenKey(hive,
+                        r"Software\Microsoft\Windows\CurrentVersion\App Paths\CapCut.exe",
+                        0, winreg.KEY_READ | view) as key:
+                    path = _registry_executable(str(winreg.QueryValueEx(key, "")[0]))
+                if path is not None and path not in paths:
+                    paths.append(path)
+            except (OSError, KeyError, TypeError, ValueError):
+                continue
+    return paths
+
+
+def _installation_cache_path(config: Config) -> Path:
+    return Path(config.get("capcut.discovery_cache",
+                           str(Path(config.get("paths.data_dir", "data")) / "capcut_installation.json")))
+
+
+def _saved_executable(config: Config) -> Path | None:
+    try:
+        data = json.loads(_installation_cache_path(config).read_text("utf-8"))
+        path = Path(data["executable"])
+        if path.is_absolute() and path.name.casefold() == "capcut.exe":
+            return path
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return None
+
+
 def find_capcut(config: Config) -> CapCutInstallation:
     if os.name != "nt":
         raise CapCutUnavailable("Open in CapCut requires the Windows desktop app on this PC.")
@@ -124,39 +162,48 @@ def find_capcut(config: Config) -> CapCutInstallation:
         executable = Path(explicit_exe).expanduser().resolve()
         apps = executable.parent.parent if re.fullmatch(version_pattern, executable.parent.name) else executable.parent
         candidates.append((apps.parent, executable))
-    else:
-        local = os.environ.get("LOCALAPPDATA")
-        registered = _registered_local_appdata()
-        for base in (Path(local) if local else None, registered, Path.home() / "AppData" / "Local"):
-            if base is not None:
-                # Resolve junctions used to move the installed app to another drive.
-                candidates.append(((base / "CapCut").resolve(), None))
-        for root in _registered_capcut_roots():
-            candidates.append((root.resolve(), None))
+    # A stale configured path must not disable all the automatic fallbacks.
+    local = os.environ.get("LOCALAPPDATA")
+    registered = _registered_local_appdata()
+    for base in (Path(local) if local else None, registered, Path.home() / "AppData" / "Local"):
+        if base is not None:
+            candidates.append(((base / "CapCut").resolve(), None))
+    for root in _registered_capcut_roots():
+        candidates.append((root.resolve(), None))
+    for executable in _app_path_executables():
+        candidates.append((_capcut_root(executable).resolve(), executable))
+    saved = _saved_executable(config)
+    if saved is not None:
+        # Re-enumerate its root first so an installed update wins over the old
+        # saved version. The actual saved file remains a final direct fallback.
+        candidates.extend([(_capcut_root(saved).resolve(), None), (_capcut_root(saved).resolve(), saved)])
     found = None
     for root, configured in candidates:
         apps = root / "Apps"
-        versions = [p for p in apps.glob("*") if p.is_dir() and re.fullmatch(version_pattern, p.name)]
+        if configured is not None and not configured.is_file():
+            continue
+        if configured is not None and re.fullmatch(version_pattern, configured.parent.name):
+            found = root, configured, configured.parent.name
+            break
+        try:
+            versions = [p for p in apps.glob("*") if p.is_dir() and re.fullmatch(version_pattern, p.name)]
+        except OSError:
+            versions = []
         versions.sort(key=lambda p: tuple(int(n) for n in p.name.split(".")), reverse=True)
         if not versions:
             continue
-        executable = configured or apps / "CapCut.exe"
-        if not executable.is_file() and not configured:
-            # An update can leave a newer version folder incomplete. Look for
-            # an actual executable rather than reporting the whole app absent.
-            installed = next((p for p in versions if (p / "CapCut.exe").is_file()), None)
-            if installed is None:
-                continue
-            executable = installed / "CapCut.exe"
+        # Prefer the real version executable: launchers can be stale or report
+        # version 1.0, and incomplete update folders are not installed versions.
+        installed = next((p for p in versions if (p / "CapCut.exe").is_file()), None)
+        executable = installed / "CapCut.exe" if installed else (configured or apps / "CapCut.exe")
         if executable.is_file():
             version = executable.parent.name if re.fullmatch(version_pattern, executable.parent.name) else versions[0].name
             found = root, executable, version
             break
     if found is None:
         raise CapCutUnavailable(
-            "This server could not locate an accessible CapCut installation. "
-            "If CapCut is installed, restart Snooker AI or set capcut.executable_path "
-            "to its CapCut.exe in the configuration."
+            "CapCut could not be verified at its saved or registered locations. "
+            "Check that its installation drive is available, or set capcut.executable_path to CapCut.exe."
         )
     root, executable, version = found
     if not version.startswith(_SUPPORTED_VERSIONS):
@@ -179,7 +226,17 @@ def find_capcut(config: Config) -> CapCutInstallation:
                 pass
     # Keep the path spelling saved by CapCut. Resolving a moved AppData junction
     # makes the app register the same draft again under its original C: alias.
-    return CapCutInstallation(executable.resolve(), projects.absolute(), version)
+    installation = CapCutInstallation(executable.resolve(), projects.absolute(), version)
+    try:
+        atomic_text(_installation_cache_path(config), json.dumps({
+            "executable": str(installation.executable), "projects_dir": str(installation.projects_dir),
+            "version": installation.version,
+        }, indent=2))
+    except OSError:
+        # Discovery is usable even when preferences cannot be saved. The next
+        # request still validates the executable; a cache never makes it true.
+        pass
+    return installation
 
 
 def _id() -> str:

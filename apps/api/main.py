@@ -498,10 +498,11 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     @app.get("/api/capcut")
     async def capcut_capability() -> dict[str, Any]:
         try:
-            installation = find_capcut(cfg)
+            installation = await asyncio.to_thread(find_capcut, cfg)
         except CapCutUnavailable as exc:
             return {"available": False, "reason": str(exc)}
-        return {"available": True, "version": installation.version}
+        return {"available": True, "version": installation.version,
+                "executable": str(installation.executable), "projects_dir": str(installation.projects_dir)}
 
     def require_algorithm(algorithm: Algorithm) -> None:
         if algorithm is Algorithm.CLASSIC:
@@ -1134,7 +1135,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             except FileNotFoundError as exc:
                 raise HTTPException(404, str(exc)) from exc
             try:
-                installation = find_capcut(cfg)
+                installation = await asyncio.to_thread(find_capcut, cfg)
                 project = await asyncio.to_thread(create_capcut_project, result, cfg, installation)
             except CapCutUnavailable as exc:
                 raise HTTPException(409, str(exc)) from exc

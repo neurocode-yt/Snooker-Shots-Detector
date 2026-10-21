@@ -224,6 +224,12 @@ def test_explicit_capcut_version_is_checked_at_its_own_installation(config, tmp_
     assert installation.executable == executable.resolve()
 
 
+@pytest.fixture(autouse=True)
+def isolated_discovery_cache(tmp_path, monkeypatch):
+    monkeypatch.setattr('snooker_ai.rendering.capcut._installation_cache_path',
+                        lambda _config:tmp_path/'capcut_installation.json')
+
+
 def _saved_case(config, capcut_case, tmp_path, monkeypatch):
     result, installation = capcut_case
     config._data["paths"]["jobs_dir"] = str(tmp_path / "jobs")
@@ -320,3 +326,26 @@ async def test_capcut_project_preparation_does_not_block_progress(config, capcut
             release.set()
             response = await task
         assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_slow_capcut_discovery_does_not_block_the_server(config, capcut_case, tmp_path, monkeypatch):
+    result, installation, _ = _saved_case(config,capcut_case,tmp_path,monkeypatch)
+    started,release=threading.Event(),threading.Event()
+    def discover(_config):
+        started.set()
+        if not release.wait(3):
+            raise RuntimeError('discovery blocked the request loop')
+        return installation
+    monkeypatch.setattr('apps.api.main.find_capcut',discover)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=create_app(config)),base_url='http://test') as client:
+        task=asyncio.create_task(client.get('/api/capcut'))
+        try:
+            assert await asyncio.to_thread(started.wait,2)
+            assert (await asyncio.wait_for(client.get('/health'),1)).status_code==200
+            assert not task.done()
+        finally:
+            release.set()
+            response=await task
+        assert response.json()['available']
+        assert response.json()['executable']==str(installation.executable)

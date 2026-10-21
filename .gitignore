@@ -22,6 +22,7 @@ data/test_tmp/
 data/debug_user_cases/
 data/editor_audit/
 data/*.log
+data/capcut_installation.json
 models/*.pt
 models/*.onnx
 models/*.pth

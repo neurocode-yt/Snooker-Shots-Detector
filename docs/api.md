@@ -140,9 +140,13 @@ HTML review interface.
 
 ## CapCut Desktop handoff
 
-`GET /api/capcut` reports `{available, version}` or `{available: false, reason}`
+`GET /api/capcut` reports `{available: true, version, executable, projects_dir}`
+or `{available: false, reason}`
 for the local Windows CapCut installation. The current draft adapter supports
-CapCut 9.5.
+CapCut 9.5 and 9.6. Successful discovery remembers the verified executable locally;
+each request checks that the file still exists. Missing configured or registered
+paths fall back to other discovery sources, including the saved executable.
+Discovery runs outside the API event loop so other requests stay responsive.
 
 `POST /api/jobs/{job_id}/open-capcut` creates a fresh CapCut draft from the saved,
 included live shots, registers it in the local project list, and launches CapCut.

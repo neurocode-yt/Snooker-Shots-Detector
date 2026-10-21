@@ -66,12 +66,19 @@ Open http://127.0.0.1:8000
 
 The editable-project integration supports Windows CapCut 9.5 and 9.6. Discovery
 checks Local AppData, the registered Windows user folder, and CapCut's Windows
-installation registration for both per-user/machine and 32/64-bit registry views.
+installation and App Paths registrations for both per-user/machine and 32/64-bit registry views.
 Custom drive installations are supported without an AppData directory junction.
 Registry uninstall commands are read only as paths and are never executed.
-If the shared launcher is missing, discovery checks actual executables in version
-folders, so an incomplete newer update directory cannot hide a usable version.
+Discovery prefers actual executables in version folders over the shared launcher,
+so an incomplete newer update directory cannot hide a usable version.
 The project-directory spelling saved by CapCut is preserved across junctions.
+
+Successful discovery saves the verified executable in `data/capcut_installation.json`
+(under `paths.data_dir` when customized). The file is local and excluded from Git.
+The executable must still exist before it is accepted; this is a recovery path,
+not a forced availability result. A missing configured executable also falls
+back to automatic discovery. The button always makes a fresh opening request,
+even when a previous browser status check failed.
 
 If an already installed CapCut is reported missing, check
 `http://127.0.0.1:8007/api/capcut` (use your server's port). After a code update,

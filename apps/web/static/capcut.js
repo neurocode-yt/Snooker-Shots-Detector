@@ -5,9 +5,11 @@ function create(fetcher = (...args) => root.fetch(...args), now = () => Date.now
   let capability = null;
   let expires = 0;
   let inFlight = null;
+  let revision = 0;
   async function load({force = false} = {}) {
     if (inFlight) return inFlight;
     if (force || !capability || now() >= expires) {
+      const startedRevision = revision;
       inFlight = fetcher("/api/capcut")
         .then(async (response) => {
           if (!response.ok) throw new Error("Could not check CapCut Desktop");
@@ -15,9 +17,11 @@ function create(fetcher = (...args) => root.fetch(...args), now = () => Date.now
         })
         .catch((error) => ({ available: false, reason: error.message }))
         .then((data) => {
-          capability = data;
-          expires = now() + (data.available ? 30000 : 5000);
-          return data;
+          if (startedRevision === revision) {
+            capability = data;
+            expires = now() + (data.available ? 30000 : 5000);
+          }
+          return capability || data;
         })
         .finally(() => { inFlight = null; });
       return inFlight;
@@ -36,18 +40,22 @@ function create(fetcher = (...args) => root.fetch(...args), now = () => Date.now
     status.classList.remove("hidden");
     status.textContent = "Preparing editable shots\u2026";
     try {
-      const readiness = await load({force: true});
-      button.title = readiness.available
-        ? "Create a new CapCut project with included shots as editable clips"
-        : readiness.reason;
-      if (!readiness.available) throw new Error(readiness.reason || "CapCut Desktop is unavailable on this PC.");
+      // The action performs fresh discovery itself. A cached/in-flight status
+      // request must never veto an actual project-opening attempt.
       const response = await fetcher(`/api/jobs/${encodeURIComponent(jobId)}/open-capcut`, {
         method: "POST",
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || "Could not create CapCut project");
+      revision++;
+      capability = {available:true};
+      expires = now()+30000;
+      button.title = "Open included shots as editable clips in CapCut";
       status.textContent = root.snookerUI?.message(data.message) ?? data.message;
     } catch (error) {
+      revision++;
+      capability = null;
+      expires = 0;
       const detail = error.message || String(error);
       status.textContent = `Could not open in CapCut: ${root.snookerUI?.message(detail) ?? detail}`;
     } finally {
