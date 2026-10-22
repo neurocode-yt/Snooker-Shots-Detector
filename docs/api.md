@@ -11,6 +11,11 @@ Liveness check.
 
 ### `POST /api/upload`
 Multipart file upload. Returns `{ path, filename, size }`.
+The upload directory must have space for the complete video plus
+`api.upload_reserve_mb` (256 MiB by default). Insufficient storage returns
+HTTP 507 with a readable reason; an over-limit file returns 413. Storage is
+rechecked during copying, failed copies are removed, and only complete files
+receive a published video path. Copying runs outside the API event loop.
 
 ### `POST /api/jobs`
 Start analysis.

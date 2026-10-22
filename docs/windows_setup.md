@@ -57,10 +57,19 @@ Open http://127.0.0.1:8000
 | Symptom | Fix |
 |---------|-----|
 | `ffmpeg not found` | Install FFmpeg; restart terminal; check PATH |
+| Upload says `No space left on device` / insufficient storage | Free space on the upload drive. Uploads need the source size plus a 256 MiB reserve; analysis and export need additional room. HTTP 507 reports insufficient upload storage. |
 | OpenCV import error | `pip install opencv-python-headless` |
 | librosa / soundfile issues | `pip install soundfile`; install [VC++ redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) |
 | Export fails on no-audio | Pipeline retries without audio automatically |
 | CUDA not used | Phase 1 is CPU CV; GPU reserved for optional torch models |
+
+Uploads default to `data/uploads` on the project's drive. A full drive is a
+storage problem even when RAM is available. The upload handler checks capacity
+before copying and during each chunk, removes its failed partial copy, and
+publishes a video path only after saving it completely. Existing videos and
+finished jobs are preserved. The reserve can be changed with
+`api.upload_reserve_mb`; it is a minimum upload reserve, not an estimate of
+space required for the whole processing job.
 
 ## Open in CapCut
 

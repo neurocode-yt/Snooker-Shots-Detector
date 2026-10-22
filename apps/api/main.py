@@ -32,6 +32,7 @@ from snooker_ai.rendering.exporter import Exporter
 from snooker_ai.rendering.shorts import ShortsManager
 from apps.api.shorts import install_shorts_routes
 from apps.api.work import install_work_routes
+from apps.api.uploads import save_upload
 from snooker_ai.rendering.capcut import (
     CapCutUnavailable,
     create_capcut_project,
@@ -458,28 +459,11 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
 
     @app.post("/api/upload")
     async def upload(file: UploadFile = File(...)) -> dict[str, Any]:
-        max_gb = float(cfg.get("api.max_upload_gb", 50.0))
-        suffix = Path(file.filename or "video.mp4").suffix or ".mp4"
-        stem = Path(file.filename or "video").stem
-        safe_stem = "".join(c if c.isalnum() or c in "-_" else "_" for c in stem)[:80]
-        dest = (
-            store.uploads
-            / f"{time.strftime('%Y%m%d-%H%M%S')}_{uuid.uuid4().hex[:8]}_{safe_stem}{suffix}"
+        return await asyncio.to_thread(
+            save_upload, file, store.uploads,
+            float(cfg.get("api.max_upload_gb", 50.0)),
+            float(cfg.get("api.upload_reserve_mb", 256)),
         )
-        # stream to disk
-        size = 0
-        with open(dest, "wb") as out:
-            while True:
-                chunk = await file.read(1024 * 1024)
-                if not chunk:
-                    break
-                size += len(chunk)
-                if size > max_gb * (1024**3):
-                    out.close()
-                    dest.unlink(missing_ok=True)
-                    raise HTTPException(413, f"File exceeds {max_gb} GB limit")
-                out.write(chunk)
-        return {"path": str(dest.resolve()), "filename": file.filename, "size": size}
 
     @app.get("/api/algorithms")
     async def get_algorithms() -> dict[str, Any]:

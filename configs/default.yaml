@@ -351,6 +351,7 @@ api:
   cors_origins:
     - "*"
   max_upload_gb: 50.0
+  upload_reserve_mb: 256  # keep a little working space; upload capacity is checked before saving
 
 # Object detection (Phase 2 hooks — optional weights)
 object_detection:
