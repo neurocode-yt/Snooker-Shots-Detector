@@ -29,3 +29,15 @@ def test_resolver_skips_incompatible_path_binary(tool, resolver, tmp_path, monke
     )
 
     assert resolver() == str(compatible)
+
+
+@pytest.mark.parametrize(
+    ("variable", "resolver"),
+    [("SNOOKER_FFMPEG", ffmpeg.find_ffmpeg), ("SNOOKER_FFPROBE", ffmpeg.find_ffprobe)],
+)
+def test_resolver_uses_packaged_android_executable(variable, resolver, tmp_path, monkeypatch):
+    binary = tmp_path / "libmedia.so"
+    binary.touch()
+    monkeypatch.setenv(variable, str(binary))
+    monkeypatch.setattr(ffmpeg.shutil, "which", lambda _: pytest.fail("Bundled runtime must take precedence"))
+    assert resolver() == str(binary)

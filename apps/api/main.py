@@ -18,7 +18,7 @@ from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from snooker_ai.utils.models import BaseModel, Field
 
 from snooker_ai.config import Config, load_config
 from snooker_ai.ingestion.probe import probe_video
@@ -1270,4 +1270,6 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
 
 
 # Module-level app for uvicorn apps.api.main:app
-app = create_app()
+# Embedded Android starts the factory with absolute private-storage paths.
+# Importing the module there must not first create a default app rooted at /.
+app = None if os.environ.get("SNOOKER_EMBEDDED") == "1" else create_app()

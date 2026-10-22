@@ -1,0 +1,16 @@
+html { -webkit-text-size-adjust: 100%; }
+body { padding-bottom: env(safe-area-inset-bottom); }
+.top { padding: 1rem; }
+.panel { padding-left: 1rem; padding-right: 1rem; }
+.mobile-note { padding: .8rem 1rem; margin: 0; border-bottom: 1px solid var(--border); color: var(--accent); font-size: .8rem; }
+[data-mobile-desktop] { display: none !important; }
+.points-dialog-question { display: none !important; }
+input, select, textarea { font-size: 16px !important; }
+button, .button { min-height: 44px; }
+@media (max-width: 600px) {
+  .page-heading { margin-bottom: 1.25rem; }
+  .card { padding: 1rem; }
+  .section-heading { flex-wrap: wrap; }
+  .workflow-choices { grid-template-columns: 1fr 1fr; }
+  dialog { max-width: calc(100vw - 16px); max-height: 92dvh; overflow: auto; }
+}

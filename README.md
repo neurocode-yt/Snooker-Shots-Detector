@@ -34,6 +34,11 @@ The web timeline remains available for optional inspection.
 
 ## Requirements
 
+An **on-device Android application** is also available in `apps/android`.
+It embeds the existing classic detector and editor, processes videos on the
+phone, and exports through Android's save/share picker. See
+[Android installation, build and platform notes](docs/android.md).
+
 - Python 3.10+
 - FFmpeg + FFprobe on `PATH`
 - Windows 10/11 (primary), Linux (Docker)

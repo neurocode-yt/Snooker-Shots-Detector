@@ -41,3 +41,10 @@ Thumbs.db
 .idea/
 .vscode/
 *.log
+apps/android/.gradle/
+apps/android/local.properties
+apps/android/vendor/
+apps/android/app/src/main/jniLibs/
+apps/android/app/src/main/python/generated/
+*.apk
+*.aab

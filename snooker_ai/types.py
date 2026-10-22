@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field, model_validator
+from snooker_ai.utils.models import BaseModel, Field, model_validator
 
 
 class EditMode(str, Enum):

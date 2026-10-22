@@ -7,7 +7,7 @@ from pathlib import Path
 
 from fastapi import HTTPException, Request
 from fastapi.responses import FileResponse, Response
-from pydantic import BaseModel
+from snooker_ai.utils.models import BaseModel
 
 from snooker_ai.rendering.shorts import PRESETS, ShortsSettings, preview_png, selection_key
 

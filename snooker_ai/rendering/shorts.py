@@ -16,7 +16,7 @@ from typing import Literal
 
 import cv2
 from PIL import Image, ImageDraw, ImageFont
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from snooker_ai.utils.models import BaseModel, ConfigDict, Field, field_validator
 
 from snooker_ai.config import Config
 from snooker_ai.jobs.lease import JobLease
@@ -71,7 +71,7 @@ PRESETS = {
 class ShortsSettings(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     player_names: str = Field(min_length=1, max_length=160)
-    shot_names: dict[int, str] = Field(default_factory=dict, max_length=10000)
+    shot_names: dict[int, str] = Field(default_factory=dict)
     preset: Literal["classic", "snooker", "bright"] = "classic"
     background: str = "#000000"
     name_color: str = "#FFD700"
@@ -94,6 +94,8 @@ class ShortsSettings(BaseModel):
     @field_validator("shot_names")
     @classmethod
     def clean_overrides(cls, value: dict[int, str]) -> dict[int, str]:
+        if len(value) > 10000:
+            raise ValueError("At most 10000 shot names are allowed")
         if any(len(name) > 160 for name in value.values()):
             raise ValueError("Shot names must be at most 160 characters")
         return {key: cls.clean_name(name) for key, name in value.items() if name.strip()}

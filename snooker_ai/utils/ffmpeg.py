@@ -53,6 +53,9 @@ class FFmpegError(RuntimeError):
 
 
 def find_ffmpeg() -> str:
+    bundled = os.environ.get("SNOOKER_FFMPEG")
+    if bundled and Path(bundled).is_file():
+        return bundled
     candidates = []
     path = shutil.which("ffmpeg")
     if path:
@@ -75,6 +78,9 @@ def find_ffmpeg() -> str:
 
 
 def find_ffprobe() -> str:
+    bundled = os.environ.get("SNOOKER_FFPROBE")
+    if bundled and Path(bundled).is_file():
+        return bundled
     candidates = []
     path = shutil.which("ffprobe")
     if path:
