@@ -41,6 +41,96 @@ Reproduce a comparison on any clip using
 `scripts/check_android_parity.py`; see [build and testing instructions](android.md).
 The test video is not included in the APK or committed to the repository.
 
+## Full original-video comparison (0.3.3)
+
+The second case uses the entire original `match_test_1.mp4` upload: 538.656508
+seconds, 1280×720 at 30 fps, 551,049,996 bytes. The existing desktop job
+`20260719-003332-e9e7d385` contains 30 automatically detected contacts and no
+manual edits. Source SHA256:
+`4c1d95bdd50ed125d015093fc0c4b8e8f79f54bd57646e18ee07e741bc86077a`.
+
+The original was imported through the Android document picker and processed by
+the normal foreground service in airplane mode on Android 15 x86-64. Desktop
+analysis was run independently using the current default detector, CPU feature
+processing and the default Windows D3D11 video decode. Neither desktop
+observations nor desktop detections were transferred to Android. A resumed
+Android run reused only its own on-device proxy and checkpoints.
+
+The completed normal Android job and corrected current PC result agree exactly:
+
+| Check | Result |
+| --- | --- |
+| Current PC / Android detections | 38 / 38 |
+| One-to-one matched detections | 38 |
+| Missing / extra Android detections | 0 / 0 |
+| Maximum contact timestamp difference | 0 seconds |
+| Maximum clip start / end difference | 0 / 0 seconds |
+| Older saved PC contacts represented on Android | 30 / 30 |
+
+Every saved timestamp was compared, not only the totals. See the complete
+[machine-readable comparison](validation/android-match-test-1.json). Inclusion
+and replay flags also match. At 218.5 seconds, PC requests manual ending review
+and Android does not; their stop confidence differs (0.87 versus 0.95), while
+their actual saved cut is identical. Intermediate proposals and numerical
+confidence metadata are not claimed to be identical across native libraries.
+
+Both independent exports retain all 38 detection records and decode fully
+without errors. Both contain 1280×720 H.264 video and AAC audio, approximately
+203.798 seconds after pause removal and overlap merging. The Android automatic
+export finished while the app remained in the background.
+
+This larger case exposed three additional input differences:
+
+- Windows' D3D11 decoder transfers NV12 surfaces. Direct planar YUV420-to-BGR
+  conversion on Android uses a different swscale kernel, even with BT.601.
+  Software NV12 conversion matched the PC's native BGR pixels at source times
+  0, 20, 100, 200 and 500 seconds.
+- Automatic x264 threading resolved to 12 frame/four lookahead threads on the
+  reference PC and six/two on the emulator, changing the proxy's decoded pixels.
+  Matching that setting produced identical SHA256 hashes for **all 16,159
+  decoded 960×540 YUV frames** of the independently generated proxies:
+  `03f7c6aa154d573123a42266754715dbef8ffb489fc6830b0388a8af8c3aa2aa`.
+- Multiplying integer PTS by a rational before converting to float differs from
+  OpenCV's multiplication by a floating-point time base. Matching OpenCV's
+  operation removed one-ULP timestamp differences; 300 consecutive native
+  frame timestamps were checked for exact equality.
+
+The first current desktop run itself missed a contact at **285.566666667 s**
+which the older desktop job had detected. Source frames show the white striking
+a nearby red and reversing. Net displacement hid a strong measured initial
+launch. The shared default detector now accepts this collision only with quiet
+pre-contact observations, cue-address/contact evidence, a consistent initial
+leg, sustained motion and independent object motion. Existing identity and
+quiet/run gates remain required. A recorded numerical fixture exercises this
+contact and rejects versions with missing contact, missing object motion or an
+already-moving white. Result-policy revision 66 invalidates final results while
+retaining compatible raw observations.
+
+The corrected desktop result contains all 30 older contacts, with eight
+additional detections. The shared detector flags the event at 43.033333333 s
+for review; visual inspection shows white-ball placement by hand before the
+break. Agreement between the platforms must not be interpreted as proving
+that every returned event is a true shot.
+
+The installed APK's SHA256 matches the tested build. All 75 packaged shared
+Python source files match the repository byte for byte; no DL module is
+packaged. The numerical dependencies still differ by platform, so matching
+source code alone is not sufficient evidence of matching outputs.
+
+The same full-video job also continued with the launcher in the foreground:
+over a 58.7-second check it advanced from proposal 157 to 161 and wrote a newer
+checkpoint. Updating to the shared collision fix resumed the existing job from
+its source-293.5-second checkpoint and reused its completed local native windows.
+
+The corrected code passed 342 selected classic detector, recall and negative
+regressions (38.43 seconds), followed by 230 processing, checkpoint, pause/resume,
+native-source, decoder, proxy and comparison regressions (40.38 seconds).
+The 0.3.3 APK and instrumentation APK build successfully; Android lint reports
+no errors (12 warnings).
+The final APK's offline instrumentation passed in 21.496 seconds, including
+real decode/seek, analysis, highlight and vertical export, native checkpoint
+interruption/corruption repair and all twelve held-out scoreboard readings.
+
 ## Runtime and regression checks
 
 - Android debug APK, instrumentation APK and Android lint passed.

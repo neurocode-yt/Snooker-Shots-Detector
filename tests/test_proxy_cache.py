@@ -98,6 +98,20 @@ def test_proxy_records_cpu_fallback_and_reuses_it(config, tmp_path, monkeypatch)
     assert calls == []
 
 
+def test_explicit_encoder_threads_invalidate_a_different_proxy(config, tmp_path, monkeypatch):
+    source, output, metadata, calls, _ = _setup(config, tmp_path, monkeypatch)
+    config._data["proxy"]["cpu_threads"] = 12
+    generate_proxy(source, output, metadata, config)
+    assert calls[-1][calls[-1].index("-threads") + 1] == "12"
+    calls.clear()
+    generate_proxy(source, output, metadata, config)
+    assert calls == []
+    config._data["proxy"]["cpu_threads"] = 6
+    generate_proxy(source, output, metadata, config)
+    assert len(calls) == 1
+    assert calls[0][calls[0].index("-threads") + 1] == "6"
+
+
 @pytest.mark.parametrize("source_fps,expected", [(25.,25.), (24.,24.), (50.,30.)])
 @pytest.mark.parametrize("gpu", [False, True])
 def test_proxy_preserves_source_cadence_below_the_configured_ceiling(

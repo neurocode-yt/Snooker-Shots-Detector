@@ -24,7 +24,10 @@ _TIME_BASE = re.compile(r"config in time_base:\s*(\d+/\d+)")
 
 
 class FFmpegCapture:
-    def __init__(self, filename, *args, **kwargs):
+    def __init__(self, filename, *args, pixel_layout="nv12", **kwargs):
+        if pixel_layout not in {"nv12", "yuv420p"}:
+            raise ValueError("Unsupported desktop decoder pixel layout")
+        self.pixel_layout = pixel_layout
         self.path = str(filename)
         self.process = None
         self.reader = None
@@ -99,7 +102,11 @@ class FFmpegCapture:
                    # metadata-aware default: colour changes alter white-ball
                    # identity and can suppress a real native contact.
                    "-map", "0:v:0", "-an", "-sn", "-vf",
-                   "scale=in_color_matrix=bt601:out_color_matrix=bt601,showinfo",
+                   # Windows' default D3D11 decoder transfers NV12 surfaces to
+                   # swscale. Planar YUV420 uses a different conversion kernel,
+                   # moving coloured edges enough to change cue observations.
+                   # Software NV12 conversion reproduces the PC's BGR pixels.
+                   f"format={self.pixel_layout},scale=in_color_matrix=bt601:out_color_matrix=bt601,showinfo",
                    "-fps_mode", "passthrough", "-threads", "1", "-pix_fmt", "bgr24",
                    "-f", "rawvideo", "pipe:1"]
         self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -112,7 +119,10 @@ class FFmpegCapture:
                     message = line.decode("utf-8", "replace")
                     base = _TIME_BASE.search(message)
                     if base:
-                        time_base = Fraction(base[1])
+                        # OpenCV computes pts * (double(num) / double(den)).
+                        # Rounding the full rational only after multiplication
+                        # differs by an ULP and can change >= refresh clocks.
+                        time_base = float(Fraction(base[1]))
                     match = _PTS.search(message)
                     if match and time_base is not None:
                         # pts_time is printed with only six significant digits.

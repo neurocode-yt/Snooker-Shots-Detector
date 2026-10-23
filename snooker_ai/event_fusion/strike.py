@@ -1029,6 +1029,26 @@ class StrikeDetector:
                 and metrics.get("cue_track_visible", 1.0) < 0.5
             )
         )
+        # A close red can reverse the white during the post-contact window.
+        # Its net displacement/direction then cancel a real outgoing leg.
+        # Keep all quiet/identity/contact/run gates below; use that measured
+        # initial leg only when independent object motion confirms a collision.
+        measured_collision = bool(
+            metrics.get("observation_fps", 0) >= 10
+            and metrics.get("post_observation_contiguous", 0) >= .5
+            and metrics.get("cue_shape_measured", 0) >= .5
+            and metrics.get("cue_geometry_confirmed", 0) >= .5
+            and metrics.get("pre_cue_address_score", 0) >= .40
+            and metrics.get("pre_cue_spatial_quiet_ratio", 0) >= .90
+            and metrics.get("pre_measured_cue_quiet_ratio", 0) >= .90
+            and metrics.get("pre_sample_count", 0) >= 8
+            and metrics.get("track_confidence", 0) >= .80
+            and metrics.get("initial_launch_displacement", 0) >= .50
+            and metrics.get("initial_launch_direction", 0) >= .95
+            and metrics.get("anchor_excursion_diameters", 0) >= 1.5
+            and metrics.get("independent_object_motion_count", 0) >= 3
+            and metrics.get("stable_cue_motion_count", 0) >= 3
+            and metrics.get("stable_cue_peak_speed", 0) >= 4.)
         return bool(
             not self._identity_return(metrics)
             and metrics["stationary_ratio"] >= 0.65
@@ -1043,8 +1063,8 @@ class StrikeDetector:
             and (object_tracks_quiet or contact_overrides_object_noise)
             and speed_crossed
             and (uninterrupted_launch or contact_bridged_launch)
-            and metrics["cue_displacement_diameters"] >= 0.50
-            and (metrics["cue_direction_consistency"] >= 0.40
+            and (metrics["cue_displacement_diameters"] >= 0.50 or measured_collision)
+            and (metrics["cue_direction_consistency"] >= 0.40 or measured_collision
                  or (metrics.get("initial_launch_displacement", 0) >= 1.25
                      and metrics.get("initial_launch_direction", 0) >= .95
                      and metrics.get("pre_cue_address_score", 0) >= .70

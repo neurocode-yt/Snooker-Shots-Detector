@@ -36,13 +36,16 @@ def main():
 
     from snooker_ai.config import load_config
     from snooker_ai.pipeline.analyzer import Analyzer
+    from snooker_ai.utils.logging import setup_logging
 
+    setup_logging()
     config = load_config(overrides={"device": "cpu", "analysis": {
         "native_contact_workers": 1, "native_contact_backend": "thread"}})
     print("Analyzing desktop reference", flush=True)
     result = Analyzer(config, directory / "desktop").analyze(source, "android-parity")
     reference = directory / "desktop-reference.json"
-    reference.write_text(json.dumps({"source_sha256": identity, "shots": [
+    reference.write_text(json.dumps({"source_sha256": identity,
+        "original_duration": result.original_duration, "shots": [
         {key: getattr(shot, key) for key in ("cue_strike", "clip_start", "clip_end")}
         for shot in result.shots]}, indent=2))
 
@@ -70,8 +73,15 @@ def main():
     report = run("exec-out", "run-as", package, "cat",
                  private + "/files/snooker-parity/broadcast-parity.json", capture_output=True).stdout
     (directory / "android-reference.json").write_bytes(report)
+    from snooker_ai.evaluation.parity import compare_shots
+    compared = compare_shots(json.loads(reference.read_text())["shots"], json.loads(report)["shots"])
+    (directory / "comparison.json").write_text(json.dumps(compared, indent=2))
+    print(f"Matched {compared['matched_count']} contacts; missing {len(compared['missing'])}; "
+          f"extra {len(compared['extra'])}; maximum boundary errors {compared['maximum_error_seconds']}", flush=True)
     if "OK (1 test)" not in completed.stdout:
         raise SystemExit("Android parity FAILED. See " + str(directory))
+    if not compared["passed"]:
+        raise SystemExit("Full per-shot comparison FAILED. See " + str(directory))
     print("Desktop/Android parity passed: " + str(directory), flush=True)
 
 

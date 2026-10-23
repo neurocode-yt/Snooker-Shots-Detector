@@ -17,6 +17,7 @@ def check_broadcast(source, expected_path, storage, native_dir):
     import mobile_runtime
     import time
     from snooker_ai.pipeline.analyzer import Analyzer
+    from snooker_ai.evaluation.parity import compare_shots
 
     mobile_runtime.start(storage, native_dir)
     source = Path(source)
@@ -30,15 +31,14 @@ def check_broadcast(source, expected_path, storage, native_dir):
     result = Analyzer(mobile_runtime._config, directory).analyze(source, "broadcast-parity")
     report = {
         "source_sha256": expected["source_sha256"],
+        "original_duration": result.original_duration,
         "shots": [{key: getattr(shot, key) for key in ("cue_strike", "clip_start", "clip_end")}
                   for shot in result.shots],
         "directory": str(directory),
     }
+    report["comparison"] = compare_shots(expected["shots"], report["shots"])
     Path(storage, "broadcast-parity.json").write_text(json.dumps(report, indent=2))
-    assert len(report["shots"]) == len(expected["shots"]), report
-    for actual, reference in zip(report["shots"], expected["shots"]):
-        for key in reference:
-            assert abs(actual[key] - reference[key]) < .001, (key, actual, reference)
+    assert report["comparison"]["passed"], report["comparison"]
     return json.dumps(report)
 
 

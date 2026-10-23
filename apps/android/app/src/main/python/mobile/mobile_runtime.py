@@ -50,12 +50,15 @@ def start(storage, native_dir):
                   "jobs_dir": str(root / "jobs"), "outputs_dir": str(root / "outputs"),
                   "models_dir": str(root / "models")},
         "jobs": {"max_workers": 1},
+        # Match the reference PC's x264 frame/lookahead threading. Letting x264
+        # choose from phone CPU count changes the analysis proxy's pixels.
+        "proxy": {"cpu_threads": 12},
         "analysis": {"native_contact_workers": 1, "native_contact_backend": "thread",
                      "hwaccel_decode": False, "decode_prefetch_frames": 2,
                      "checkpoint_every_samples": 20, "checkpoint_seconds": 15,
                      # Included in the shared checkpoint fingerprint so decoder
                      # corrections never reuse observations from older APKs.
-                     "decoder_profile": "ffmpeg-bgr601-integer-pts-v2"},
+                     "decoder_profile": "ffmpeg-bgr601-nv12-opencv-pts-v4"},
         "api": {"cors_origins": []},
     })
     from apps.api.main import create_app

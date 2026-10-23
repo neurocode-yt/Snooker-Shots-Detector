@@ -117,6 +117,16 @@ release signing key.
   previously changed cue-ball identity and missed a real contact. The decoder
   derives presentation times from integer PTS and the stream time base rather
   than rounded log timestamps, preserving dense tracker refresh decisions.
+  The default conversion first uses NV12 surfaces, matching the Windows
+  D3D11 decoder selected by the desktop's default hardware-decode setting.
+  Converting planar YUV420 directly to BGR uses a different swscale kernel and
+  changes edge pixels even with the same colour matrix. NV12 conversion on
+  Android remains entirely in software; it does not require a phone GPU.
+  Android fixes x264's analysis-proxy frame threading at 12, matching the
+  reference PC's resolved setting (four lookahead threads at 960×540). Automatic
+  thread selection previously chose six/two on the emulator and changed proxy
+  pixels. The shared proxy builder accepts `proxy.cpu_threads`; desktop behavior
+  and cache signatures remain unchanged when this setting is absent.
   Colour parity, timestamp precision, VFR, seek and decoder failure behavior
   have dedicated host tests. Decoder revisions invalidate analysis checkpoints.
 - Native executable wrappers reside in Android's read-only `nativeLibraryDir`,
@@ -147,6 +157,14 @@ analysis directory, and the check fails if any shot or boundary differs. Reports
 are saved under `apps/android/vendor/parity/`. The source fixture is transferred
 only for testing and is not embedded in the distributed APK. This check covers
 the default detector; it does not test DL Algo.
+
+To compare results from normal app jobs, retrieve their `analysis.json` files
+and run `scripts/compare_detection_results.py PC.json Android.json --output report.json`.
+This matches strokes one to one by contact time, lists missing and extra
+detections separately, and checks every contact, clip start and clip end within
+1 ms. Equal totals alone do not pass. When both input reports contain
+`source_sha256`, differing source bytes are rejected. The comparison identifies
+agreement between runs; neither run is treated as human-labelled ground truth.
 
 Runtime pins: Chaquopy 17.0.0, NumPy 1.23.3, OpenCV 4.5.1.48, SciPy 1.8.1,
 Pillow 11.0.0, Pydantic 1.10.26, FastAPI 0.115.14 and Starlette 0.46.2.

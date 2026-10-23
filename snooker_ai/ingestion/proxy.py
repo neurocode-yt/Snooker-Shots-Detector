@@ -68,6 +68,10 @@ def generate_proxy(
         target_fps = min(target_fps, float(metadata.fps))
     crf = int(proxy_cfg.get("crf", 28))
     preset = str(proxy_cfg.get("preset", "veryfast"))
+    # Auto x264 threading changes the decoded analysis pixels across CPUs.
+    # Preserve desktop defaults and cache signatures when unspecified.
+    cpu_threads = proxy_cfg.get("cpu_threads")
+    thread_args = [] if cpu_threads is None else ["-threads", str(max(1, int(cpu_threads)))]
     keyframe_s = max(0.25, float(proxy_cfg.get("seek_keyframe_seconds", 2.0)))
     gop_frames = max(1, int(round(target_fps * keyframe_s)))
     review_audio_bitrate = str(proxy_cfg.get("review_audio_bitrate", "96k"))
@@ -92,6 +96,8 @@ def generate_proxy(
         },
         "audio": {"source": source_signature, "sample_rate": audio_sr},
     }
+    if cpu_threads is not None:
+        signatures["video"]["cpu_threads"] = int(thread_args[-1])
     try:
         previous_signatures = json.loads(signature_path.read_text(encoding="utf-8"))
         if not isinstance(previous_signatures, dict):
@@ -198,6 +204,7 @@ def generate_proxy(
                 f"scale={pw}:{ph}:flags=bicubic,fps={target_fps}",
                 "-c:v",
                 "libx264",
+                *thread_args,
                 "-preset",
                 preset,
                 "-crf",
@@ -235,6 +242,7 @@ def generate_proxy(
                 f"scale={pw}:{ph}:flags=bicubic,fps={target_fps}",
                 "-c:v",
                 "libx264",
+                *thread_args,
                 "-preset",
                 preset,
                 "-crf",
