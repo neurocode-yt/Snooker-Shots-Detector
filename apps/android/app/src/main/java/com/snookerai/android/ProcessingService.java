@@ -59,6 +59,10 @@ public class ProcessingService extends Service {
                     for (int attempt = 0; attempt < 600; attempt++) {
                         if (Python.getInstance().getModule("mobile_runtime").callAttr("ready").toBoolean()) {
                             ready = true;
+                            if (ProtectionActivity.prefs(this).getBoolean("auto_resume", true)) {
+                                try { Python.getInstance().getModule("mobile_runtime").callAttr("recover_interrupted"); }
+                                catch (Exception error) { android.util.Log.w("SnookerAI", "Automatic recovery unavailable; saved checkpoints kept", error); }
+                            }
                             handler.post(this::poll);
                             return;
                         }
@@ -73,7 +77,7 @@ public class ProcessingService extends Service {
                 }
             });
         }
-        return START_NOT_STICKY;
+        return START_STICKY;
     }
 
     public static HttpURLConnection connection(String url) throws IOException {
@@ -113,6 +117,7 @@ public class ProcessingService extends Service {
                         break;
                     }
                 }
+                ProtectionActivity.prefs(this).edit().putBoolean("work_pending", busy || items.length() > 0).apply();
                 long now = SystemClock.elapsedRealtime();
                 if (busy && (!wakeLock.isHeld() || now - lastWakeRefresh > 5 * 60 * 1000L)) {
                     wakeLock.acquire(10 * 60 * 1000L);

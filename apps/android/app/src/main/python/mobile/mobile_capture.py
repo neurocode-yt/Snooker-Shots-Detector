@@ -32,6 +32,7 @@ class FFmpegCapture:
         self.position = 0
         self.timestamp = 0.0
         self.seek = 0.0
+        self._discard_through = None
         self.opened = False
         try:
             data = ffprobe_json(self.path)
@@ -75,6 +76,15 @@ class FFmpegCapture:
         self.timestamp = self.seek
         self.position = round(self.seek * self.fps)
         self.frame = None
+        self._discard_through = None
+        return True
+
+    def resume_after(self, timestamp, next_index):
+        """Resume by original PTS, including when average FPS cannot locate a frame."""
+        if not self.set(cv2.CAP_PROP_POS_MSEC, timestamp * 1000):
+            return False
+        self.position = next_index
+        self._discard_through = timestamp
         return True
 
     def _start(self):
@@ -128,6 +138,14 @@ class FFmpegCapture:
         self.reader.start()
 
     def grab(self):
+        while self._grab_decoded():
+            if self._discard_through is None or self.timestamp > self._discard_through + 1e-9:
+                self._discard_through = None
+                return True
+            self.position -= 1  # the saved frame is already in the detector state
+        return False
+
+    def _grab_decoded(self):
         if not self.opened:
             return False
         if self.process is None:

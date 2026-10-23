@@ -13,7 +13,9 @@ open it. Allow installation from your chosen Files/browser application if
 Android requests it. This is a development-signed APK, suitable for direct
 installation; it is not a Play Store release.
 
-1. Open **Snooker AI** and allow notifications to see processing progress.
+1. Open **Snooker AI**. Its **Background & checkpoints** setup links to Android's
+   battery exemption, notification and app settings. Enable unrestricted
+   background use and notifications. The same setup remains available below the editor.
 2. Choose **All shots**, **Pots only**, **Pots + fouls**, or **Edit shots**.
 3. Choose a match using Android's document picker and start processing.
 4. Review or adjust the saved shot timeline if needed. Use **Download** to pick
@@ -41,15 +43,42 @@ app storage removes the private library. Save finished exports to shared storage
 
 Processing runs in a foreground service and displays a notification. It
 continues when leaving the editor or turning off the screen while Android
-permits the service to run. **Pause/Resume** and **Continue processing** use the
-same saved checkpoints as desktop. Force-stopping, device restarts, low storage
-and vendor battery restrictions can interrupt processing; reopen and continue
-the saved job. Android 15 and later impose a six-hour background media-processing
-limit. Long matches can take longer than their duration and warm the phone;
+permits the service to run. It requests a sticky service restart after an OS
+process kill and automatically continues interrupted jobs through the existing
+Continue routes. Manually paused work stays paused. After a reboot, a notification
+opens the app to resume work; Android 15 prohibits launching this service from boot.
+Force-stop requires reopening the app. Android 15 and later impose a
+[six-hour background media-processing limit](https://developer.android.com/develop/background-work/services/fgs/timeout).
+Long matches can take longer than their duration and warm the phone;
 full-match speed and accuracy must be measured on the user's actual handset and
 broadcasts. The Android dependency versions differ from desktop. Matching a
 tested clip does not establish identical accuracy on every broadcast; use the
 comparison check below before relying on a new device or input format.
+
+## Processing checkpoints
+
+Both the coarse scan and native confirmation windows save full streaming
+detector state every **20 analysed samples or 15 seconds**, whichever is reached
+first at a frame boundary. This includes tracking, flow, table masks, sampling
+clock, context, feature prefix and the next frame. Completed stages and native
+windows are also cached. Continue reuses completed work and seeks within the
+unfinished window; it does not rerun the match from the beginning. Native Android
+resume uses the original presentation timestamp, including for VFR footage.
+A completed early-stop snapshot never decodes extra frames when restored.
+
+Saves use atomic replacement and fsync. Before publishing progress, checkpoint
+or edit files, Android keeps three checksum-verified local recovery generations
+in a synchronous SQLite WAL index with immutable data objects. Startup repairs
+damaged primary files from a valid generation. A recovery-save failure propagates
+instead of silently skipping a detector window. Superseded generations are pruned.
+The default detector's rules, thresholds and sampling rates are unchanged.
+
+Only progress and edits receive these extra recovery copies; imported videos
+are not duplicated by checkpoint protection. Keep original videos separately.
+These copies protect against process termination and damaged individual saves,
+and remain inside app storage: uninstalling or clearing data removes them.
+Work after the last durable checkpoint can repeat. An unfinished proxy or MP4
+render can restart that stage, while completed detection remains reusable.
 
 ## Build on Windows
 

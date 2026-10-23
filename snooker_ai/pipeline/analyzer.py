@@ -27,6 +27,7 @@ import cv2
 import numpy as np
 
 from snooker_ai.config import Config
+from snooker_ai.utils.persistence import RecoverySaveError
 from snooker_ai.utils.work_control import WorkPaused, check_pause, current_control
 from snooker_ai.event_fusion.strike import StrikeDetector
 from snooker_ai.event_fusion.rack_idle import RackIdleGate
@@ -1010,10 +1011,16 @@ class Analyzer:
         self.tracker = BallTracker()
         self._last_cue_tip = None
 
-        # Only the full coarse scan is checkpointed here. Native windows already
-        # have their own completed-window caches, which Continue reuses.
-        snapshot_path = self.job_dir / "coarse_partial.npz"
-        snapshot_enabled = bool(checkpoint_signature and collect_scene_observations)
+        # Save streaming state inside a window as well as the completed-window
+        # cache: native confirmation can take minutes on a phone.
+        snapshot_path = self.job_dir / ("coarse_partial.npz" if collect_scene_observations else "native_partial.npz")
+        snapshot_enabled = bool(checkpoint_signature)
+        if checkpoint_signature and not collect_scene_observations:
+            checkpoint_signature = hashlib.sha256(json.dumps([
+                checkpoint_signature, requested_start, end_time, sample_fps,
+            ]).encode()).hexdigest()
+        initial_idx = idx
+        completed_snapshot = False
         next_sample_t = start_time
         saved_at = time.monotonic()
         checkpoint_every = max(1, int(self.config.get("analysis.checkpoint_every_samples", 120)))
@@ -1041,7 +1048,10 @@ class Analyzer:
                             or state["kept"] != len(restored_features)
                             or not 0 <= restored_features[-1].t < duration):
                         raise ValueError("Invalid partial checkpoint coverage")
-                    if not cap.set(cv2.CAP_PROP_POS_FRAMES, next_idx):
+                    seeked = (cap.resume_after(restored_features[-1].t, next_idx)
+                              if resize_to is not None and hasattr(cap, "resume_after")
+                              else cap.set(cv2.CAP_PROP_POS_FRAMES, next_idx))
+                    if not seeked:
                         raise RuntimeError("Decoder cannot seek to the saved checkpoint")
                     if abs(cap.get(cv2.CAP_PROP_POS_FRAMES) - next_idx) > .5:
                         raise RuntimeError("Decoder did not reach the saved checkpoint")
@@ -1064,7 +1074,11 @@ class Analyzer:
                         rack_gate.__dict__.update(snapshot["rack_gate"])
                     self.broadcast_context.__dict__.update(snapshot["broadcast"])
                     self._confirmed_target_returns = snapshot["target_returns"]
-                    scene_stream.__dict__.update(snapshot["scene_stream"])
+                    if scene_stream is not None:
+                        scene_stream.__dict__.update(snapshot["scene_stream"])
+                    completed_snapshot = snapshot.get("complete", False)
+                    logger.info("Restored %s checkpoint at frame %d (%.3fs, %d samples)",
+                                checkpoint_stage, next_idx, features[-1].t, kept)
                     if progress:
                         progress(features[-1].t / duration,
                                  f"Continuing from saved checkpoint at {features[-1].t:.1f}s")
@@ -1072,7 +1086,7 @@ class Analyzer:
                 logger.warning("Ignoring invalid partial checkpoint: %s", exc)
                 # A malformed state must not combine a restored prefix with a
                 # fresh decoder starting at zero.
-                features, idx, kept = [], 0, 0
+                features, idx, kept = [], initial_idx, 0
                 prev_gray = prev_hist = prev_image = prev_sample_t = None
                 camera_scene_id, next_sample_t = 0, start_time
                 geometry, current_view, current_view_extra = ViewGeometry(), CameraViewType.OTHER, {}
@@ -1081,7 +1095,7 @@ class Analyzer:
                 interaction = TableInteractionDetector()
                 if rack_gate is not None:
                     rack_gate = RackIdleGate()
-                scene_stream = self.scene_det.start_stream()
+                scene_stream = self.scene_det.start_stream() if collect_scene_observations else None
                 self.table.reset()
                 self.motion.reset()
                 self.objects.reset()
@@ -1089,15 +1103,15 @@ class Analyzer:
                 self._last_cue_tip = None
                 self.broadcast_context.reset_observations(preserve_target=False)
                 self._confirmed_target_returns = []
-                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                cap.set(cv2.CAP_PROP_POS_FRAMES, initial_idx)
 
-        def persist_snapshot(frame_idx: int, state: dict) -> None:
+        def persist_snapshot(frame_idx: int, state: dict, *, complete: bool = False) -> None:
             nonlocal saved_at
             if not snapshot_enabled:
                 return
             save_snapshot(snapshot_path, {
                 "version": 1, "signature": checkpoint_signature, "duration": duration,
-                "sample_fps": sample_fps, "next_idx": frame_idx + 1,
+                "sample_fps": sample_fps, "next_idx": frame_idx + 1, "complete": complete,
                 "state": {key: state[key] for key in state_names},
                 "features": [self._cache_feature(item) for item in features],
                 "table_masks": self.table._mask_history,
@@ -1108,7 +1122,8 @@ class Analyzer:
                 "rack_gate": vars(rack_gate) if rack_gate is not None else {},
                 "broadcast": vars(self.broadcast_context),
                 "target_returns": self._confirmed_target_returns,
-                "scene_stream": {key: value for key, value in vars(scene_stream).items() if key != "detector"},
+                "scene_stream": ({key: value for key, value in vars(scene_stream).items() if key != "detector"}
+                                 if scene_stream is not None else {}),
             })
             self._write_checkpoint({
                 "stage": checkpoint_stage, "signature": checkpoint_signature,
@@ -1116,6 +1131,12 @@ class Analyzer:
                 "frame_idx": frame_idx, "features": len(features),
             })
             saved_at = time.monotonic()
+
+        if completed_snapshot:
+            cap.release()
+            observations = scene_stream.observations if scene_stream is not None else []
+            self._apply_match_context(features, self._coarse_context_reference)
+            return [f for f in features if f.t >= requested_start-1e-6], observations, []
 
         # Decode runs on a background thread (see utils.video) so FFmpeg/NVDEC
         # frame decode overlaps the OpenCL/CPU feature extraction below.
@@ -1451,7 +1472,7 @@ class Analyzer:
                     )
 
             if snapshot_enabled and features:
-                persist_snapshot(idx, locals())
+                persist_snapshot(idx, locals(), complete=True)
         except WorkPaused:
             if snapshot_enabled and features:
                 persist_snapshot(idx, locals())
@@ -1759,6 +1780,8 @@ class Analyzer:
                         end_time=end,
                         collect_scene_observations=False,
                         checkpoint_stage="dense_refinement",
+                        checkpoint_signature=f"{signature}:dense:{range_idx}" if signature else None,
+                        resume=resume,
                     )
                     if signature:
                         self._save_dense_window(
@@ -1770,6 +1793,8 @@ class Analyzer:
                         f"Resumed window {range_idx + 1}/{total_ranges}",
                     )
                 dense.extend(part)
+            except RecoverySaveError:
+                raise
             except Exception as exc:  # pragma: no cover - codec-specific fallback
                 logger.warning(
                     "Dense refinement failed for %.3f-%.3f: %s",
@@ -1917,6 +1942,8 @@ class Analyzer:
                         sample_fps=fps, start_time=start, end_time=end,
                         collect_scene_observations=False, checkpoint_stage="adaptive_refinement",
                         stop_when=(lambda features: settled(features, candidate, history)) if candidate is not None else None,
+                        checkpoint_signature=f"{signature}:adaptive:{index}" if signature else None,
+                        resume=resume,
                     )
                 if signature:
                     self._save_dense_window(signature, index, start, end, part)

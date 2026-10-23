@@ -27,6 +27,8 @@ def start(storage, native_dir):
             raise RuntimeError("Previous processing is still pausing. Reopen the app shortly.")
     root = Path(storage)
     root.mkdir(parents=True, exist_ok=True)
+    from mobile_backup import configure
+    configure(root)
     os.chdir(root)
     os.environ["SNOOKER_FFMPEG"] = str(Path(native_dir) / "libffmpeg.so")
     os.environ["SNOOKER_FFPROBE"] = str(Path(native_dir) / "libffprobe.so")
@@ -50,6 +52,7 @@ def start(storage, native_dir):
         "jobs": {"max_workers": 1},
         "analysis": {"native_contact_workers": 1, "native_contact_backend": "thread",
                      "hwaccel_decode": False, "decode_prefetch_frames": 2,
+                     "checkpoint_every_samples": 20, "checkpoint_seconds": 15,
                      # Included in the shared checkpoint fingerprint so decoder
                      # corrections never reuse observations from older APKs.
                      "decoder_profile": "ffmpeg-bgr601-integer-pts-v2"},
@@ -77,6 +80,15 @@ def start(storage, native_dir):
         if request.url.path == "/api/algorithms":
             return JSONResponse({"algorithms": [{"id": "classic", "label": "Default detector",
                                                  "available": True, "reason": "Ready"}]})
+        if request.method == "POST" and request.url.path.endswith("/pause"):
+            # A deliberate user pause must never be automatically undone.
+            parts = request.url.path.strip("/").split("/")
+            if len(parts) in {4, 6} and parts[:2] == ["api", "jobs"]:
+                from snooker_ai.jobs.store import JobStore
+                directory = JobStore(_config).job_dir(parts[2])
+                if len(parts) == 6 and parts[3] == "shorts":
+                    directory = directory / "export" / "shorts" / parts[4]
+                (directory / "mobile_system_resume").unlink(missing_ok=True)
         response = await call_next(request)
         if request.url.path == "/" or request.url.path.startswith("/review/"):
             content = b"".join([chunk async for chunk in response.body_iterator])
@@ -111,20 +123,60 @@ def pause_all():
         return
     from snooker_ai.jobs.store import JobStore
     from snooker_ai.utils.work_control import WorkControl
+    from snooker_ai.utils.persistence import atomic_text
     from apps.api.main import _ACTIVE_STATUSES
     store = JobStore(_config)
     for meta in store.list_jobs():
         directory = store.job_dir(meta["job_id"])
         if meta.get("status") in _ACTIVE_STATUSES:
-            WorkControl(directory).request()
+            control = WorkControl(directory)
+            if not control.requested():
+                atomic_text(directory / "mobile_system_resume", "1")
+                control.request()
         for batch in directory.glob("export/shorts/*"):
             manifest = batch / "manifest.json"
             if manifest.is_file():
                 try:
                     if json.loads(manifest.read_text())["status"] in {"queued", "rendering"}:
-                        WorkControl(batch).request()
+                        control = WorkControl(batch)
+                        if not control.requested():
+                            atomic_text(batch / "mobile_system_resume", "1")
+                            control.request()
                 except (OSError, ValueError, KeyError):
                     pass
+
+
+def recover_interrupted():
+    """Use the normal Continue routes: preserve edits, export intent and queue."""
+    import urllib.request
+    from snooker_ai.jobs.store import JobStore
+    from snooker_ai.utils.work_control import WorkControl
+    store = JobStore(_config)
+
+    def request(path, method="GET"):
+        req = urllib.request.Request(_url + path, method=method,
+                                     headers={"Cookie": "snooker_mobile=" + _token})
+        with urllib.request.urlopen(req, timeout=30) as response:
+            return json.load(response)
+
+    resumed = []
+    for item in request("/api/work")["items"]:
+        directory = store.job_dir(item["job_id"])
+        if item["kind"] == "shorts":
+            directory = directory / "export" / "shorts" / item["batch_id"]
+        marker = directory / "mobile_system_resume"
+        user_pause = WorkControl(directory).requested() and not marker.is_file()
+        if item["can_resume"] and not user_pause and (item["status"] == "interrupted" or marker.is_file()):
+            try:
+                request(item["resume_url"], "POST")
+                marker.unlink(missing_ok=True)
+                resumed.append(item["task_id"])
+            except Exception:
+                # Keep the checkpoint and marker. The user can retry Continue
+                # after resolving a missing source or full storage.
+                import logging
+                logging.getLogger(__name__).exception("Could not resume %s", item["task_id"])
+    return json.dumps(resumed)
 
 
 def stop():

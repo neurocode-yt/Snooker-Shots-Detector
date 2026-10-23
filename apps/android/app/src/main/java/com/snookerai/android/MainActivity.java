@@ -1,9 +1,7 @@
 package com.snookerai.android;
 
-import android.Manifest;
 import android.app.*;
 import android.content.*;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.*;
 import android.view.*;
@@ -19,6 +17,7 @@ public class MainActivity extends Activity {
     private WebView web;
     private LinearLayout screen;
     private TextView message;
+    private Button protection;
     private ValueCallback<Uri[]> fileCallback;
     private String exportUrl;
     private String exportMime;
@@ -46,10 +45,12 @@ public class MainActivity extends Activity {
         message.setText("Snooker AI\n\nStarting your on-device editor…");
         screen.addView(message);
         setContentView(screen);
-        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
-            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 20);
         startForegroundService(new Intent(this, ProcessingService.class));
         handler.post(this::awaitEditor);
+        if (!ProtectionActivity.prefs(this).getBoolean("setup_shown", false)) {
+            ProtectionActivity.prefs(this).edit().putBoolean("setup_shown", true).apply();
+            startActivity(new Intent(this, ProtectionActivity.class));
+        }
     }
 
     private void awaitEditor() {
@@ -101,6 +102,7 @@ public class MainActivity extends Activity {
                 fullScreen = view;
                 fullScreenCallback = callback;
                 web.setVisibility(View.GONE);
+                if (protection != null) protection.setVisibility(View.GONE);
                 screen.addView(view, new LinearLayout.LayoutParams(-1, -1));
             }
             @Override public void onHideCustomView() { closeFullScreen(); }
@@ -132,7 +134,12 @@ public class MainActivity extends Activity {
             catch (ActivityNotFoundException error) { exportUrl = null; Toast.makeText(this, "No document provider available", Toast.LENGTH_LONG).show(); }
         });
         screen.removeView(message);
-        screen.addView(web, new LinearLayout.LayoutParams(-1, -1));
+        screen.addView(web, new LinearLayout.LayoutParams(-1, 0, 1));
+        protection = new Button(this);
+        protection.setText("Background & checkpoints");
+        protection.setAllCaps(false);
+        protection.setOnClickListener(view -> startActivity(new Intent(this, ProtectionActivity.class)));
+        screen.addView(protection, new LinearLayout.LayoutParams(-1, -2));
         web.loadUrl(ProcessingService.baseUrl + "/");
     }
 
@@ -202,6 +209,7 @@ public class MainActivity extends Activity {
         if (web != null && !ProcessingService.ready) {
             closeFullScreen();
             screen.removeView(web);
+            screen.removeView(protection);
             web.destroy();
             web = null;
             loaded = false;
@@ -217,6 +225,7 @@ public class MainActivity extends Activity {
         screen.removeView(fullScreen);
         fullScreen = null;
         web.setVisibility(View.VISIBLE);
+        if (protection != null) protection.setVisibility(View.VISIBLE);
         fullScreenCallback.onCustomViewHidden();
         fullScreenCallback = null;
     }

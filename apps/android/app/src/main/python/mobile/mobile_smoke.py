@@ -121,6 +121,7 @@ def run(storage, native_dir):
     assert abs(capture.get(cv2.CAP_PROP_POS_MSEC) - 3200) < 2
     capture.release()
     config = mobile_runtime._config
+    checkpoint_report = check_checkpoint_resume(source, config, metadata.duration, directory)
     # The actual classic analyzer must finish; no mocks or server-side worker.
     result = Analyzer(config, directory / "analysis").analyze(source, "android-smoke")
     assert result.original_duration >= 9.9
@@ -142,4 +143,53 @@ def run(storage, native_dir):
     return json.dumps({"server": True, "authentication": True, "decoder": True,
                        "analysis_features": len(result.features), "detected_shots": len(result.shots),
                        "highlight_seconds": output.duration, "shorts": True,
+                       "checkpoint_recovery": checkpoint_report,
                        "opencv": cv2.__version__})
+
+
+def check_checkpoint_resume(source, config, duration, directory):
+    """Real Android decode/track/serialize/restore; no mocked detector output."""
+    from snooker_ai.config import Config
+    from snooker_ai.pipeline.analyzer import Analyzer
+    from snooker_ai.pipeline.checkpoints import load_snapshot
+    from snooker_ai.utils.timebase import TimeMapper
+    from snooker_ai.utils.work_control import WorkPaused
+    cfg = Config(config.as_dict())
+    cfg._data["analysis"]["checkpoint_every_samples"] = 4
+    mapper = TimeMapper(duration, duration, 10)
+    options = dict(sample_fps=10, start_time=2, end_time=5,
+                   checkpoint_signature="android-native-recovery", resume=False)
+    jobs = Path(cfg.get("paths.jobs_dir"))
+    whole = Analyzer(cfg, jobs / "checkpoint-smoke-whole")
+    whole._native_source = source
+    expected, _, _ = whole._extract_features(source, None, mapper, duration, **options)
+    interrupted = Analyzer(cfg, jobs / "checkpoint-smoke-interrupted")
+    interrupted._native_source = source
+    original = interrupted._write_checkpoint
+
+    def fail(data):
+        original(data)
+        if data["source_time"] >= 3:
+            raise WorkPaused()
+
+    interrupted._write_checkpoint = fail
+    try:
+        interrupted._extract_features(source, None, mapper, duration, **options)
+        raise AssertionError("Interruption was not reached")
+    except WorkPaused:
+        pass
+    saved = load_snapshot(interrupted.job_dir / "native_partial.npz")
+    from mobile_backup import _store
+    (interrupted.job_dir / "native_partial.npz").write_bytes(b"damaged primary checkpoint")
+    repaired = _store.recover()
+    assert any(path.endswith("checkpoint-smoke-interrupted/native_partial.npz") for path in repaired)
+    assert load_snapshot(interrupted.job_dir / "native_partial.npz")["next_idx"] == saved["next_idx"]
+    resumed = Analyzer(cfg, interrupted.job_dir)
+    resumed._native_source = source
+    messages = []
+    options.update(resume=True, progress=lambda fraction, message: messages.append(message))
+    actual, _, _ = resumed._extract_features(source, None, mapper, duration, **options)
+    assert any("Continuing from saved checkpoint" in message for message in messages)
+    assert [f.model_dump() for f in actual] == [f.model_dump() for f in expected]
+    return {"saved_next_frame": saved["next_idx"], "identical_features": True,
+            "corrupt_primary_repaired": True}

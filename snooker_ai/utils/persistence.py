@@ -8,6 +8,22 @@ import uuid
 from contextlib import contextmanager
 from pathlib import Path
 
+_before_publish = None
+
+
+class RecoverySaveError(RuntimeError):
+    """A required Android recovery copy could not be made durable."""
+
+
+def set_publish_guard(callback=None):
+    """Optionally preserve a durable recovery copy before publishing a write.
+
+    The Android host installs this guard; desktop behavior stays unchanged.
+    A guard failure must propagate so a save is never acknowledged as protected.
+    """
+    global _before_publish
+    _before_publish = callback
+
 
 @contextmanager
 def atomic_output(path: Path, *, binary: bool = False):
@@ -19,6 +35,8 @@ def atomic_output(path: Path, *, binary: bool = False):
             yield stream
             stream.flush()
             os.fsync(stream.fileno())
+        if _before_publish is not None:
+            _before_publish(path, temporary)
         for attempt in range(8):
             try:
                 temporary.replace(path)
@@ -27,6 +45,12 @@ def atomic_output(path: Path, *, binary: bool = False):
                 if attempt == 7:
                     raise
                 time.sleep(min(.25, .01 * 2**attempt))
+        if os.name != "nt":
+            directory = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
     finally:
         temporary.unlink(missing_ok=True)
 

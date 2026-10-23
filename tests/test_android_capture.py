@@ -62,6 +62,36 @@ def test_android_decoder_missing_source(tmp_path):
     assert capture.read() == (False, None)
 
 
+@pytest.mark.parametrize("variable", [False, True])
+def test_checkpoint_resume_preserves_every_original_frame_and_pts(tmp_path, variable):
+    output = tmp_path / "checkpoint.mp4"
+    command = [find_ffmpeg(), "-y", "-f", "lavfi", "-i", "testsrc2=size=128x96:rate=30:duration=2"]
+    if variable:
+        command += ["-vf", "select='if(lt(n,20),not(mod(n,3)),not(mod(n,2)))'", "-fps_mode", "vfr"]
+    run_command(command + ["-c:v", "libx264", str(output)])
+    capture = mobile_capture.FFmpegCapture(output)
+    expected = []
+    try:
+        while capture.grab():
+            expected.append((capture.timestamp, capture.retrieve()[1].copy()))
+    finally:
+        capture.release()
+    # This boundary is deliberately outside the first VFR cadence. Dividing
+    # frame index by average FPS would resume at the wrong original image.
+    boundary = 13
+    resumed = mobile_capture.FFmpegCapture(output)
+    try:
+        assert resumed.resume_after(expected[boundary - 1][0], boundary)
+        assert resumed.get(cv2.CAP_PROP_POS_FRAMES) == boundary
+        for timestamp, image in expected[boundary:]:
+            assert resumed.grab()
+            assert abs(resumed.timestamp - timestamp) < 1e-12
+            np.testing.assert_array_equal(resumed.retrieve()[1], image)
+        assert not resumed.grab()
+    finally:
+        resumed.release()
+
+
 def test_android_decoder_matches_desktop_broadcast_colours(tmp_path):
     """HD colour tags must not change the detector's BGR input on Android."""
     output = tmp_path / "broadcast709.mp4"

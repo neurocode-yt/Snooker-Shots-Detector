@@ -52,19 +52,23 @@ def test_normal_eof_and_intentional_early_close_are_supported():
     iterator.close()
 
 
-def test_coarse_scan_restores_detector_state_without_duplicate_or_missing_samples(
-    config, tmp_path, synthetic_video, monkeypatch,
+@pytest.mark.parametrize("native", [False, True])
+def test_scan_restores_detector_state_without_duplicate_or_missing_samples(
+    config, tmp_path, synthetic_video, monkeypatch, native,
 ):
     config._data["device"] = "cpu"
     config._data["analysis"]["sample_fps"] = 2
     config._data["analysis"]["checkpoint_every_samples"] = 4
     config._data["analysis"]["hwaccel_decode"] = False
     mapper = TimeMapper(source_duration=7, proxy_duration=7, source_fps=15)
-    kwargs = dict(collect_scene_observations=True, checkpoint_stage="coarse_features",
+    kwargs = dict(collect_scene_observations=not native, checkpoint_stage="native" if native else "coarse_features",
+                  sample_fps=15 if native else 2, start_time=2 if native else 0,
                   checkpoint_signature="matching-source-and-settings")
     whole = Analyzer(config, tmp_path / "whole")
+    whole._native_source = synthetic_video if native else None
     expected, expected_scenes, _ = whole._extract_features(synthetic_video, None, mapper, 7, **kwargs)
     interrupted = Analyzer(config, tmp_path / "resumed")
+    interrupted._native_source = synthetic_video if native else None
     original_write = interrupted._write_checkpoint
 
     def stop_after_saved_checkpoint(data):
@@ -75,9 +79,10 @@ def test_coarse_scan_restores_detector_state_without_duplicate_or_missing_sample
     monkeypatch.setattr(interrupted, "_write_checkpoint", stop_after_saved_checkpoint)
     with pytest.raises(RuntimeError, match="power loss"):
         interrupted._extract_features(synthetic_video, None, mapper, 7, **kwargs)
-    saved = load_snapshot(interrupted.job_dir / "coarse_partial.npz")
-    assert len(saved["features"]) == 8
+    saved = load_snapshot(interrupted.job_dir / ("native_partial.npz" if native else "coarse_partial.npz"))
+    assert len(saved["features"]) >= 8
     resumed = Analyzer(config, interrupted.job_dir)
+    resumed._native_source = synthetic_video if native else None
     original_capture = cv2.VideoCapture
     seeked = []
 
@@ -94,7 +99,8 @@ def test_coarse_scan_restores_detector_state_without_duplicate_or_missing_sample
 
     monkeypatch.setattr("snooker_ai.pipeline.analyzer.open_capture", ObservedCapture)
     actual, scenes, _ = resumed._extract_features(synthetic_video, None, mapper, 7, **kwargs)
-    assert seeked == [(cv2.CAP_PROP_POS_FRAMES, saved["next_idx"])]
+    assert seeked[-1] == (cv2.CAP_PROP_POS_FRAMES, saved["next_idx"])
+    assert saved["next_idx"] > 0
     assert [f.model_dump() for f in actual] == [f.model_dump() for f in expected]
     assert scenes == expected_scenes
 
@@ -113,6 +119,29 @@ def test_atomic_checkpoint_write_failure_keeps_previous_valid_snapshot(tmp_path,
         save_snapshot(path, {"state": np.arange(20)})
     assert path.read_bytes() == original_bytes
     np.testing.assert_array_equal(load_snapshot(path)["state"], np.arange(10))
+
+
+def test_finished_native_partial_does_not_decode_beyond_an_early_stop(
+    config, tmp_path, synthetic_video, monkeypatch,
+):
+    config._data["device"] = "cpu"
+    config._data["analysis"]["hwaccel_decode"] = False
+    mapper = TimeMapper(7, 7, 15)
+    kwargs = dict(sample_fps=15, start_time=2, end_time=6,
+                  checkpoint_signature="same-window", stop_when=lambda features: len(features) >= 25)
+    analyzer = Analyzer(config, tmp_path / "job")
+    analyzer._native_source = synthetic_video
+    expected, _, _ = analyzer._extract_features(synthetic_video, None, mapper, 7, **kwargs)
+    assert load_snapshot(analyzer.job_dir / "native_partial.npz")["complete"]
+    resumed = Analyzer(config, analyzer.job_dir)
+    resumed._native_source = synthetic_video
+
+    def unexpected_decode(*args, **kwargs):
+        pytest.fail("A completed early-stop snapshot must not decode more frames")
+
+    monkeypatch.setattr("snooker_ai.pipeline.analyzer.sampled_frames", unexpected_decode)
+    actual, _, _ = resumed._extract_features(synthetic_video, None, mapper, 7, **kwargs)
+    assert [f.model_dump() for f in actual] == [f.model_dump() for f in expected]
 
 
 @pytest.mark.parametrize("corruption", ["archive", "state"])

@@ -63,6 +63,35 @@ The test video is not included in the APK or committed to the repository.
   editor JavaScript regression suites passed. The pure-Python Pydantic fallback
   was also tested separately against validation, review and export contracts.
 
+## Checkpoint recovery update (0.2.0)
+
+- Started a fresh normal queue job on Android 15 using the same broadcast clip.
+  After a partial native window saved 20 observations with `next_idx=50`, sent
+  SIGKILL to the app's UID-owned process while the app was in the background.
+  This bypassed graceful pause/shutdown. Android restarted the sticky service
+  automatically with a new PID. The same job resumed without user input,
+  reused its proxy, 54 coarse observations and completed native windows,
+  finished with the same two shots and exactly the contact/start/end values
+  listed above, and completed its automatic MP4 export.
+- The final Android offline instrumentation passed in 24.958 seconds. In
+  addition to decode, analysis, highlight, Shorts and scoreboard checks, it
+  interrupted a real native scan, deliberately damaged its primary NPZ,
+  repaired it from local recovery storage, restored at frame 34 and required
+  every resumed feature to equal uninterrupted extraction. This exercised the
+  packaged Pydantic implementation, SQLite, fsync and Android FFmpeg seeking.
+- Host interruption tests verify exact feature equality and a nonzero decoder
+  seek for coarse and native windows. A terminal early-stop snapshot returns
+  without decoding additional frames. Real FFmpeg tests verify exact resumed
+  pixels and presentation timestamps for both CFR and VFR video.
+- Recovery tests cover a damaged primary, damaged latest recovery generation,
+  bounded three-generation retention, storage-full failure without replacing
+  the previous save, explicit project deletion, and automatic Continue while
+  preserving manual pauses and original export intent.
+- Background setup, notification/battery settings links and checkpoint status
+  were inspected in the emulator. Build and Android lint pass.
+- All 208 selected host detector, pause/resume, checkpoint, native-window,
+  score-selection and Android decoder regression tests passed (52.25 seconds).
+
 This is evidence for the tested runtime and broadcast excerpt. It is not a
 measurement of full-match recall on physical phones or a guarantee that every
 shot in every broadcast will be detected. Native OpenCV and NumPy versions
