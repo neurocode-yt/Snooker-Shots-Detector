@@ -1,4 +1,4 @@
-# Snooker AI for Android
+# Snooker App for Android
 
 The Android application packages the repository's **default detector, API,
 review editor and FFmpeg exports** inside an APK. Import, proxy generation,
@@ -8,12 +8,12 @@ required after installing the APK.
 
 ## Install and use
 
-Copy `dist/SnookerAI-Android.apk` to a **64-bit Android 10 or newer** phone and
+Copy `dist/Snooker-App.apk` to a **64-bit Android 10 or newer** phone and
 open it. Allow installation from your chosen Files/browser application if
 Android requests it. This is a development-signed APK, suitable for direct
 installation; it is not a Play Store release.
 
-1. Open **Snooker AI**. Its **Background & checkpoints** setup automatically asks
+1. Open **Snooker App**. Its **Background & checkpoints** setup automatically asks
    Android to **Let app always run in background** and then enable processing
    notifications. Tap **Allow** in both system prompts. Existing installations
    also receive this setup on updating to v0.4.2 if protection is incomplete;
@@ -30,7 +30,7 @@ installation; it is not a Play Store release.
    share sheet, including compatible installed video editors.
 5. Install the official **CapCut** Android app and complete its first-run setup
    and video-access prompt, then tap **Open in CapCut** in
-   the video library or editor. Snooker AI prepares each included live shot as
+   the video library or editor. Snooker App prepares each included live shot as
    a separate MP4 with audio, saves it under **Movies/Snooker AI/CapCut** and
    opens CapCut's editor with those clips. Confirm an import if CapCut requests
    it. Close any project already open in CapCut before importing another.
@@ -51,7 +51,7 @@ option is exposed. Computer GPU acceleration is not bundled. On Android, the
 CapCut handoff uses its multiple-video import action with MediaStore content URIs;
 it does not write Windows draft files into CapCut's private app data. The imported
 shots remain separate clips. To extend a cut beyond its rendered footage, adjust
-the saved trim in Snooker AI and reopen CapCut. Updated edits create a new clip
+the saved trim in Snooker App and reopen CapCut. Updated edits create a new clip
 generation and preserve media previously handed to CapCut.
 Keep the exported Movies clips while their CapCut project is in use: CapCut may
 reference these files instead of copying them. Existing clips are checksum-checked
@@ -97,7 +97,7 @@ These are different from dismissing the editor or its notification. Reopen the
 app to resume from its durable checkpoints; processing cannot be guaranteed
 while Android has stopped the app. Android 15 and later impose a
 [six-hour background media-processing limit](https://developer.android.com/develop/background-work/services/fgs/timeout).
-At the limit, Snooker AI stops its service and posts **Android paused background
+At the limit, Snooker App stops its service and posts **Android paused background
 processing** with a tap-to-resume action. Bringing the app back to the foreground
 resets Android's allowance. Phone manufacturers may impose additional restrictions;
 no setting can promise that Android will never close an app. See Android's

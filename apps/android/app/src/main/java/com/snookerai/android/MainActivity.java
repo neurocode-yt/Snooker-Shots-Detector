@@ -42,7 +42,7 @@ public class MainActivity extends Activity {
         message.setTextColor(0xffeff5f3);
         message.setTextSize(18);
         message.setPadding(28, 70, 28, 28);
-        message.setText("Snooker AI\n\nStarting your on-device editor…");
+        message.setText("Snooker App\n\nStarting your on-device editor…");
         screen.addView(message);
         setContentView(screen);
         startForegroundService(new Intent(this, ProcessingService.class));
@@ -57,7 +57,7 @@ public class MainActivity extends Activity {
     private void awaitEditor() {
         if (isFinishing() || isDestroyed() || loaded) return;
         if (ProcessingService.failure != null) {
-            message.setText("Could not start Snooker AI\n\n" + ProcessingService.failure + "\n\nClose and reopen the app to retry.");
+            message.setText("Could not start Snooker App\n\n" + ProcessingService.failure + "\n\nClose and reopen the app to retry.");
             return;
         }
         if (!ProcessingService.ready) { handler.postDelayed(this::awaitEditor, 250); return; }
@@ -95,7 +95,7 @@ public class MainActivity extends Activity {
                 return null;
             }
             @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame()) Toast.makeText(MainActivity.this, "Local editor unavailable. Reopen Snooker AI to continue saved work.", Toast.LENGTH_LONG).show();
+                if (request.isForMainFrame()) Toast.makeText(MainActivity.this, "Local editor unavailable. Reopen Snooker App to continue saved work.", Toast.LENGTH_LONG).show();
             }
         });
         web.setWebChromeClient(new WebChromeClient() {
@@ -217,7 +217,7 @@ public class MainActivity extends Activity {
             web.destroy();
             web = null;
             loaded = false;
-            message.setText("Snooker AI\n\nRestoring your on-device editor…");
+            message.setText("Snooker App\n\nRestoring your on-device editor…");
             screen.addView(message);
             startForegroundService(new Intent(this, ProcessingService.class));
             handler.post(this::awaitEditor);

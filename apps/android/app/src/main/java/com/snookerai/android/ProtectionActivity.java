@@ -49,7 +49,7 @@ public class ProtectionActivity extends Activity {
     }
     private void open(Intent intent) {
         try { startActivity(intent); }
-        catch (ActivityNotFoundException error) { Toast.makeText(this, "Open Snooker AI's settings in Android Settings", Toast.LENGTH_LONG).show(); }
+        catch (ActivityNotFoundException error) { Toast.makeText(this, "Open Snooker App's settings in Android Settings", Toast.LENGTH_LONG).show(); }
     }
 
     @Override public void onCreate(Bundle saved) {
@@ -76,7 +76,7 @@ public class ProtectionActivity extends Activity {
         button("Enable processing notifications", this::askForNotifications);
         button("Open app battery / auto-start settings", () ->
             open(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName()))));
-        text("If your phone offers Unrestricted battery, Allow background activity or Auto-start, enable them for Snooker AI.", 14);
+        text("If your phone offers Unrestricted battery, Allow background activity or Auto-start, enable them for Snooker App.", 14);
         text("You can press Home, swipe the editor out of Recents or turn off the screen while processing. The notification shows the current stage and percentage; tap it to return. Swiping the progress notification away does not cancel the work.", 14);
         Switch resume = new Switch(this); resume.setText("Automatically resume interrupted work");
         resume.setTextColor(0xffeff5f3); resume.setChecked(prefs(this).getBoolean("auto_resume", true));
@@ -86,7 +86,7 @@ public class ProtectionActivity extends Activity {
         backup = text("Starting checkpoint protection...", 16);
         text("Detection saves its full state every 20 analysed samples or 15 seconds between frames, and after each completed stage and window. If Android closes the app, it continues from the latest saved checkpoint. Only unfinished work after that checkpoint may repeat.", 14);
         text("Progress and edits have three verified local recovery generations. Original videos are not duplicated. Keep your original videos separately. Clearing app data or uninstalling removes these local checkpoints.", 14);
-        text("To keep processing, avoid Android's Active apps > Stop and Force stop buttons: they end the entire app. Android 15+ also limits background media processing to six hours; tap the saved-work notification to continue if that limit is reached. No app can override these controls. Reopening Snooker AI resumes saved work. Work you pause yourself stays paused.", 14);
+        text("To keep processing, avoid Android's Active apps > Stop and Force stop buttons: they end the entire app. Android 15+ also limits background media processing to six hours; tap the saved-work notification to continue if that limit is reached. No app can override these controls. Reopening Snooker App resumes saved work. Work you pause yourself stays paused.", 14);
         button("Return to editor", this::finish);
         handler.post(this::refresh);
     }

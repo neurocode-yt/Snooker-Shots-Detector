@@ -83,7 +83,7 @@ def start(storage, native_dir):
         global _requests
         if (request.headers.get("host") != _url.split("//", 1)[1]
                 or not hmac.compare_digest(request.cookies.get("snooker_mobile", ""), _token)):
-            return JSONResponse({"detail": "Open Snooker AI on this phone"}, status_code=403)
+            return JSONResponse({"detail": "Open Snooker App on this phone"}, status_code=403)
         if request.url.path == "/api/algorithms":
             return JSONResponse({"algorithms": [{"id": "classic", "label": "Default detector",
                                                  "available": True, "reason": "Ready"}]})

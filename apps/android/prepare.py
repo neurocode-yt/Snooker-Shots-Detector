@@ -113,6 +113,10 @@ def prepare(sdk, ndk):
             for child in ["api", "web"]:
                 shutil.copytree(ROOT / name / child, target / child,
                                 ignore=shutil.ignore_patterns("__pycache__"))
+            # Brand only the packaged mobile pages; retain the shared desktop UI.
+            for page in (target / "web").glob("*.html"):
+                page.write_text(page.read_text(encoding="utf-8").replace("Snooker AI", "Snooker App"),
+                                encoding="utf-8")
         else:
             ignored = ["__pycache__"]
             if name == "snooker_ai":

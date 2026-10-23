@@ -31,7 +31,7 @@ public class ProcessingService extends Service {
     private String lastStatus = "";
     private long idleSince;
     private volatile ProcessingStatus current = new ProcessingStatus(true, true, -1,
-        "Snooker AI", "Starting local video editor…", "Restoring saved checkpoints.");
+        "Snooker App", "Starting local video editor…", "Restoring saved checkpoints.");
 
     /** Protect document copies and CapCut publication as well as Python jobs. */
     static final class NativeWork implements AutoCloseable {
@@ -100,7 +100,7 @@ public class ProcessingService extends Service {
                         if (destroyed) return;
                         failure = error.toString();
                         ready = false;
-                        ResumeAfterBoot.show(this, "Snooker AI could not start", "Open the app for details. Saved checkpoints are kept.");
+                        ResumeAfterBoot.show(this, "Snooker App could not start", "Open the app for details. Saved checkpoints are kept.");
                         stopSelf();
                     });
                 }

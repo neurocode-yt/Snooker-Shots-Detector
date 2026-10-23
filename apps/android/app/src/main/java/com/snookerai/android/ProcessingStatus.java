@@ -28,12 +28,12 @@ final class ProcessingStatus {
         }
         if (selected == null && nativeWork == null) {
             boolean saved = items.length() > 0;
-            return new ProcessingStatus(false, saved, -1, "Snooker AI",
+            return new ProcessingStatus(false, saved, -1, "Snooker App",
                 saved ? "Work paused · checkpoints saved" : "Ready · Choose a video to begin",
                 saved ? "Open the app to continue saved work." : "All processing runs on this phone.");
         }
         if (selected == null) return new ProcessingStatus(true, true, -1,
-            "Snooker AI · processing", nativeWork, "You can close the editor. Processing continues in the background.");
+            "Snooker App · processing", nativeWork, "You can close the editor. Processing continues in the background.");
         double progress = selected.optDouble("progress", Double.NaN);
         int percent = Double.isFinite(progress) ? (int)Math.round(Math.max(0, Math.min(1, progress)) * 100) : -1;
         String message = selected.optString("message", selected.optString("status", "Processing"));
@@ -42,7 +42,7 @@ final class ProcessingStatus {
         String detail = (name.isEmpty() ? "" : name + "\n") + message + (percent >= 0 ? " · " + percent + "%" : "")
             + (active > 1 ? "\n" + active + " tasks running or queued." : "")
             + "\nYou can close the editor. Processing continues in the background.";
-        return new ProcessingStatus(true, true, percent, "Snooker AI · processing",
+        return new ProcessingStatus(true, true, percent, "Snooker App · processing",
             message + (percent >= 0 ? " · " + percent + "%" : ""), detail);
     }
 

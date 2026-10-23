@@ -3,6 +3,16 @@
 The APK runs the **default detector only**, using the shared desktop analyzer,
 rules, thresholds and segmentation code. DL source and weights are excluded.
 
+## Android app name (v0.4.3)
+
+The Android application is named **Snooker App** in the installed app label,
+mobile editor, startup messages and processing notifications. The APK's label
+was verified with Android build tools; an in-place emulator update and launch
+confirmed the editor and notification display the new name. The build and lint
+passed with zero errors and eleven warnings. The package ID, signing identity
+and existing media paths remain compatible with installed versions and saved
+CapCut projects. The build script now produces `dist/Snooker-App.apk`.
+
 ## Automatic background permission prompts (v0.4.2)
 
 Evidence is recorded in [`validation/android-permissions.json`](validation/android-permissions.json).

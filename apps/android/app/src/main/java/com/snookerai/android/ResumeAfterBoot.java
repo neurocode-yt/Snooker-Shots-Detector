@@ -7,7 +7,7 @@ import android.content.*;
 public class ResumeAfterBoot extends BroadcastReceiver {
     @Override public void onReceive(Context context, Intent intent) {
         if (!Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction()) || !ProtectionActivity.prefs(context).getBoolean("work_pending", false)) return;
-        show(context, "Snooker AI · saved work is ready", "Tap to resume processing from saved checkpoints");
+        show(context, "Snooker App · saved work is ready", "Tap to resume processing from saved checkpoints");
     }
 
     static void show(Context context, String title, String text) {
