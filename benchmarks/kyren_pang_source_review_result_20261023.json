@@ -1,0 +1,1103 @@
+{
+  "source_review": "benchmarks/kyren_pang_source_review_20261023.json",
+  "job_id": "20261023-225250-a915e3fa",
+  "parent_job_id": "20261023-075154-f6e49efd",
+  "original_detected": 235,
+  "original_selected": 124,
+  "corrected_detected": 274,
+  "corrected_selected": 201,
+  "previous_selected_cuts_preserved": 124,
+  "summary": {
+    "pot": 185,
+    "no_pot": 53,
+    "foul": 3,
+    "points": 0,
+    "unknown": 33,
+    "included": 201,
+    "method": "stable_scores_and_source_review",
+    "policy": 6,
+    "selection": "pots_and_fouls",
+    "score_readings": 5002,
+    "score_layouts": [
+      "paired_boxes"
+    ],
+    "frames": [
+      {
+        "frame": 1,
+        "first_strike": 46.36,
+        "last_strike": 854.72,
+        "first_shot_id": 1,
+        "last_shot_id": 38
+      },
+      {
+        "frame": 2,
+        "first_strike": 1046.96,
+        "last_strike": 1905.68,
+        "first_shot_id": 39,
+        "last_shot_id": 79
+      },
+      {
+        "frame": 3,
+        "first_strike": 2097.76,
+        "last_strike": 3258.2400000000007,
+        "first_shot_id": 80,
+        "last_shot_id": 126
+      },
+      {
+        "frame": 4,
+        "first_strike": 3486.1600000000003,
+        "last_strike": 4758.24,
+        "first_shot_id": 127,
+        "last_shot_id": 175
+      },
+      {
+        "frame": 5,
+        "first_strike": 4971.64,
+        "last_strike": 5613.960011111111,
+        "first_shot_id": 176,
+        "last_shot_id": 210
+      },
+      {
+        "frame": 6,
+        "first_strike": 5841.360011111112,
+        "last_strike": 6455.800011111111,
+        "first_shot_id": 211,
+        "last_shot_id": 239
+      },
+      {
+        "frame": 7,
+        "first_strike": 6652.040011111111,
+        "last_strike": 7427.480011111112,
+        "first_shot_id": 240,
+        "last_shot_id": 274
+      }
+    ],
+    "frame_context_shots": 14,
+    "non_scoring_context_shots": 13,
+    "source_review": {
+      "name": "Kyren Wilson vs Pang Junxu - full source scoring review 2026-10-23",
+      "added_contacts": 39,
+      "updated_records": 26,
+      "frames_reviewed": 7
+    }
+  },
+  "export_duration_seconds": 1348.873,
+  "expected_duration_seconds": 1348.875898446557,
+  "video_codec": "h264",
+  "audio_codec": "aac",
+  "export_bytes": 605185963,
+  "export_sha256": "025e19758095a9a5e1ea78f409cd3f342232e3f320ab6af153fa170287c7c60d",
+  "full_audio_video_decode": "passed",
+  "minimum_frame_correlation": 0.999558776748605,
+  "frame_comparisons": [
+    {
+      "shot_id": 1,
+      "strike": 46.36,
+      "correlation": 0.9998605723366049
+    },
+    {
+      "shot_id": 13,
+      "strike": 433.24,
+      "correlation": 0.9998731944793151
+    },
+    {
+      "shot_id": 15,
+      "strike": 481.64000000000004,
+      "correlation": 0.9998178509784214
+    },
+    {
+      "shot_id": 16,
+      "strike": 510.40000000000003,
+      "correlation": 0.9998671588278456
+    },
+    {
+      "shot_id": 17,
+      "strike": 529.52,
+      "correlation": 0.9998404788750889
+    },
+    {
+      "shot_id": 18,
+      "strike": 553.76,
+      "correlation": 0.9998905853352191
+    },
+    {
+      "shot_id": 19,
+      "strike": 568.1600000000001,
+      "correlation": 0.9998571108653215
+    },
+    {
+      "shot_id": 20,
+      "strike": 583.12,
+      "correlation": 0.9997901647852169
+    },
+    {
+      "shot_id": 21,
+      "strike": 597.52,
+      "correlation": 0.9998949647425265
+    },
+    {
+      "shot_id": 22,
+      "strike": 609.64,
+      "correlation": 0.9998906142803543
+    },
+    {
+      "shot_id": 23,
+      "strike": 625.44,
+      "correlation": 0.9998533281422609
+    },
+    {
+      "shot_id": 24,
+      "strike": 640.96,
+      "correlation": 0.9998443245569654
+    },
+    {
+      "shot_id": 25,
+      "strike": 656.84,
+      "correlation": 0.999886608280978
+    },
+    {
+      "shot_id": 26,
+      "strike": 672.64,
+      "correlation": 0.9998933468721323
+    },
+    {
+      "shot_id": 27,
+      "strike": 683.32,
+      "correlation": 0.9998488727678816
+    },
+    {
+      "shot_id": 28,
+      "strike": 697.72,
+      "correlation": 0.9997935227792418
+    },
+    {
+      "shot_id": 29,
+      "strike": 712.2,
+      "correlation": 0.9998933928431665
+    },
+    {
+      "shot_id": 30,
+      "strike": 724.2800000000001,
+      "correlation": 0.9998240612213286
+    },
+    {
+      "shot_id": 31,
+      "strike": 736.76,
+      "correlation": 0.9996721559470129
+    },
+    {
+      "shot_id": 32,
+      "strike": 750.0,
+      "correlation": 0.9997890143092576
+    },
+    {
+      "shot_id": 33,
+      "strike": 764.6,
+      "correlation": 0.9998340201639879
+    },
+    {
+      "shot_id": 34,
+      "strike": 780.72,
+      "correlation": 0.9998760060585602
+    },
+    {
+      "shot_id": 35,
+      "strike": 792.8000000000001,
+      "correlation": 0.9998684460379507
+    },
+    {
+      "shot_id": 37,
+      "strike": 836.08,
+      "correlation": 0.9998750736043369
+    },
+    {
+      "shot_id": 38,
+      "strike": 854.72,
+      "correlation": 0.9998707526928934
+    },
+    {
+      "shot_id": 39,
+      "strike": 1046.96,
+      "correlation": 0.9998682914967701
+    },
+    {
+      "shot_id": 40,
+      "strike": 1081.92,
+      "correlation": 0.9998156864449178
+    },
+    {
+      "shot_id": 47,
+      "strike": 1255.1200000000003,
+      "correlation": 0.9998579409643746
+    },
+    {
+      "shot_id": 49,
+      "strike": 1315.68,
+      "correlation": 0.9998490701434305
+    },
+    {
+      "shot_id": 50,
+      "strike": 1347.3200000000002,
+      "correlation": 0.9998840920222664
+    },
+    {
+      "shot_id": 51,
+      "strike": 1385.5600000000002,
+      "correlation": 0.9998783041246518
+    },
+    {
+      "shot_id": 52,
+      "strike": 1433.72,
+      "correlation": 0.9999245050764242
+    },
+    {
+      "shot_id": 53,
+      "strike": 1471.28,
+      "correlation": 0.9998280755481683
+    },
+    {
+      "shot_id": 54,
+      "strike": 1496.76,
+      "correlation": 0.9999043830303169
+    },
+    {
+      "shot_id": 55,
+      "strike": 1530.52,
+      "correlation": 0.9998698616272533
+    },
+    {
+      "shot_id": 56,
+      "strike": 1550.48,
+      "correlation": 0.9998866758336281
+    },
+    {
+      "shot_id": 57,
+      "strike": 1567.24,
+      "correlation": 0.9998828907090953
+    },
+    {
+      "shot_id": 58,
+      "strike": 1586.92,
+      "correlation": 0.9998359377902317
+    },
+    {
+      "shot_id": 60,
+      "strike": 1610.0,
+      "correlation": 0.9998220571188773
+    },
+    {
+      "shot_id": 61,
+      "strike": 1626.52,
+      "correlation": 0.9998495636453557
+    },
+    {
+      "shot_id": 62,
+      "strike": 1642.12,
+      "correlation": 0.999874356058012
+    },
+    {
+      "shot_id": 63,
+      "strike": 1657.62,
+      "correlation": 0.999853882574523
+    },
+    {
+      "shot_id": 64,
+      "strike": 1672.64,
+      "correlation": 0.9998024534905497
+    },
+    {
+      "shot_id": 65,
+      "strike": 1694.4,
+      "correlation": 0.9998772056126519
+    },
+    {
+      "shot_id": 66,
+      "strike": 1712.24,
+      "correlation": 0.99991455283877
+    },
+    {
+      "shot_id": 67,
+      "strike": 1726.92,
+      "correlation": 0.9998664516755317
+    },
+    {
+      "shot_id": 68,
+      "strike": 1744.3600000000001,
+      "correlation": 0.9998739346722243
+    },
+    {
+      "shot_id": 69,
+      "strike": 1761.0400000000002,
+      "correlation": 0.9998424198491357
+    },
+    {
+      "shot_id": 70,
+      "strike": 1780.76,
+      "correlation": 0.9998697646852978
+    },
+    {
+      "shot_id": 71,
+      "strike": 1794.2,
+      "correlation": 0.9998846846932025
+    },
+    {
+      "shot_id": 72,
+      "strike": 1810.0,
+      "correlation": 0.9998843500768972
+    },
+    {
+      "shot_id": 73,
+      "strike": 1824.1200000000003,
+      "correlation": 0.9998984264903478
+    },
+    {
+      "shot_id": 74,
+      "strike": 1837.73,
+      "correlation": 0.999558776748605
+    },
+    {
+      "shot_id": 75,
+      "strike": 1851.8400000000001,
+      "correlation": 0.9997697338830412
+    },
+    {
+      "shot_id": 76,
+      "strike": 1864.5600000000002,
+      "correlation": 0.9998010369088909
+    },
+    {
+      "shot_id": 77,
+      "strike": 1877.52,
+      "correlation": 0.999875374429991
+    },
+    {
+      "shot_id": 78,
+      "strike": 1893.16,
+      "correlation": 0.9998053176000424
+    },
+    {
+      "shot_id": 79,
+      "strike": 1905.68,
+      "correlation": 0.9999125694363997
+    },
+    {
+      "shot_id": 80,
+      "strike": 2097.76,
+      "correlation": 0.9998358702650916
+    },
+    {
+      "shot_id": 89,
+      "strike": 2456.54,
+      "correlation": 0.9999154325786026
+    },
+    {
+      "shot_id": 90,
+      "strike": 2484.56,
+      "correlation": 0.9998704701172073
+    },
+    {
+      "shot_id": 92,
+      "strike": 2501.6000000000004,
+      "correlation": 0.9997530663477415
+    },
+    {
+      "shot_id": 93,
+      "strike": 2527.12,
+      "correlation": 0.9998634165569288
+    },
+    {
+      "shot_id": 94,
+      "strike": 2541.92,
+      "correlation": 0.9998954070303439
+    },
+    {
+      "shot_id": 95,
+      "strike": 2555.08,
+      "correlation": 0.9998142528666798
+    },
+    {
+      "shot_id": 96,
+      "strike": 2574.2400000000007,
+      "correlation": 0.999874993456626
+    },
+    {
+      "shot_id": 97,
+      "strike": 2592.08,
+      "correlation": 0.9998885882658095
+    },
+    {
+      "shot_id": 98,
+      "strike": 2617.54,
+      "correlation": 0.9998803103475283
+    },
+    {
+      "shot_id": 104,
+      "strike": 2839.08,
+      "correlation": 0.9998675890103509
+    },
+    {
+      "shot_id": 106,
+      "strike": 2898.4,
+      "correlation": 0.9999097127705717
+    },
+    {
+      "shot_id": 108,
+      "strike": 2942.2400000000007,
+      "correlation": 0.9998464607433674
+    },
+    {
+      "shot_id": 109,
+      "strike": 2962.88,
+      "correlation": 0.9998801782138809
+    },
+    {
+      "shot_id": 111,
+      "strike": 3038.1600000000003,
+      "correlation": 0.9998895873106848
+    },
+    {
+      "shot_id": 112,
+      "strike": 3059.84,
+      "correlation": 0.9998323081188175
+    },
+    {
+      "shot_id": 115,
+      "strike": 3090.0,
+      "correlation": 0.9998290180810567
+    },
+    {
+      "shot_id": 116,
+      "strike": 3108.0,
+      "correlation": 0.9998507879316678
+    },
+    {
+      "shot_id": 117,
+      "strike": 3124.84,
+      "correlation": 0.9998813751228804
+    },
+    {
+      "shot_id": 118,
+      "strike": 3153.04,
+      "correlation": 0.9998974744520468
+    },
+    {
+      "shot_id": 119,
+      "strike": 3173.62,
+      "correlation": 0.9999000717106736
+    },
+    {
+      "shot_id": 120,
+      "strike": 3188.32,
+      "correlation": 0.9998883712867959
+    },
+    {
+      "shot_id": 121,
+      "strike": 3203.62,
+      "correlation": 0.9998716706354933
+    },
+    {
+      "shot_id": 122,
+      "strike": 3216.62,
+      "correlation": 0.9998741124038358
+    },
+    {
+      "shot_id": 123,
+      "strike": 3225.62,
+      "correlation": 0.9998613626994045
+    },
+    {
+      "shot_id": 124,
+      "strike": 3239.44,
+      "correlation": 0.9998549746136547
+    },
+    {
+      "shot_id": 125,
+      "strike": 3248.32,
+      "correlation": 0.9998770125487175
+    },
+    {
+      "shot_id": 126,
+      "strike": 3258.2400000000007,
+      "correlation": 0.9998569547784962
+    },
+    {
+      "shot_id": 127,
+      "strike": 3486.1600000000003,
+      "correlation": 0.9998053612354701
+    },
+    {
+      "shot_id": 131,
+      "strike": 3600.12,
+      "correlation": 0.999906562803794
+    },
+    {
+      "shot_id": 134,
+      "strike": 3667.2400000000007,
+      "correlation": 0.9998886647895634
+    },
+    {
+      "shot_id": 135,
+      "strike": 3688.96,
+      "correlation": 0.9998682560297991
+    },
+    {
+      "shot_id": 136,
+      "strike": 3707.04,
+      "correlation": 0.9997667472013714
+    },
+    {
+      "shot_id": 137,
+      "strike": 3722.84,
+      "correlation": 0.9998622994681685
+    },
+    {
+      "shot_id": 139,
+      "strike": 3749.26,
+      "correlation": 0.9999058697375397
+    },
+    {
+      "shot_id": 140,
+      "strike": 3775.6400000000003,
+      "correlation": 0.9999237596482491
+    },
+    {
+      "shot_id": 141,
+      "strike": 3798.26,
+      "correlation": 0.9999141838105606
+    },
+    {
+      "shot_id": 142,
+      "strike": 3819.28,
+      "correlation": 0.9999049792419407
+    },
+    {
+      "shot_id": 143,
+      "strike": 3849.88,
+      "correlation": 0.9998734829597299
+    },
+    {
+      "shot_id": 144,
+      "strike": 3880.52,
+      "correlation": 0.9998417690890042
+    },
+    {
+      "shot_id": 145,
+      "strike": 3900.62,
+      "correlation": 0.999890564243773
+    },
+    {
+      "shot_id": 147,
+      "strike": 3931.7200000000003,
+      "correlation": 0.9998901667884603
+    },
+    {
+      "shot_id": 149,
+      "strike": 3974.12,
+      "correlation": 0.999885817075912
+    },
+    {
+      "shot_id": 150,
+      "strike": 4007.12,
+      "correlation": 0.9998760811116657
+    },
+    {
+      "shot_id": 151,
+      "strike": 4054.6800000000003,
+      "correlation": 0.9998251694023752
+    },
+    {
+      "shot_id": 159,
+      "strike": 4311.360000000001,
+      "correlation": 0.9997840590795184
+    },
+    {
+      "shot_id": 161,
+      "strike": 4340.6,
+      "correlation": 0.9999013752176619
+    },
+    {
+      "shot_id": 162,
+      "strike": 4354.26,
+      "correlation": 0.9998990764829709
+    },
+    {
+      "shot_id": 163,
+      "strike": 4394.16,
+      "correlation": 0.9998486303369586
+    },
+    {
+      "shot_id": 166,
+      "strike": 4545.96,
+      "correlation": 0.9998090354393318
+    },
+    {
+      "shot_id": 167,
+      "strike": 4571.52,
+      "correlation": 0.9998852299869957
+    },
+    {
+      "shot_id": 168,
+      "strike": 4594.76,
+      "correlation": 0.9998843654514828
+    },
+    {
+      "shot_id": 169,
+      "strike": 4616.62,
+      "correlation": 0.9998518304977602
+    },
+    {
+      "shot_id": 171,
+      "strike": 4634.84,
+      "correlation": 0.999891899493821
+    },
+    {
+      "shot_id": 172,
+      "strike": 4661.76,
+      "correlation": 0.999885928510653
+    },
+    {
+      "shot_id": 173,
+      "strike": 4700.12,
+      "correlation": 0.9998219630622872
+    },
+    {
+      "shot_id": 174,
+      "strike": 4736.96,
+      "correlation": 0.9998809883941453
+    },
+    {
+      "shot_id": 175,
+      "strike": 4758.24,
+      "correlation": 0.9999131529217011
+    },
+    {
+      "shot_id": 176,
+      "strike": 4971.64,
+      "correlation": 0.9998770766098257
+    },
+    {
+      "shot_id": 180,
+      "strike": 5058.08,
+      "correlation": 0.9999041451861574
+    },
+    {
+      "shot_id": 181,
+      "strike": 5087.76,
+      "correlation": 0.9998504092437244
+    },
+    {
+      "shot_id": 182,
+      "strike": 5146.12,
+      "correlation": 0.9998386673819115
+    },
+    {
+      "shot_id": 183,
+      "strike": 5177.76,
+      "correlation": 0.9998821607107592
+    },
+    {
+      "shot_id": 184,
+      "strike": 5185.8,
+      "correlation": 0.9998724952059266
+    },
+    {
+      "shot_id": 185,
+      "strike": 5205.4400000000005,
+      "correlation": 0.9998666266325252
+    },
+    {
+      "shot_id": 186,
+      "strike": 5242.04,
+      "correlation": 0.9998898234354302
+    },
+    {
+      "shot_id": 187,
+      "strike": 5262.240000000001,
+      "correlation": 0.9998387236806586
+    },
+    {
+      "shot_id": 188,
+      "strike": 5296.4400000000005,
+      "correlation": 0.999871699647725
+    },
+    {
+      "shot_id": 189,
+      "strike": 5312.15,
+      "correlation": 0.9998856218053594
+    },
+    {
+      "shot_id": 190,
+      "strike": 5331.15,
+      "correlation": 0.9998928847401369
+    },
+    {
+      "shot_id": 191,
+      "strike": 5346.240011111111,
+      "correlation": 0.9999006183217297
+    },
+    {
+      "shot_id": 192,
+      "strike": 5363.240011111111,
+      "correlation": 0.9998915831100527
+    },
+    {
+      "shot_id": 194,
+      "strike": 5378.920011111111,
+      "correlation": 0.9998965504727311
+    },
+    {
+      "shot_id": 195,
+      "strike": 5396.76,
+      "correlation": 0.9998919562098011
+    },
+    {
+      "shot_id": 196,
+      "strike": 5415.62,
+      "correlation": 0.9998837320630024
+    },
+    {
+      "shot_id": 197,
+      "strike": 5429.62,
+      "correlation": 0.9998332916242878
+    },
+    {
+      "shot_id": 198,
+      "strike": 5447.080011111111,
+      "correlation": 0.999886874720816
+    },
+    {
+      "shot_id": 199,
+      "strike": 5473.800011111111,
+      "correlation": 0.9998836767071905
+    },
+    {
+      "shot_id": 200,
+      "strike": 5488.6800111111115,
+      "correlation": 0.9998684368363436
+    },
+    {
+      "shot_id": 201,
+      "strike": 5502.200011111111,
+      "correlation": 0.9998500112843308
+    },
+    {
+      "shot_id": 202,
+      "strike": 5514.640011111112,
+      "correlation": 0.9998506717553045
+    },
+    {
+      "shot_id": 204,
+      "strike": 5527.360011111112,
+      "correlation": 0.9998842914165956
+    },
+    {
+      "shot_id": 205,
+      "strike": 5540.240011111111,
+      "correlation": 0.9998497358929833
+    },
+    {
+      "shot_id": 206,
+      "strike": 5554.520011111112,
+      "correlation": 0.999808639835718
+    },
+    {
+      "shot_id": 207,
+      "strike": 5565.440011111112,
+      "correlation": 0.9998526159904888
+    },
+    {
+      "shot_id": 208,
+      "strike": 5579.960011111111,
+      "correlation": 0.999874531950218
+    },
+    {
+      "shot_id": 209,
+      "strike": 5599.280011111111,
+      "correlation": 0.9998717949471934
+    },
+    {
+      "shot_id": 210,
+      "strike": 5613.960011111111,
+      "correlation": 0.9998685159201899
+    },
+    {
+      "shot_id": 211,
+      "strike": 5841.360011111112,
+      "correlation": 0.9997988016177063
+    },
+    {
+      "shot_id": 212,
+      "strike": 5885.920011111111,
+      "correlation": 0.999815899166224
+    },
+    {
+      "shot_id": 213,
+      "strike": 5908.960011111111,
+      "correlation": 0.9999022373891473
+    },
+    {
+      "shot_id": 215,
+      "strike": 5938.160011111111,
+      "correlation": 0.9998867749211581
+    },
+    {
+      "shot_id": 216,
+      "strike": 5964.62,
+      "correlation": 0.9998722373217955
+    },
+    {
+      "shot_id": 217,
+      "strike": 5991.5,
+      "correlation": 0.9998824544751759
+    },
+    {
+      "shot_id": 218,
+      "strike": 6024.360011111112,
+      "correlation": 0.999901846799648
+    },
+    {
+      "shot_id": 219,
+      "strike": 6050.000011111111,
+      "correlation": 0.9998274360772409
+    },
+    {
+      "shot_id": 220,
+      "strike": 6071.12,
+      "correlation": 0.9998785655179898
+    },
+    {
+      "shot_id": 221,
+      "strike": 6091.76,
+      "correlation": 0.999916162336703
+    },
+    {
+      "shot_id": 223,
+      "strike": 6111.040011111111,
+      "correlation": 0.9998937902526975
+    },
+    {
+      "shot_id": 224,
+      "strike": 6128.240011111111,
+      "correlation": 0.9998606816752922
+    },
+    {
+      "shot_id": 225,
+      "strike": 6142.6800111111115,
+      "correlation": 0.999890959627459
+    },
+    {
+      "shot_id": 227,
+      "strike": 6165.160011111111,
+      "correlation": 0.9998511222255365
+    },
+    {
+      "shot_id": 228,
+      "strike": 6183.920011111111,
+      "correlation": 0.9999006041606497
+    },
+    {
+      "shot_id": 229,
+      "strike": 6202.12,
+      "correlation": 0.9999139521120757
+    },
+    {
+      "shot_id": 230,
+      "strike": 6232.400011111112,
+      "correlation": 0.9998826140467724
+    },
+    {
+      "shot_id": 231,
+      "strike": 6249.320011111113,
+      "correlation": 0.9998798067138079
+    },
+    {
+      "shot_id": 232,
+      "strike": 6267.080011111111,
+      "correlation": 0.9998972802787384
+    },
+    {
+      "shot_id": 233,
+      "strike": 6304.840011111111,
+      "correlation": 0.9998908779466592
+    },
+    {
+      "shot_id": 234,
+      "strike": 6326.240011111111,
+      "correlation": 0.9998556450311268
+    },
+    {
+      "shot_id": 235,
+      "strike": 6344.6800111111115,
+      "correlation": 0.9999057076187854
+    },
+    {
+      "shot_id": 236,
+      "strike": 6382.400011111112,
+      "correlation": 0.9998401789434533
+    },
+    {
+      "shot_id": 237,
+      "strike": 6407.62,
+      "correlation": 0.9999076081600592
+    },
+    {
+      "shot_id": 238,
+      "strike": 6424.6800111111115,
+      "correlation": 0.9999040002724814
+    },
+    {
+      "shot_id": 239,
+      "strike": 6455.800011111111,
+      "correlation": 0.9998690439871994
+    },
+    {
+      "shot_id": 240,
+      "strike": 6652.040011111111,
+      "correlation": 0.9998889831390502
+    },
+    {
+      "shot_id": 243,
+      "strike": 6758.120011111111,
+      "correlation": 0.9998555477101332
+    },
+    {
+      "shot_id": 244,
+      "strike": 6849.920011111111,
+      "correlation": 0.9998185249969738
+    },
+    {
+      "shot_id": 245,
+      "strike": 6872.880011111111,
+      "correlation": 0.9997609920655107
+    },
+    {
+      "shot_id": 247,
+      "strike": 6898.26,
+      "correlation": 0.9998647685836152
+    },
+    {
+      "shot_id": 248,
+      "strike": 6934.160011111111,
+      "correlation": 0.9998877194047947
+    },
+    {
+      "shot_id": 250,
+      "strike": 6961.7200111111115,
+      "correlation": 0.9998833519847596
+    },
+    {
+      "shot_id": 251,
+      "strike": 7024.880011111111,
+      "correlation": 0.9998618856066717
+    },
+    {
+      "shot_id": 252,
+      "strike": 7044.160011111111,
+      "correlation": 0.9998315461476313
+    },
+    {
+      "shot_id": 253,
+      "strike": 7080.12,
+      "correlation": 0.9998626326051585
+    },
+    {
+      "shot_id": 255,
+      "strike": 7108.240011111111,
+      "correlation": 0.9998870223411195
+    },
+    {
+      "shot_id": 256,
+      "strike": 7128.920011111111,
+      "correlation": 0.9998095161192287
+    },
+    {
+      "shot_id": 257,
+      "strike": 7149.240011111111,
+      "correlation": 0.9998370231621807
+    },
+    {
+      "shot_id": 258,
+      "strike": 7187.920011111111,
+      "correlation": 0.9998133930278048
+    },
+    {
+      "shot_id": 259,
+      "strike": 7205.6800111111115,
+      "correlation": 0.9999182666155007
+    },
+    {
+      "shot_id": 260,
+      "strike": 7227.880011111111,
+      "correlation": 0.9999074076315094
+    },
+    {
+      "shot_id": 261,
+      "strike": 7251.000011111111,
+      "correlation": 0.9998167968038052
+    },
+    {
+      "shot_id": 262,
+      "strike": 7267.080011111111,
+      "correlation": 0.999787455002251
+    },
+    {
+      "shot_id": 264,
+      "strike": 7281.600011111112,
+      "correlation": 0.999859206308298
+    },
+    {
+      "shot_id": 265,
+      "strike": 7299.320011111113,
+      "correlation": 0.9998890900889855
+    },
+    {
+      "shot_id": 266,
+      "strike": 7332.860000000001,
+      "correlation": 0.9998494555933756
+    },
+    {
+      "shot_id": 267,
+      "strike": 7352.160011111111,
+      "correlation": 0.9999023687123777
+    },
+    {
+      "shot_id": 268,
+      "strike": 7366.635,
+      "correlation": 0.9998547079358417
+    },
+    {
+      "shot_id": 269,
+      "strike": 7376.640011111112,
+      "correlation": 0.9998985084437025
+    },
+    {
+      "shot_id": 270,
+      "strike": 7389.760011111111,
+      "correlation": 0.999895812275049
+    },
+    {
+      "shot_id": 271,
+      "strike": 7398.480011111112,
+      "correlation": 0.9998636954156389
+    },
+    {
+      "shot_id": 272,
+      "strike": 7407.520011111112,
+      "correlation": 0.9998639138555085
+    },
+    {
+      "shot_id": 273,
+      "strike": 7416.264999999999,
+      "correlation": 0.9998715407212905
+    },
+    {
+      "shot_id": 274,
+      "strike": 7427.480011111112,
+      "correlation": 0.9998584496205085
+    }
+  ],
+  "parent_analysis_unchanged": true,
+  "full_audio_video_decode_fail_on_error": true,
+  "http_range_download_status": 206,
+  "http_content_range": "bytes 0-1023/605185963"
+}

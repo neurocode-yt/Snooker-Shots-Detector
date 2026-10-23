@@ -1,0 +1,710 @@
+{
+  "name": "Kyren Wilson vs Pang Junxu - full source scoring review 2026-10-23",
+  "source_reviewed": true,
+  "parent_job_id": "20261023-075154-f6e49efd",
+  "parent_analysis_sha256": "a3f7274d9510a711a648dbd00905f8f0985d00fc6e1df8615ee0775bb8421810",
+  "source_filename": "20261023-013555_3f5a3b00_Kyren_Wilson_vs_Pang_Junxu.mp4",
+  "source_size_bytes": 1566624618,
+  "source_sha256": "fba2d5e9eda3f20f03b03547c1586737144283722a72f04e5c4ed3a164f6680d",
+  "source_duration_seconds": 7451.921278,
+  "review_scope": "Entire 7451.92-second source scanned at 2 fps for scores; all 111 excluded records and every uncovered scoring interval inspected against original footage. Contacts added from bounded visual review, not score changes alone.",
+  "review_limit": "New contact intervals are visual review bounds, not frame-exact measured cue instants. New clip ends are reviewed editing boundaries, not confirmed all-ball stops. This repairs this saved match, not the general detector.",
+  "score_scan": {
+    "sample_fps": 2,
+    "samples": 14904,
+    "readable_samples": 6757,
+    "proposals": 40,
+    "observations_sha256": "289f20166cf11afe3626fa3a73520badbf7724a4c27da15a1dca6f99ab4493af"
+  },
+  "updates": [
+    {
+      "shot_id": 50,
+      "strike": 1385.5600000000002,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed red; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 52,
+      "strike": 1471.28,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed red; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 87,
+      "strike": 2555.08,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed brown; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 88,
+      "strike": 2574.2400000000007,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed red; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 89,
+      "strike": 2592.08,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed blue; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 145,
+      "strike": 4545.96,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed red; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 146,
+      "strike": 4571.52,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed black; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 147,
+      "strike": 4594.76,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed red; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 152,
+      "strike": 4736.96,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed blue; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 160,
+      "strike": 5177.76,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed blue; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 162,
+      "strike": 5205.4400000000005,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed pink with transient score correction; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 163,
+      "strike": 5242.04,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed red; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 171,
+      "strike": 5473.800011111111,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed red; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 184,
+      "strike": 5885.920011111111,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed red with delayed score; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 188,
+      "strike": 6024.360011111112,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed black; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 193,
+      "strike": 6142.6800111111115,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed black; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 195,
+      "strike": 6165.160011111111,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed red; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 224,
+      "strike": 7227.880011111111,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed black; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 230,
+      "strike": 7352.160011111111,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed black; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 232,
+      "strike": 7389.760011111111,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed red; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 233,
+      "strike": 7398.480011111112,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed black; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 234,
+      "strike": 7407.520011111112,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed red; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 103,
+      "strike": 3059.84,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed red after preceding foul; excluded or misclassified by automatic score selection."
+    },
+    {
+      "shot_id": 95,
+      "strike": 2839.08,
+      "status": "foul",
+      "included": true,
+      "reason": "Six-point foul; the overhead footage at 2861.4 is its replay."
+    },
+    {
+      "shot_id": 102,
+      "strike": 3038.1600000000003,
+      "status": "foul",
+      "included": true,
+      "reason": "Four-point foul; the score is awarded before the following red, not by it."
+    },
+    {
+      "shot_id": 209,
+      "strike": 6758.120011111111,
+      "status": "foul",
+      "included": true,
+      "reason": "Four-point foul; the score update is delayed past the original result window."
+    }
+  ],
+  "additions": [
+    {
+      "contact_interval": [
+        581.94,
+        584.3
+      ],
+      "clip": [
+        579.94,
+        590.3
+      ],
+      "status": "pot",
+      "reason": "Frame 1 red; source address, launch and pot were inspected."
+    },
+    {
+      "contact_interval": [
+        1495.58,
+        1497.94
+      ],
+      "clip": [
+        1493.58,
+        1503.94
+      ],
+      "status": "pot",
+      "reason": "Frame 2 pink."
+    },
+    {
+      "contact_interval": [
+        1640.94,
+        1643.3
+      ],
+      "clip": [
+        1638.94,
+        1649.3
+      ],
+      "status": "pot",
+      "reason": "Frame 2 red."
+    },
+    {
+      "contact_interval": [
+        1656.44,
+        1658.8
+      ],
+      "clip": [
+        1654.44,
+        1664.8
+      ],
+      "status": "pot",
+      "reason": "Frame 2 pink."
+    },
+    {
+      "contact_interval": [
+        1836.66,
+        1838.8
+      ],
+      "clip": [
+        1834.66,
+        1844.8
+      ],
+      "status": "pot",
+      "reason": "Frame 2 yellow during clearance."
+    },
+    {
+      "contact_interval": [
+        2455.36,
+        2457.72
+      ],
+      "clip": [
+        2453.36,
+        2463.72
+      ],
+      "status": "pot",
+      "reason": "Frame 3 opening scoring red; subsequent replay is excluded."
+    },
+    {
+      "contact_interval": [
+        2500.4,
+        2502.8
+      ],
+      "clip": [
+        2498.4,
+        2508.8
+      ],
+      "status": "pot",
+      "reason": "Frame 3 red; the scoreboard update is delayed until ball-in-hand footage."
+    },
+    {
+      "contact_interval": [
+        2525.94,
+        2528.3
+      ],
+      "clip": [
+        2523.94,
+        2534.3
+      ],
+      "status": "pot",
+      "reason": "Frame 3 blue."
+    },
+    {
+      "contact_interval": [
+        2616.36,
+        2618.72
+      ],
+      "clip": [
+        2614.36,
+        2624.72
+      ],
+      "status": "pot",
+      "reason": "Frame 3 red."
+    },
+    {
+      "contact_interval": [
+        3172.44,
+        3174.8
+      ],
+      "clip": [
+        3170.44,
+        3180.8
+      ],
+      "status": "pot",
+      "reason": "Frame 3 pink."
+    },
+    {
+      "contact_interval": [
+        3202.44,
+        3204.8
+      ],
+      "clip": [
+        3200.44,
+        3210.8
+      ],
+      "status": "pot",
+      "reason": "Frame 3 pink."
+    },
+    {
+      "contact_interval": [
+        3215.44,
+        3217.8
+      ],
+      "clip": [
+        3213.44,
+        3223.8
+      ],
+      "status": "pot",
+      "reason": "Frame 3 red."
+    },
+    {
+      "contact_interval": [
+        3224.44,
+        3226.8
+      ],
+      "clip": [
+        3222.44,
+        3232.8
+      ],
+      "status": "pot",
+      "reason": "Frame 3 blue."
+    },
+    {
+      "contact_interval": [
+        3598.94,
+        3601.3
+      ],
+      "clip": [
+        3596.94,
+        3607.3
+      ],
+      "status": "pot",
+      "reason": "Frame 4 Pang red."
+    },
+    {
+      "contact_interval": [
+        3705.86,
+        3708.22
+      ],
+      "clip": [
+        3703.86,
+        3714.22
+      ],
+      "status": "pot",
+      "reason": "Frame 4 red."
+    },
+    {
+      "contact_interval": [
+        3748.08,
+        3750.44
+      ],
+      "clip": [
+        3746.08,
+        3756.44
+      ],
+      "status": "pot",
+      "reason": "Frame 4 rest-assisted red."
+    },
+    {
+      "contact_interval": [
+        3797.08,
+        3799.44
+      ],
+      "clip": [
+        3795.08,
+        3805.44
+      ],
+      "status": "pot",
+      "reason": "Frame 4 red."
+    },
+    {
+      "contact_interval": [
+        3899.44,
+        3901.8
+      ],
+      "clip": [
+        3897.44,
+        3907.8
+      ],
+      "status": "pot",
+      "reason": "Frame 4 pink."
+    },
+    {
+      "contact_interval": [
+        3972.94,
+        3975.3
+      ],
+      "clip": [
+        3970.94,
+        3981.3
+      ],
+      "status": "pot",
+      "reason": "Frame 4 Pang red; preceding overhead replay is excluded."
+    },
+    {
+      "contact_interval": [
+        4005.94,
+        4008.3
+      ],
+      "clip": [
+        4003.94,
+        4014.3
+      ],
+      "status": "pot",
+      "reason": "Frame 4 yellow."
+    },
+    {
+      "contact_interval": [
+        4353.08,
+        4355.44
+      ],
+      "clip": [
+        4351.08,
+        4361.44
+      ],
+      "status": "pot",
+      "reason": "Frame 4 black."
+    },
+    {
+      "contact_interval": [
+        4615.44,
+        4617.8
+      ],
+      "clip": [
+        4613.44,
+        4623.8
+      ],
+      "status": "pot",
+      "reason": "Frame 4 brown during clearance."
+    },
+    {
+      "contact_interval": [
+        5144.94,
+        5147.3
+      ],
+      "clip": [
+        5142.94,
+        5153.3
+      ],
+      "status": "pot",
+      "reason": "Frame 5 red."
+    },
+    {
+      "contact_interval": [
+        5311.0,
+        5313.3
+      ],
+      "clip": [
+        5309.0,
+        5319.3
+      ],
+      "status": "pot",
+      "reason": "Frame 5 black; score overlay remains absent during close-up."
+    },
+    {
+      "contact_interval": [
+        5330.0,
+        5332.3
+      ],
+      "clip": [
+        5330.0,
+        5338.3
+      ],
+      "status": "pot",
+      "reason": "Frame 5 red; next readable score combines this red and preceding black. The source has no decoded video frames from the requested 5328 start until the keyframe at 5330. Start at that observed frame; the cue action is still visible."
+    },
+    {
+      "contact_interval": [
+        5395.58,
+        5397.94
+      ],
+      "clip": [
+        5393.58,
+        5403.94
+      ],
+      "status": "pot",
+      "reason": "Frame 5 red."
+    },
+    {
+      "contact_interval": [
+        5414.44,
+        5416.8
+      ],
+      "clip": [
+        5412.44,
+        5422.8
+      ],
+      "status": "pot",
+      "reason": "Frame 5 black."
+    },
+    {
+      "contact_interval": [
+        5428.44,
+        5430.8
+      ],
+      "clip": [
+        5426.44,
+        5436.8
+      ],
+      "status": "pot",
+      "reason": "Frame 5 red."
+    },
+    {
+      "contact_interval": [
+        5963.44,
+        5965.8
+      ],
+      "clip": [
+        5961.44,
+        5971.8
+      ],
+      "status": "pot",
+      "reason": "Frame 6 black."
+    },
+    {
+      "contact_interval": [
+        5990.0,
+        5993.0
+      ],
+      "clip": [
+        5988.0,
+        5999.0
+      ],
+      "status": "pot",
+      "reason": "Frame 6 red between two black pots."
+    },
+    {
+      "contact_interval": [
+        6069.94,
+        6072.3
+      ],
+      "clip": [
+        6067.94,
+        6078.3
+      ],
+      "status": "pot",
+      "reason": "Frame 6 black."
+    },
+    {
+      "contact_interval": [
+        6090.58,
+        6092.94
+      ],
+      "clip": [
+        6088.58,
+        6098.94
+      ],
+      "status": "pot",
+      "reason": "Frame 6 red; subsequent replay is excluded."
+    },
+    {
+      "contact_interval": [
+        6200.94,
+        6203.3
+      ],
+      "clip": [
+        6198.94,
+        6209.3
+      ],
+      "status": "pot",
+      "reason": "Frame 6 red."
+    },
+    {
+      "contact_interval": [
+        6406.44,
+        6408.8
+      ],
+      "clip": [
+        6404.44,
+        6414.8
+      ],
+      "status": "pot",
+      "reason": "Frame 6 black."
+    },
+    {
+      "contact_interval": [
+        6897.08,
+        6899.44
+      ],
+      "clip": [
+        6895.08,
+        6905.44
+      ],
+      "status": "pot",
+      "reason": "Frame 7 red; the broadcaster corrects player totals after the prior replay."
+    },
+    {
+      "contact_interval": [
+        7078.94,
+        7081.3
+      ],
+      "clip": [
+        7076.94,
+        7087.3
+      ],
+      "status": "pot",
+      "reason": "Frame 7 black."
+    },
+    {
+      "contact_interval": [
+        7331.43,
+        7334.29
+      ],
+      "clip": [
+        7329.43,
+        7340.29
+      ],
+      "status": "pot",
+      "reason": "Frame 7 red; next readable score combines red and black."
+    },
+    {
+      "contact_interval": [
+        7365.47,
+        7367.8
+      ],
+      "clip": [
+        7363.47,
+        7373.8
+      ],
+      "status": "pot",
+      "reason": "Frame 7 red."
+    },
+    {
+      "contact_interval": [
+        7415.59,
+        7416.94
+      ],
+      "clip": [
+        7413.59,
+        7422.94
+      ],
+      "status": "pot",
+      "reason": "Frame 7 black."
+    }
+  ],
+  "frames": [
+    {
+      "first_shot_id": 1,
+      "last_shot_id": 37,
+      "reason": "Opening rack and final live contact visually checked in source."
+    },
+    {
+      "first_shot_id": 38,
+      "last_shot_id": 74,
+      "reason": "Opening rack and final live contact checked. The final black outcome has no readable result overlay; retained as frame context."
+    },
+    {
+      "first_shot_id": 75,
+      "last_shot_id": 113,
+      "reason": "Opening rack and final live contact visually checked in source."
+    },
+    {
+      "first_shot_id": 114,
+      "last_shot_id": 153,
+      "reason": "Opening rack and final live contact visually checked in source."
+    },
+    {
+      "first_shot_id": 154,
+      "last_shot_id": 182,
+      "reason": "Opening rack and final live contact checked. The last stroke is retained as context without inventing a pot classification."
+    },
+    {
+      "first_shot_id": 183,
+      "last_shot_id": 205,
+      "reason": "Opening rack and final live contact visually checked in source."
+    },
+    {
+      "first_shot_id": 206,
+      "last_shot_id": 235,
+      "reason": "Opening rack and final live contact visually checked in source."
+    }
+  ]
+}

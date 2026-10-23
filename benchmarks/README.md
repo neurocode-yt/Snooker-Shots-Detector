@@ -59,3 +59,7 @@ Report development and held-out windows separately when describing results.
 These short sections do not establish full-match accuracy, performance on other
 broadcasts, or universal coverage of camera angles. A larger output clip count
 alone is not evidence of better recall or precision.
+
+The [Wilson–Pang saved-match review](../docs/kyren_pang_source_review_20261023.md)
+records a separate, source-bound correction manifest and export verification.
+Its manual edits are not automatic detector predictions or a held-out benchmark.
