@@ -13,9 +13,16 @@ open it. Allow installation from your chosen Files/browser application if
 Android requests it. This is a development-signed APK, suitable for direct
 installation; it is not a Play Store release.
 
-1. Open **Snooker AI**. Its **Background & checkpoints** setup links to Android's
-   battery exemption, notification and app settings. Enable unrestricted
-   background use and notifications. The same setup remains available below the editor.
+1. Open **Snooker AI**. Its **Background & checkpoints** setup automatically asks
+   Android to **Let app always run in background** and then enable processing
+   notifications. Tap **Allow** in both system prompts. Existing installations
+   also receive this setup on updating to v0.4.2 if protection is incomplete;
+   already granted permissions are skipped. If your phone still reports a
+   background restriction, the setup offers app settings for **Unrestricted**
+   battery use and manufacturer-specific **Auto-start**. The same setup remains
+   available below the editor. After declining, tap **Allow background processing**
+   there to try again; Android notification settings open if repeated denials
+   prevent another permission dialog.
 2. Choose **All shots**, **Pots only**, **Pots + fouls**, or **Edit shots**.
 3. Choose a match using Android's document picker and start processing.
 4. Review or adjust the saved shot timeline if needed. Use **Download** to pick
@@ -69,6 +76,10 @@ permission and the **Video processing** notification channel must both be enable
 The setup screen checks both and shows battery/background restrictions. The
 editor shows **Set up background processing** until the recommended settings
 are enabled, including automatic recovery.
+The battery request uses Android's
+[battery-optimization exemption](https://developer.android.com/training/monitoring-device-state/doze-standby)
+so processing can keep its CPU wake lock during Doze. It does not disable
+Android's separate foreground-service time limit or a manufacturer's own controls.
 
 A renewable partial CPU wake lock covers startup, active detection, queued
 jobs, video uploads, native export copies and CapCut media preparation/publication.

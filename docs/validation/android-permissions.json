@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-23",
+  "app_version": "0.4.2",
+  "version_code": 9,
+  "device": "Android 15 API 35 x86_64 emulator-5558",
+  "apk_sha256": "a9a7aae4f84222fbb8f71b01ce92d6053fe476a4254ae678287249e888c0fe4d",
+  "method": "Preserved app library, removed battery exemption, revoked POST_NOTIFICATIONS and cleared its permission flags, reset only setup_version to 2 and notification_permission_asked to false, then launched MainActivity. Inspected real system dialogs with UIAutomator, selected buttons by resource ID, and checked actual Android permission state with dumpsys.",
+  "allow": {
+    "battery_prompt_shown_automatically": true,
+    "battery_prompt_text": "Let app always run in background?",
+    "notification_prompt_followed": true,
+    "battery_exemption_granted": true,
+    "notifications_granted": true,
+    "returned_to_setup_without_prompt_loop": true
+  },
+  "deny": {
+    "battery_prompt_shown_automatically": true,
+    "notification_prompt_followed": true,
+    "battery_exemption_granted": false,
+    "notifications_granted": false,
+    "returned_to_setup_without_prompt_loop": true
+  },
+  "relaunch_after_allow": {
+    "resumed_activity": "com.snookerai.android.MainActivity",
+    "repeated_permission_prompt": false,
+    "installed_version": "0.4.2"
+  },
+  "build": {
+    "assembleDebug": "passed",
+    "assembleDebugAndroidTest": "passed",
+    "lintDebug": {"errors": 0, "warnings": 11}
+  },
+  "instrumentation": {
+    "passed": 4,
+    "elapsed_seconds": 171.265,
+    "classes": [
+      "com.snookerai.android.BackgroundServiceTest",
+      "com.snookerai.android.OnDeviceSmokeTest#testCapCutReadOnlyHandoff",
+      "com.snookerai.android.OnDeviceSmokeTest#testOfflinePipeline"
+    ]
+  },
+  "limitations": [
+    "Manufacturer-specific battery settings and missing-intent fallback paths were not exercised on this emulator.",
+    "Battery exemption does not override Android Stop, Force stop or the media-processing foreground-service timeout.",
+    "Detector and checkpoint implementation were unchanged by this permission-setup update."
+  ]
+}

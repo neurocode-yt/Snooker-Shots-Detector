@@ -34,7 +34,7 @@ public class BackgroundServiceTest extends InstrumentationTestCase {
     public void testServiceSurvivesTaskRemovalAndStopsWhenIdle() throws Exception {
         Context context = getInstrumentation().getTargetContext();
         int setup = ProtectionActivity.prefs(context).getInt("setup_version", 0);
-        ProtectionActivity.prefs(context).edit().putInt("setup_version", 2).commit();
+        ProtectionActivity.prefs(context).edit().putInt("setup_version", ProtectionActivity.SETUP_VERSION).commit();
         Activity activity = null;
         try (ProcessingService.NativeWork work = ProcessingService.keepWorking("Background transfer check")) {
             activity = getInstrumentation().startActivitySync(new Intent(context, MainActivity.class)
@@ -65,7 +65,7 @@ public class BackgroundServiceTest extends InstrumentationTestCase {
         waitUntil(() -> !ProcessingService.ready, 80_000, "Idle service consumed the background time allowance");
         // Reopening after idle shutdown must restart a usable server, not reuse
         // the stale WebView session or get stuck waiting for the previous stop.
-        ProtectionActivity.prefs(context).edit().putInt("setup_version", 2).commit();
+        ProtectionActivity.prefs(context).edit().putInt("setup_version", ProtectionActivity.SETUP_VERSION).commit();
         Activity reopened = getInstrumentation().startActivitySync(new Intent(context, MainActivity.class)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         try {

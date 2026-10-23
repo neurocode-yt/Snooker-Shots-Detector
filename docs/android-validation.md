@@ -3,6 +3,31 @@
 The APK runs the **default detector only**, using the shared desktop analyzer,
 rules, thresholds and segmentation code. DL source and weights are excluded.
 
+## Automatic background permission prompts (v0.4.2)
+
+Evidence is recorded in [`validation/android-permissions.json`](validation/android-permissions.json).
+On the Android 15 emulator, the app's existing library was preserved while its
+battery exemption, notification permission and setup version were reset to
+exercise the upgrade flow. Opening the app automatically displayed Android's
+**Let app always run in background?** dialog, followed by its notification
+permission dialog. Accepting both added Snooker AI to Android's battery
+exemption list and granted `POST_NOTIFICATIONS`; the setup displayed both as
+enabled. A separate run declined both and verified that neither permission was
+granted, the setup remained accessible, and no repeated prompt loop appeared.
+
+The request sequence preserves its state across activity recreation and checks
+the actual Android permission state on return from Settings. Already granted
+permissions are skipped. If runtime notification prompts are exhausted, the
+button opens Android notification settings. Devices that omit the direct battery
+dialog fall back to the battery exemption settings list. Manufacturer-specific
+settings still depend on the phone; those fallback paths were not exercised on
+this emulator. This update changes permission setup only, not detector rules or
+checkpoints, and does not bypass Android's separate six-hour service limit.
+
+The v0.4.2 APK built successfully; Android lint reported zero errors and eleven
+warnings. All four service-lifecycle, progress, CapCut URI and offline-processing
+instrumentation tests passed in 171.265 seconds after the permission checks.
+
 ## Background processing and notification recovery (v0.4.1)
 
 Evidence is recorded in [`validation/android-background.json`](validation/android-background.json).

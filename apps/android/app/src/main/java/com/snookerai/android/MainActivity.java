@@ -47,9 +47,10 @@ public class MainActivity extends Activity {
         setContentView(screen);
         startForegroundService(new Intent(this, ProcessingService.class));
         handler.post(this::awaitEditor);
-        if (ProtectionActivity.prefs(this).getInt("setup_version", 0) < 2) {
-            ProtectionActivity.prefs(this).edit().putInt("setup_version", 2).apply();
-            if (!ProtectionActivity.configured(this)) startActivity(new Intent(this, ProtectionActivity.class));
+        if (ProtectionActivity.prefs(this).getInt("setup_version", 0) < ProtectionActivity.SETUP_VERSION) {
+            ProtectionActivity.prefs(this).edit().putInt("setup_version", ProtectionActivity.SETUP_VERSION).apply();
+            if (!ProtectionActivity.configured(this)) startActivity(new Intent(this, ProtectionActivity.class)
+                .putExtra(ProtectionActivity.REQUEST_PERMISSIONS, true));
         }
     }
 
