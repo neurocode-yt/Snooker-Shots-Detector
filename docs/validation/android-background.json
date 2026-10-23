@@ -1,0 +1,133 @@
+{
+  "date": "2026-10-23",
+  "app_version": "0.4.1",
+  "version_code": 8,
+  "device": "Android 15 API 35 x86_64 emulator-5558",
+  "apk_sha256": "5a1c064a722612e317a9a2d42178557c55f16d5aee5b31daa17c833dbe23ff94",
+  "fixture": {
+    "source": "120-second excerpt from original match_test_1, beginning at 160 seconds (stream copied)",
+    "sha256": "21358e0f2e3b5d924d711f21500a1d80ef5bfcf1aae2fe10a828903f92a00429",
+    "bytes": 121811626,
+    "job_id": "background-check-20261023"
+  },
+  "ordinary_dismissal": {
+    "recents_swipe_continued": true,
+    "notification_swipe_removed_card": true,
+    "notification_restored_by_poll": true,
+    "progress_bar_visible": true,
+    "expanded_percentage_visible": true,
+    "unchanged_status_notification_restored": {
+      "baseline_present": true,
+      "removed": true,
+      "restored": true
+    }
+  },
+  "screen_off": {
+    "start": "Rejected non-strike proposal 1/34",
+    "later": "Rejected non-strike proposal 6/34",
+    "power_state": "Asleep",
+    "partial_wake_lock_held": true
+  },
+  "process_kill": {
+    "pid_before": "3947",
+    "pid_after": "4499",
+    "automatic_restart": true,
+    "native_resume_frame": 1096,
+    "native_resume_time_seconds": 36.5,
+    "completed_files_unchanged": true,
+    "completed_files": {
+      "coarse_checkpoint.json": {
+        "sha256": "de18f983a3b8a7aabad3e6eefad8e672d3fb85549e0601be3dfbaa57143c0a07",
+        "mtime": "1792743273"
+      },
+      "refinement_cache/window_0000.json": {
+        "sha256": "92d01ddacd82e584fc0df71639d175726a80d22f8253efe64654e59cf35ce53c",
+        "mtime": "1792743281"
+      },
+      "refinement_cache/window_0001.json": {
+        "sha256": "79d275b8379cd8be05c5f75282705ea54c7c63e82f15d1e5f87faaa544b06a0c",
+        "mtime": "1792743294"
+      },
+      "refinement_cache/window_0002.json": {
+        "sha256": "c1568bbec2ff31b86902742d8b9a48ac3ae37685b0fa212d93a0964f28f36bb1",
+        "mtime": "1792743302"
+      },
+      "refinement_cache/window_0003.json": {
+        "sha256": "432150bb06e1ec6d365bc7973836e365e63c793f3b6e9866dbf170110a54e0af",
+        "mtime": "1792743313"
+      },
+      "refinement_cache/window_0006.json": {
+        "sha256": "be09a605d73ce1abf44331a73c31bb5205d30ba1388a656948a74e794d6234be",
+        "mtime": "1792743327"
+      },
+      "refinement_cache/window_0007.json": {
+        "sha256": "06b5f350423773fd8857117db3f453ff02d03b010143d5d02f058abd1d24cf82",
+        "mtime": "1792743335"
+      },
+      "refinement_cache/window_0008.json": {
+        "sha256": "31bbdad080b9b9e7ad5a5be238483ec47acf6a474012e0f2eb5e2dbfd4708527",
+        "mtime": "1792743350"
+      },
+      "refinement_cache/window_0010.json": {
+        "sha256": "7b9cbfda36c146fe2c5f1dd405612be745b688b4c0dae4d543849dbce1c1641f",
+        "mtime": "1792743364"
+      },
+      "refinement_cache/window_0011.json": {
+        "sha256": "576849546d4f7ec8e9ba753b659d63baba7dfaff5f2bc5a889623d54fbc0adc3",
+        "mtime": "1792743383"
+      }
+    }
+  },
+  "android_active_apps_stop": {
+    "service_and_process_stopped": true,
+    "reopening_resumed_checkpoint": true
+  },
+  "android_timeout": {
+    "test_timeout_ms": 20000,
+    "original_device_config_value": null,
+    "device_config_restored": true,
+    "saved_progress": 0.7795588235294119,
+    "status": "paused",
+    "recovery_notification_visible": true,
+    "tapping_notification_resumed": true,
+    "resume_message": "Rejected non-strike proposal 12/34"
+  },
+  "inflight_request": {
+    "pending_request_visible": 1,
+    "invalid_submission_status": 400,
+    "count_after_error": 0
+  },
+  "host_tests": {
+    "passed": 22,
+    "seconds": 11.95
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 11
+  },
+  "limitations": [
+    "No Android app can guarantee perpetual execution across all devices.",
+    "Active apps Stop, Settings Force stop, reboots, OEM policies and OS time limits can stop processing.",
+    "Completed checkpoints remain reusable; work after the latest checkpoint can repeat."
+  ],
+  "completed_video": {
+    "status": "completed",
+    "progress": 1.0,
+    "message": "Finished video ready: 8 detected shots",
+    "shots_detected": 8,
+    "auto_export_ready": true,
+    "export_bytes": 9889235,
+    "full_decode_errors": "",
+    "full_decode_exit_code": 0
+  },
+  "instrumentation": {
+    "passed": 4,
+    "seconds": 158.694,
+    "tests": [
+      "BackgroundServiceTest#testProgressSelectsRunningWorkAndPreservesPausedState",
+      "BackgroundServiceTest#testServiceSurvivesTaskRemovalAndStopsWhenIdle",
+      "OnDeviceSmokeTest#testCapCutReadOnlyHandoff",
+      "OnDeviceSmokeTest#testOfflinePipeline"
+    ]
+  }
+}

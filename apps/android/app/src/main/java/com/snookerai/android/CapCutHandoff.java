@@ -89,8 +89,9 @@ public class CapCutHandoff {
             });
             return;
         }
-        worker.execute(() -> {
-            try {
+        ProcessingService.NativeWork work = ProcessingService.keepWorking("Preparing clips for CapCut…");
+        try { worker.execute(() -> {
+            try (work) {
                 var module = Python.getInstance().getModule("mobile_capcut");
                 module.callAttr("start", jobId);
                 JSONObject state;
@@ -123,6 +124,9 @@ public class CapCutHandoff {
                     }
                 });
             } catch (Exception error) { notifyPage(requestId, error.getMessage(), true, true); }
-        });
+        }); } catch (java.util.concurrent.RejectedExecutionException error) {
+            work.close();
+            notifyPage(requestId, "Reopen the editor to prepare CapCut clips", true, true);
+        }
     }
 }

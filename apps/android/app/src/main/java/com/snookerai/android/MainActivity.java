@@ -47,9 +47,9 @@ public class MainActivity extends Activity {
         setContentView(screen);
         startForegroundService(new Intent(this, ProcessingService.class));
         handler.post(this::awaitEditor);
-        if (!ProtectionActivity.prefs(this).getBoolean("setup_shown", false)) {
-            ProtectionActivity.prefs(this).edit().putBoolean("setup_shown", true).apply();
-            startActivity(new Intent(this, ProtectionActivity.class));
+        if (ProtectionActivity.prefs(this).getInt("setup_version", 0) < 2) {
+            ProtectionActivity.prefs(this).edit().putInt("setup_version", 2).apply();
+            if (!ProtectionActivity.configured(this)) startActivity(new Intent(this, ProtectionActivity.class));
         }
     }
 
@@ -133,7 +133,7 @@ public class MainActivity extends Activity {
         screen.removeView(message);
         screen.addView(web, new LinearLayout.LayoutParams(-1, 0, 1));
         protection = new Button(this);
-        protection.setText("Background & checkpoints");
+        protection.setText(ProtectionActivity.configured(this) ? "Background & checkpoints" : "Set up background processing");
         protection.setAllCaps(false);
         protection.setOnClickListener(view -> startActivity(new Intent(this, ProtectionActivity.class)));
         screen.addView(protection, new LinearLayout.LayoutParams(-1, -2));
@@ -153,7 +153,8 @@ public class MainActivity extends Activity {
             if (result == RESULT_OK && data != null && data.getData() != null && url != null) {
                 Uri destination = data.getData();
                 Toast.makeText(this, "Saving export…", Toast.LENGTH_SHORT).show();
-                files.execute(() -> copyExport(url, destination, mime));
+                ProcessingService.NativeWork work = ProcessingService.keepWorking("Saving exported video…");
+                files.execute(() -> { try (work) { copyExport(url, destination, mime); } });
             }
         }
     }
@@ -198,8 +199,13 @@ public class MainActivity extends Activity {
         else super.onBackPressed();
     }
 
+    @Override protected void onStart() { super.onStart(); ProcessingService.visibleScreens.incrementAndGet(); }
+    @Override protected void onStop() { ProcessingService.visibleScreens.decrementAndGet(); super.onStop(); }
+
     @Override protected void onResume() {
         super.onResume();
+        if (protection != null) protection.setText(ProtectionActivity.configured(this)
+            ? "Background & checkpoints" : "Set up background processing");
         // Android may time out the background service while keeping this
         // Activity. Rebuild its WebView session when the user returns, so the
         // saved library can resume through the newly started local server.

@@ -18,6 +18,16 @@ public class ProtectionActivity extends Activity {
     static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences("protection", Context.MODE_PRIVATE);
     }
+    static boolean notificationsEnabled(Context context) {
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
+        NotificationChannel channel = manager.getNotificationChannel(ProcessingService.CHANNEL);
+        return manager.areNotificationsEnabled() && (channel == null || channel.getImportance() != NotificationManager.IMPORTANCE_NONE);
+    }
+    static boolean configured(Context context) {
+        return context.getSystemService(PowerManager.class).isIgnoringBatteryOptimizations(context.getPackageName())
+            && !context.getSystemService(ActivityManager.class).isBackgroundRestricted()
+            && notificationsEnabled(context) && prefs(context).getBoolean("auto_resume", true);
+    }
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService reader = Executors.newSingleThreadExecutor();
     private LinearLayout content;
@@ -58,11 +68,14 @@ public class ProtectionActivity extends Activity {
         button("Enable processing notifications", () -> {
             if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
                 requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 32);
-            else open(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName()));
+            else open(new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+                .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName())
+                .putExtra(Settings.EXTRA_CHANNEL_ID, ProcessingService.CHANNEL));
         });
         button("Open app battery / auto-start settings", () ->
             open(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName()))));
         text("If your phone offers Unrestricted battery, Allow background activity or Auto-start, enable them for Snooker AI.", 14);
+        text("You can press Home, swipe the editor out of Recents or turn off the screen while processing. The notification shows the current stage and percentage; tap it to return. Swiping the progress notification away does not cancel the work.", 14);
         Switch resume = new Switch(this); resume.setText("Automatically resume interrupted work");
         resume.setTextColor(0xffeff5f3); resume.setChecked(prefs(this).getBoolean("auto_resume", true));
         resume.setPadding(0, 24, 0, 24); content.addView(resume);
@@ -71,7 +84,7 @@ public class ProtectionActivity extends Activity {
         backup = text("Starting checkpoint protection...", 16);
         text("Detection saves its full state every 20 analysed samples or 15 seconds between frames, and after each completed stage and window. If Android closes the app, it continues from the latest saved checkpoint. Only unfinished work after that checkpoint may repeat.", 14);
         text("Progress and edits have three verified local recovery generations. Original videos are not duplicated. Keep your original videos separately. Clearing app data or uninstalling removes these local checkpoints.", 14);
-        text("Android can still stop an app after force-stop, reboot or a system time limit. Saved work remains protected; reopening Snooker AI resumes interrupted work. Work you pause yourself stays paused.", 14);
+        text("To keep processing, avoid Android's Active apps > Stop and Force stop buttons: they end the entire app. Android 15+ also limits background media processing to six hours; tap the saved-work notification to continue if that limit is reached. No app can override these controls. Reopening Snooker AI resumes saved work. Work you pause yourself stays paused.", 14);
         button("Return to editor", this::finish);
         handler.post(this::refresh);
     }
@@ -80,7 +93,7 @@ public class ProtectionActivity extends Activity {
         if (isDestroyed() || isFinishing()) return;
         boolean exempt = getSystemService(PowerManager.class).isIgnoringBatteryOptimizations(getPackageName());
         boolean restricted = getSystemService(ActivityManager.class).isBackgroundRestricted();
-        boolean notifications = getSystemService(NotificationManager.class).areNotificationsEnabled();
+        boolean notifications = notificationsEnabled(this);
         permissions.setText("Battery optimisation: " + (exempt ? "Disabled ✓" : "Still enabled — allow background use")
             + "\nBackground restriction: " + (restricted ? "Restricted — check app settings" : "Not restricted ✓")
             + "\nNotifications: " + (notifications ? "Enabled ✓" : "Disabled"));
@@ -101,4 +114,6 @@ public class ProtectionActivity extends Activity {
     }
 
     @Override protected void onDestroy() { handler.removeCallbacksAndMessages(null); reader.shutdown(); super.onDestroy(); }
+    @Override protected void onStart() { super.onStart(); ProcessingService.visibleScreens.incrementAndGet(); }
+    @Override protected void onStop() { ProcessingService.visibleScreens.decrementAndGet(); super.onStop(); }
 }

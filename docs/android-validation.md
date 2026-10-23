@@ -3,6 +3,54 @@
 The APK runs the **default detector only**, using the shared desktop analyzer,
 rules, thresholds and segmentation code. DL source and weights are excluded.
 
+## Background processing and notification recovery (v0.4.1)
+
+Evidence is recorded in [`validation/android-background.json`](validation/android-background.json).
+On the Android 15 emulator, a 120-second excerpt of the original `match_test_1`
+was submitted through the normal app API. The editor was swiped out of Recents
+while its proxy was being generated. Detection continued. The ongoing
+notification displayed a progress bar, video filename, stage and percentage;
+swiping that notification away removed the card, and the next service poll
+restored it without interrupting processing.
+
+With the screen switched off, native confirmation advanced from proposal 1/34
+to 6/34. Android reported the display asleep and the app's partial CPU wake lock
+held. A UID-owned SIGKILL then terminated PID 3947. Android automatically started
+PID 4499, which restored native analysis at frame 1096 / 36.5 seconds. All ten
+previously completed coarse/window checkpoint files retained both their SHA256
+and modification timestamps. They were reused rather than reanalysed.
+
+The separate Android **Active apps > Stop** behavior was exercised using Android's
+documented `cmd activity stop-app` command. It stopped the entire process and
+service. Reopening resumed the saved job. Android's media-processing timeout was
+then temporarily shortened to 20 seconds using its documented developer test
+setting. The service stopped normally, saved work became paused at 77.96%, and
+the **Android paused background processing** notification appeared. Tapping it
+resumed the job and advanced to proposal 12/34. The emulator's timeout override
+was removed afterwards, restoring the original system setting.
+
+A partially sent authenticated request was also held open. The work feed
+reported one pending request before it became a job, then correctly returned to
+zero after a 400 response. This prevents idle shutdown from interrupting uploads
+or leaving the service falsely busy after a rejected submission.
+
+The interrupted excerpt ultimately completed with **eight detected shots** and
+a 9,889,235-byte highlight MP4 while the screen remained asleep. A full FFmpeg
+decode of that export completed with exit code zero and no error output.
+
+The service integration test removes the real Activity task while a native
+transfer is registered, waits longer than the one-minute idle grace, and requires
+the service and notification to remain active. Once the transfer ends, it requires
+idle shutdown and a working local API after reopening. Other checks cover running
+versus queued progress, saved pauses, indeterminate native transfers, CapCut URI
+handoff and the real offline decoder/analyzer/export smoke test.
+
+These tests demonstrate ordinary dismissal, screen-off work, restart and
+checkpoint recovery. They do **not** establish that an Android app can never be
+stopped, nor that every manufacturer's battery policy behaves like this emulator.
+The implementation respects Android's Stop/Force stop and time-limit controls;
+its detector code is unchanged by this update.
+
 ## Broadcast regression
 
 A 27-second, 1280×720, 30 fps excerpt from the existing Murphy–Day upload

@@ -59,14 +59,38 @@ are available, including on Android 10.
 App data persists across normal closes and updates, but uninstalling or clearing
 app storage removes the private library. Save finished exports to shared storage.
 
-Processing runs in a foreground service and displays a notification. It
-continues when leaving the editor or turning off the screen while Android
-permits the service to run. It requests a sticky service restart after an OS
+Processing runs in a foreground service with an ongoing **stage, percentage
+and progress-bar notification**. It continues after Home, Back, swiping the
+editor out of Recents, or turning off the screen while Android permits the
+service to run. Swiping the notification itself away does not pause work;
+the next status check restores it, normally within five seconds. The expanded
+notification names the video and reports other queued work. Notification
+permission and the **Video processing** notification channel must both be enabled.
+The setup screen checks both and shows battery/background restrictions. The
+editor shows **Set up background processing** until the recommended settings
+are enabled, including automatic recovery.
+
+A renewable partial CPU wake lock covers startup, active detection, queued
+jobs, video uploads, native export copies and CapCut media preparation/publication.
+It also covers the short gap between starting a task and its first progress
+update, and refreshes independently of HTTP progress requests. Once work finishes
+and the editor is closed, the service stops and releases the wake lock after a
+one-minute idle grace period so it does not consume the
+background processing time allowance unnecessarily. Reopening starts the local
+editor again. It requests a sticky service restart after an OS
 process kill and automatically continues interrupted jobs through the existing
 Continue routes. Manually paused work stays paused. After a reboot, a notification
 opens the app to resume work; Android 15 prohibits launching this service from boot.
-Force-stop requires reopening the app. Android 15 and later impose a
+**Android's Active apps > Stop and Settings > Force stop stop the entire app.**
+These are different from dismissing the editor or its notification. Reopen the
+app to resume from its durable checkpoints; processing cannot be guaranteed
+while Android has stopped the app. Android 15 and later impose a
 [six-hour background media-processing limit](https://developer.android.com/develop/background-work/services/fgs/timeout).
+At the limit, Snooker AI stops its service and posts **Android paused background
+processing** with a tap-to-resume action. Bringing the app back to the foreground
+resets Android's allowance. Phone manufacturers may impose additional restrictions;
+no setting can promise that Android will never close an app. See Android's
+[notification-panel Stop behavior](https://developer.android.com/develop/background-work/services/fgs/handle-user-stopping).
 Long matches can take longer than their duration and warm the phone;
 full-match speed and accuracy must be measured on the user's actual handset and
 broadcasts. The Android dependency versions differ from desktop. Matching a

@@ -15,6 +15,7 @@ _config = None
 _app = None
 _url = None
 _token = None
+_requests = 0
 
 
 def start(storage, native_dir):
@@ -79,6 +80,7 @@ def start(storage, native_dir):
 
     @_app.middleware("http")
     async def private_phone_app(request, call_next):
+        global _requests
         if (request.headers.get("host") != _url.split("//", 1)[1]
                 or not hmac.compare_digest(request.cookies.get("snooker_mobile", ""), _token)):
             return JSONResponse({"detail": "Open Snooker AI on this phone"}, status_code=403)
@@ -94,11 +96,22 @@ def start(storage, native_dir):
                 if len(parts) == 6 and parts[3] == "shorts":
                     directory = directory / "export" / "shorts" / parts[4]
                 (directory / "mobile_system_resume").unlink(missing_ok=True)
-        response = await call_next(request)
+        # Keep the native service alive while a large upload or save is in
+        # flight, before it has become a visible queue item. This counter only
+        # changes on the server event loop.
+        mutation = request.method not in {"GET", "HEAD", "OPTIONS"}
+        if mutation:
+            _requests += 1
+        try:
+            response = await call_next(request)
+        finally:
+            if mutation:
+                _requests -= 1
         if request.url.path == "/api/work" and response.status_code == 200:
             content = b"".join([chunk async for chunk in response.body_iterator])
             data = json.loads(content)
             data["items"].extend(mobile_capcut._manager.work_items())
+            data["mobile_requests"] = _requests
             return JSONResponse(data)
         if request.url.path == "/" or request.url.path.startswith("/review/"):
             content = b"".join([chunk async for chunk in response.body_iterator])
