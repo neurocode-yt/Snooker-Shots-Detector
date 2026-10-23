@@ -75,6 +75,7 @@ public class MainActivity extends Activity {
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setSupportMultipleWindows(false);
+        web.addJavascriptInterface(new CapCutHandoff(this, web, files), "SnookerAndroid");
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -114,10 +115,6 @@ public class MainActivity extends Activity {
                 try { startActivityForResult(pick, PICK_VIDEO); }
                 catch (ActivityNotFoundException error) { fileCallback.onReceiveValue(null); fileCallback = null; }
                 return true;
-            }
-            @Override public boolean onJsConfirm(WebView view, String url, String text, JsResult result) {
-                if (text.contains("CapCut")) { result.cancel(); return true; }
-                return super.onJsConfirm(view, url, text, result);
             }
         });
         web.setDownloadListener((url, userAgent, disposition, mimeType, length) -> {

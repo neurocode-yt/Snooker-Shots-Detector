@@ -7,6 +7,8 @@ function create(fetcher = (...args) => root.fetch(...args), now = () => Date.now
   let inFlight = null;
   let revision = 0;
   async function load({force = false} = {}) {
+    if (root.SnookerAndroid) return {available: root.SnookerAndroid.capcutAvailable(),
+      reason: 'Import included shots as separate clips into CapCut on this phone'};
     if (inFlight) return inFlight;
     if (force || !capability || now() >= expires) {
       const startedRevision = revision;
@@ -36,10 +38,27 @@ function create(fetcher = (...args) => root.fetch(...args), now = () => Date.now
     pending.add(jobId);
     const oldLabel = button.textContent;
     button.disabled = true;
-    button.textContent = "Preparing CapCut project\u2026";
+    button.textContent = root.SnookerAndroid ? "Preparing CapCut clips\u2026" : "Preparing CapCut project\u2026";
     status.classList.remove("hidden");
     status.textContent = "Preparing editable shots\u2026";
     try {
+      if (root.SnookerAndroid) {
+        const requestId = `capcut_${now()}_${Math.random().toString(36).slice(2)}`;
+        await new Promise((resolve, reject) => {
+          const update = (event) => {
+            if (event.detail?.requestId !== requestId) return;
+            status.textContent = event.detail.message;
+            if (event.detail.done) {
+              root.removeEventListener('snooker-capcut', update);
+              if (event.detail.failed) reject(new Error(event.detail.message)); else resolve();
+            }
+          };
+          root.addEventListener('snooker-capcut', update);
+          try { root.SnookerAndroid.openCapCut(jobId, requestId); }
+          catch (error) { root.removeEventListener('snooker-capcut', update); reject(error); }
+        });
+        return;
+      }
       // The action performs fresh discovery itself. A cached/in-flight status
       // request must never veto an actual project-opening attempt.
       const response = await fetcher(`/api/jobs/${encodeURIComponent(jobId)}/open-capcut`, {

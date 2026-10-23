@@ -67,6 +67,8 @@ def start(storage, native_dir):
     import uvicorn
 
     _app = create_app(_config)
+    import mobile_capcut
+    mobile_capcut.configure(_config)
     _token = secrets.token_urlsafe(32)
     listener = socket.socket()
     listener.bind(("127.0.0.1", 0))
@@ -93,6 +95,11 @@ def start(storage, native_dir):
                     directory = directory / "export" / "shorts" / parts[4]
                 (directory / "mobile_system_resume").unlink(missing_ok=True)
         response = await call_next(request)
+        if request.url.path == "/api/work" and response.status_code == 200:
+            content = b"".join([chunk async for chunk in response.body_iterator])
+            data = json.loads(content)
+            data["items"].extend(mobile_capcut._manager.work_items())
+            return JSONResponse(data)
         if request.url.path == "/" or request.url.path.startswith("/review/"):
             content = b"".join([chunk async for chunk in response.body_iterator])
             content = content.replace(b"</head>", b'<link rel="stylesheet" href="/mobile/mobile.css">'
@@ -124,6 +131,9 @@ def ready():
 def pause_all():
     if _config is None:
         return
+    import mobile_capcut
+    if mobile_capcut._manager is not None:
+        mobile_capcut._manager.pause()
     from snooker_ai.jobs.store import JobStore
     from snooker_ai.utils.work_control import WorkControl
     from snooker_ai.utils.persistence import atomic_text
@@ -155,6 +165,9 @@ def recover_interrupted():
     from snooker_ai.jobs.store import JobStore
     from snooker_ai.utils.work_control import WorkControl
     store = JobStore(_config)
+    import mobile_capcut
+    if mobile_capcut._manager is not None:
+        mobile_capcut._manager.recover()
 
     def request(path, method="GET"):
         req = urllib.request.Request(_url + path, method=method,

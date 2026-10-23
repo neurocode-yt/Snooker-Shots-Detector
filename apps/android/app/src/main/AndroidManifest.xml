@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
+    <queries><package android:name="com.lemon.lvoverseas" /></queries>
     <application android:label="Snooker AI" android:theme="@android:style/Theme.Material.NoActionBar"
         android:icon="@drawable/ic_snooker" android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -20,6 +21,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".ProtectionActivity" android:exported="false" />
+        <provider android:name=".CapCutProvider" android:authorities="${applicationId}.capcut"
+            android:exported="false" android:grantUriPermissions="true" />
         <receiver android:name=".ResumeAfterBoot" android:exported="true">
             <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /></intent-filter>
         </receiver>

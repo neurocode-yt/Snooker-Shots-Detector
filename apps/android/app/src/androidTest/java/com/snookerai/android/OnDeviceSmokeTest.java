@@ -8,6 +8,45 @@ import java.io.*;
 
 /** Executes real decode, classic analysis, mixed export and vertical export. */
 public class OnDeviceSmokeTest extends InstrumentationTestCase {
+    public void testCapCutReadOnlyHandoff() throws Exception {
+        var context = getInstrumentation().getTargetContext();
+        String generation = "a".repeat(64);
+        File clip = new File(context.getFilesDir(), "snooker/jobs/capcut-provider-check/export/mobile_capcut/" + generation + "/shot_0001.mp4");
+        clip.getParentFile().mkdirs();
+        try (OutputStream out = new FileOutputStream(clip)) { out.write(new byte[]{1, 2, 3, 4}); }
+        var uri = android.net.Uri.parse("content://com.snookerai.android.capcut/capcut-provider-check/" + generation + "/shot_0001.mp4");
+        try (InputStream in = context.getContentResolver().openInputStream(uri)) { assertEquals(1, in.read()); }
+        assertEquals("video/mp4", context.getContentResolver().getType(uri));
+        try {
+            context.getContentResolver().openFileDescriptor(uri, "w");
+            fail("Clip provider must reject writes");
+        } catch (FileNotFoundException expected) { }
+        try {
+            CapCutProvider.resolveFile(context, android.net.Uri.parse("content://com.snookerai.android.capcut/../" + generation + "/shot_0001.mp4"));
+            fail("Clip provider must reject traversal");
+        } catch (FileNotFoundException expected) { }
+        JSONObject state = new JSONObject().put("generation", generation)
+            .put("files", new org.json.JSONArray().put(new JSONObject().put("filename", "shot_0001.mp4")));
+        android.content.Intent send = CapCutHandoff.intent(context, "capcut-provider-check", state);
+        assertEquals(android.content.Intent.ACTION_SEND, send.getAction());
+        assertEquals("com.lemon.lvoverseas", send.getPackage());
+        assertTrue((send.getFlags() & android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0);
+        assertEquals(uri, send.getClipData().getItemAt(0).getUri());
+        JSONObject published = CapCutMedia.publish(context, "capcut-provider-check", state, message -> { });
+        JSONObject reused = CapCutMedia.publish(context, "capcut-provider-check", state, message -> { });
+        assertEquals(published.getJSONArray("media_uris").toString(), reused.getJSONArray("media_uris").toString());
+        var publicUri = android.net.Uri.parse(published.getJSONArray("media_uris").getString(0));
+        assertEquals("media", publicUri.getAuthority());
+        assertEquals(publicUri, CapCutHandoff.intent(context, "capcut-provider-check", published).getClipData().getItemAt(0).getUri());
+        context.getContentResolver().delete(publicUri, null, null);
+        state.getJSONArray("files").put(new JSONObject().put("filename", "shot_0001.mp4"));
+        send = CapCutHandoff.intent(context, "capcut-provider-check", state);
+        assertEquals(android.content.Intent.ACTION_SEND_MULTIPLE, send.getAction());
+        assertEquals(2, send.getParcelableArrayListExtra(android.content.Intent.EXTRA_STREAM).size());
+        assertEquals(2, send.getClipData().getItemCount());
+        clip.delete();
+    }
+
     public void testBroadcastParity() throws Exception {
         var arguments = ((android.test.InstrumentationTestRunner) getInstrumentation()).getArguments();
         String source = arguments.getString("parity_source");

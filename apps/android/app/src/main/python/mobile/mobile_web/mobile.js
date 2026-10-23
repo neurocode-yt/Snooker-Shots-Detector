@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function adapt() {
     for (const node of document.querySelectorAll('button, a')) {
       const text = node.textContent.trim();
-      if (/CapCut|Open.*folder|Show in.*folder/i.test(text)) node.dataset.mobileDesktop = '';
+      if (/Open.*folder|Show in.*folder/i.test(text)) node.dataset.mobileDesktop = '';
     }
     const file = document.getElementById('file-name');
     if (file?.textContent === 'Choose videos or drop them here') file.textContent = 'Choose videos from your phone';

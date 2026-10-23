@@ -21,6 +21,16 @@ installation; it is not a Play Store release.
 4. Review or adjust the saved shot timeline if needed. Use **Download** to pick
    a location for the MP4, ZIP or labels. After saving, **Share** opens Android's
    share sheet, including compatible installed video editors.
+5. Install the official **CapCut** Android app and complete its first-run setup
+   and video-access prompt, then tap **Open in CapCut** in
+   the video library or editor. Snooker AI prepares each included live shot as
+   a separate MP4 with audio, saves it under **Movies/Snooker AI/CapCut** and
+   opens CapCut's editor with those clips. Confirm an import if CapCut requests
+   it. Close any project already open in CapCut before importing another.
+   Preparation progress is
+   shown under Current work; each completed clip is checkpointed and reused
+   after interruption. If the app is in the background when preparation finishes,
+   return and tap **Open in CapCut** again to launch the saved clips.
 
 The interface, detection rules, thresholds, trims, score selection, mix
 transitions and Shorts layouts come from the existing desktop source. Android
@@ -30,8 +40,16 @@ sampling settings. The default desktop detector is rule based and does not use
 trained weights. Its source is shared with Android; this port does not replace
 it with a smaller model. **Android uses the default detector only.** DL Algo's
 source, models and PyTorch training runtime are excluded from the APK, and no DL
-option is exposed. Computer GPU acceleration is not bundled. Windows CapCut's private desktop draft
-format has no Android equivalent; use MP4 save/share on the phone.
+option is exposed. Computer GPU acceleration is not bundled. On Android, the
+CapCut handoff uses its multiple-video import action with MediaStore content URIs;
+it does not write Windows draft files into CapCut's private app data. The imported
+shots remain separate clips. To extend a cut beyond its rendered footage, adjust
+the saved trim in Snooker AI and reopen CapCut. Updated edits create a new clip
+generation and preserve media previously handed to CapCut.
+Keep the exported Movies clips while their CapCut project is in use: CapCut may
+reference these files instead of copying them. Existing clips are checksum-checked
+and reused on another tap, avoiding duplicate media. CapCut can append its own
+default ending; that is controlled by CapCut's settings.
 
 Imported videos are copied into private app storage, keeping the selected
 original untouched. Keep room for that copy, an analysis proxy and exports.

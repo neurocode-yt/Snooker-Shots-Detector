@@ -153,6 +153,47 @@ interruption/corruption repair and all twelve held-out scoreboard readings.
   editor JavaScript regression suites passed. The pure-Python Pydantic fallback
   was also tested separately against validation, review and export contracts.
 
+## CapCut Android handoff (0.4.0)
+
+Installed CapCut 13.6.0 from the APK linked by its official Android download
+page on the Android 15 emulator. Completed CapCut's first-run setup and video
+permission prompt. Used **Open in CapCut** on the normal 38-detection library
+job from the full-video comparison above. No CapCut private project files were
+written by Snooker AI; the app publishes completed clips under Movies and uses
+CapCut's advertised local multiple-video import activity.
+
+The actual editor opened with the source footage. Read-only inspection of the
+project created by CapCut confirmed 38 distinct video materials and 38 separate
+shot segments in source order, all with audio at volume 1. Each clip starts at
+its own beginning and retains the rendered shot duration. Maximum difference
+from the requested source interval was 0.026667 seconds, within one 30 fps frame.
+CapCut appended its default two-second ending as a 39th segment; the project
+duration is 214.257 seconds. Selection handles and clip editing controls were
+inspected in the actual CapCut editor. See the per-clip
+[validation data](validation/android-capcut.json).
+
+Private content-provider URIs were rejected silently by this CapCut build, so
+the production handoff publishes ordinary MediaStore videos. Saved media is
+checksum-checked and reused on retry. It remains in Movies for CapCut projects
+which reference it. The Android import has separate rendered clips; extending
+a cut beyond its rendered footage requires changing the trim in Snooker AI and
+opening another import. It does not provide desktop draft source handles.
+
+Killed the Snooker AI process with SIGKILL after 24 of 38 clips were committed.
+The sticky service restarted with a new PID, automatically resumed preparation
+and finished all 38. All 24 committed clip hashes and modification times were
+unchanged, proving they were reused rather than rendered again. Each rendered
+clip and manifest are published atomically; a changed trim creates a new
+generation instead of changing media used by an existing CapCut project.
+
+Selected CapCut, on-device media, pause and recovery tests passed: 81 host tests
+(one Windows directory-alias fixture skipped), eight JavaScript tests, and Android
+build/lint. Host coverage includes real accurate seeking, first-frame comparison,
+audio, duration, interruption, corrupt clips, saved trims and path validation.
+Final Android instrumentation passed both the handoff and offline pipeline
+tests, including read-only URI grants, traversal/write rejection, idempotent
+MediaStore publication, decoding, checkpoint repair, exports and scoreboards.
+
 ## Checkpoint recovery update (0.2.0)
 
 - Started a fresh normal queue job on Android 15 using the same broadcast clip.
