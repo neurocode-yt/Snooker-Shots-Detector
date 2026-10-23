@@ -21,6 +21,7 @@ public class MainActivity extends Activity {
     private TextView message;
     private ValueCallback<Uri[]> fileCallback;
     private String exportUrl;
+    private String exportMime;
     private View fullScreen;
     private WebChromeClient.CustomViewCallback fullScreenCallback;
     private boolean loaded;
@@ -121,9 +122,12 @@ public class MainActivity extends Activity {
             if (!url.startsWith(ProcessingService.baseUrl + "/")) return;
             if (exportUrl != null) { Toast.makeText(this, "Finish the current save first", Toast.LENGTH_SHORT).show(); return; }
             exportUrl = url;
+            String filename = URLUtil.guessFileName(url, disposition, mimeType);
+            String extension = MimeTypeMap.getFileExtensionFromUrl(filename);
+            String detected = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension.toLowerCase(java.util.Locale.ROOT));
+            exportMime = detected != null ? detected : mimeType == null ? "application/octet-stream" : mimeType;
             Intent save = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
-                .setType(mimeType == null ? "application/octet-stream" : mimeType)
-                .putExtra(Intent.EXTRA_TITLE, URLUtil.guessFileName(url, disposition, mimeType));
+                .setType(exportMime).putExtra(Intent.EXTRA_TITLE, filename);
             try { startActivityForResult(save, SAVE_EXPORT); }
             catch (ActivityNotFoundException error) { exportUrl = null; Toast.makeText(this, "No document provider available", Toast.LENGTH_LONG).show(); }
         });
@@ -139,16 +143,18 @@ public class MainActivity extends Activity {
             fileCallback = null;
         } else if (request == SAVE_EXPORT) {
             String url = exportUrl;
+            String mime = exportMime;
             exportUrl = null;
+            exportMime = null;
             if (result == RESULT_OK && data != null && data.getData() != null && url != null) {
                 Uri destination = data.getData();
                 Toast.makeText(this, "Saving export…", Toast.LENGTH_SHORT).show();
-                files.execute(() -> copyExport(url, destination));
+                files.execute(() -> copyExport(url, destination, mime));
             }
         }
     }
 
-    private void copyExport(String url, Uri destination) {
+    private void copyExport(String url, Uri destination, String mime) {
         HttpURLConnection connection = null;
         try {
             connection = ProcessingService.connection(url);
@@ -167,9 +173,11 @@ public class MainActivity extends Activity {
                 new AlertDialog.Builder(this).setTitle("Export saved")
                 .setMessage("Your export is saved in the location you selected.")
                 .setPositiveButton("Share", (dialog, which) -> {
-                    String type = getContentResolver().getType(destination);
+                    String type = mime == null ? getContentResolver().getType(destination) : mime;
                     Intent share = new Intent(Intent.ACTION_SEND).setType(type == null ? "application/octet-stream" : type)
-                        .putExtra(Intent.EXTRA_STREAM, destination).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        .putExtra(Intent.EXTRA_STREAM, destination)
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    share.setClipData(ClipData.newUri(getContentResolver(), "Snooker highlights", destination));
                     startActivity(Intent.createChooser(share, "Share highlights"));
                 }).setNegativeButton("Done", null).show();
             });
@@ -184,6 +192,24 @@ public class MainActivity extends Activity {
         if (fullScreen != null) closeFullScreen();
         else if (web != null && web.canGoBack()) web.goBack();
         else super.onBackPressed();
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        // Android may time out the background service while keeping this
+        // Activity. Rebuild its WebView session when the user returns, so the
+        // saved library can resume through the newly started local server.
+        if (web != null && !ProcessingService.ready) {
+            closeFullScreen();
+            screen.removeView(web);
+            web.destroy();
+            web = null;
+            loaded = false;
+            message.setText("Snooker AI\n\nRestoring your on-device editor…");
+            screen.addView(message);
+            startForegroundService(new Intent(this, ProcessingService.class));
+            handler.post(this::awaitEditor);
+        }
     }
 
     private void closeFullScreen() {

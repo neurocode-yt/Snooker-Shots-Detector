@@ -32,6 +32,11 @@ the fixture hash, used fresh Android analysis storage, required equal counts,
 and checked every contact/start/end against the desktop within 1 ms. The saved
 values above were subsequently compared and were exactly equal.
 
+The original emulator library job was then restarted through the normal app
+interface. It independently produced the same two shots and identical saved
+contact/start/end values, and completed its automatic 14.833333-second MP4
+export with audio. The library displays two detected shots.
+
 Reproduce a comparison on any clip using
 `scripts/check_android_parity.py`; see [build and testing instructions](android.md).
 The test video is not included in the APK or committed to the repository.
@@ -44,6 +49,14 @@ The test video is not included in the APK or committed to the repository.
   detector capability, real video decoding and seeking, actual analysis,
   a 7.8-second mixed highlight with audio, and a 1080×1920 Short with audio.
 - Twelve held-out broadcast scoreboard readings passed on Android.
+- The same offline test also passed on the Android 17 x86-64 emulator with
+  16 KB pages (27.646 seconds), using the manifest's page compatibility mode.
+- Background-service recovery was checked on Android 15: the service was
+  stopped while the Activity remained in memory, then the existing Activity
+  was brought forward. It started a new local server and restored the editor.
+- Native document save preserved the exported MP4 byte for byte (SHA256
+  checked). The Android share sheet received `video/mp4`, read permission and
+  the correct saved filename. No file was sent to another person or service.
 - Six host decoder tests passed, including frame-exact HD colour matching,
   timestamp precision, VFR, nonzero source start, seeking and missing input.
 - Desktop model/API/export, saved trim, upload, queue, pot/score selection and
@@ -55,4 +68,5 @@ measurement of full-match recall on physical phones or a guarantee that every
 shot in every broadcast will be detected. Native OpenCV and NumPy versions
 still differ between the desktop environment and available Android wheels.
 The APK targets 64-bit Android 10 onward; the device checks above used Android
-15. Native 16 KB page compliance and Play Store distribution are not certified.
+15 and Android 17's page compatibility mode. Native 16 KB page compliance and
+Play Store distribution are not certified.

@@ -17,10 +17,13 @@ public class ProcessingService extends Service {
     public static volatile String baseUrl, token, failure;
     public static volatile boolean ready;
     private static final String CHANNEL = "processing";
-    private final ExecutorService worker = Executors.newSingleThreadExecutor();
+    // Serialize shutdown and startup even when Android creates a new Service
+    // instance while the previous instance is still pausing its Python jobs.
+    private static final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private PowerManager.WakeLock wakeLock;
     private boolean starting;
+    private volatile boolean destroyed;
     private String lastStatus = "";
     private long lastWakeRefresh;
 
@@ -85,8 +88,9 @@ public class ProcessingService extends Service {
     }
 
     private void poll() {
-        if (!ready || worker.isShutdown()) return;
+        if (!ready || destroyed) return;
         worker.execute(() -> {
+            if (destroyed) return;
             String status = "Ready · Choose a video to begin";
             boolean busy = false;
             HttpURLConnection connection = null;
@@ -121,7 +125,7 @@ public class ProcessingService extends Service {
                 }
             } catch (Exception error) { android.util.Log.w("SnookerAI", "Progress unavailable", error); }
             finally { if (connection != null) connection.disconnect(); }
-            handler.postDelayed(this::poll, 5000);
+            if (!destroyed) handler.postDelayed(this::poll, 5000);
         });
     }
 
@@ -132,6 +136,7 @@ public class ProcessingService extends Service {
     }
 
     @Override public void onDestroy() {
+        destroyed = true;
         ready = false;
         handler.removeCallbacksAndMessages(null);
         if (wakeLock.isHeld()) wakeLock.release();
@@ -139,7 +144,6 @@ public class ProcessingService extends Service {
             try { Python.getInstance().getModule("mobile_runtime").callAttr("stop"); }
             catch (Exception error) { android.util.Log.w("SnookerAI", "Stopping", error); }
         });
-        worker.shutdown();
         super.onDestroy();
     }
 
