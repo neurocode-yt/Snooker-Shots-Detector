@@ -119,8 +119,9 @@ def test_incomplete_update_cannot_override_a_working_version_even_with_launcher(
     assert installation.version == "9.6.0.4097"
 
 
+@pytest.mark.parametrize("new_version", ["9.6.0.5000", "9.7.5.4135"])
 def test_last_verified_installation_survives_missing_registration_and_detects_updates(
-    config, tmp_path, monkeypatch, isolated_windows
+    config, tmp_path, monkeypatch, isolated_windows, new_version
 ):
     import json
 
@@ -137,7 +138,7 @@ def test_last_verified_installation_survives_missing_registration_and_detects_up
     with monkeypatch.context() as directory_scan:
         directory_scan.setattr(Path, "glob", lambda *args: iter(()))
         assert find_capcut(config).executable == exe.resolve()
-    newer = root / "Apps/9.6.0.5000/CapCut.exe"
+    newer = root / "Apps" / new_version / "CapCut.exe"
     newer.parent.mkdir()
     newer.touch()
     assert find_capcut(config).executable == newer.resolve()

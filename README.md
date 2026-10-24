@@ -23,7 +23,7 @@ The web timeline remains available for optional inspection.
 - **Review UI** — move boundaries, add/delete shots, mark replays, export labels
 - **Selected-shots preview** — immediately play included shots as one continuous virtual timeline
 - **Export** — individual clips, one combined MP4, CSV, EDL, training labels
-- **Open in CapCut** — create a Windows CapCut 9.5/9.6 project with separate editable shots
+- **Open in CapCut** — create a Windows CapCut 9.5/9.6/9.7 project with separate editable shots
 - **Make Shorts** — turn included shots into separate vertical videos with player names, layout preview, and a ZIP download
 - **Current work / Pause / Resume** — see active and waiting matches, exports, and Shorts, and pause without losing saved progress
 - **Jobs** — progress, resume, batch CLI
@@ -191,9 +191,10 @@ or music. This handoff uses straight cuts; the combined MP4's rendered mix
 transitions are not included. Keep the source video in its current location.
 
 The integration creates a fresh project on every click, preserves existing
-CapCut edits, and backs up CapCut's project index. Its private draft format is
-verified against **Windows CapCut 9.5 and 9.6**; unsupported versions show a reason
-instead of writing an unverified draft. CapCut must be installed on the PC
+CapCut edits, and backs up CapCut's project index. It supports **Windows CapCut
+9.5, 9.6 and 9.7**; other versions show a reason instead of writing an unverified
+draft. Native opening has been checked in 9.5 and 9.6; 9.7 discovery and draft
+generation are covered by automated tests. CapCut must be installed on the PC
 running Snooker AI. For a custom installation or project location, configure
 `capcut.executable_path` and `capcut.projects_dir` in the YAML configuration.
 Discovery checks Windows' registered app-data and installation locations as well

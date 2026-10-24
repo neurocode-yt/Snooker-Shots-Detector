@@ -134,7 +134,7 @@ def test_empty_selection_and_missing_source_fail_without_writing(config, capcut_
     assert not installation.projects_dir.exists()
 
 
-@pytest.mark.parametrize("version", ["9.7.0.1000", "10.0.0.1000"])
+@pytest.mark.parametrize("version", ["9.8.0.1000", "9.70.0.1000", "10.0.0.1000"])
 def test_unsupported_capcut_version_reports_reason(config, tmp_path, monkeypatch, version):
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
     apps = tmp_path / "CapCut" / "Apps"
@@ -154,6 +154,33 @@ def test_capcut_96_uses_native_launcher(config, tmp_path, monkeypatch):
     installation = find_capcut(config)
     assert installation.version == "9.6.0.4097"
     assert installation.executable == (apps / "CapCut.exe").resolve()
+
+
+@pytest.mark.parametrize("version", ["9.7.0.1000", "9.7.5.4135"])
+def test_capcut_97_creates_editable_draft_with_installed_version(
+    config, capcut_case, tmp_path, monkeypatch, version,
+):
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    executable = tmp_path / "CapCut" / "Apps" / version / "CapCut.exe"
+    executable.parent.mkdir(parents=True)
+    executable.touch()
+    with monkeypatch.context() as discovery:
+        discovery.setattr("snooker_ai.rendering.capcut.os", SimpleNamespace(name="nt", environ=os.environ))
+        installation = find_capcut(config)
+        assert installation.executable == executable.resolve()
+        assert installation.version == version
+    result, _ = capcut_case
+    payload = create_capcut_project(result, config, installation)
+    assert payload["capcut_version"] == version
+    assert payload["shot_count"] == 2
+    project = Path(payload["project_path"])
+    content = json.loads((project / "draft_content.json").read_text())
+    assert content["platform"]["app_version"] == ".".join(version.split(".")[:3])
+    segments = content["tracks"][0]["segments"]
+    assert [s["desc"] for s in segments] == ["Shot 1", "Shot 3"]
+    timeline = project / "Timelines" / content["id"] / "draft_content.json"
+    assert timeline.read_bytes() == (project / "draft_content.json").read_bytes()
+    assert content["materials"]["videos"][0]["path"] == Path(result.source_path).as_posix()
 
 
 def test_capcut_preserves_saved_project_root_alias(config, tmp_path, monkeypatch):
