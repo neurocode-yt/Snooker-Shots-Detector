@@ -1,0 +1,18 @@
+.project-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:.6rem; margin:1rem 0; }
+.project-toolbar span { color:var(--muted); font-size:.85rem; }
+.project-toolbar .notice { flex-basis:100%; }
+.project-select { display:flex; align-items:center; gap:.55rem; min-width:0; }
+.project-select input { width:1.1rem; height:1.1rem; flex-shrink:0; }
+.project-select h3 { margin:0; overflow-wrap:anywhere; }
+.match-heading { display:flex; justify-content:space-between; align-items:start; gap:1rem; }
+.match-heading .btn-project-name { flex-shrink:0; }
+.project-dialog { width:min(560px,calc(100% - 2rem)); max-height:85vh; overflow:auto; box-sizing:border-box; background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:14px; padding:1.4rem; }
+.project-dialog::backdrop { background:#000b; }
+.project-dialog h2 { margin:0 0 1rem; font-size:1.2rem; }
+.project-dialog p,.project-dialog li { line-height:1.5; overflow-wrap:anywhere; }
+.project-dialog ul { max-height:12rem; overflow:auto; padding-left:1.2rem; }
+.project-dialog label { display:grid; gap:.5rem; }
+.project-dialog input { width:100%; box-sizing:border-box; }
+.project-dialog-actions { display:flex; flex-wrap:wrap; gap:.6rem; justify-content:flex-end; margin-top:1rem; }
+#project-delete-status,#project-name-status { color:var(--warn); }
+@media(max-width:540px) { .match-heading { flex-wrap:wrap; } .project-toolbar button { font-size:.75rem; } }

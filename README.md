@@ -24,6 +24,7 @@ The web timeline remains available for optional inspection.
 - **Selected-shots preview** — immediately play included shots as one continuous virtual timeline
 - **Export** — individual clips, one combined MP4, CSV, EDL, training labels
 - **Open in CapCut** — create a Windows CapCut 9.5/9.6/9.7 project with separate editable shots
+- **Library projects** — name a match across saved versions and delete selected projects with their resources and linked CapCut drafts
 - **Make Shorts** — turn included shots into separate vertical videos with player names, layout preview, and a ZIP download
 - **Current work / Pause / Resume** — see active and waiting matches, exports, and Shorts, and pause without losing saved progress
 - **Jobs** — progress, resume, batch CLI
@@ -118,6 +119,22 @@ is trimmed between the two shots so neither shot is lost. Legacy mode names are
 accepted and coerce to strict.
 
 ## Web UI
+
+In **Your videos**, use **Name project** to set the name for every version of a
+match. The name is saved across restarts, appears in the editor, and is used
+for new CapCut handoffs. Renaming does not change the source filename or shots.
+
+Select project checkboxes (or **Select matching projects** for the current
+search/filter), then **Delete selected**. The confirmation covers all versions
+and earlier runs on each selected match card, including analysis, proxies,
+clips, exports, Shorts, and every linked CapCut draft created by Snooker AI.
+Unshared uploads in the app's upload folder are removed too. Shared sources
+and originals outside that folder are retained and reported in the preview.
+New preprocessed uploads record their input ownership so unused inputs can
+also be cleaned; older files without that receipt are not guessed from names.
+Pause processing/Shorts and close CapCut before deleting its linked drafts.
+If a resource remains locked, **Retry resource cleanup** finishes the saved
+deletion. Cancellation leaves projects untouched; permanent deletion has no undo.
 
 ```bash
 snooker-ai serve --host 127.0.0.1 --port 8000

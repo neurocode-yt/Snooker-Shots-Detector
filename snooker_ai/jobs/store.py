@@ -466,6 +466,8 @@ class JobStore:
     def list_jobs(self) -> list[dict[str, Any]]:
         jobs = []
         for p in sorted(self.root.iterdir(), reverse=True):
+            if p.name.startswith("."):
+                continue
             if (p / "job.json").exists():
                 try:
                     jobs.append(self.get_meta(p.name))

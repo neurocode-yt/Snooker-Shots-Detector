@@ -496,6 +496,7 @@ async function continueJob(jobId, button) {
 }
 
 let libraryJobs = [];
+const libraryProjects = window.snookerLibraryProjects.create({getJobs:()=>libraryJobs,refresh:refreshJobs,render:renderJobs});
 let libraryFilter = "all";
 let libraryCapcut = {available: false, reason: "Checking CapCut…"};
 const libraryPolling = window.snookerPolling.create(loadJobs, {
@@ -597,9 +598,11 @@ processingOrder.addEventListener("change", async () => {
 });
 
 function renderJobs() {
+  libraryProjects.sync(libraryFilter,document.getElementById('job-search').value);
   window.snookerLibraryView.render({jobs:libraryJobs,filter:libraryFilter,visible:visibleJobs,
     pointsAvailable,potsAvailable,capcut:libraryCapcut,pending:libraryPending,
-    messages:libraryMessages,capcutMessages:capcutJobMessages,refresh:renderJobs});
+    messages:libraryMessages,capcutMessages:capcutJobMessages,refresh:renderJobs,
+    selected:libraryProjects.selected,projectBusy:libraryProjects.isBusy()});
 }
 
 async function loadJobs() {

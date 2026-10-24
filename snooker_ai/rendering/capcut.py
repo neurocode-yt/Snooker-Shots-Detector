@@ -9,6 +9,7 @@ Media stays at its original path so trims can be extended without re-encoding.
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import math
 import os
@@ -23,6 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from snooker_ai.config import Config
+from snooker_ai.jobs.lease import JobLease
 from snooker_ai.rendering.exporter import Exporter
 from snooker_ai.types import AnalysisResult, ExportRequest, ShotSelection
 from snooker_ai.utils.persistence import atomic_text
@@ -249,6 +251,22 @@ def _write_json(path: Path, value: Any) -> None:
 
 
 def _register(project: Path, meta: dict[str, Any]) -> None:
+    lease = capcut_index_lease(project.parent)
+    if not lease.acquire():
+        raise CapCutUnavailable("CapCut's project list is being updated. Try again shortly.")
+    try:
+        _register_unlocked(project, meta)
+    finally:
+        lease.release()
+
+
+def capcut_index_lease(root: Path) -> JobLease:
+    root = root.resolve()
+    key = hashlib.sha256(str(root).lower().encode()).hexdigest()
+    return JobLease(root.parent / '.snooker-index-locks' / key)
+
+
+def _register_unlocked(project: Path, meta: dict[str, Any]) -> None:
     """Append a new draft while preserving and backing up the existing index."""
     index_path = project.parent / "root_meta_info.json"
     entry = {k: v for k, v in meta.items() if k not in ("draft_materials", "draft_materials_copied_info")}
@@ -288,6 +306,7 @@ def _register(project: Path, meta: dict[str, Any]) -> None:
 
 def create_capcut_project(
     result: AnalysisResult, config: Config, installation: CapCutInstallation,
+    project_name: str | None = None,
 ) -> dict[str, Any]:
     """Create a fresh registered draft; never overwrite an existing CapCut edit."""
     source = Path(result.source_path).resolve()
@@ -318,8 +337,9 @@ def create_capcut_project(
     template = json.loads(_SCHEMA.read_text(encoding="utf-8"))
     content = copy.deepcopy(template["content"])
     project_id, timeline_id, media_id, local_id = (_id() for _ in range(4))
-    display_name = re.sub(r"^\d{8}-\d{6}_[0-9a-f]{8}_", "", source.stem)
-    display_name = re.sub(r"_cleaned_[0-9a-f]{8}$", "", display_name).replace("_", " ")
+    display_name = project_name or re.sub(r"^\d{8}-\d{6}_[0-9a-f]{8,32}_", "", source.stem)
+    if not project_name:
+        display_name = re.sub(r"_cleaned_[0-9a-f]{8}$", "", display_name).replace("_", " ")
     name_stem = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", display_name).strip(" .")[:65] or "match"
     selection_label = " - Pots + fouls" if result.selection is ShotSelection.POTS_AND_FOULS else ""
     project_name = f"Snooker - {name_stem}{selection_label} - {uuid.uuid4().hex[:8]}"

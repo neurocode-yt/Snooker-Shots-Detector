@@ -32,6 +32,7 @@ from snooker_ai.rendering.exporter import Exporter
 from snooker_ai.rendering.shorts import ShortsManager
 from apps.api.shorts import install_shorts_routes
 from apps.api.work import install_work_routes
+from apps.api.projects import install_project_routes
 from apps.api.uploads import save_upload
 from snooker_ai.rendering.capcut import (
     CapCutUnavailable,
@@ -420,6 +421,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     )
     app.state.match_queue = queue
     app.state.shorts_manager = shorts
+    projects = install_project_routes(app, store, _locks)
 
     def enqueue(job_id, source, mode, resume, force=False, auto_export=True):
         if not queue.submit(job_id, source, mode, resume, force, auto_export):
@@ -783,6 +785,9 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             logger.exception("Pre-analysis edit failed for %s", source)
             raise HTTPException(500, f"Could not create cleaned video: {exc}") from exc
         metadata = probe_video(rendered)
+        from snooker_ai.utils.persistence import atomic_text
+        atomic_text(rendered.with_suffix(rendered.suffix + ".source.json"),
+                    json.dumps({"source_path": str(source)}))
         return {
             "path": str(rendered),
             "duration": metadata.duration,
@@ -792,7 +797,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
 
     @app.get("/api/jobs")
     async def list_jobs() -> list[dict[str, Any]]:
-        return [with_download(meta) for meta in store.list_jobs()]
+        return [with_download(meta) for meta in projects.annotate(store.list_jobs())]
 
     def with_download(meta: dict[str, Any]) -> dict[str, Any]:
         job_id = meta["job_id"]
@@ -850,7 +855,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     @app.get("/api/jobs/{job_id}")
     async def get_job(job_id: str) -> dict[str, Any]:
         try:
-            return with_download(store.get_meta(job_id))
+            return with_download(projects.info(job_id) or store.get_meta(job_id))
         except FileNotFoundError as exc:
             raise HTTPException(404, str(exc)) from exc
 
@@ -1113,14 +1118,20 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         lock = _locks.setdefault(job_id, threading.Lock())
         if _job_busy(store, job_id) or not lock.acquire(blocking=False):
             raise HTTPException(409, f"Job {job_id} is already processing")
+        capcut_lease = JobLease(store.job_dir(job_id), ".capcut.lock")
         try:
+            if not capcut_lease.acquire():
+                raise HTTPException(409, "This project is being opened in CapCut or deleted")
             try:
                 result = await asyncio.to_thread(store.load_selection_analysis, job_id)
             except FileNotFoundError as exc:
                 raise HTTPException(404, str(exc)) from exc
             try:
                 installation = await asyncio.to_thread(find_capcut, cfg)
-                project = await asyncio.to_thread(create_capcut_project, result, cfg, installation)
+                info = projects.info(job_id) or {}
+                name = info.get("display_name")
+                args = (result, cfg, installation, name) if name else (result, cfg, installation)
+                project = await asyncio.to_thread(create_capcut_project, *args)
             except CapCutUnavailable as exc:
                 raise HTTPException(409, str(exc)) from exc
             except ValueError as exc:
@@ -1145,6 +1156,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
                 message = "Project created; start CapCut manually. " + message
             return {**project, "launched": launched, "launch_error": launch_error, "message": message}
         finally:
+            capcut_lease.release()
             lock.release()
 
     @app.post("/api/jobs/{job_id}/open-clips-folder")

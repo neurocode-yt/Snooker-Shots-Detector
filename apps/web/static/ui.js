@@ -8,9 +8,10 @@
   }[char]));
   function filename(job) {
     return String(job.source_path || job.job_id || "Untitled video").split(/[\\/]/).pop()
-      .replace(/^\d{8}-\d{6}_[a-f0-9]{8}_/i, "");
+      .replace(/^\d{8}-\d{6}_[a-f0-9]{8,32}_/i, "");
   }
   function title(job) {
+    if (job.display_name) return job.display_name;
     return filename(job).replace(/\.(mp4|mov|mkv|avi|webm|m4v)$/i, "").replace(/_/g, " ");
   }
   function mode(job) {

@@ -31,7 +31,7 @@
       // Legacy jobs lack fingerprints. Associate them only when the source has
       // one known revision; never bridge two different replacements of a file.
       const rev = revision(job) || (known.size === 1 ? [...known][0] : known.size ? `unverified:${job.job_id}` : 'legacy');
-      const key = JSON.stringify([path,rev]);
+      const key = job.project_id || JSON.stringify([path,rev]);
       if (!families.has(key)) families.set(key,{key,jobs:[]});
       families.get(key).jobs.push(job);
     }

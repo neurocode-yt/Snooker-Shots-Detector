@@ -12,9 +12,14 @@ class JobLease:
         self.stream = None
 
     def acquire(self) -> bool:
+        if self._deleting():
+            return False
         self.path.parent.mkdir(parents=True, exist_ok=True)
         stream = self.path.open("a+b")
         try:
+            if self._deleting():
+                stream.close()
+                return False
             if os.name == "nt":
                 import msvcrt
                 stream.seek(0)
@@ -31,6 +36,10 @@ class JobLease:
             return False
         self.stream = stream
         return True
+
+    def _deleting(self) -> bool:
+        return any((parent.parent / ".deleting" / parent.name).exists()
+                   for parent in (self.path.parent, *self.path.parent.parents) if parent.name)
 
     def release(self) -> None:
         if self.stream is not None:
