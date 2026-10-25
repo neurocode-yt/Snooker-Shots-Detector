@@ -1,0 +1,1704 @@
+{
+  "name": "Mark Williams vs David Gilbert - full source scoring review 2026-10-25",
+  "source_reviewed": true,
+  "parent_job_id": "20261025-021055-bde48e86",
+  "parent_analysis_sha256": "655ad3e40e77833399528228dd38ac17f9e3af89705f41e8fd8aaf424b4c2cbe",
+  "source_filename": "20261024-171832_2b0bc70a743f44198732f6757bd25891_Mark_Williams_vs_David_Gilbert.mp4",
+  "source_size_bytes": 2503664540,
+  "source_sha256": "d04e804ab60bd188f20d79b0d80f4024efb762d3677efbf8a26fd2ef394d2304",
+  "source_duration_seconds": 11913.048333,
+  "review_scope": "Entire 11913.05-second match scanned at 2fps for scores; all354 detected records reviewed against original-source frames, all79 uncovered score changes and combined scoring runs examined, with focused contact samples for restorations and all ten frame bookends.",
+  "review_limit": "This explicitly repairs the saved match. Contact intervals are visual sample bounds, not frame-exact cue timing. Editing ends are not confirmed all-ball stops. General detector recall remains a separate issue.",
+  "score_scan": {
+    "sample_fps": 2,
+    "samples": 23827,
+    "uncovered_changes_reviewed": 79,
+    "observations_sha256": "c86c868048bbdd83b7f75410c49555a945612af213375fe12461107e0760bc04",
+    "coarse_readable_samples": 3899,
+    "combined_readable_samples": 12136
+  },
+  "updates": [
+    {
+      "shot_id": 1,
+      "strike": 16.96,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source-reviewed live opening break; retained as frame context even though it does not pot a ball."
+    },
+    {
+      "shot_id": 4,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 125.84
+    },
+    {
+      "shot_id": 7,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source-reviewed missed blue; no scoring change.",
+      "strike": 182.32000000000002
+    },
+    {
+      "shot_id": 8,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 194.28
+    },
+    {
+      "shot_id": 11,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed live red; scoreboard advances 9-6 to 9-7 after the shot.",
+      "strike": 260.76
+    },
+    {
+      "shot_id": 12,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 267.84000000000003
+    },
+    {
+      "shot_id": 19,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed live red; scoreboard advances 9-31 to 9-32.",
+      "strike": 503.8
+    },
+    {
+      "shot_id": 33,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 919.36
+    },
+    {
+      "shot_id": 38,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Live missed yellow after the last red; Williams concedes the frame after this attempt.",
+      "strike": 1183.8400000000001
+    },
+    {
+      "shot_id": 39,
+      "strike": 1391.04,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source-reviewed live opening break; retained as frame context even though it does not pot a ball."
+    },
+    {
+      "shot_id": 41,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 1430.92
+    },
+    {
+      "shot_id": 45,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 1495.88
+    },
+    {
+      "shot_id": 53,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 1705.0400000000002
+    },
+    {
+      "shot_id": 60,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 2072.36
+    },
+    {
+      "shot_id": 62,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed live pink; score increases 17-51 to23-51.",
+      "strike": 2156.7200000000003
+    },
+    {
+      "shot_id": 69,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 2342.4
+    },
+    {
+      "shot_id": 83,
+      "strike": 2674.2400000000007,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source-reviewed final live miss before concession; retained as the frame ending."
+    },
+    {
+      "shot_id": 84,
+      "strike": 2893.8,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source-reviewed live opening break; retained as frame context even though it does not pot a ball."
+    },
+    {
+      "shot_id": 95,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 3290.52
+    },
+    {
+      "shot_id": 105,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 3664.6400000000003
+    },
+    {
+      "shot_id": 110,
+      "strike": 3815.28,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source-reviewed final live miss before concession; retained as the frame ending."
+    },
+    {
+      "shot_id": 112,
+      "strike": 4010.5600000000004,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source-reviewed live opening break; retained as frame context even though it does not pot a ball."
+    },
+    {
+      "shot_id": 120,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 4244.68
+    },
+    {
+      "shot_id": 128,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 4473.6
+    },
+    {
+      "shot_id": 133,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 4567.72
+    },
+    {
+      "shot_id": 135,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 4633.400000000001
+    },
+    {
+      "shot_id": 139,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 4792.8
+    },
+    {
+      "shot_id": 142,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 4825.92
+    },
+    {
+      "shot_id": 145,
+      "strike": 4868.52,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source-reviewed final live miss before concession; retained as the frame ending."
+    },
+    {
+      "shot_id": 146,
+      "strike": 5806.320000000001,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source-reviewed live opening break; retained as frame context even though it does not pot a ball."
+    },
+    {
+      "shot_id": 150,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 5948.04
+    },
+    {
+      "shot_id": 159,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 6189.04
+    },
+    {
+      "shot_id": 162,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 6286.320000000001
+    },
+    {
+      "shot_id": 166,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 6330.4400000000005
+    },
+    {
+      "shot_id": 167,
+      "status": "pot",
+      "included": true,
+      "reason": "Live red with delayed scoreboard update16 to17; pink follows.",
+      "strike": 6346.4400000000005
+    },
+    {
+      "shot_id": 179,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 6750.72
+    },
+    {
+      "shot_id": 186,
+      "status": "pot",
+      "included": true,
+      "reason": "Live black visibly leaves the table and is respotted; no readable final score overlay.",
+      "strike": 6871.0
+    },
+    {
+      "shot_id": 187,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 6876.12
+    },
+    {
+      "shot_id": 188,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Live missed yellow; Gilbert concedes immediately afterward.",
+      "strike": 6883.8
+    },
+    {
+      "shot_id": 189,
+      "strike": 7073.88,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source-reviewed live opening break; retained as frame context even though it does not pot a ball."
+    },
+    {
+      "shot_id": 191,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 7128.200000000001
+    },
+    {
+      "shot_id": 198,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed live blue after red12; baseline12 to17; next red completes combined scoreboard update18.",
+      "strike": 7311.4400000000005
+    },
+    {
+      "shot_id": 199,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed live red after blue; combined score update12 to18 contains blue and red.",
+      "strike": 7325.6
+    },
+    {
+      "shot_id": 200,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 7378.4400000000005
+    },
+    {
+      "shot_id": 204,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed live black; score32 to39.",
+      "strike": 7493.68
+    },
+    {
+      "shot_id": 209,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 7629.56
+    },
+    {
+      "shot_id": 220,
+      "status": "pot",
+      "included": true,
+      "reason": "Live red with delayed scoreboard update23 to24.",
+      "strike": 7932.320000000001
+    },
+    {
+      "shot_id": 222,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 7961.64
+    },
+    {
+      "shot_id": 245,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 8787.16
+    },
+    {
+      "shot_id": 251,
+      "status": "pot",
+      "included": true,
+      "reason": "Live blue; delayed overlay reports17 before the following red and blue.",
+      "strike": 8904.6
+    },
+    {
+      "shot_id": 259,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 9115.24
+    },
+    {
+      "shot_id": 267,
+      "strike": 9248.880000000001,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source-reviewed final live miss before concession; retained as the frame ending."
+    },
+    {
+      "shot_id": 268,
+      "strike": 9437.2,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source-reviewed live opening break; retained as frame context even though it does not pot a ball."
+    },
+    {
+      "shot_id": 275,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 9636.52
+    },
+    {
+      "shot_id": 277,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 9665.32
+    },
+    {
+      "shot_id": 284,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 9846.16
+    },
+    {
+      "shot_id": 292,
+      "strike": 9999.560000000001,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source-reviewed final live miss before concession; retained as the frame ending."
+    },
+    {
+      "shot_id": 293,
+      "strike": 10202.84,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source-reviewed live opening break; retained as frame context even though it does not pot a ball."
+    },
+    {
+      "shot_id": 294,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed live first red in frame9; later scoreboard combines this red and blue295 as six points.",
+      "strike": 10221.720000000001
+    },
+    {
+      "shot_id": 296,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 10253.32
+    },
+    {
+      "shot_id": 323,
+      "strike": 10850.92,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source-reviewed final live miss before concession; retained as the frame ending."
+    },
+    {
+      "shot_id": 324,
+      "strike": 11043.24,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source-reviewed live opening break; retained as frame context even though it does not pot a ball."
+    },
+    {
+      "shot_id": 327,
+      "status": "pot",
+      "included": true,
+      "reason": "Source-reviewed live opening red; score appears late at11174 before black328.",
+      "strike": 11165.76
+    },
+    {
+      "shot_id": 331,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 11240.0
+    },
+    {
+      "shot_id": 332,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 11273.6
+    },
+    {
+      "shot_id": 335,
+      "status": "no_pot",
+      "included": false,
+      "possible_replay": true,
+      "reason": "Source-reviewed WST transition and duplicate contact identify a broadcast replay, not a new live scoring shot.",
+      "strike": 11438.720000000001
+    },
+    {
+      "shot_id": 354,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Final live missed black; Gilbert concedes the match after the attempt.",
+      "strike": 11884.960000000003
+    }
+  ],
+  "additions": [
+    {
+      "contact_interval": [
+        116,
+        117
+      ],
+      "status": "pot",
+      "clip": [
+        114,
+        123
+      ],
+      "reason": "Source-reviewed live first red: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "first red"
+    },
+    {
+      "contact_interval": [
+        355,
+        356
+      ],
+      "status": "pot",
+      "clip": [
+        353,
+        362
+      ],
+      "reason": "Source-reviewed live red20: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red20"
+    },
+    {
+      "contact_interval": [
+        773,
+        774
+      ],
+      "status": "pot",
+      "clip": [
+        771,
+        780
+      ],
+      "reason": "Source-reviewed live red50: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red50"
+    },
+    {
+      "contact_interval": [
+        913,
+        914
+      ],
+      "status": "pot",
+      "clip": [
+        911,
+        917.36
+      ],
+      "reason": "Source-reviewed live pink62: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "pink62"
+    },
+    {
+      "contact_interval": [
+        1016,
+        1018
+      ],
+      "status": "pot",
+      "clip": [
+        1014,
+        1024
+      ],
+      "reason": "Source-reviewed live red14: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red14"
+    },
+    {
+      "contact_interval": [
+        1172,
+        1173
+      ],
+      "status": "pot",
+      "clip": [
+        1170,
+        1179
+      ],
+      "reason": "Source-reviewed live red29: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red29"
+    },
+    {
+      "contact_interval": [
+        1490,
+        1491
+      ],
+      "status": "pot",
+      "clip": [
+        1488,
+        1493.88
+      ],
+      "reason": "Source-reviewed live red15 frame2: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red15 frame2"
+    },
+    {
+      "contact_interval": [
+        1629,
+        1630
+      ],
+      "status": "pot",
+      "clip": [
+        1627,
+        1636
+      ],
+      "reason": "Source-reviewed live blue34: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "blue34"
+    },
+    {
+      "contact_interval": [
+        1676,
+        1677
+      ],
+      "status": "pot",
+      "clip": [
+        1674,
+        1683
+      ],
+      "reason": "Source-reviewed live red43: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red43"
+    },
+    {
+      "contact_interval": [
+        1746,
+        1747
+      ],
+      "status": "pot",
+      "clip": [
+        1744,
+        1753
+      ],
+      "reason": "Source-reviewed live red51: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red51"
+    },
+    {
+      "contact_interval": [
+        2324,
+        2325
+      ],
+      "status": "pot",
+      "clip": [
+        2322,
+        2331
+      ],
+      "reason": "Source-reviewed live black48: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "black48"
+    },
+    {
+      "contact_interval": [
+        2638,
+        2639
+      ],
+      "status": "pot",
+      "clip": [
+        2636,
+        2645
+      ],
+      "reason": "Source-reviewed live blue67: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "blue67"
+    },
+    {
+      "contact_interval": [
+        3205,
+        3207
+      ],
+      "status": "pot",
+      "clip": [
+        3203,
+        3213
+      ],
+      "reason": "Source-reviewed live firstred f3: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "firstred f3"
+    },
+    {
+      "contact_interval": [
+        3367,
+        3368
+      ],
+      "status": "pot",
+      "clip": [
+        3365,
+        3374
+      ],
+      "reason": "Source-reviewed live black8: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "black8"
+    },
+    {
+      "contact_interval": [
+        3431,
+        3432
+      ],
+      "status": "pot",
+      "clip": [
+        3429,
+        3438
+      ],
+      "reason": "Source-reviewed live red14 f3: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red14 f3"
+    },
+    {
+      "contact_interval": [
+        3510,
+        3511
+      ],
+      "status": "pot",
+      "clip": [
+        3508,
+        3517
+      ],
+      "reason": "Source-reviewed live black29: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "black29"
+    },
+    {
+      "contact_interval": [
+        3525,
+        3526
+      ],
+      "status": "pot",
+      "clip": [
+        3523,
+        3532
+      ],
+      "reason": "Source-reviewed live red30: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red30"
+    },
+    {
+      "contact_interval": [
+        3550,
+        3552
+      ],
+      "status": "pot",
+      "clip": [
+        3548,
+        3558
+      ],
+      "reason": "Source-reviewed live red38: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red38"
+    },
+    {
+      "contact_interval": [
+        3582,
+        3583
+      ],
+      "status": "pot",
+      "clip": [
+        3580,
+        3589
+      ],
+      "reason": "Source-reviewed live red46: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red46"
+    },
+    {
+      "contact_interval": [
+        3741,
+        3742
+      ],
+      "status": "pot",
+      "clip": [
+        3739,
+        3748
+      ],
+      "reason": "Source-reviewed live black81: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "black81"
+    },
+    {
+      "contact_interval": [
+        3775,
+        3776
+      ],
+      "status": "pot",
+      "clip": [
+        3773,
+        3782
+      ],
+      "reason": "Source-reviewed live red88: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red88"
+    },
+    {
+      "contact_interval": [
+        4135,
+        4136
+      ],
+      "status": "pot",
+      "clip": [
+        4133,
+        4142
+      ],
+      "reason": "Source-reviewed live red6 f4: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red6 f4"
+    },
+    {
+      "contact_interval": [
+        4261,
+        4263
+      ],
+      "status": "pot",
+      "clip": [
+        4259,
+        4269
+      ],
+      "reason": "Source-reviewed live blue12: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "blue12"
+    },
+    {
+      "contact_interval": [
+        6371,
+        6373
+      ],
+      "status": "pot",
+      "clip": [
+        6369,
+        6379
+      ],
+      "reason": "Source-reviewed live pink23: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "pink23"
+    },
+    {
+      "contact_interval": [
+        6386,
+        6387
+      ],
+      "status": "pot",
+      "clip": [
+        6384,
+        6393
+      ],
+      "reason": "Source-reviewed live red24: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red24"
+    },
+    {
+      "contact_interval": [
+        6513,
+        6514
+      ],
+      "status": "pot",
+      "clip": [
+        6511,
+        6520
+      ],
+      "reason": "Source-reviewed live red45: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red45"
+    },
+    {
+      "contact_interval": [
+        6615,
+        6617
+      ],
+      "status": "pot",
+      "clip": [
+        6613,
+        6623
+      ],
+      "reason": "Source-reviewed live black15: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "black15"
+    },
+    {
+      "contact_interval": [
+        6637,
+        6638
+      ],
+      "status": "pot",
+      "clip": [
+        6635,
+        6644
+      ],
+      "reason": "Source-reviewed live red16: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red16"
+    },
+    {
+      "contact_interval": [
+        6680,
+        6681
+      ],
+      "status": "pot",
+      "clip": [
+        6678,
+        6687
+      ],
+      "reason": "Source-reviewed live red24 f5: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red24 f5"
+    },
+    {
+      "contact_interval": [
+        6727,
+        6728
+      ],
+      "status": "pot",
+      "clip": [
+        6725,
+        6734
+      ],
+      "reason": "Source-reviewed live black31: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "black31"
+    },
+    {
+      "contact_interval": [
+        7371,
+        7373
+      ],
+      "status": "pot",
+      "clip": [
+        7369,
+        7376.44
+      ],
+      "reason": "Source-reviewed live pink24 f6: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "pink24 f6"
+    },
+    {
+      "contact_interval": [
+        7595,
+        7596
+      ],
+      "status": "pot",
+      "clip": [
+        7593,
+        7602
+      ],
+      "reason": "Source-reviewed live pink49: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "pink49"
+    },
+    {
+      "contact_interval": [
+        7610,
+        7611
+      ],
+      "status": "pot",
+      "clip": [
+        7608,
+        7617
+      ],
+      "reason": "Source-reviewed live red50 f6: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red50 f6"
+    },
+    {
+      "contact_interval": [
+        7685,
+        7687
+      ],
+      "status": "pot",
+      "clip": [
+        7683,
+        7693
+      ],
+      "reason": "Source-reviewed live pink64: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "pink64"
+    },
+    {
+      "contact_interval": [
+        7876,
+        7877
+      ],
+      "status": "pot",
+      "clip": [
+        7874,
+        7883
+      ],
+      "reason": "Source-reviewed live red8: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red8"
+    },
+    {
+      "contact_interval": [
+        7903,
+        7904
+      ],
+      "status": "pot",
+      "clip": [
+        7901,
+        7910
+      ],
+      "reason": "Source-reviewed live red16 f6: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red16 f6"
+    },
+    {
+      "contact_interval": [
+        9013,
+        9014
+      ],
+      "status": "pot",
+      "clip": [
+        9011,
+        9020
+      ],
+      "reason": "Source-reviewed live red36: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red36"
+    },
+    {
+      "contact_interval": [
+        9038,
+        9039
+      ],
+      "status": "pot",
+      "clip": [
+        9036,
+        9045
+      ],
+      "reason": "Source-reviewed live red44: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red44"
+    },
+    {
+      "contact_interval": [
+        9093,
+        9094
+      ],
+      "status": "pot",
+      "clip": [
+        9091,
+        9100
+      ],
+      "reason": "Source-reviewed live red59: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red59"
+    },
+    {
+      "contact_interval": [
+        9124,
+        9125
+      ],
+      "status": "pot",
+      "clip": [
+        9122,
+        9131
+      ],
+      "reason": "Source-reviewed live red67: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red67"
+    },
+    {
+      "contact_interval": [
+        9222,
+        9223
+      ],
+      "status": "pot",
+      "clip": [
+        9220,
+        9229
+      ],
+      "reason": "Source-reviewed live red97: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red97"
+    },
+    {
+      "contact_interval": [
+        9234,
+        9235
+      ],
+      "status": "pot",
+      "clip": [
+        9232,
+        9241
+      ],
+      "reason": "Source-reviewed live black104: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "black104"
+    },
+    {
+      "contact_interval": [
+        9603,
+        9604
+      ],
+      "status": "pot",
+      "clip": [
+        9601,
+        9610
+      ],
+      "reason": "Source-reviewed live red15 f8: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red15 f8"
+    },
+    {
+      "contact_interval": [
+        9646,
+        9647
+      ],
+      "status": "pot",
+      "clip": [
+        9644,
+        9653
+      ],
+      "reason": "Source-reviewed live red23 live: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red23 live"
+    },
+    {
+      "contact_interval": [
+        9717,
+        9718
+      ],
+      "status": "pot",
+      "clip": [
+        9715,
+        9724
+      ],
+      "reason": "Source-reviewed live red39: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red39"
+    },
+    {
+      "contact_interval": [
+        9748,
+        9749
+      ],
+      "status": "pot",
+      "clip": [
+        9746,
+        9755
+      ],
+      "reason": "Source-reviewed live red47: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red47"
+    },
+    {
+      "contact_interval": [
+        9774,
+        9775
+      ],
+      "status": "pot",
+      "clip": [
+        9772,
+        9781
+      ],
+      "reason": "Source-reviewed live black54: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "black54"
+    },
+    {
+      "contact_interval": [
+        9804,
+        9805
+      ],
+      "status": "pot",
+      "clip": [
+        9802,
+        9811
+      ],
+      "reason": "Source-reviewed live colour61: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "colour61"
+    },
+    {
+      "contact_interval": [
+        9861,
+        9862
+      ],
+      "status": "pot",
+      "clip": [
+        9859,
+        9868
+      ],
+      "reason": "Source-reviewed live red69: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red69"
+    },
+    {
+      "contact_interval": [
+        9873,
+        9874
+      ],
+      "status": "pot",
+      "clip": [
+        9871,
+        9880
+      ],
+      "reason": "Source-reviewed live colour75: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "colour75"
+    },
+    {
+      "contact_interval": [
+        9908,
+        9909
+      ],
+      "status": "pot",
+      "clip": [
+        9906,
+        9915
+      ],
+      "reason": "Source-reviewed live red84: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red84"
+    },
+    {
+      "contact_interval": [
+        9950,
+        9951
+      ],
+      "status": "pot",
+      "clip": [
+        9948,
+        9957
+      ],
+      "reason": "Source-reviewed live red100: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red100"
+    },
+    {
+      "contact_interval": [
+        9986,
+        9987
+      ],
+      "status": "pot",
+      "clip": [
+        9984,
+        9993
+      ],
+      "reason": "Source-reviewed live black115: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "black115"
+    },
+    {
+      "contact_interval": [
+        10547,
+        10548
+      ],
+      "status": "pot",
+      "clip": [
+        10545,
+        10554
+      ],
+      "reason": "Source-reviewed live red28: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red28"
+    },
+    {
+      "contact_interval": [
+        10588,
+        10589
+      ],
+      "status": "pot",
+      "clip": [
+        10586,
+        10595
+      ],
+      "reason": "Source-reviewed live black43: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "black43"
+    },
+    {
+      "contact_interval": [
+        10628,
+        10629
+      ],
+      "status": "pot",
+      "clip": [
+        10626,
+        10635
+      ],
+      "reason": "Source-reviewed live red52: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red52"
+    },
+    {
+      "contact_interval": [
+        10712,
+        10713
+      ],
+      "status": "pot",
+      "clip": [
+        10710,
+        10719
+      ],
+      "reason": "Source-reviewed live red74: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red74"
+    },
+    {
+      "contact_interval": [
+        10723,
+        10724
+      ],
+      "status": "pot",
+      "clip": [
+        10721,
+        10730
+      ],
+      "reason": "Source-reviewed live black80: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "black80"
+    },
+    {
+      "contact_interval": [
+        10735,
+        10736
+      ],
+      "status": "pot",
+      "clip": [
+        10733,
+        10741.4
+      ],
+      "reason": "Source-reviewed live red81: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red81"
+    },
+    {
+      "contact_interval": [
+        10775,
+        10777
+      ],
+      "status": "pot",
+      "clip": [
+        10773,
+        10783
+      ],
+      "reason": "Source-reviewed live red95: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red95"
+    },
+    {
+      "contact_interval": [
+        10800,
+        10801
+      ],
+      "status": "pot",
+      "clip": [
+        10798,
+        10807
+      ],
+      "reason": "Source-reviewed live red103: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red103"
+    },
+    {
+      "contact_interval": [
+        11208,
+        11209
+      ],
+      "status": "pot",
+      "clip": [
+        11206,
+        11215
+      ],
+      "reason": "Source-reviewed live red9 f10: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red9 f10"
+    },
+    {
+      "contact_interval": [
+        11247,
+        11248
+      ],
+      "status": "pot",
+      "clip": [
+        11245,
+        11254
+      ],
+      "reason": "Source-reviewed live red17: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red17"
+    },
+    {
+      "contact_interval": [
+        11266,
+        11267
+      ],
+      "status": "pot",
+      "clip": [
+        11264,
+        11271.6
+      ],
+      "reason": "Source-reviewed live black24: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "black24"
+    },
+    {
+      "contact_interval": [
+        11350,
+        11351
+      ],
+      "status": "pot",
+      "clip": [
+        11348,
+        11357
+      ],
+      "reason": "Source-reviewed live red25: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red25"
+    },
+    {
+      "contact_interval": [
+        11489,
+        11491
+      ],
+      "status": "pot",
+      "clip": [
+        11487,
+        11497
+      ],
+      "reason": "Source-reviewed live black14: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "black14"
+    },
+    {
+      "contact_interval": [
+        11545,
+        11547
+      ],
+      "status": "pot",
+      "clip": [
+        11543,
+        11553
+      ],
+      "reason": "Source-reviewed live red23 f10: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red23 f10"
+    },
+    {
+      "contact_interval": [
+        11573,
+        11574
+      ],
+      "status": "pot",
+      "clip": [
+        11571,
+        11580
+      ],
+      "reason": "Source-reviewed live black30: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "black30"
+    },
+    {
+      "contact_interval": [
+        11604,
+        11606
+      ],
+      "status": "pot",
+      "clip": [
+        11602,
+        11612
+      ],
+      "reason": "Source-reviewed live black38: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "black38"
+    },
+    {
+      "contact_interval": [
+        11617,
+        11619
+      ],
+      "status": "pot",
+      "clip": [
+        11615,
+        11625
+      ],
+      "reason": "Source-reviewed live red39 f10: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "red39 f10"
+    },
+    {
+      "contact_interval": [
+        641,
+        642
+      ],
+      "status": "foul",
+      "clip": [
+        639,
+        648
+      ],
+      "reason": "Source-reviewed live foul in frame1: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "foul in frame1"
+    },
+    {
+      "contact_interval": [
+        2112,
+        2113
+      ],
+      "status": "pot",
+      "clip": [
+        2110,
+        2119
+      ],
+      "reason": "Source-reviewed live Williams red frame2 to10: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Williams red frame2 to10"
+    },
+    {
+      "contact_interval": [
+        2124,
+        2125
+      ],
+      "status": "pot",
+      "clip": [
+        2122,
+        2131
+      ],
+      "reason": "Source-reviewed live Williams black frame2 to17: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Williams black frame2 to17"
+    },
+    {
+      "contact_interval": [
+        2140,
+        2141
+      ],
+      "status": "pot",
+      "clip": [
+        2138,
+        2147
+      ],
+      "reason": "Source-reviewed live Williams red frame2 to18: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Williams red frame2 to18"
+    },
+    {
+      "contact_interval": [
+        3674,
+        3675
+      ],
+      "status": "pot",
+      "clip": [
+        3672,
+        3681
+      ],
+      "reason": "Source-reviewed live Gilbert red frame3 to58: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Gilbert red frame3 to58"
+    },
+    {
+      "contact_interval": [
+        3688,
+        3689
+      ],
+      "status": "pot",
+      "clip": [
+        3686,
+        3695
+      ],
+      "reason": "Source-reviewed live Gilbert black frame3 to65: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Gilbert black frame3 to65"
+    },
+    {
+      "contact_interval": [
+        3711,
+        3712
+      ],
+      "status": "pot",
+      "clip": [
+        3709,
+        3718
+      ],
+      "reason": "Source-reviewed live Gilbert red frame3 to66: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Gilbert red frame3 to66"
+    },
+    {
+      "contact_interval": [
+        3720,
+        3721
+      ],
+      "status": "pot",
+      "clip": [
+        3718,
+        3727
+      ],
+      "reason": "Source-reviewed live Gilbert black frame3 to73: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Gilbert black frame3 to73"
+    },
+    {
+      "contact_interval": [
+        4714,
+        4715
+      ],
+      "status": "pot",
+      "clip": [
+        4712,
+        4721
+      ],
+      "reason": "Source-reviewed live Gilbert black frame4 to31: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Gilbert black frame4 to31"
+    },
+    {
+      "contact_interval": [
+        4735,
+        4736
+      ],
+      "status": "pot",
+      "clip": [
+        4733,
+        4742
+      ],
+      "reason": "Source-reviewed live Gilbert red frame4 to32: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Gilbert red frame4 to32"
+    },
+    {
+      "contact_interval": [
+        4753,
+        4754
+      ],
+      "status": "pot",
+      "clip": [
+        4751,
+        4760
+      ],
+      "reason": "Source-reviewed live Gilbert black frame4 to39: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Gilbert black frame4 to39"
+    },
+    {
+      "contact_interval": [
+        4766,
+        4767
+      ],
+      "status": "pot",
+      "clip": [
+        4764,
+        4773
+      ],
+      "reason": "Source-reviewed live Gilbert red frame4 to40: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Gilbert red frame4 to40"
+    },
+    {
+      "contact_interval": [
+        8916,
+        8917
+      ],
+      "status": "pot",
+      "clip": [
+        8914,
+        8923
+      ],
+      "reason": "Source-reviewed live Williams red frame7 to18: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Williams red frame7 to18"
+    },
+    {
+      "contact_interval": [
+        8927,
+        8928
+      ],
+      "status": "pot",
+      "clip": [
+        8925,
+        8934
+      ],
+      "reason": "Source-reviewed live Williams blue frame7 to23: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Williams blue frame7 to23"
+    },
+    {
+      "contact_interval": [
+        8940,
+        8942
+      ],
+      "status": "pot",
+      "clip": [
+        8938,
+        8948
+      ],
+      "reason": "Source-reviewed live Williams red frame7 to24: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Williams red frame7 to24"
+    },
+    {
+      "contact_interval": [
+        9079,
+        9080
+      ],
+      "status": "pot",
+      "clip": [
+        9077,
+        9086
+      ],
+      "reason": "Source-reviewed live Williams pink frame7 to58: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Williams pink frame7 to58"
+    },
+    {
+      "contact_interval": [
+        8660,
+        8661
+      ],
+      "status": "no_pot",
+      "frame_bookend": "first",
+      "review_id": "frame7_break",
+      "clip": [
+        8658,
+        8671
+      ],
+      "reason": "Source-reviewed live Gilbert frame7 break: visible cue approach and ball departure, with the pot and/or subsequent score confirmation. The contact is bounded by sampled source frames.",
+      "label": "Gilbert frame7 break"
+    }
+  ],
+  "frames": [
+    {
+      "first_shot_id": 1,
+      "last_shot_id": 38
+    },
+    {
+      "first_shot_id": 39,
+      "last_shot_id": 83
+    },
+    {
+      "first_shot_id": 84,
+      "last_shot_id": 110
+    },
+    {
+      "first_shot_id": 112,
+      "last_shot_id": 145
+    },
+    {
+      "first_shot_id": 146,
+      "last_shot_id": 188
+    },
+    {
+      "first_shot_id": 189,
+      "last_shot_id": 240
+    },
+    {
+      "first_review_id": "frame7_break",
+      "last_shot_id": 267
+    },
+    {
+      "first_shot_id": 268,
+      "last_shot_id": 292
+    },
+    {
+      "first_shot_id": 293,
+      "last_shot_id": 323
+    },
+    {
+      "first_shot_id": 324,
+      "last_shot_id": 354
+    }
+  ]
+}

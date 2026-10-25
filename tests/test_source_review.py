@@ -82,6 +82,71 @@ def test_reclassifying_the_only_foul_clears_the_old_summary_count(reviewed_case)
     assert result.pot_selection_summary["points"] == 0
 
 
+def test_review_can_exclude_a_confirmed_replay_without_changing_parent(reviewed_case):
+    original, manifest = reviewed_case
+    manifest["updates"][0].update(possible_replay=True, included=False)
+    result = apply_source_review(original, manifest)
+    replay = next(s for s in result.shots if s.cue_strike == 30)
+    assert replay.possible_replay and not replay.included
+    assert not original.shots[1].possible_replay
+    assert result.pot_selection_summary["included"] == 3
+
+
+def test_missing_break_can_be_added_only_as_a_referenced_frame_bookend(reviewed_case):
+    original, manifest = reviewed_case
+    manifest["additions"].append(
+        {
+            "review_id": "opening_break",
+            "contact_interval": [4.8, 5.2],
+            "clip": [2.8, 12],
+            "status": "no_pot",
+            "frame_bookend": "first",
+            "reason": "Source shows the racked reds and live break before the overlay appears",
+        }
+    )
+    manifest["frames"] = [{"first_review_id": "opening_break", "last_shot_id": 3}]
+    result = apply_source_review(original, manifest)
+    assert result.shots[0].cue_strike == 5
+    assert result.shots[0].included
+    assert result.shots[0].evidence["frame_context"]["first"]
+    assert result.pot_selection_summary["frames"][0]["first_shot_id"] == 1
+    assert result.pot_selection_summary["frames"][0]["last_shot_id"] == 5
+    manifest["frames"] = []
+    with pytest.raises(ValueError, match="referenced frame bookend"):
+        apply_source_review(original, manifest)
+
+
+@pytest.mark.parametrize(
+    "defect",
+    [
+        "included_replay",
+        "replay_bookend",
+        "duplicate_id",
+        "unreferenced_context",
+        "unbounded_context",
+    ],
+)
+def test_review_rejects_unsafe_replay_or_context_changes(reviewed_case, defect):
+    original, manifest = reviewed_case
+    if defect == "included_replay":
+        manifest["updates"][0]["possible_replay"] = True
+    elif defect == "replay_bookend":
+        original.shots[0].possible_replay = True
+    elif defect == "duplicate_id":
+        manifest["additions"][0]["review_id"] = "same"
+        manifest["additions"].append(
+            {**manifest["additions"][0], "contact_interval": [59.8, 60.2], "clip": [57.8, 66.2]}
+        )
+    elif defect == "unreferenced_context":
+        manifest["additions"][0].update(status="no_pot", frame_bookend="first")
+    else:
+        manifest["additions"][0].update(status="no_pot")
+    snapshot = original.model_dump_json()
+    with pytest.raises(ValueError):
+        apply_source_review(original, manifest)
+    assert original.model_dump_json() == snapshot
+
+
 @pytest.mark.parametrize(
     "defect",
     [
@@ -165,7 +230,7 @@ def test_rebuild_creates_separate_version_and_preserves_parent_files(
 def test_changed_fingerprint_cannot_create_a_repair_job(
     config, tmp_path, monkeypatch, reviewed_case, which
 ):
-    store, parent, path = prepare_job(config, tmp_path, monkeypatch, reviewed_case)
+    store, _parent, path = prepare_job(config, tmp_path, monkeypatch, reviewed_case)
     manifest = json.loads(path.read_text())
     manifest["source_sha256" if which == "source" else "parent_analysis_sha256"] = "0" * 64
     path.write_text(json.dumps(manifest))
