@@ -1,6 +1,6 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {create} = require('../apps/web/static/points.js');
+const {create, createDialog} = require('../apps/web/static/points.js');
 const response = (data, ok = true) => ({ok, json: async () => data});
 
 test('completed highlights report already made and keep the variant ID for CapCut', async () => {
@@ -114,4 +114,30 @@ test('completed metadata with a live worker waits for release before CapCut', as
   await api.run('original', state => states.push(state));
   assert.equal(checks, 2);
   assert.equal(states.at(-1).state, 'ready');
+});
+
+test('CapCut handoff keeps Close and Escape available and cannot reopen a dismissed popup', async t => {
+  // A pending handoff must not trap the user in the progress dialog.
+  class Element extends EventTarget {
+    constructor() { super(); this.open=false; this.disabled=false; this.nodes=new Map(); this.classList={add(){},toggle(){}}; }
+    setAttribute() {} removeAttribute() {} focus() {}
+    querySelector(selector) { if (!this.nodes.has(selector)) this.nodes.set(selector,new Element()); return this.nodes.get(selector); }
+    showModal() { this.open=true; }
+    close() { this.open=false; this.dispatchEvent(new Event('close')); }
+  }
+  const previousDoc=globalThis.document, previousCapCut=globalThis.snookerCapCut;
+  let dialog, finish;
+  globalThis.document={createElement:()=>dialog=new Element(),body:{appendChild(){}}};
+  globalThis.snookerCapCut={open:()=>new Promise(resolve=>{finish=resolve;})};
+  t.after(()=>{globalThis.document=previousDoc;globalThis.snookerCapCut=previousCapCut;});
+  const popup=createDialog({run:async(id,update)=>update({state:'ready',jobId:'saved',message:'Ready'})});
+  await popup.open('source');
+  const handoff=dialog.querySelector('.points-open').onclick();
+  assert.equal(dialog.querySelector('.points-close').disabled,false);
+  const escape=new Event('cancel',{cancelable:true});
+  dialog.dispatchEvent(escape); assert.equal(escape.defaultPrevented,false);
+  dialog.querySelector('.points-close').dispatchEvent(new Event('click'));
+  assert.equal(dialog.open,false);
+  finish(); await handoff;
+  assert.equal(dialog.open,false);
 });

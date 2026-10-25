@@ -1,0 +1,17 @@
+.is-dismissed { display: none !important; }
+.dismissible { position: relative; padding-right: 3rem !important; min-height: 2.65rem; }
+.toast.dismissible { position: fixed; }
+.dismiss-close { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 36px; height: 36px; padding: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text); cursor: pointer; font-size: 1.45rem; line-height: 1; }
+.dismiss-close:hover { background: var(--panel); border-color: var(--accent); }
+.dismiss-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.dismissible > .dismiss-close { position: absolute; top: .2rem; right: .2rem; }
+.dismissible-dialog { position: fixed; padding-top: 3.5rem !important; }
+.dismissible-dialog > .dismiss-close { position: absolute; top: .7rem; right: .7rem; }
+.menu-panel { position: absolute; padding-top: 2.8rem !important; }
+.menu-panel > .dismiss-close { position: absolute; top: .3rem; right: .3rem; width: 36px; height: 36px; padding: 0; justify-content: center; border: 1px solid var(--border); font-size: 1.45rem; }
+.dismissed-tools { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; max-width: 1400px; margin: .5rem auto; padding: 0 1.25rem; }
+.dismissed-tools:not(:has(button:not([hidden]))) { display: none; }
+.work-heading-actions { display: flex; align-items: center; gap: .75rem; }
+.work-title-actions { display: flex; align-items: center; gap: .6rem; }
+.work-panel[hidden], .dismissed-tools button[hidden] { display: none !important; }
+@media (max-width: 650px) { .work-heading-actions { justify-content: space-between; } .work-title-actions { gap: .4rem; } }

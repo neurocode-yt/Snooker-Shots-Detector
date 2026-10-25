@@ -86,7 +86,6 @@ function createDialog(api = create()) {
       <div class="points-dialog-actions"><button class="points-close">Close</button><button class="points-open primary hidden">Open in CapCut</button></div>`;
     root.document.body.appendChild(dialog);
     dialog.querySelector(".points-close").addEventListener("click", () => dialog.close());
-    dialog.addEventListener("cancel", (event) => { if (handoffPending) event.preventDefault(); });
     dialog.addEventListener("close", () => { session++; });
   }
   function open(jobId, {title = "", onUpdate = () => {}} = {}) {
@@ -135,9 +134,8 @@ function createDialog(api = create()) {
     capcut.onclick = async () => {
       if (handoffPending || currentUpdate?.state !== "ready") return;
       handoffPending = true;
-      close.disabled = true;
       try { await root.snookerCapCut.open(currentUpdate.jobId, capcut, capcutStatus); }
-      finally { handoffPending = false; close.disabled = false; }
+      finally { handoffPending = false; }
     };
     return api.run(jobId, update, () => session === token && dialog.open);
   }

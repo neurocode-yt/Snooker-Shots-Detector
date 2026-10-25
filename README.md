@@ -27,6 +27,7 @@ The web timeline remains available for optional inspection.
 - **Library projects** — name a match across saved versions and delete selected projects with their resources and linked CapCut drafts
 - **Make Shorts** — turn included shots into separate vertical videos with player names, layout preview, and a ZIP download
 - **Current work / Pause / Resume** — see active and waiting matches, exports, and Shorts, and pause without losing saved progress
+- **Dismiss controls** — close activity entries, notices, and popups; hidden work stays hidden after refresh and can be restored
 - **Jobs** — progress, resume, batch CLI
 - **Automatic workflow** — upload and start once; detection, cutting, and combined export finish without review approval
 - **Adaptive analysis** — native cadence at cue contact and stop boundaries; cheaper tracking follows the roll and exits on confirmed stillness

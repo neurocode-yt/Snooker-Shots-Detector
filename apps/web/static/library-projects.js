@@ -94,8 +94,7 @@
       }catch(error){currentPlan=null;el('project-delete-status').textContent=error.message+' Click Check again to review the current resources.';}
       finally{busy=false;el('project-delete-recheck').disabled=false;sync();}
     });
-    doc.querySelectorAll('[data-close-project-dialog]').forEach(button=>button.addEventListener('click',()=>{if(!busy)el(button.dataset.closeProjectDialog).close();}));
-    [el('project-name-dialog'),el('project-delete-dialog')].forEach(dialog=>dialog.addEventListener('cancel',event=>{if(busy)event.preventDefault();}));
+    doc.querySelectorAll('[data-close-project-dialog]').forEach(button=>button.addEventListener('click',()=>el(button.dataset.closeProjectDialog).close()));
     el('projects-cleanup').addEventListener('click',async()=>{
       if(busy)return;busy=true;
       try{const data=await request('/api/projects/cleanup',{});el('project-cleanup').classList.toggle('hidden',!data.cleanup_pending);await refresh();}
