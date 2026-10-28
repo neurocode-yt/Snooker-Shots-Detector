@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import asdict, dataclass
+from bisect import bisect_left, bisect_right
 from pathlib import Path
 
 import cv2
@@ -12,12 +13,14 @@ import cv2
 from snooker_ai.config import Config
 from snooker_ai.pot_detection.frame_context import FrameContextDetector
 from snooker_ai.pot_detection.scoreboard import ScoreboardReader, ScoreReading
-from snooker_ai.types import AnalysisResult, PotStatus, ShotRecord, ShotSelection
+from snooker_ai.pot_detection.source_scores import cached_source_markers, cached_source_scores
+from snooker_ai.replay_detection.detector import ReplayDetector
+from snooker_ai.types import AnalysisResult, FrameFeatures, PotStatus, ShotRecord, ShotSelection, StrikeCandidate
 from snooker_ai.utils.persistence import atomic_text
 from snooker_ai.utils.video import open_capture, sampled_frames
 
-SELECTION_POLICY = 6
-_SCORE_SCAN_POLICY = 5  # Selection changes do not invalidate native score observations.
+SELECTION_POLICY = 8
+_SCORE_SCAN_POLICY = 7  # Longer baselines and thin-digit source observations.
 
 
 @dataclass
@@ -158,6 +161,17 @@ class PotSelector:
         self.settings = dict(config.get("pot_selection", {}))
         self.reader = ScoreboardReader(float(self.settings.get("min_digit_confidence", 0.78)))
 
+    def _outcome_deadline(self, shot):
+        grace = float(self.settings.get("score_update_grace_seconds", 8))
+        end = max(shot.physical_stop_timestamp, shot.cue_strike_timestamp) + grace
+        update = shot.evidence.get('score_update_time')
+        # A source-observed delayed update can extend this shot's OCR window.
+        # Classification still needs fresh stable readings and stops before
+        # the next stroke; a score hint alone never decides pot versus foul.
+        if isinstance(update, (int, float)) and shot.cue_strike_timestamp+.2 < update <= shot.cue_strike_timestamp+25:
+            end = max(end, update+1.)
+        return end
+
     def _signature(self, result: AnalysisResult):
         source = Path(result.source_path)
         stat = source.stat()
@@ -178,23 +192,27 @@ class PotSelector:
         ).hexdigest()
 
     def scan(self, result: AnalysisResult, progress=None) -> list[ScoreReading]:
-        baseline = float(self.settings.get("baseline_seconds", 6))
-        grace = float(self.settings.get("score_update_grace_seconds", 8))
+        complete = cached_source_scores(result.source_path, result.original_duration, self.config, self.job_dir)
+        if complete is not None:
+            return complete
+        baseline = max(float(self.settings.get("max_baseline_seconds", 25)),
+                       float(self.settings.get("baseline_seconds", 6)))
         intervals = []
         shots = sorted(result.shots, key=lambda shot: shot.cue_strike_timestamp)
+        live_times = [s.cue_strike_timestamp for s in shots if not s.possible_replay]
         for i, shot in enumerate(shots):
             if shot.possible_replay:
                 continue
             following = (
-                shots[i + 1].cue_strike_timestamp - 0.1
-                if i + 1 < len(shots)
+                live_times[bisect_right(live_times, shot.cue_strike_timestamp)] - 0.1
+                if bisect_right(live_times, shot.cue_strike_timestamp) < len(live_times)
                 else result.original_duration
             )
             start = max(0.0, shot.cue_strike_timestamp - baseline)
             end = min(
                 result.original_duration,
                 following,
-                max(shot.physical_stop_timestamp, shot.cue_strike_timestamp) + grace,
+                self._outcome_deadline(shot),
             )
             if end <= start:
                 continue
@@ -203,6 +221,17 @@ class PotSelector:
             else:
                 intervals.append((start, end))
         signature = self._signature(result)
+        # Inserting a recovered stroke can shift every numbered window. Keep
+        # complete source/range matches available even if an earlier new window
+        # subsequently overwrites their old ordinal file.
+        completed = {}
+        for path in (self.job_dir / "pot_score_cache").glob("window_*.json"):
+            try:
+                data = json.loads(path.read_text("utf-8"))
+                if data["signature"] == signature and data.get("complete", True):
+                    completed[tuple(data["range"])] = [ScoreReading(**item) for item in data["readings"]]
+            except (OSError, ValueError, KeyError, TypeError):
+                continue
         readings = []
         period = 1 / max(0.5, float(self.settings.get("sample_fps", 2)))
         checkpoint_every = max(1, int(self.settings.get("checkpoint_every_samples", 120)))
@@ -226,6 +255,10 @@ class PotSelector:
                             )
                 except (OSError, ValueError, KeyError, TypeError):
                     pass
+                if saved is None and (start, end) in completed:
+                    saved = completed[(start, end)]
+                    atomic_text(cache, json.dumps({"signature": signature, "range": [start, end],
+                        "complete": True, "readings": [asdict(item) for item in saved]}))
                 if saved is None:
                     if cap is None:
                         cap = open_capture(
@@ -324,30 +357,62 @@ class PotSelector:
     ) -> AnalysisResult:
         selection = ShotSelection(selection)
         include_fouls = selection is ShotSelection.POTS_AND_FOULS
+        markers = cached_source_markers(result.source_path, result.original_duration, self.config, self.job_dir)
+        if markers:
+            # A saved slim timeline has no image features. Graphical pairing
+            # still owns replay spans; contact anchors only locate saved shots.
+            anchors = [FrameFeatures(t=s.cue_strike) for s in result.shots]
+            anchors += [FrameFeatures(**marker) for marker in markers]
+            candidates = [StrikeCandidate(timestamp=s.cue_strike, confidence=s.strike_confidence)
+                          for s in result.shots]
+            ReplayDetector(self.config).mark_candidates(candidates, sorted(anchors, key=lambda f: f.t))
+            for shot, candidate in zip(result.shots, candidates):
+                if candidate.possible_replay:
+                    shot.possible_replay = True
+                    shot.evidence.update(candidate.evidence)
         readings = self.scan(result, progress)
-        frames = FrameContextDetector(self.config, self.job_dir).identify(result, readings, progress)
+        # Frame openings can precede the first detected shot's OCR window.
+        # Keep source observations already made by the whole-match pass.
+        frame_readings = {round(r.t, 6): r for r in readings}
+        for feature in result.features:
+            if feature.scoreboard_reading and feature.match_context_valid and not feature.broadcast_replay:
+                reading = ScoreReading(**feature.scoreboard_reading)
+                frame_readings.setdefault(round(reading.t, 6), reading)
+        frames = FrameContextDetector(self.config, self.job_dir).identify(
+            result, sorted(frame_readings.values(), key=lambda r: r.t), progress)
+        # Saved All shots detection must still associate delayed score updates.
+        from snooker_ai.pot_detection.recall import scoring_gap_proposals
+        matched = {}
+        scoring_gap_proposals(readings, result.shots, result.original_duration, matched_updates=matched)
+        for shot in result.shots:
+            shot.evidence.update(matched.get(shot.cue_strike_timestamp, {}))
         grace = float(self.settings.get("score_update_grace_seconds", 8))
         baseline = float(self.settings.get("baseline_seconds", 6))
         counts = {status.value: 0 for status in PotStatus}
         shots = sorted(result.shots, key=lambda shot: shot.cue_strike_timestamp)
+        live = [s for s in shots if not s.possible_replay]
+        live_times = [s.cue_strike_timestamp for s in live]
         for i, shot in enumerate(shots):
+            next_index = bisect_right(live_times, shot.cue_strike_timestamp)
+            prior_index = bisect_left(live_times, shot.cue_strike_timestamp)-1
+            previous = live[prior_index] if prior_index >= 0 else None
             following = (
-                shots[i + 1].cue_strike_timestamp - 0.1
-                if i + 1 < len(shots)
+                live_times[next_index] - 0.1
+                if next_index < len(live_times)
                 else result.original_duration
             )
             end = min(
                 result.original_duration,
                 following,
-                max(shot.physical_stop_timestamp, shot.cue_strike_timestamp) + grace,
+                self._outcome_deadline(shot),
             )
             status, evidence = classify_shot(
                 shot,
                 readings,
                 end,
-                baseline_seconds=baseline,
-                outcome_deadline=max(shot.physical_stop_timestamp, shot.cue_strike_timestamp)
-                + grace,
+                baseline_seconds=max(baseline, min(float(self.settings.get("max_baseline_seconds", 25)), shot.cue_strike_timestamp-
+                    (previous.cue_strike_timestamp+.2 if previous else 0))),
+                outcome_deadline=self._outcome_deadline(shot),
                 max_score_gap=max(0.8, 1.6 / max(0.5, float(self.settings.get("sample_fps", 2)))),
             )
             if (
@@ -365,8 +430,7 @@ class PotSelector:
                 if include_fouls
                 else {PotStatus.POT}
             )
-            if scoring and i > 0:
-                previous = shots[i - 1]
+            if scoring and previous is not None:
                 if (
                     previous.pot_status is PotStatus.UNKNOWN
                     and shot.cue_strike_timestamp < previous.physical_stop_timestamp + grace

@@ -18,7 +18,7 @@ from snooker_ai.utils.logging import get_logger
 
 logger = get_logger("replay")
 _REPLAY_VIEWS = (CameraViewType.REPLAY, CameraViewType.SLOW_MOTION_REPLAY)
-_STINGER_LENGTHS = (192, 193, 194, 195)
+_STINGER_LENGTHS = (192, 193, 194, 195, 196)
 
 
 class ReplayDetector:

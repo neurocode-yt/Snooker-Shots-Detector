@@ -1,0 +1,782 @@
+{
+  "name": "Wilson–Thepchaiya six-frame source review, 28 October 2026",
+  "source_reviewed": true,
+  "parent_job_id": "20261028-082306-deebe81b",
+  "parent_analysis_sha256": "6cb6b12b83bc05977b1c1b2c3cfb8d28f9f49e754c496396cd4d2a82071a04dc",
+  "source_sha256": "b3663c8a9c50fb87288e421eddfa4842d2a43f9936d121f68427e34d19d3c003",
+  "source_size_bytes": 1127814111,
+  "source_duration_seconds": 5590.250667,
+  "review_scope": {
+    "original_records_checked": 216,
+    "frames": 6,
+    "whole_source_score_sample_fps": 2,
+    "whole_source_replay_sample_fps": 4,
+    "contact_review": "Original source contact sheets across every saved record, every score-gap window and all frame bookends, followed by quarter-second/native-frame checks of corrections. This was not continuous real-time playback.",
+    "timing": "Review intervals are bounds, not exact cue-tip contact or verified physical stops."
+  },
+  "updates": [
+    {
+      "shot_id": 10,
+      "strike": 345.16,
+      "status": "pot",
+      "included": true,
+      "reason": "Original-source review confirms the live pot; the old score window or digit mask omitted its baseline/update."
+    },
+    {
+      "shot_id": 19,
+      "strike": 554.6,
+      "status": "pot",
+      "included": true,
+      "reason": "Original-source review confirms the live pot; the old score window or digit mask omitted its baseline/update."
+    },
+    {
+      "shot_id": 30,
+      "strike": 761.8000000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Original-source review confirms the live pot; the old score window or digit mask omitted its baseline/update."
+    },
+    {
+      "shot_id": 45,
+      "strike": 1188.24,
+      "status": "pot",
+      "included": true,
+      "reason": "Original-source review confirms the live pot; the old score window or digit mask omitted its baseline/update."
+    },
+    {
+      "shot_id": 98,
+      "strike": 2534.36,
+      "status": "pot",
+      "included": true,
+      "reason": "Original-source review confirms the live pot; the old score window or digit mask omitted its baseline/update."
+    },
+    {
+      "shot_id": 99,
+      "strike": 2554.56,
+      "status": "pot",
+      "included": true,
+      "reason": "Original-source review confirms the live pot; the old score window or digit mask omitted its baseline/update."
+    },
+    {
+      "shot_id": 110,
+      "strike": 2926.32,
+      "status": "pot",
+      "included": true,
+      "reason": "Original-source review confirms the live pot; the old score window or digit mask omitted its baseline/update."
+    },
+    {
+      "shot_id": 112,
+      "strike": 2959.0,
+      "status": "pot",
+      "included": true,
+      "reason": "Original-source review confirms the live pot; the old score window or digit mask omitted its baseline/update."
+    },
+    {
+      "shot_id": 122,
+      "strike": 3444.0,
+      "status": "pot",
+      "included": true,
+      "reason": "Original-source review confirms the live pot; the old score window or digit mask omitted its baseline/update."
+    },
+    {
+      "shot_id": 133,
+      "strike": 3687.2400000000007,
+      "status": "pot",
+      "included": true,
+      "reason": "Original-source review confirms the live pot; the old score window or digit mask omitted its baseline/update."
+    },
+    {
+      "shot_id": 134,
+      "strike": 3707.96,
+      "status": "pot",
+      "included": true,
+      "reason": "Original-source review confirms the live pot; the old score window or digit mask omitted its baseline/update."
+    },
+    {
+      "shot_id": 11,
+      "strike": 356.8,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Original source brackets this duplicate with matching WST opening and closing wipes; retain the corresponding live stroke instead.",
+      "possible_replay": true
+    },
+    {
+      "shot_id": 34,
+      "strike": 1004.6800000000001,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Original source brackets this duplicate with matching WST opening and closing wipes; retain the corresponding live stroke instead.",
+      "possible_replay": true
+    },
+    {
+      "shot_id": 36,
+      "strike": 1043.64,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Original source brackets this duplicate with matching WST opening and closing wipes; retain the corresponding live stroke instead.",
+      "possible_replay": true
+    },
+    {
+      "shot_id": 39,
+      "strike": 1106.0,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Original source brackets this duplicate with matching WST opening and closing wipes; retain the corresponding live stroke instead.",
+      "possible_replay": true
+    },
+    {
+      "shot_id": 69,
+      "strike": 1868.0800000000002,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Original source brackets this duplicate with matching WST opening and closing wipes; retain the corresponding live stroke instead.",
+      "possible_replay": true
+    },
+    {
+      "shot_id": 76,
+      "strike": 1988.48,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Original source brackets this duplicate with matching WST opening and closing wipes; retain the corresponding live stroke instead.",
+      "possible_replay": true
+    },
+    {
+      "shot_id": 95,
+      "strike": 2475.2000000000003,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Original source brackets this duplicate with matching WST opening and closing wipes; retain the corresponding live stroke instead.",
+      "possible_replay": true
+    },
+    {
+      "shot_id": 123,
+      "strike": 3453.88,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Original source brackets this duplicate with matching WST opening and closing wipes; retain the corresponding live stroke instead.",
+      "possible_replay": true
+    },
+    {
+      "shot_id": 135,
+      "strike": 3724.32,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Original source brackets this duplicate with matching WST opening and closing wipes; retain the corresponding live stroke instead.",
+      "possible_replay": true
+    },
+    {
+      "shot_id": 146,
+      "strike": 3908.2000000000003,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Original source brackets this duplicate with matching WST opening and closing wipes; retain the corresponding live stroke instead.",
+      "possible_replay": true
+    },
+    {
+      "shot_id": 149,
+      "strike": 3955.1600000000003,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Original source brackets this duplicate with matching WST opening and closing wipes; retain the corresponding live stroke instead.",
+      "possible_replay": true
+    },
+    {
+      "shot_id": 153,
+      "strike": 4015.48,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Original source brackets this duplicate with matching WST opening and closing wipes; retain the corresponding live stroke instead.",
+      "possible_replay": true
+    },
+    {
+      "shot_id": 178,
+      "strike": 4696.280000000001,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Original source brackets this duplicate with matching WST opening and closing wipes; retain the corresponding live stroke instead.",
+      "possible_replay": true
+    },
+    {
+      "shot_id": 182,
+      "strike": 4777.320000000001,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Original source brackets this duplicate with matching WST opening and closing wipes; retain the corresponding live stroke instead.",
+      "possible_replay": true
+    },
+    {
+      "shot_id": 129,
+      "strike": 3603.04,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Original source shows a missed live attempt. The late one-point increase belongs to the subsequent Thepchaiya red at 3626 seconds."
+    },
+    {
+      "shot_id": 152,
+      "strike": 4004.6000000000004,
+      "status": "foul",
+      "included": true,
+      "reason": "Original source shows the live foul at 4004.60. Seven points are awarded to Wilson on return from its replay; the replay is not a second scoring stroke."
+    },
+    {
+      "shot_id": 32,
+      "strike": 971.6400000000001,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Original-source review confirms this frame opening or final live attempt; preserve it as frame context."
+    },
+    {
+      "shot_id": 57,
+      "strike": 1406.8,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Original-source review confirms this frame opening or final live attempt; preserve it as frame context."
+    },
+    {
+      "shot_id": 58,
+      "strike": 1601.88,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Original-source review confirms this frame opening or final live attempt; preserve it as frame context."
+    },
+    {
+      "shot_id": 93,
+      "strike": 2433.2400000000007,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Original-source review confirms this frame opening or final live attempt; preserve it as frame context."
+    },
+    {
+      "shot_id": 216,
+      "strike": 5519.400000000001,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Original-source review confirms this frame opening or final live attempt; preserve it as frame context."
+    }
+  ],
+  "additions": [
+    {
+      "review_id": "pot_135.08",
+      "contact_interval": [
+        135.08,
+        135.24
+      ],
+      "clip": [
+        132.88,
+        142.24
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_173.75",
+      "contact_interval": [
+        173.75,
+        174
+      ],
+      "clip": [
+        171.55,
+        181
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_481.28",
+      "contact_interval": [
+        481.28,
+        481.64
+      ],
+      "clip": [
+        479.08,
+        488.64
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_496.25",
+      "contact_interval": [
+        496.25,
+        496.5
+      ],
+      "clip": [
+        494.05,
+        503.5
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_682.00",
+      "contact_interval": [
+        682,
+        682.25
+      ],
+      "clip": [
+        679.8,
+        689.25
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_738.20",
+      "contact_interval": [
+        738.2,
+        738.4
+      ],
+      "clip": [
+        736.0,
+        745.4
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_1320.75",
+      "contact_interval": [
+        1320.75,
+        1321
+      ],
+      "clip": [
+        1318.55,
+        1328
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_1384.20",
+      "contact_interval": [
+        1384.2,
+        1384.6
+      ],
+      "clip": [
+        1383.48,
+        1391.0
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_1701.60",
+      "contact_interval": [
+        1701.6,
+        1701.8
+      ],
+      "clip": [
+        1699.4,
+        1708.8
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_1748.25",
+      "contact_interval": [
+        1748.25,
+        1748.5
+      ],
+      "clip": [
+        1746.05,
+        1755.5
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_1790.75",
+      "contact_interval": [
+        1790.75,
+        1791
+      ],
+      "clip": [
+        1788.55,
+        1798
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_2063.50",
+      "contact_interval": [
+        2063.5,
+        2063.75
+      ],
+      "clip": [
+        2061.3,
+        2070.75
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_2146.75",
+      "contact_interval": [
+        2146.75,
+        2147
+      ],
+      "clip": [
+        2144.55,
+        2154
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_2479.20",
+      "contact_interval": [
+        2479.2,
+        2479.4
+      ],
+      "clip": [
+        2478.72,
+        2486.4
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_2586.75",
+      "contact_interval": [
+        2586.75,
+        2587
+      ],
+      "clip": [
+        2584.55,
+        2594
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_2670.50",
+      "contact_interval": [
+        2670.5,
+        2670.75
+      ],
+      "clip": [
+        2668.3,
+        2677.75
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_2748.00",
+      "contact_interval": [
+        2748,
+        2748.25
+      ],
+      "clip": [
+        2745.8,
+        2755.25
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_2830.25",
+      "contact_interval": [
+        2830.25,
+        2830.5
+      ],
+      "clip": [
+        2828.05,
+        2837.5
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_2892.50",
+      "contact_interval": [
+        2892.5,
+        2892.75
+      ],
+      "clip": [
+        2890.3,
+        2899.75
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_2988.50",
+      "contact_interval": [
+        2988.5,
+        2988.75
+      ],
+      "clip": [
+        2986.3,
+        2995.75
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_3103.00",
+      "contact_interval": [
+        3103,
+        3103.25
+      ],
+      "clip": [
+        3100.8,
+        3110.25
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_3137.50",
+      "contact_interval": [
+        3137.5,
+        3137.75
+      ],
+      "clip": [
+        3135.3,
+        3144.75
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_3503.48",
+      "contact_interval": [
+        3503.48,
+        3503.72
+      ],
+      "clip": [
+        3501.28,
+        3510.72
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_3536.75",
+      "contact_interval": [
+        3536.75,
+        3537.25
+      ],
+      "clip": [
+        3534.55,
+        3544.25
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_3626.25",
+      "contact_interval": [
+        3626.25,
+        3626.75
+      ],
+      "clip": [
+        3624.05,
+        3633.75
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_3757.25",
+      "contact_interval": [
+        3757.25,
+        3757.5
+      ],
+      "clip": [
+        3755.05,
+        3764.5
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_3787.25",
+      "contact_interval": [
+        3787.25,
+        3787.5
+      ],
+      "clip": [
+        3785.05,
+        3794.5
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_3837.50",
+      "contact_interval": [
+        3837.5,
+        3838
+      ],
+      "clip": [
+        3835.3,
+        3843.32
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_3858.50",
+      "contact_interval": [
+        3858.5,
+        3858.75
+      ],
+      "clip": [
+        3856.3,
+        3865.75
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_5310.00",
+      "contact_interval": [
+        5310,
+        5310.25
+      ],
+      "clip": [
+        5307.8,
+        5317.25
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_5348.75",
+      "contact_interval": [
+        5348.75,
+        5349.25
+      ],
+      "clip": [
+        5346.55,
+        5356.25
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_5412.50",
+      "contact_interval": [
+        5412.5,
+        5413
+      ],
+      "clip": [
+        5410.3,
+        5418.0
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_5436.25",
+      "contact_interval": [
+        5436.25,
+        5436.75
+      ],
+      "clip": [
+        5434.05,
+        5443.75
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_5450.00",
+      "contact_interval": [
+        5450,
+        5450.25
+      ],
+      "clip": [
+        5447.8,
+        5457.25
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "pot_5479.50",
+      "contact_interval": [
+        5479.5,
+        5479.75
+      ],
+      "clip": [
+        5477.3,
+        5485.04
+      ],
+      "status": "pot",
+      "reason": "Original-source review: live cue action and ball departure followed by a pot and score increase; contact is bounded by adjacent source observations."
+    },
+    {
+      "review_id": "break1",
+      "contact_interval": [
+        60.56,
+        60.68
+      ],
+      "clip": [
+        58.36,
+        69
+      ],
+      "status": "no_pot",
+      "frame_bookend": "first",
+      "reason": "Original source shows the live frame-opening break and the racked reds dispersing. The camera dissolve bounds exact contact."
+    },
+    {
+      "review_id": "break5",
+      "contact_interval": [
+        3424.25,
+        3424.5
+      ],
+      "clip": [
+        3422.05,
+        3433
+      ],
+      "status": "no_pot",
+      "frame_bookend": "first",
+      "reason": "Original source shows the live frame-opening break and the racked reds dispersing. The camera dissolve bounds exact contact."
+    },
+    {
+      "review_id": "break6",
+      "contact_interval": [
+        4646,
+        4646.25
+      ],
+      "clip": [
+        4643.8,
+        4655
+      ],
+      "status": "no_pot",
+      "frame_bookend": "first",
+      "reason": "Original source shows the live frame-opening break and the racked reds dispersing. The camera dissolve bounds exact contact."
+    }
+  ],
+  "frames": [
+    {
+      "first_review_id": "break1",
+      "last_shot_id": 31
+    },
+    {
+      "first_shot_id": 32,
+      "last_shot_id": 57
+    },
+    {
+      "first_shot_id": 58,
+      "last_shot_id": 92
+    },
+    {
+      "first_shot_id": 93,
+      "last_shot_id": 121
+    },
+    {
+      "first_review_id": "break5",
+      "last_shot_id": 176
+    },
+    {
+      "first_review_id": "break6",
+      "last_shot_id": 216
+    }
+  ]
+}

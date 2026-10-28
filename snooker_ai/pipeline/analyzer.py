@@ -2,8 +2,8 @@
 Main analysis pipeline.
 
 Phase 1 flow:
-  validate → proxy → sample frames → table/motion/scene features
-  → strike fusion → replay filter → state machine → segments
+  validate â†’ proxy â†’ sample frames â†’ table/motion/scene features
+  â†’ strike fusion â†’ replay filter â†’ state machine â†’ segments
 """
 
 from __future__ import annotations
@@ -46,8 +46,10 @@ from snooker_ai.segmentation.builder import SegmentBuilder
 from snooker_ai.segmentation.visual_tail import VisualTailDetector
 from snooker_ai.segmentation.portrait import PortraitCutawayDetector
 from snooker_ai.pot_detection.scoreboard import ScoreboardReader, ScoreReading
-from snooker_ai.pot_detection.recall import scoring_gap_proposals, scoring_object_contact
+from snooker_ai.pot_detection.recall import scoring_gap_proposals, scoring_object_contact, scoring_collision_contact
 from snooker_ai.pot_detection.depth_launch import scoring_depth_contact
+from snooker_ai.pot_detection.white_reacquisition import scoring_white_contact
+from snooker_ai.pot_detection.source_scores import cached_source_markers, scan_source_scores
 from snooker_ai.pot_detection.frame_context import frame_ranges, rack_cut_contact
 from snooker_ai.table_detection.localizer import TableLocalizer, TableObservation
 from snooker_ai.temporal_model.state_machine import ShotStateMachine
@@ -77,7 +79,7 @@ from snooker_ai.pipeline.contact_workers import (
 logger = get_logger("pipeline")
 
 ProgressCb = Callable[[float, str, str], None]
-_CACHE_VERSION = 45
+_CACHE_VERSION = 46
 
 
 class Analyzer:
@@ -120,7 +122,7 @@ class Analyzer:
         def report(p: float, stage: str, msg: str = "") -> None:
             if progress:
                 progress(p, stage, msg)
-            logger.info("[%.0f%%] %s — %s", p * 100, stage, msg)
+            logger.info("[%.0f%%] %s â€” %s", p * 100, stage, msg)
 
         checkpoint_path = self.job_dir / "checkpoint.json"
         analysis_path = self.job_dir / "analysis.json"
@@ -346,12 +348,25 @@ class Analyzer:
             })
             features = self.state_machine.label(features)
 
+        review_ranges = []
         if self.config.get("analysis.scoreboard_recall", True):
-            readings = [ScoreReading(**f.scoreboard_reading) for f in rack_reference
-                        if f.scoreboard_reading and f.match_context_valid and not f.broadcast_replay]
+            # Tiny proxy digits and missed-contact windows cannot cover every
+            # score change. Read the complete original overlay once, with a
+            # reusable pause-safe cache; visual checks still own each contact.
+            readings = scan_source_scores(source, metadata.duration, self.config, self.job_dir,
+                progress=lambda p, msg: report(.912+.002*p, JobStatus.REFINING.value, msg))
+            markers = cached_source_markers(source, metadata.duration, self.config, self.job_dir)
+            if markers:
+                features = self._merge_feature_layers(features, [FrameFeatures(
+                    **marker, observation_valid=False) for marker in markers])
+                self.replay_det.mark_candidates(candidates, features)
             preliminary = self.segmenter.build(candidates, features, metadata.duration, mode)
             accepted_contact_times = {shot.cue_strike for shot in preliminary}
-            proposals = scoring_gap_proposals(readings, preliminary, metadata.duration)
+            matched_updates = {}
+            proposals = scoring_gap_proposals(readings, preliminary, metadata.duration,
+                                              matched_updates=matched_updates)
+            for candidate in candidates:
+                candidate.evidence.update(matched_updates.get(candidate.timestamp, {}))
             if proposals:
                 review_ranges = [{'start':p.uncertainty_start,'end':p.uncertainty_end,
                                   'score_update_time':p.evidence['score_update_time'],
@@ -420,6 +435,12 @@ class Analyzer:
             shots = self.segmenter.build(candidates, features, metadata.duration, mode)
         shots = self._preserve_user_edits(shots, job_id)
         shots = self._score_importance(shots, features)
+        if review_ranges:
+            # A visually recovered candidate can still fail the final clip
+            # checks. Only a retained shot resolves the scoring detail.
+            retained_updates = {s.evidence.get('score_update_time') for s in shots}
+            self._detection_diagnostics['unresolved_scoring_gaps'] = [
+                gap for gap in review_ranges if gap['score_update_time'] not in retained_updates]
         self._record_detection_stage("segmentation", candidates, extra={
             "shot_records": len(shots), "included_shots": sum(s.included for s in shots),
         })
@@ -462,7 +483,7 @@ class Analyzer:
                 )
             )
 
-        # Store compact features (drop huge arrays — already lightweight)
+        # Store compact features (drop huge arrays â€” already lightweight)
         result = AnalysisResult(
             job_id=job_id,
             source_path=str(source),
@@ -517,14 +538,18 @@ class Analyzer:
         return candidates
 
     def _recover_scoring_depth(self, source, hints, proposed, observed):
-        """Check scored gaps for measured depth, red departure or registered red flow."""
+        """Check scored gaps for a short collision, depth or measured red departure."""
         recovered = list(proposed)
         for hint in hints:
             update = hint.evidence.get('score_update_time')
             if any(self.segmenter._candidate_supported(c)
                    and c.evidence.get('score_update_time') == update for c in proposed):
                 continue
-            contact = scoring_depth_contact(source, hint, observed, self.config)
+            contact = scoring_collision_contact(hint, observed)
+            if contact is None:
+                contact = scoring_white_contact(source, hint, observed, self.config)
+            if contact is None:
+                contact = scoring_depth_contact(source, hint, observed, self.config)
             if contact is not None:
                 recovered.append(contact)
         return self._deduplicate_candidates(recovered)
@@ -1533,8 +1558,10 @@ class Analyzer:
     @staticmethod
     def _table_view_changed(before: TableObservation | None, after: TableObservation) -> bool:
         """Detect a major view-local cloth change missed by image histograms."""
+        # Low-angle views are usable above .25. Requiring .5 here carried a
+        # foreground close-up's ball scale through dissolves into wide low views.
         if (before is None or before.contour is None or after.contour is None
-                or before.confidence < .5 or after.confidence < .5
+                or before.confidence < .25 or after.confidence < .25
                 or before.bbox is None or after.bbox is None):
             return False
         ax, ay, aw, ah = before.bbox
@@ -2231,7 +2258,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 66,
+            "result_policy_version": 68,
             "visual_tail": self.config.get("visual_tail", {}),
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")

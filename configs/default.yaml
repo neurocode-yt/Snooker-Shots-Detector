@@ -79,6 +79,7 @@ analysis:
 pot_selection:
   sample_fps: 2.0
   baseline_seconds: 12.0
+  max_baseline_seconds: 25.0  # Bound a missing overlay during a low camera view.
   score_update_grace_seconds: 8.0
   min_digit_confidence: 0.78
 

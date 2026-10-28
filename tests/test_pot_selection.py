@@ -262,6 +262,22 @@ def test_delayed_unresolved_previous_score_cannot_make_next_miss_a_pot(
     )
 
 
+def test_native_linked_late_foul_extends_ocr_without_using_hint_as_a_result(config, tmp_path, monkeypatch):
+    result = fixture_result(tmp_path)
+    result.shots = [shot(10, 12)]
+    result.shots[0].evidence['score_update_time'] = 24.
+    selector = PotSelector(config, tmp_path)
+    samples = (readings((20, 12), start=8, end=23.5)
+               + readings((20, 16), start=24, end=26, active=1))
+    monkeypatch.setattr(selector, 'scan', lambda *a, **k: samples)
+    selector.apply(result, selection=ShotSelection.POTS_AND_FOULS)
+    assert result.shots[0].pot_status is PotStatus.FOUL and result.shots[0].included
+    # Remove the real post-score readings: the same hint proves no outcome.
+    monkeypatch.setattr(selector, 'scan', lambda *a, **k: [])
+    selector.apply(result, selection=ShotSelection.POTS_AND_FOULS)
+    assert result.shots[0].pot_status is PotStatus.UNKNOWN and not result.shots[0].included
+
+
 def test_confirmed_previous_pot_does_not_block_fast_next_red(config, tmp_path, monkeypatch):
     result = fixture_result(tmp_path)
     previous = shot(4, 8)
@@ -428,6 +444,26 @@ def test_score_scan_resumes_its_own_partial_checkpoint(config, tmp_path, synthet
     # A completed cache needs no decoding or OCR on Continue.
     resumed.reader.read = lambda *args: pytest.fail("completed score window must be reused")
     assert resumed.scan(result) == expected
+
+
+def test_inserting_a_recovered_shot_reuses_later_score_windows(config, tmp_path, synthetic_video):
+    config._data['pot_selection'] = {'baseline_seconds': .3, 'max_baseline_seconds': .3,
+                                     'score_update_grace_seconds': .2}
+    result = AnalysisResult(job_id='shifted', source_path=str(synthetic_video), original_duration=7,
+        metadata=VideoMetadata(path=str(synthetic_video), duration=7, fps=15),
+        shots=[shot(1, 1.5), shot(5, 5.5)])
+    selector = PotSelector(config, tmp_path)
+    selector.reader.read = lambda frame, t: ScoreReading(t, 1, 0, 0, .99, 'paired_boxes')
+    expected = selector.scan(result)
+    result.shots.insert(1, shot(3, 3.5))
+    decoded = []
+    def read(frame, t):
+        assert 2.6 <= t <= 3.8, 'A previously completed score window was decoded again'
+        decoded.append(t)
+        return ScoreReading(t, 1, 0, 0, .99, 'paired_boxes')
+    selector.reader.read = read
+    actual = selector.scan(result)
+    assert decoded and all(r in actual for r in expected)
 
 
 def test_capabilities_advertise_selection_separately_from_detection_algorithm(config, tmp_path):

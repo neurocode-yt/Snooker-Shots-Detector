@@ -272,9 +272,11 @@ def test_frame_cache_is_carried_to_a_saved_selection(config, tmp_path):
     store.save_analysis(result)
     payload = json.dumps({"signature": "source-and-intervals", "racks": [[[4.5, 5.5]]]})
     (store.job_dir(parent) / "frame_context_cache.json").write_text(payload)
+    (store.job_dir(parent) / "source_scores.json").write_text('{"complete":true,"fixture":"whole source"}')
     child = store.create(result.source_path, selection=ShotSelection.POTS_AND_FOULS)
     store.seed_selection_analysis(child, parent)
     assert (store.job_dir(child) / "frame_context_cache.json").read_text() == payload
+    assert (store.job_dir(child) / "source_scores.json").read_bytes() == (store.job_dir(parent) / "source_scores.json").read_bytes()
 
 
 def test_rack_scan_resumes_completed_frames_and_never_decodes_a_complete_cache(

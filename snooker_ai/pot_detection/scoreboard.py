@@ -241,6 +241,15 @@ class ScoreboardReader:
                 digits = ((gray < 115) & (interior > 0)).astype(np.uint8) * 255
                 reading = read_digits(digits, min_confidence=self.min_confidence)
                 if reading is None:
+                    # Thin antialiased strokes can disappear at the dark mask
+                    # threshold. Require agreement at two brighter thresholds;
+                    # retain the same glyph confidence and ambiguity gates.
+                    alternatives = [read_digits(
+                        ((gray < threshold) & (interior > 0)).astype(np.uint8)*255,
+                        min_confidence=self.min_confidence) for threshold in (120, 130)]
+                    if all(item is not None for item in alternatives) and alternatives[0][0] == alternatives[1][0]:
+                        reading = (alternatives[0][0], min(item[1] for item in alternatives))
+                if reading is None:
                     return None
                 readings.append(reading)
             indicators = []

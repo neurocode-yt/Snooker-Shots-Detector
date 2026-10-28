@@ -584,6 +584,35 @@ class SegmentBuilder:
                         and abs(candidate.timestamp-evidence.get('opening_rack_timestamp', -10)) <= 3)
         scoring_object = (evidence.get("score_assisted_proposal", 0) >= .5
                           and evidence.get("score_supported_object_launch", 0) >= .5)
+        if "native_scoring_white_reacquisition" in evidence:
+            scoring_object = bool(scoring_object
+                and evidence.get("native_scoring_white_reacquisition", 0) >= .5
+                and 1 <= evidence.get("score_delta", 0) <= 7
+                and evidence.get("contact_time_upper_bound", 0) >= .5
+                and evidence.get("white_rest_samples", 0) >= 7
+                and evidence.get("white_rolling_samples", 0) >= 6
+                and evidence.get("white_travel_diameters", 0) >= 2
+                and evidence.get("white_direction_consistency", 0) >= .94
+                and evidence.get("white_rest_changed_fraction", 0) >= .35
+                and .04 <= candidate.timestamp-evidence.get("white_last_rest", -1) <= .32+1e-6
+                and .2 <= evidence.get("object_launch_confirmation_time", 0)-candidate.timestamp <= .6)
+        if "native_scoring_short_collision" in evidence:
+            scoring_object = bool(scoring_object
+                and evidence.get("native_scoring_short_collision", 0) >= .5
+                and 1 <= evidence.get("score_delta", 0) <= 7
+                and evidence.get("contact_time_upper_bound", 0) >= .5
+                and abs(evidence.get("collision_launch_motion_start", -1)-candidate.timestamp) <= 1e-6
+                and .25 <= evidence.get("object_launch_confirmation_time", 0)-candidate.timestamp <= .5
+                and evidence.get("collision_measured_frames", 0) >= 8
+                and evidence.get("collision_launch_travel_diameters", 0) >= .9
+                and evidence.get("collision_exit_travel_diameters", 0) >= .4
+                and evidence.get("collision_launch_direction", 0) >= .94
+                and evidence.get("collision_exit_direction", 0) >= .90
+                and -1.001 <= evidence.get("collision_turn_cosine", 1) <= .25
+                and (evidence.get("collision_visible_rest", 0) >= .5
+                     and evidence.get("collision_address_score", 0) >= .25
+                     or evidence.get("collision_hidden_rest", 0) >= .5
+                     and evidence.get("collision_address_score", 0) >= .45))
         if "native_scoring_red_launch" in evidence or "red_launch_motion_start" in evidence:
             scoring_object = bool(
                 scoring_object and evidence.get("native_scoring_red_launch", 0) >= .5

@@ -137,6 +137,8 @@ test('scoring details retain bounded evidence without a manual-work prompt',()=>
   assert.match(html,/Scoring details \(1\)/);
   assert.match(html,/data-history="gaps:gap" open/);
   assert.match(html,/\/api\/jobs\/gap\/video#t=120.000,132.000/);
+  assert.match(html,/data-source-preview data-start="120.000" data-end="132.000"/);
+  assert.doesNotMatch(html,/target="_blank"/);
   assert.doesNotMatch(html,/<bad>|#t=-1|#t=3.000/);
   const [group]=library.groups([gap]);
   assert.equal(library.matches(group,'attention'),false);
@@ -166,4 +168,6 @@ test('frame context is visible and older scoring exports can be updated',()=>{
   assert.doesNotMatch(html,/Update frame shots/);
   const old=view.run({...saved,pot_selection_summary:{policy:5,included:165,unknown:0}},'Pots + fouls',{});
   assert.match(old,/btn-recheck-scores.*Update frame shots/);
+  const prior=view.run({...saved,pot_selection_summary:{policy:7,included:176,unknown:0}},'Pots + fouls',{});
+  assert.match(prior,/btn-recheck-scores.*Recheck scores/);
 });

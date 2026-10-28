@@ -36,6 +36,14 @@ def frame_ranges(readings, duration, max_score_gap=0.8):
     episodes = []
     zero = None
     previous = None
+    def episode_start(zero, previous):
+        if previous is None:
+            return 0.
+        # Broadcasters can restore the zero overlay only after the break.
+        # Search the intervening source footage, bounded by the preceding
+        # score and 25 seconds; never move a continuously observed reset.
+        return (max(previous.end, zero.start-25.)
+                if zero.start-previous.end > 2 else zero.start)
     for run in runs:
         if (run.left, run.right) == (0, 0):
             if zero is None:
@@ -48,11 +56,11 @@ def frame_ranges(readings, duration, max_score_gap=0.8):
                 run.left >= previous.left and run.right >= previous.right
             )
             if not returns_to_old:
-                episodes.append((0.0 if previous is None else zero.start, run.start))
+                episodes.append((episode_start(zero, previous), run.start))
             zero = None
         previous = run
     if zero is not None:
-        episodes.append((0.0 if previous is None else zero.start, duration))
+        episodes.append((episode_start(zero, previous), duration))
     return [
         FrameRange(start, opening_end, episodes[i + 1][0] if i + 1 < len(episodes) else duration)
         for i, (start, opening_end) in enumerate(episodes)
@@ -354,7 +362,17 @@ class FrameContextDetector:
                     result.shots.append(opening)
                     break
             if opening is None:
-                continue
+                # A low opening camera may never show a measurable intact
+                # rack. An independently verified native cue-ball launch in
+                # the zero-score episode remains a real first live contact.
+                opening = next((s for s in live if s.cue_strike < interval.opening_end
+                    and s.evidence.get('cue_geometry_confirmed', 0) >= .5
+                    and s.evidence.get('cue_ball_motion_confirmed', 0) >= .5
+                    and s.evidence.get('observation_fps', 0) >= 20
+                    and s.evidence.get('pre_sample_count', 0) >= 6
+                    and s.evidence.get('sustained_count', 0) >= 6), None)
+                if opening is None:
+                    continue
             live = [s for s in live if s.cue_strike >= opening.cue_strike]
             if opening not in live:
                 live.insert(0, opening)

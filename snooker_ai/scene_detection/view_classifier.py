@@ -126,6 +126,9 @@ class ViewClassifier:
         does not establish that the following play is a replay.
         """
         small = cv2.resize(frame, (320, 180))
+        triangle = ViewClassifier._wst_triangle_stinger(small)
+        if triangle:
+            return triangle
         gold = ViewClassifier._gold_chevron_stinger(small)
         if gold:
             return gold
@@ -162,6 +165,28 @@ class ViewClassifier:
             return []
         title = cv2.cvtColor(small[58:128, 106:214], cv2.COLOR_BGR2GRAY)
         return (cv2.resize(title, (16, 12)).astype(np.float32).ravel()/255).tolist()
+
+    @staticmethod
+    @lru_cache(maxsize=1)
+    def _wst_template() -> np.ndarray | None:
+        return cv2.imread(str(Path(__file__).parent/'assets/wst_replay_logo.png'), cv2.IMREAD_GRAYSCALE)
+
+    @staticmethod
+    def _wst_triangle_stinger(small: np.ndarray) -> list[float]:
+        """Require the measured WST glyph/triangle inside its full-screen wipe."""
+        hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV)
+        if np.mean((hsv[:, :, 1] < 60) & (hsv[:, :, 2] > 200)) < .50:
+            return []
+        red = ((hsv[:, :, 0] < 10) | (hsv[:, :, 0] > 170)) & (hsv[:, :, 1] > 150)
+        if np.mean(red) < .03:
+            return []
+        title = cv2.cvtColor(small[40:140, 110:210], cv2.COLOR_BGR2GRAY)
+        template = ViewClassifier._wst_template()
+        if template is None or template.shape != title.shape or np.std(title) < 10:
+            return []
+        if float(cv2.matchTemplate(title, template, cv2.TM_CCOEFF_NORMED)[0, 0]) < .94:
+            return []
+        return [5., 0., 0., 0.] + [1.] * 192
 
     @staticmethod
     def _gold_chevron_stinger(small: np.ndarray) -> list[float]:

@@ -201,6 +201,9 @@ class JobStore:
                 self.job_dir(job_id) / "pot_score_cache" / path.name, path.read_text("utf-8")
             )
         context_cache = self.job_dir(parent_id) / "frame_context_cache.json"
+        source_scores = self.job_dir(parent_id) / "source_scores.json"
+        if source_scores.is_file():
+            atomic_text(self.job_dir(job_id)/"source_scores.json", source_scores.read_text("utf-8"))
         if context_cache.is_file():
             atomic_text(self.job_dir(job_id) / context_cache.name, context_cache.read_text('utf-8'))
         return result

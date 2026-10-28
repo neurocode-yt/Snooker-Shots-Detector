@@ -91,7 +91,8 @@ def test_old_selection_policy_creates_an_updated_version_without_overwriting_exp
         updated = client.post(f'/api/jobs/{child}/versions/pots_and_fouls').json()['job_id']
         assert updated != child
         assert client.app.state.match_queue.wait_idle()
-        assert store.get_meta(updated)['pot_selection_summary']['policy'] == 6
+        from snooker_ai.pot_detection.selector import SELECTION_POLICY
+        assert store.get_meta(updated)['pot_selection_summary']['policy'] == SELECTION_POLICY
         assert (store.job_dir(child)/'export/highlights.mp4').read_bytes() == old_export
         assert client.post(f'/api/jobs/{updated}/versions/pots_and_fouls').json()['job_id'] == updated
 

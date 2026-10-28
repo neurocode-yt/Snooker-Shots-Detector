@@ -50,6 +50,32 @@ def test_replay_contact_cannot_claim_a_live_score_update():
     assert len(scoring_gap_proposals(samples,[replay],60))==1
 
 
+@pytest.mark.parametrize('points,delay', [(1, 15), (4, 14), (4, 20)])
+def test_delayed_score_is_attached_once_to_the_existing_stroke(points, delay):
+    samples = (readings((20, 4), start=8, end=20)
+               + readings((20+points, 4), start=10+delay, end=12+delay))
+    assert scoring_gap_proposals(samples, [existing(10)], 60) == []
+
+
+def test_delayed_update_cannot_hide_a_following_missing_pot_or_bridge_a_reset():
+    samples = (readings((20, 4), start=8, end=20)
+               + readings((21, 4), start=25, end=30)
+               + readings((25, 4), start=31, end=35))
+    proposals = scoring_gap_proposals(samples, [existing(10)], 60)
+    assert len(proposals) == 1 and proposals[0].evidence['score_delta'] == 4
+    samples = (readings((40, 4), start=8, end=20)
+               + readings((0, 0), start=21, end=25)
+               + readings((1, 0), start=26, end=30))
+    assert len(scoring_gap_proposals(samples, [existing(10)], 60)) == 1
+
+
+def test_identical_score_on_return_from_cutaway_retains_the_stroke_baseline():
+    samples = (readings((0, 0), start=8, end=11)
+               + readings((0, 0), start=17, end=21.5)
+               + readings((4, 0), start=22, end=24))
+    assert scoring_gap_proposals(samples, [existing(10)], 60) == []
+
+
 def object_rows():
     return [FrameFeatures(t=10+i/30,observation_fps=30,view_type='ball_closeup',
         table_confidence=.9,scoring_object_launch_count=1) for i in range(6)]

@@ -12,6 +12,7 @@
     const pending = settings.pending?.has(job.job_id);
     const actions = UI.actions(job), summary = job.pot_selection_summary || {};
     const oldFramePolicy = Number(summary.policy)>0 && Number(summary.policy)<6;
+    const oldScorePolicy = Number(summary.policy)>0 && Number(summary.policy)<8;
     const gaps = (Array.isArray(job.scoring_gaps_unresolved)?job.scoring_gaps_unresolved:[])
       .filter(gap=>Number.isFinite(gap.start)&&Number.isFinite(gap.end)&&gap.start>=0&&gap.end>gap.start);
     const count = Number.isFinite(summary.included) ? `${summary.included}${Number.isFinite(job.shots_detected)?` of ${job.shots_detected}`:''} shots selected`
@@ -25,7 +26,7 @@
       ${!job.download_url && UI.finished(job) && hasShots && !active ? `<button class="btn-export-version primary" data-job-id="${id}" ${pending?'disabled':''}>${pending?'Exporting…':'Export video'}</button>` : ''}
       ${actions.resume ? `<button class="btn-continue primary" data-job-id="${id}">${job.status==='paused'?'Resume':'Continue'}</button>` : ''}
       ${editorLink}
-      ${UI.finished(job) && !active && job.selection && job.selection!=='all' && (oldFramePolicy || Number(summary.unknown||0)>0) ? `<button class="btn-recheck-scores secondary" data-job-id="${id}" ${pending?'disabled':''}>${oldFramePolicy?'Update frame shots':'Recheck scores'}</button>` : ''}
+      ${UI.finished(job) && !active && job.selection && job.selection!=='all' && (oldScorePolicy || Number(summary.unknown||0)>0) ? `<button class="btn-recheck-scores secondary" data-job-id="${id}" ${pending?'disabled':''}>${oldFramePolicy?'Update frame shots':'Recheck scores'}</button>` : ''}
       ${UI.finished(job) ? `<button class="btn-capcut secondary" data-job-id="${id}" ${available?'':'disabled'} title="${escape(settings.capcut?.reason || 'Open this version as editable clips')}">Open in CapCut</button><button class="btn-shorts secondary" data-job-id="${id}" ${available?'':'disabled'}>Make Shorts</button>` : ''}
       <details class="menu job-menu"><summary class="button icon-button" data-job-id="${id}" aria-label="More options for ${escape(label)}${historical?' earlier run':''}">•••</summary><div class="menu-panel"><button class="btn-restart" data-job-id="${id}" ${actions.restart&&!pending?'':'disabled'}>Restart analysis</button><div class="menu-meta"><strong>Processing details</strong><span>${escape(UI.message(job.message))}</span>${job.error?`<span class="error-detail">${escape(UI.message(job.error))}</span>`:''}${Number.isFinite(job.checkpoint?.source_time)?`<span>Saved through ${UI.time(job.checkpoint.source_time)}${job.checkpoint.duration?` of ${UI.time(job.checkpoint.duration)}`:''}</span>`:''}<span class="job-id">${id}</span></div></div></details>`;
     return `<article class="job-item version-run" data-library-job="${id}" aria-label="${escape(label)}${historical?' earlier run':''}"><div class="job-copy"><div class="job-title-row"><h4>${escape(label)}${historical?' · earlier run':''}</h4><span class="status-badge ${state.tone}">${state.label}</span></div><p class="version-detail">${escape(count)}${historical?` · ${date(job)}`:''}${!active&&UI.finished(job)&&!job.download_url?' · Video export not ready':''}</p>
