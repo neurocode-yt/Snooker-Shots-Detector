@@ -20,7 +20,7 @@ def score_signature(source, duration, config):
     return hashlib.sha256(
         json.dumps(
             [
-                2,
+                5,
                 str(source.resolve()),
                 stat.st_size,
                 stat.st_mtime_ns,

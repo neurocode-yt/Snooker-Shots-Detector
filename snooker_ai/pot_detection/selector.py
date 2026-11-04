@@ -19,8 +19,8 @@ from snooker_ai.types import AnalysisResult, FrameFeatures, PotStatus, ShotRecor
 from snooker_ai.utils.persistence import atomic_text
 from snooker_ai.utils.video import open_capture, sampled_frames
 
-SELECTION_POLICY = 8
-_SCORE_SCAN_POLICY = 7  # Longer baselines and thin-digit source observations.
+SELECTION_POLICY = 9
+_SCORE_SCAN_POLICY = 8  # Dim white outer-score glyph recovery.
 
 
 @dataclass

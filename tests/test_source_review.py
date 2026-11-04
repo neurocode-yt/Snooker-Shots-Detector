@@ -92,6 +92,89 @@ def test_review_can_exclude_a_confirmed_replay_without_changing_parent(reviewed_
     assert result.pot_selection_summary["included"] == 3
 
 
+def test_all_shots_review_can_remove_a_false_contact_and_add_a_safety(reviewed_case):
+    original, manifest = reviewed_case
+    manifest.update(selection="all", removals=[{
+        "shot_id": 2, "strike": 30, "reason": "Referee placing a ball; no cue contact",
+    }], updates=[])
+    manifest["additions"][0]["status"] = "no_pot"
+    original.shots[-1].linked_live_shot_id = 2
+    original.events.append(TimelineEvent(event_type="cue_strike", timestamp=30,
+                                         metadata={"shot_id": 2}))
+    result = apply_source_review(original, manifest)
+    assert result.selection.value == "all"
+    assert [s.cue_strike for s in result.shots] == [10, 50, 70]
+    assert result.shots[-1].linked_live_shot_id is None
+    assert [e.timestamp for e in result.events] == [50, 70]
+    assert result.events[-1].metadata["shot_id"] == 3
+    assert result.pot_selection_summary["source_review"]["removed_records"] == 1
+    assert len(original.shots) == 3
+
+
+@pytest.mark.parametrize("defect", ["moved", "reason", "duplicate", "bookend", "update"])
+def test_removals_require_matching_source_observations(reviewed_case, defect):
+    original, manifest = reviewed_case
+    removal = {"shot_id": 2, "strike": 30, "reason": "Duplicate preparation movement"}
+    manifest["updates"] = []
+    manifest["removals"] = [removal]
+    if defect == "moved":
+        removal["strike"] = 31
+    elif defect == "reason":
+        removal["reason"] = ""
+    elif defect == "duplicate":
+        manifest["removals"] *= 2
+    elif defect == "bookend":
+        removal.update(shot_id=1, strike=10)
+    else:
+        manifest["updates"] = [{**removal, "status": "pot"}]
+    snapshot = original.model_dump_json()
+    with pytest.raises(ValueError):
+        apply_source_review(original, manifest)
+    assert original.model_dump_json() == snapshot
+
+
+def test_second_review_does_not_duplicate_previously_added_contact_events(reviewed_case):
+    original, manifest = reviewed_case
+    first = apply_source_review(original, manifest)
+    manifest.update(updates=[], additions=[], frames=[])
+    second = apply_source_review(first, manifest)
+    assert len(second.events) == len(first.events)
+    assert second.pot_selection_summary["source_review"]["added_contacts"] == 0
+
+
+def test_highlights_review_can_retain_an_excluded_safety_for_the_all_shots_version(reviewed_case):
+    original, manifest = reviewed_case
+    manifest["additions"][0].update(status="no_pot", included=False)
+    result = apply_source_review(original, manifest)
+    safety = next(s for s in result.shots if s.cue_strike == 50)
+    assert safety.pot_status is PotStatus.NO_POT and not safety.included
+    assert result.selection.value == "pots_and_fouls"
+
+
+def test_reviewed_cut_does_not_invent_a_new_measured_stop(reviewed_case):
+    original, manifest = reviewed_case
+    original.shots[1].ball_motion_end = original.shots[1].physical_stop_timestamp = 35
+    original.shots[1].last_ball_motion_timestamp = 34.8
+    original.shots[1].stop_confirmation_timestamp = 35.5
+    manifest["updates"][0]["clip"] = [28, 34]
+    result = apply_source_review(original, manifest)
+    JobStore._sync_review_timestamps(result)
+    changed = next(s for s in result.shots if s.cue_strike == 30)
+    assert changed.clip_end == changed.clip_end_timestamp == 34
+    assert changed.user_modified
+    assert changed.physical_stop_timestamp == 35
+    assert changed.stop_confirmation_timestamp == 35.5
+    assert original.shots[1].clip_end == 35
+
+
+@pytest.mark.parametrize("clip", [[31, 35], [28, 30], [28, 91], [28, float('nan')]])
+def test_reviewed_replacement_clip_requires_finite_source_bounds(reviewed_case, clip):
+    original, manifest = reviewed_case
+    manifest["updates"][0]["clip"] = clip
+    with pytest.raises(ValueError, match="replacement clip"):
+        apply_source_review(original, manifest)
+
+
 def test_missing_break_can_be_added_only_as_a_referenced_frame_bookend(reviewed_case):
     original, manifest = reviewed_case
     manifest["additions"].append(

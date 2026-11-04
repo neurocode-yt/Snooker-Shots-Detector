@@ -1,0 +1,86 @@
+[
+  {
+    "file": "40.png",
+    "t": 40,
+    "left": 0,
+    "right": 0,
+    "active": 1
+  },
+  {
+    "file": "367.png",
+    "t": 367,
+    "left": 13,
+    "right": 0,
+    "active": 0
+  },
+  {
+    "file": "694.png",
+    "t": 694,
+    "left": 47,
+    "right": 0,
+    "active": 0
+  },
+  {
+    "file": "1021.png",
+    "t": 1021,
+    "left": 56,
+    "right": 7,
+    "active": 1
+  },
+  {
+    "file": "6579.png",
+    "t": 6579,
+    "left": 26,
+    "right": 6,
+    "active": 0
+  },
+  {
+    "file": "7560.png",
+    "t": 7560,
+    "left": 73,
+    "right": 0,
+    "active": 0
+  },
+  {
+    "file": "5627.png",
+    "t": 5627,
+    "left": 0,
+    "right": 29,
+    "active": 1
+  },
+  {
+    "file": "6053.png",
+    "t": 6053,
+    "left": 0,
+    "right": 54,
+    "active": 1
+  },
+  {
+    "file": "6119.png",
+    "t": 6119,
+    "left": 0,
+    "right": 69,
+    "active": 1
+  },
+  {
+    "file": "3401.png",
+    "t": 3401,
+    "left": 57,
+    "right": 4,
+    "active": 1
+  },
+  {
+    "file": "6959.png",
+    "t": 6959,
+    "left": 114,
+    "right": 6,
+    "active": null
+  },
+  {
+    "file": "5620.png",
+    "t": 5620,
+    "left": 0,
+    "right": 22,
+    "active": 1
+  }
+]

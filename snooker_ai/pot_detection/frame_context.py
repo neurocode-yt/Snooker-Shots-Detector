@@ -317,6 +317,32 @@ class FrameContextDetector:
         return shot[0]
 
     def identify(self, result: AnalysisResult, readings, progress=None):
+        # Rechecking OCR must preserve explicitly reviewed frame boundaries.
+        # Validate every pair before bypassing automatic rack recovery.
+        reviewed = {}
+        for shot in sorted(result.shots, key=lambda s: s.cue_strike):
+            context = shot.evidence.get("frame_context", {})
+            if context.get("source_reviewed") and not shot.possible_replay:
+                frame = reviewed.setdefault(context.get("frame"), {"first": [], "last": []})
+                for role in ("first", "last"):
+                    if context.get(role):
+                        frame[role].append(shot)
+        identified = []
+        for number, pair in reviewed.items():
+            if len(pair["first"]) != 1 or len(pair["last"]) != 1:
+                break
+            first, last = pair["first"][0], pair["last"][0]
+            if (not isinstance(number, int) or number != len(identified) + 1
+                    or not 0 <= first.cue_strike <= last.cue_strike < result.original_duration
+                    or identified and first.cue_strike <= identified[-1]["last_strike"]):
+                break
+            identified.append({"frame": number, "first_strike": first.cue_strike,
+                               "last_strike": last.cue_strike,
+                               "first_shot_id": first.shot_id, "last_shot_id": last.shot_id})
+        if (identified and len(identified) == len(reviewed)
+                and all(any(f["first_strike"] <= s.cue_strike <= f["last_strike"]
+                            for f in identified) for s in result.shots if not s.possible_replay)):
+            return identified
         for shot in result.shots:
             shot.evidence.pop("frame_context", None)
         ranges = frame_ranges(

@@ -17,9 +17,25 @@ def apply_source_review(result: AnalysisResult, manifest: dict) -> AnalysisResul
     if not math.isfinite(duration) or abs(duration - result.original_duration) > 0.1:
         raise ValueError("Reviewed source duration does not match the saved analysis")
     reviewed = result.model_copy(deep=True)
+    selection = ShotSelection(manifest.get("selection", "pots_and_fouls"))
     original_ids = {s.shot_id: s for s in reviewed.shots}
     added_ids = {}
+    new_contacts = []
     touched = set()
+    removed = set()
+    for change in manifest.get("removals", []):
+        identifier = change["shot_id"]
+        if identifier in touched or identifier not in original_ids:
+            raise ValueError("Duplicate or missing reviewed shot ID")
+        strike = float(change["strike"])
+        if (not math.isfinite(strike)
+                or abs(original_ids[identifier].cue_strike - strike) > 0.05
+                or not change.get("reason")):
+            raise ValueError("Reviewed removal requires a matching contact and source observation")
+        touched.add(identifier)
+        removed.add(identifier)
+    reviewed.shots = [s for s in reviewed.shots if s.shot_id not in removed]
+    reviewed.events = [e for e in reviewed.events if e.metadata.get("shot_id") not in removed]
     for change in manifest.get("updates", []):
         identifier = change["shot_id"]
         if identifier in touched or identifier not in original_ids:
@@ -31,6 +47,21 @@ def apply_source_review(result: AnalysisResult, manifest: dict) -> AnalysisResul
             raise ValueError("Reviewed contact no longer matches the saved shot")
         if not change.get("reason"):
             raise ValueError("Reviewed corrections require a source observation")
+        if "clip" in change:
+            start, end = map(float, change["clip"])
+            if (not all(math.isfinite(v) for v in (start, end))
+                    or not 0 <= start <= strike < end <= reviewed.original_duration
+                    or end - start < 4):
+                raise ValueError("Invalid reviewed replacement clip")
+            # These are editing boundaries; retain the prior motion/stop
+            # observations instead of inventing a new measured ball stop.
+            shot.evidence["end_trim"] = {
+                "reference_end": shot.clip_end, "source_reviewed": True,
+            }
+            shot.clip_start = shot.clip_start_timestamp = start
+            shot.clip_end = shot.clip_end_timestamp = end
+            shot.preparation_start = start
+            shot.user_modified = True
         possible_replay = change.get("possible_replay", shot.possible_replay)
         if not isinstance(possible_replay, bool):
             raise TypeError("Reviewed replay flag must be a boolean")
@@ -59,7 +90,10 @@ def apply_source_review(result: AnalysisResult, manifest: dict) -> AnalysisResul
             raise ValueError("Reviewed addition duplicates an existing contact")
         status = PotStatus(change["status"])
         context = change.get("frame_bookend")
-        if status not in {PotStatus.POT, PotStatus.FOUL, PotStatus.POINTS} and context not in {
+        included = change.get("included", True)
+        if not isinstance(included, bool):
+            raise TypeError("Reviewed inclusion flag must be a boolean")
+        if included and selection is not ShotSelection.ALL and status not in {PotStatus.POT, PotStatus.FOUL, PotStatus.POINTS} and context not in {
             "first",
             "last",
         }:
@@ -85,7 +119,7 @@ def apply_source_review(result: AnalysisResult, manifest: dict) -> AnalysisResul
             manual_review_required=True,
             user_modified=True,
             pot_status=status,
-            included=True,
+            included=included,
             evidence={
                 "source_review": dict(change),
                 "pots_only_manual_override": True,
@@ -97,6 +131,7 @@ def apply_source_review(result: AnalysisResult, manifest: dict) -> AnalysisResul
             },
         )
         reviewed.shots.append(shot)
+        new_contacts.append(shot)
         if review_id is not None:
             added_ids[review_id] = shot
 
@@ -109,7 +144,10 @@ def apply_source_review(result: AnalysisResult, manifest: dict) -> AnalysisResul
             raise ValueError("Each reviewed frame needs exactly one reference per bookend")
         try:
             if existing_key in frame:
-                return original_ids[frame[existing_key]]
+                identifier = frame[existing_key]
+                if identifier in removed:
+                    raise KeyError(identifier)
+                return original_ids[identifier]
             return added_ids[frame[added_key]]
         except KeyError as exc:
             raise ValueError("Missing reviewed frame bookend") from exc
@@ -145,19 +183,22 @@ def apply_source_review(result: AnalysisResult, manifest: dict) -> AnalysisResul
             raise ValueError("A non-scoring addition must be a referenced frame bookend")
 
     reviewed.shots.sort(key=lambda s: s.cue_strike)
-    prior_strikes = {identifier: shot.cue_strike for identifier, shot in original_ids.items()}
+    prior_strikes = {identifier: shot.cue_strike for identifier, shot in original_ids.items()
+                     if identifier not in removed}
     strike_to_id = {}
     for index, shot in enumerate(reviewed.shots, 1):
         shot.shot_id = index
         strike_to_id[shot.cue_strike] = index
     for shot in reviewed.shots:
+        if shot.linked_live_shot_id in removed:
+            shot.linked_live_shot_id = None
         if shot.linked_live_shot_id in prior_strikes:
             shot.linked_live_shot_id = strike_to_id[prior_strikes[shot.linked_live_shot_id]]
     for event in reviewed.events:
         identifier = event.metadata.get("shot_id")
         if identifier in prior_strikes:
             event.metadata["shot_id"] = strike_to_id[prior_strikes[identifier]]
-    added = [s for s in reviewed.shots if "contact_interval" in s.evidence.get("source_review", {})]
+    added = new_contacts
     for shot in added:
         reviewed.events.append(
             TimelineEvent(
@@ -176,17 +217,18 @@ def apply_source_review(result: AnalysisResult, manifest: dict) -> AnalysisResul
         s.pot_status.value for s in reviewed.shots if s.pot_status is not None
     )
     counts = {status.value: observed_counts[status.value] for status in PotStatus}
-    reviewed.selection = ShotSelection.POTS_AND_FOULS
+    reviewed.selection = selection
     reviewed.pot_selection_summary = {
         **reviewed.pot_selection_summary,
         **counts,
         "included": sum(s.included and not s.possible_replay for s in reviewed.shots),
         "method": "stable_scores_and_source_review",
-        "selection": "pots_and_fouls",
+        "selection": selection.value,
         "source_review": {
             "name": manifest["name"],
             "added_contacts": len(added),
-            "updated_records": len(touched),
+            "updated_records": len(touched - removed),
+            "removed_records": len(removed),
             "frames_reviewed": len(frames),
         },
         "frames": [

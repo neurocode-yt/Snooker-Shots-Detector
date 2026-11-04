@@ -38,6 +38,34 @@ def result_with_frames(tmp_path):
     return result
 
 
+def test_rechecking_scores_keeps_complete_source_reviewed_frames(config, tmp_path, monkeypatch):
+    result = result_with_frames(tmp_path)
+    for i, item in enumerate(result.shots):
+        item.evidence["frame_context"] = {
+            "frame": 1 if i < 4 else 2, "first": i in (0, 4),
+            "last": i in (3, 7), "source_reviewed": True,
+        }
+    monkeypatch.setattr(FrameContextDetector, "scan_racks",
+                        lambda *args: pytest.fail("recovered an already reviewed frame"))
+    selector = PotSelector(config, tmp_path)
+    monkeypatch.setattr(selector, "scan", lambda *args: samples())
+    selector.apply(result, selection=ShotSelection.POTS_AND_FOULS)
+    assert [(f["first_strike"], f["last_strike"])
+            for f in result.pot_selection_summary["frames"]] == [(5, 45), (65, 110)]
+    assert all(result.shots[i].included for i in (0, 3, 4, 7))
+
+
+def test_incomplete_reviewed_frame_does_not_bypass_automatic_detection(config, tmp_path, monkeypatch):
+    result = result_with_frames(tmp_path)
+    result.shots[0].evidence["frame_context"] = {
+        "frame": 1, "first": True, "last": False, "source_reviewed": True,
+    }
+    detector_racks(monkeypatch)
+    frames = FrameContextDetector(config, tmp_path).identify(result, samples())
+    assert len(frames) == 2
+    assert not result.shots[0].evidence["frame_context"].get("source_reviewed")
+
+
 def detector_racks(monkeypatch):
     monkeypatch.setattr(
         FrameContextDetector, "scan_racks", lambda *args: [[[4.5, 5.5]], [[64.5, 65.5]]]

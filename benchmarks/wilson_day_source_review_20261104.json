@@ -1,0 +1,2541 @@
+{
+  "name": "Wilson-Day seven-frame source review, 4 November 2026",
+  "source_reviewed": true,
+  "selection": "pots_and_fouls",
+  "source_duration_seconds": 7604.786667,
+  "parent_job_id": "batch-f3af8e95-1626-488c-82c5-e78a6d5bd46e",
+  "removals": [
+    {
+      "shot_id": 13,
+      "strike": 320.2,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 24,
+      "strike": 586.0,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 64,
+      "strike": 1652.52,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 238,
+      "strike": 6440.68,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 239,
+      "strike": 6456.72,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 275,
+      "strike": 7211.08,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 28,
+      "strike": 647.64,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 54,
+      "strike": 1488.04,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 56,
+      "strike": 1499.88,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 57,
+      "strike": 1518.68,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 60,
+      "strike": 1576.6000000000001,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 72,
+      "strike": 1847.24,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 82,
+      "strike": 2105.6,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 83,
+      "strike": 2114.12,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 85,
+      "strike": 2133.2000000000003,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 97,
+      "strike": 2482.2000000000003,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 107,
+      "strike": 2654.6800000000003,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 110,
+      "strike": 2693.6400000000003,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 119,
+      "strike": 2981.6800000000003,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 123,
+      "strike": 3048.0,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 130,
+      "strike": 3167.32,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 149,
+      "strike": 3528.1600000000003,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 169,
+      "strike": 4253.16,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 171,
+      "strike": 4272.76,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 183,
+      "strike": 4415.480000000001,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 190,
+      "strike": 5386.320000000001,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 195,
+      "strike": 5512.88,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 196,
+      "strike": 5535.280000000001,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 199,
+      "strike": 5561.0,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 220,
+      "strike": 6063.84,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 222,
+      "strike": 6095.52,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 235,
+      "strike": 6370.200000000001,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 250,
+      "strike": 6683.320000000001,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 277,
+      "strike": 7250.08,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 280,
+      "strike": 7291.400000000001,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 292,
+      "strike": 7488.72,
+      "reason": "Source shows preparation, post-shot movement or referee handling; the adjacent live contact is retained."
+    },
+    {
+      "shot_id": 102,
+      "strike": 2568.8,
+      "reason": "Replace early cue/preparation timestamp with source-observed cue-ball departure and a complete clip."
+    },
+    {
+      "shot_id": 127,
+      "strike": 3106.32,
+      "reason": "Replace early cue/preparation timestamp with source-observed cue-ball departure and a complete clip."
+    },
+    {
+      "shot_id": 185,
+      "strike": 4433.24,
+      "reason": "Replace early cue/preparation timestamp with source-observed cue-ball departure and a complete clip."
+    },
+    {
+      "shot_id": 189,
+      "strike": 4473.84,
+      "reason": "Replace early cue/preparation timestamp with source-observed cue-ball departure and a complete clip."
+    },
+    {
+      "shot_id": 191,
+      "strike": 5392.0,
+      "reason": "Replace early cue/preparation timestamp with source-observed cue-ball departure and a complete clip."
+    },
+    {
+      "shot_id": 247,
+      "strike": 6583.400000000001,
+      "reason": "Replace early cue/preparation timestamp with source-observed cue-ball departure and a complete clip."
+    },
+    {
+      "shot_id": 267,
+      "strike": 6905.6,
+      "reason": "Replace early cue/preparation timestamp with source-observed cue-ball departure and a complete clip."
+    },
+    {
+      "shot_id": 289,
+      "strike": 7450.68,
+      "reason": "Replace early cue/preparation timestamp with source-observed cue-ball departure and a complete clip."
+    }
+  ],
+  "additions": [
+    {
+      "review_id": "contact_76.5",
+      "contact_interval": [
+        75.5,
+        77.5
+      ],
+      "clip": [
+        73.5,
+        85.5
+      ],
+      "status": "no_pot",
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable.",
+      "included": false
+    },
+    {
+      "review_id": "contact_724.5",
+      "contact_interval": [
+        723.5,
+        725.5
+      ],
+      "clip": [
+        721.5,
+        733.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_802.5",
+      "contact_interval": [
+        801.5,
+        803.5
+      ],
+      "clip": [
+        799.5,
+        811.5
+      ],
+      "status": "no_pot",
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable.",
+      "included": false
+    },
+    {
+      "review_id": "contact_1008.5",
+      "contact_interval": [
+        1007.5,
+        1009.5
+      ],
+      "clip": [
+        1005.5,
+        1017.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_1078.5",
+      "contact_interval": [
+        1077.5,
+        1079.5
+      ],
+      "clip": [
+        1075.5,
+        1087.5
+      ],
+      "status": "no_pot",
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable.",
+      "included": false
+    },
+    {
+      "review_id": "contact_1096.5",
+      "contact_interval": [
+        1095.5,
+        1097.5
+      ],
+      "clip": [
+        1093.5,
+        1105.5
+      ],
+      "status": "no_pot",
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable.",
+      "included": false
+    },
+    {
+      "review_id": "contact_1122.5",
+      "contact_interval": [
+        1121.5,
+        1123.5
+      ],
+      "clip": [
+        1119.5,
+        1131.5
+      ],
+      "status": "no_pot",
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable.",
+      "included": false
+    },
+    {
+      "review_id": "contact_1140.5",
+      "contact_interval": [
+        1139.5,
+        1141.5
+      ],
+      "clip": [
+        1137.5,
+        1149.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true,
+      "frame_bookend": "last"
+    },
+    {
+      "review_id": "contact_2449.5",
+      "contact_interval": [
+        2448.5,
+        2450.5
+      ],
+      "clip": [
+        2446.5,
+        2458.5
+      ],
+      "status": "no_pot",
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable.",
+      "included": false
+    },
+    {
+      "review_id": "contact_2805.5",
+      "contact_interval": [
+        2804.5,
+        2806.5
+      ],
+      "clip": [
+        2802.5,
+        2814.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_2818.5",
+      "contact_interval": [
+        2817.5,
+        2819.5
+      ],
+      "clip": [
+        2815.5,
+        2827.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_2832.5",
+      "contact_interval": [
+        2831.5,
+        2833.5
+      ],
+      "clip": [
+        2829.5,
+        2841.5
+      ],
+      "status": "no_pot",
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable.",
+      "included": true,
+      "frame_bookend": "last"
+    },
+    {
+      "review_id": "contact_3599.5",
+      "contact_interval": [
+        3598.5,
+        3600.5
+      ],
+      "clip": [
+        3596.5,
+        3608.5
+      ],
+      "status": "no_pot",
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable.",
+      "included": false
+    },
+    {
+      "review_id": "contact_3616.5",
+      "contact_interval": [
+        3615.5,
+        3617.5
+      ],
+      "clip": [
+        3613.5,
+        3625.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_3632.5",
+      "contact_interval": [
+        3631.5,
+        3633.5
+      ],
+      "clip": [
+        3629.5,
+        3641.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_3650.5",
+      "contact_interval": [
+        3649.5,
+        3651.5
+      ],
+      "clip": [
+        3647.5,
+        3658.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_3661.5",
+      "contact_interval": [
+        3660.5,
+        3662.5
+      ],
+      "clip": [
+        3658.5,
+        3665.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_3668.5",
+      "contact_interval": [
+        3667.5,
+        3669.5
+      ],
+      "clip": [
+        3665.5,
+        3677.5
+      ],
+      "status": "no_pot",
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable.",
+      "included": true,
+      "frame_bookend": "last"
+    },
+    {
+      "review_id": "contact_6948.5",
+      "contact_interval": [
+        6947.5,
+        6949.5
+      ],
+      "clip": [
+        6945.5,
+        6953.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_6956.5",
+      "contact_interval": [
+        6955.5,
+        6957.5
+      ],
+      "clip": [
+        6953.5,
+        6962.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_6965.5",
+      "contact_interval": [
+        6964.5,
+        6966.5
+      ],
+      "clip": [
+        6962.5,
+        6971.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_6974.5",
+      "contact_interval": [
+        6973.5,
+        6975.5
+      ],
+      "clip": [
+        6971.5,
+        6980.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_6983.5",
+      "contact_interval": [
+        6982.5,
+        6984.5
+      ],
+      "clip": [
+        6980.5,
+        6987.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_6990.5",
+      "contact_interval": [
+        6989.5,
+        6991.5
+      ],
+      "clip": [
+        6987.5,
+        6993.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true,
+      "frame_bookend": "last"
+    },
+    {
+      "review_id": "contact_2569.5",
+      "contact_interval": [
+        2568.5,
+        2570.5
+      ],
+      "clip": [
+        2566.5,
+        2578.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_3107.5",
+      "contact_interval": [
+        3106.5,
+        3108.5
+      ],
+      "clip": [
+        3104.5,
+        3116.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_4433.5",
+      "contact_interval": [
+        4432.5,
+        4434.5
+      ],
+      "clip": [
+        4430.5,
+        4440.2
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_4476.5",
+      "contact_interval": [
+        4475.5,
+        4477.5
+      ],
+      "clip": [
+        4473.5,
+        4485.5
+      ],
+      "status": "no_pot",
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable.",
+      "included": true,
+      "frame_bookend": "last"
+    },
+    {
+      "review_id": "contact_5395.5",
+      "contact_interval": [
+        5394.5,
+        5396.5
+      ],
+      "clip": [
+        5392.5,
+        5404.5
+      ],
+      "status": "no_pot",
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable.",
+      "included": true,
+      "frame_bookend": "first"
+    },
+    {
+      "review_id": "contact_6587.5",
+      "contact_interval": [
+        6586.5,
+        6588.5
+      ],
+      "clip": [
+        6584.5,
+        6596.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_6908.5",
+      "contact_interval": [
+        6907.5,
+        6909.5
+      ],
+      "clip": [
+        6905.5,
+        6913.8
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    },
+    {
+      "review_id": "contact_7452.5",
+      "contact_interval": [
+        7451.5,
+        7453.5
+      ],
+      "clip": [
+        7449.5,
+        7461.5
+      ],
+      "status": "pot",
+      "reason": "Source review confirms the pot and the full-source score increase.",
+      "included": true
+    }
+  ],
+  "frames": [
+    {
+      "first_shot_id": 1,
+      "last_review_id": "contact_1140.5"
+    },
+    {
+      "first_shot_id": 44,
+      "last_review_id": "contact_2832.5"
+    },
+    {
+      "first_shot_id": 117,
+      "last_review_id": "contact_3668.5"
+    },
+    {
+      "first_shot_id": 153,
+      "last_review_id": "contact_4476.5"
+    },
+    {
+      "first_review_id": "contact_5395.5",
+      "last_shot_id": 230
+    },
+    {
+      "first_shot_id": 231,
+      "last_review_id": "contact_6990.5"
+    },
+    {
+      "first_shot_id": 271,
+      "last_shot_id": 298
+    }
+  ],
+  "parent_analysis_sha256": "bd5d16378be9b49dd8cb92f77ce148f0f0b254435f9d747b96cb7de30a2ac77d",
+  "source_size_bytes": 1117982781,
+  "source_sha256": "8233f54d87e238f5f0c9570c8a521108c589f18e308c2a1f23b9ff5550bc934f",
+  "review_scope": {
+    "original_records_checked": 298,
+    "frames": 7,
+    "source_duration_seconds": 7604.786667,
+    "whole_source_score_sample_fps": 2,
+    "readable_source_scores": 14689,
+    "long_gap_windows_checked": 25,
+    "medium_gap_windows_checked": 139,
+    "contact_review": "Source contact sheets for all saved records, scoring gaps, frame tails, and uncovered intervals, followed by one-second or finer checks and cue-ball position comparisons. This was not continuous real-time playback.",
+    "timing": "Added contact intervals are bounds; clip ends are reviewed editing boundaries, not measured physical stops."
+  },
+  "updates": [
+    {
+      "shot_id": 1,
+      "strike": 3.48,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 2,
+      "strike": 22.76,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 3,
+      "strike": 45.64,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 4,
+      "strike": 126.28,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 5,
+      "strike": 154.84,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 6,
+      "strike": 180.68,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 7,
+      "strike": 200.08,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 8,
+      "strike": 228.36,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 9,
+      "strike": 253.36,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 10,
+      "strike": 265.32,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 11,
+      "strike": 291.16,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 12,
+      "strike": 310.8,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 14,
+      "strike": 342.04,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 15,
+      "strike": 381.36,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 16,
+      "strike": 406.20000000000005,
+      "status": "foul",
+      "included": true,
+      "reason": "Source review confirms the foul and points awarded to the opponent."
+    },
+    {
+      "shot_id": 17,
+      "strike": 424.48,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 18,
+      "strike": 445.0,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 19,
+      "strike": 488.0,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 20,
+      "strike": 512.64,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 21,
+      "strike": 529.28,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 22,
+      "strike": 554.08,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 23,
+      "strike": 568.5600000000002,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 25,
+      "strike": 596.8000000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 26,
+      "strike": 618.36,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 27,
+      "strike": 639.1600000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 29,
+      "strike": 653.64,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 30,
+      "strike": 673.4,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 31,
+      "strike": 689.8000000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 32,
+      "strike": 707.5600000000002,
+      "clip": [
+        705.5600000000002,
+        721.5
+      ],
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 33,
+      "strike": 761.5600000000002,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 34,
+      "strike": 826.88,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 35,
+      "strike": 843.96,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 36,
+      "strike": 878.44,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 37,
+      "strike": 906.0400000000001,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 38,
+      "strike": 925.76,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 39,
+      "strike": 947.76,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 40,
+      "strike": 962.9200000000001,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 41,
+      "strike": 987.72,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 42,
+      "strike": 1041.8400000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 43,
+      "strike": 1057.76,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 44,
+      "strike": 1268.0,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 45,
+      "strike": 1292.8400000000001,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 46,
+      "strike": 1311.6000000000001,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 47,
+      "strike": 1329.3200000000002,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 48,
+      "strike": 1351.6000000000001,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 49,
+      "strike": 1378.64,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 50,
+      "strike": 1397.0,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 51,
+      "strike": 1414.2,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 52,
+      "strike": 1442.6000000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 53,
+      "strike": 1462.48,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 55,
+      "strike": 1495.8400000000001,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 58,
+      "strike": 1524.0,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 59,
+      "strike": 1550.48,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 61,
+      "strike": 1582.44,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 62,
+      "strike": 1614.5600000000002,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 63,
+      "strike": 1637.3200000000002,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 65,
+      "strike": 1657.3600000000001,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 66,
+      "strike": 1680.96,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 67,
+      "strike": 1707.68,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 68,
+      "strike": 1734.1200000000003,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 69,
+      "strike": 1751.76,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 70,
+      "strike": 1782.4,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 71,
+      "strike": 1800.2,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 73,
+      "strike": 1854.76,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 74,
+      "strike": 1892.2,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 75,
+      "strike": 1922.92,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 76,
+      "strike": 1969.92,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 77,
+      "strike": 1996.6000000000001,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 78,
+      "strike": 2027.5600000000002,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 79,
+      "strike": 2049.44,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 80,
+      "strike": 2069.92,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 81,
+      "strike": 2097.92,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 84,
+      "strike": 2119.88,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 86,
+      "strike": 2140.28,
+      "status": "foul",
+      "included": true,
+      "reason": "Source review confirms the foul and points awarded to the opponent."
+    },
+    {
+      "shot_id": 87,
+      "strike": 2181.56,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 88,
+      "strike": 2200.0,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 89,
+      "strike": 2254.2000000000003,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 90,
+      "strike": 2285.8,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 91,
+      "strike": 2308.6800000000003,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 92,
+      "strike": 2344.08,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 93,
+      "strike": 2370.84,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 94,
+      "strike": 2391.76,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 95,
+      "strike": 2422.04,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 96,
+      "strike": 2464.92,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 98,
+      "strike": 2490.84,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 99,
+      "strike": 2509.84,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 100,
+      "strike": 2532.08,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 101,
+      "strike": 2557.1200000000003,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 103,
+      "strike": 2587.92,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 104,
+      "strike": 2611.6400000000003,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 105,
+      "strike": 2629.7200000000003,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 106,
+      "strike": 2643.96,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 108,
+      "strike": 2659.44,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 109,
+      "strike": 2681.0,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 111,
+      "strike": 2700.96,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 112,
+      "strike": 2732.6800000000003,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 113,
+      "strike": 2745.88,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 114,
+      "strike": 2761.2400000000007,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 115,
+      "strike": 2776.4,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 116,
+      "strike": 2791.1200000000003,
+      "clip": [
+        2789.1200000000003,
+        2802.5
+      ],
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 117,
+      "strike": 2947.28,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 118,
+      "strike": 2963.36,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 120,
+      "strike": 2986.92,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 121,
+      "strike": 3011.6800000000003,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 122,
+      "strike": 3042.56,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 124,
+      "strike": 3062.4,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 125,
+      "strike": 3078.56,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 126,
+      "strike": 3091.08,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 128,
+      "strike": 3137.44,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 129,
+      "strike": 3156.36,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 131,
+      "strike": 3172.6000000000004,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 132,
+      "strike": 3188.36,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 133,
+      "strike": 3203.04,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 134,
+      "strike": 3219.52,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 135,
+      "strike": 3233.6000000000004,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 136,
+      "strike": 3249.0,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 137,
+      "strike": 3261.2000000000003,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 138,
+      "strike": 3280.56,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 139,
+      "strike": 3293.76,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 140,
+      "strike": 3315.0800000000004,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 141,
+      "strike": 3351.6400000000003,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 142,
+      "strike": 3378.28,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 143,
+      "strike": 3395.8,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 144,
+      "strike": 3431.88,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 145,
+      "strike": 3451.0800000000004,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 146,
+      "strike": 3482.1200000000003,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 147,
+      "strike": 3499.2400000000007,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 148,
+      "strike": 3513.84,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 150,
+      "strike": 3542.8,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 151,
+      "strike": 3562.84,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 152,
+      "strike": 3582.84,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 153,
+      "strike": 3915.6400000000003,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 154,
+      "strike": 3939.44,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 155,
+      "strike": 3960.96,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 156,
+      "strike": 3980.36,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 157,
+      "strike": 4007.84,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 158,
+      "strike": 4037.2400000000007,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 159,
+      "strike": 4053.0,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 160,
+      "strike": 4068.28,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 161,
+      "strike": 4082.6400000000003,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 162,
+      "strike": 4097.12,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 163,
+      "strike": 4140.96,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 164,
+      "strike": 4178.2,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 165,
+      "strike": 4196.4400000000005,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 166,
+      "strike": 4212.64,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 167,
+      "strike": 4227.04,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 168,
+      "strike": 4243.08,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 170,
+      "strike": 4261.480000000001,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 172,
+      "strike": 4278.0,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 173,
+      "strike": 4293.96,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 174,
+      "strike": 4305.480000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 175,
+      "strike": 4314.16,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 176,
+      "strike": 4328.400000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 177,
+      "strike": 4341.88,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 178,
+      "strike": 4354.52,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 179,
+      "strike": 4366.08,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 180,
+      "strike": 4381.92,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 181,
+      "strike": 4396.2,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 182,
+      "strike": 4408.6,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 184,
+      "strike": 4419.76,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 186,
+      "strike": 4442.2,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 187,
+      "strike": 4452.400000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 188,
+      "strike": 4464.12,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 192,
+      "strike": 5431.240000000001,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 193,
+      "strike": 5453.0,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 194,
+      "strike": 5473.04,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 197,
+      "strike": 5540.6,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 198,
+      "strike": 5552.240000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 200,
+      "strike": 5567.04,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 201,
+      "strike": 5584.0,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 202,
+      "strike": 5604.6,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 203,
+      "strike": 5620.280000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 204,
+      "strike": 5640.92,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 205,
+      "strike": 5674.72,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 206,
+      "strike": 5697.04,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 207,
+      "strike": 5713.08,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 208,
+      "strike": 5733.84,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 209,
+      "strike": 5759.76,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 210,
+      "strike": 5794.320000000001,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 211,
+      "strike": 5814.4400000000005,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 212,
+      "strike": 5855.92,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 213,
+      "strike": 5881.64,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 214,
+      "strike": 5928.92,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 215,
+      "strike": 5957.480000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 216,
+      "strike": 5982.64,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 217,
+      "strike": 5999.96,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 218,
+      "strike": 6018.52,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 219,
+      "strike": 6046.76,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 221,
+      "strike": 6087.480000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 223,
+      "strike": 6102.280000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 224,
+      "strike": 6114.400000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 225,
+      "strike": 6126.320000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 226,
+      "strike": 6137.92,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 227,
+      "strike": 6150.76,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 228,
+      "strike": 6162.16,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 229,
+      "strike": 6177.52,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 230,
+      "strike": 6195.0,
+      "clip": [
+        6193.0,
+        6200
+      ],
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 231,
+      "strike": 6293.4400000000005,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 232,
+      "strike": 6318.8,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 233,
+      "strike": 6337.76,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 234,
+      "strike": 6352.88,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 236,
+      "strike": 6376.6,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 237,
+      "strike": 6429.200000000001,
+      "status": "foul",
+      "included": true,
+      "reason": "Source review confirms the foul and points awarded to the opponent."
+    },
+    {
+      "shot_id": 240,
+      "strike": 6464.04,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 241,
+      "strike": 6486.360000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 242,
+      "strike": 6506.68,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 243,
+      "strike": 6521.240000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 244,
+      "strike": 6540.320000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 245,
+      "strike": 6555.200000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 246,
+      "strike": 6574.56,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 248,
+      "strike": 6628.240000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 249,
+      "strike": 6647.320000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 251,
+      "strike": 6689.96,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 252,
+      "strike": 6712.64,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 253,
+      "strike": 6734.0,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 254,
+      "strike": 6755.92,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 255,
+      "strike": 6771.160000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 256,
+      "strike": 6781.360000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 257,
+      "strike": 6798.200000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 258,
+      "strike": 6813.0,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 259,
+      "strike": 6828.52,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 260,
+      "strike": 6841.72,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 261,
+      "strike": 6851.360000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 262,
+      "strike": 6862.360000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 263,
+      "strike": 6872.400000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 264,
+      "strike": 6882.76,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 265,
+      "strike": 6893.8,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 266,
+      "strike": 6899.96,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 268,
+      "strike": 6915.8,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 269,
+      "strike": 6927.480000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 270,
+      "strike": 6938.0,
+      "clip": [
+        6936.0,
+        6945.5
+      ],
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 271,
+      "strike": 7126.04,
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 272,
+      "strike": 7157.480000000001,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 273,
+      "strike": 7183.400000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 274,
+      "strike": 7201.68,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 276,
+      "strike": 7223.120000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 278,
+      "strike": 7255.480000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 279,
+      "strike": 7280.160000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 281,
+      "strike": 7296.92,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 282,
+      "strike": 7313.84,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 283,
+      "strike": 7329.480000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 284,
+      "strike": 7378.88,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 285,
+      "strike": 7393.0,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 286,
+      "strike": 7406.88,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 287,
+      "strike": 7423.64,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 288,
+      "strike": 7438.88,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 290,
+      "strike": 7464.160000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 291,
+      "strike": 7477.72,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 293,
+      "strike": 7494.360000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 294,
+      "strike": 7506.200000000001,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 295,
+      "strike": 7520.4400000000005,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 296,
+      "strike": 7535.8,
+      "status": "pot",
+      "included": true,
+      "reason": "Source review confirms the pot and the full-source score increase."
+    },
+    {
+      "shot_id": 297,
+      "strike": 7567.08,
+      "status": "no_pot",
+      "included": false,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    },
+    {
+      "shot_id": 298,
+      "strike": 7585.0,
+      "clip": [
+        7583.0,
+        7597
+      ],
+      "status": "no_pot",
+      "included": true,
+      "reason": "Source shows an unpotted stroke or opening break; the frame ending/concession is kept as context where applicable."
+    }
+  ],
+  "expected": {
+    "all_contacts": 286,
+    "selected_clips": 208,
+    "confirmed_pots": 193,
+    "fouls": 3,
+    "unknown": 0,
+    "frames": 7,
+    "new_contacts": 24,
+    "retimed_contacts": 8,
+    "false_records_removed": 36,
+    "first_red_strike": 154.84
+  }
+}

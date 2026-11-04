@@ -147,6 +147,22 @@ class ScoreboardReader:
     def __init__(self, min_confidence: float = 0.78):
         self.min_confidence = min_confidence
 
+    def _light_digits(self, crop):
+        primary = read_digits((crop > 180).astype(np.uint8)*255,
+                              min_confidence=self.min_confidence)
+        if primary is not None:
+            return primary
+        agreed = []
+        for thresholds in ((150, 160), (130, 140), (110, 120)):
+            alternatives = [read_digits((crop > threshold).astype(np.uint8)*255,
+                                        min_confidence=self.min_confidence)
+                            for threshold in thresholds]
+            if all(item is not None for item in alternatives) and alternatives[0][0] == alternatives[1][0]:
+                agreed.append((alternatives[0][0], min(item[1] for item in alternatives)))
+        if agreed and len({item[0] for item in agreed}) == 1:
+            return max(agreed, key=lambda item: item[1])
+        return None
+
     @staticmethod
     def _pair(frame: np.ndarray):
         h, w = frame.shape[:2]
@@ -353,15 +369,16 @@ class ScoreboardReader:
             ):
                 continue
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # The yellow panel can bleed into the adjacent crop by a pixel or
+            # two. Its edge and the red break counter are not white points.
+            gray[hsv[:, :, 1] >= 100] = 0
             readings = []
             for x0, x1 in (
                 (max(0, x - round(bh * 1.6)), x),
                 (x + bw, min(w, x + bw + round(bh * 1.6))),
             ):
                 crop = gray[y : y + bh, x0:x1]
-                reading = read_digits(
-                    (crop > 180).astype(np.uint8) * 255, min_confidence=self.min_confidence
-                )
+                reading = self._light_digits(crop)
                 if reading is None:
                     break
                 readings.append(reading)
@@ -369,7 +386,7 @@ class ScoreboardReader:
                 continue
             # The white turn marker is at the outer edge of each name panel.
             indicators = []
-            for center in (x - bh, x + bw + bh * 12.1):
+            for center in (x - bw * 4.35, x + bw * 5.12):
                 x0, x1 = max(0, round(center - bh * 0.5)), min(w, round(center + bh * 0.5))
                 crop = gray[y : y + bh, x0:x1]
                 contours, _ = cv2.findContours(

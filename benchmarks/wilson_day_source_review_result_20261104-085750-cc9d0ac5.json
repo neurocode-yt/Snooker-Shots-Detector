@@ -1,0 +1,1468 @@
+{
+  "job_id": "20261104-085750-cc9d0ac5",
+  "selected_clips": 208,
+  "output_duration": 2801.68,
+  "expected_mix_duration": 2801.68,
+  "output_sha256": "2fb71356c1c08a0bb0c6fe7ae86e0962e81504cb88b97d1aa9cb7b57f9ae30d2",
+  "full_decode_exit_code": 0,
+  "full_decode_errors": "",
+  "minimum_luma_correlation": 0.999896072087664,
+  "frame_comparisons": [
+    {
+      "shot_id": 1,
+      "source_time": 3.96,
+      "output_time": 2.48,
+      "luma_correlation": 0.9999059729603835,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 6,
+      "source_time": 155.32000000000002,
+      "output_time": 10.8,
+      "luma_correlation": 0.9999188431541622,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 7,
+      "source_time": 181.16,
+      "output_time": 30.64,
+      "luma_correlation": 0.9999329618699636,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 8,
+      "source_time": 200.56000000000003,
+      "output_time": 39.2,
+      "luma_correlation": 0.9999157428968649,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 12,
+      "source_time": 291.68000000000006,
+      "output_time": 67.28,
+      "luma_correlation": 0.9999080447753927,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 13,
+      "source_time": 311.32,
+      "output_time": 79.56,
+      "luma_correlation": 0.9999130909840191,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 14,
+      "source_time": 342.55999999999995,
+      "output_time": 84.6,
+      "luma_correlation": 0.9999127287117567,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 16,
+      "source_time": 406.7200000000001,
+      "output_time": 123.68,
+      "luma_correlation": 0.9999017869976896,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 20,
+      "source_time": 513.16,
+      "output_time": 132.24,
+      "luma_correlation": 0.9999105262132542,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 21,
+      "source_time": 529.8,
+      "output_time": 148.64,
+      "luma_correlation": 0.9999076814747956,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 22,
+      "source_time": 554.5999999999999,
+      "output_time": 173.2,
+      "luma_correlation": 0.9999162845123778,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 23,
+      "source_time": 569.0800000000003,
+      "output_time": 187.44,
+      "luma_correlation": 0.9999152448573638,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 24,
+      "source_time": 597.2800000000001,
+      "output_time": 204.6,
+      "luma_correlation": 0.9999132752595721,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 25,
+      "source_time": 618.84,
+      "output_time": 210.72,
+      "luma_correlation": 0.9999096422053583,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 26,
+      "source_time": 639.6400000000001,
+      "output_time": 216.2,
+      "luma_correlation": 0.9999121336729178,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 27,
+      "source_time": 654.12,
+      "output_time": 224.44,
+      "luma_correlation": 0.9999209522655339,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 28,
+      "source_time": 673.8800000000001,
+      "output_time": 243.96,
+      "luma_correlation": 0.9999085357021971,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 29,
+      "source_time": 690.2800000000002,
+      "output_time": 260.12,
+      "luma_correlation": 0.9999212301854535,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 30,
+      "source_time": 708.0400000000002,
+      "output_time": 264.4,
+      "luma_correlation": 0.999913285899851,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 31,
+      "source_time": 724.98,
+      "output_time": 281.08,
+      "luma_correlation": 0.9999287818993848,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 35,
+      "source_time": 844.44,
+      "output_time": 291.84,
+      "luma_correlation": 0.9999020498451888,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 39,
+      "source_time": 948.24,
+      "output_time": 298.76,
+      "luma_correlation": 0.9999164692554635,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 41,
+      "source_time": 988.2000000000002,
+      "output_time": 313.68,
+      "luma_correlation": 0.9999177632732967,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 42,
+      "source_time": 1008.98,
+      "output_time": 323.24,
+      "luma_correlation": 0.999901762568361,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 43,
+      "source_time": 1042.3200000000002,
+      "output_time": 334.0,
+      "luma_correlation": 0.999912562285705,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 44,
+      "source_time": 1058.64,
+      "output_time": 338.0,
+      "luma_correlation": 0.9999083366523475,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 48,
+      "source_time": 1140.98,
+      "output_time": 345.64,
+      "luma_correlation": 0.9999248363638202,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 49,
+      "source_time": 1268.4800000000002,
+      "output_time": 356.4,
+      "luma_correlation": 0.9998996607959959,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 54,
+      "source_time": 1379.1200000000003,
+      "output_time": 364.68,
+      "luma_correlation": 0.9999168756489949,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 55,
+      "source_time": 1397.48,
+      "output_time": 382.8,
+      "luma_correlation": 0.9999406833094278,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 56,
+      "source_time": 1414.6800000000003,
+      "output_time": 399.76,
+      "luma_correlation": 0.9999121342016812,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 57,
+      "source_time": 1443.0800000000004,
+      "output_time": 427.92,
+      "luma_correlation": 0.9999262306394291,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 68,
+      "source_time": 1734.6000000000004,
+      "output_time": 432.16,
+      "luma_correlation": 0.9999052512825913,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 69,
+      "source_time": 1752.2400000000002,
+      "output_time": 449.56,
+      "luma_correlation": 0.9999167292276431,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 70,
+      "source_time": 1782.8800000000003,
+      "output_time": 455.4,
+      "luma_correlation": 0.9998991041844126,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 71,
+      "source_time": 1800.68,
+      "output_time": 472.96,
+      "luma_correlation": 0.9999107271817537,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 73,
+      "source_time": 1892.68,
+      "output_time": 494.92,
+      "luma_correlation": 0.9999094677963588,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 74,
+      "source_time": 1923.4000000000005,
+      "output_time": 525.4,
+      "luma_correlation": 0.9999151377819507,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 79,
+      "source_time": 2070.4,
+      "output_time": 532.6,
+      "luma_correlation": 0.9999065339162648,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 80,
+      "source_time": 2098.4000000000005,
+      "output_time": 560.36,
+      "luma_correlation": 0.9999082780566543,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 82,
+      "source_time": 2140.76,
+      "output_time": 567.8,
+      "luma_correlation": 0.9999042055966272,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 91,
+      "source_time": 2422.5200000000004,
+      "output_time": 573.56,
+      "luma_correlation": 0.9998980692943662,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 98,
+      "source_time": 2569.9800000000005,
+      "output_time": 582.48,
+      "luma_correlation": 0.9999088614142191,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 99,
+      "source_time": 2588.4,
+      "output_time": 593.24,
+      "luma_correlation": 0.9999120979461996,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 100,
+      "source_time": 2612.120000000001,
+      "output_time": 606.96,
+      "luma_correlation": 0.9999189754292693,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 101,
+      "source_time": 2630.2000000000007,
+      "output_time": 624.8,
+      "luma_correlation": 0.9999551672020889,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 102,
+      "source_time": 2644.8,
+      "output_time": 639.04,
+      "luma_correlation": 0.999917110600855,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 103,
+      "source_time": 2659.92,
+      "output_time": 649.16,
+      "luma_correlation": 0.9999136459054839,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 104,
+      "source_time": 2681.4800000000005,
+      "output_time": 670.48,
+      "luma_correlation": 0.9999156201861769,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 105,
+      "source_time": 2701.4400000000005,
+      "output_time": 682.88,
+      "luma_correlation": 0.9999156700228262,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 106,
+      "source_time": 2733.1600000000008,
+      "output_time": 688.84,
+      "luma_correlation": 0.9999432927668935,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 107,
+      "source_time": 2746.3600000000006,
+      "output_time": 701.8,
+      "luma_correlation": 0.999914936609173,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 108,
+      "source_time": 2761.720000000001,
+      "output_time": 716.92,
+      "luma_correlation": 0.9999140628773213,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 109,
+      "source_time": 2776.8800000000006,
+      "output_time": 731.84,
+      "luma_correlation": 0.9999167773315701,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 110,
+      "source_time": 2791.600000000001,
+      "output_time": 746.32,
+      "luma_correlation": 0.9999141900600854,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 111,
+      "source_time": 2805.9800000000005,
+      "output_time": 760.44,
+      "luma_correlation": 0.9999256148709762,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 112,
+      "source_time": 2818.98,
+      "output_time": 772.2,
+      "luma_correlation": 0.9999181047525288,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 113,
+      "source_time": 2832.9800000000005,
+      "output_time": 783.96,
+      "luma_correlation": 0.9999256997038817,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 114,
+      "source_time": 2947.76,
+      "output_time": 794.72,
+      "luma_correlation": 0.999896072087664,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 119,
+      "source_time": 3062.88,
+      "output_time": 803.76,
+      "luma_correlation": 0.9999153831812871,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 120,
+      "source_time": 3079.04,
+      "output_time": 810.64,
+      "luma_correlation": 0.9999248570013691,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 121,
+      "source_time": 3091.5600000000004,
+      "output_time": 822.92,
+      "luma_correlation": 0.9999139966680962,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 122,
+      "source_time": 3107.9800000000005,
+      "output_time": 838.92,
+      "luma_correlation": 0.9999423276059451,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 123,
+      "source_time": 3137.92,
+      "output_time": 849.68,
+      "luma_correlation": 0.9999181988735854,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 124,
+      "source_time": 3156.8400000000006,
+      "output_time": 868.36,
+      "luma_correlation": 0.9999115123996993,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 125,
+      "source_time": 3173.080000000001,
+      "output_time": 879.08,
+      "luma_correlation": 0.9999093480480433,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 126,
+      "source_time": 3188.8400000000006,
+      "output_time": 894.6,
+      "luma_correlation": 0.999912551959532,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 127,
+      "source_time": 3203.5200000000004,
+      "output_time": 909.04,
+      "luma_correlation": 0.9999170187012647,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 128,
+      "source_time": 3220.000000000001,
+      "output_time": 915.2,
+      "luma_correlation": 0.9999399293849375,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 129,
+      "source_time": 3234.080000000001,
+      "output_time": 929.04,
+      "luma_correlation": 0.9999212933042466,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 130,
+      "source_time": 3249.4800000000005,
+      "output_time": 944.2,
+      "luma_correlation": 0.9999221680791124,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 131,
+      "source_time": 3261.680000000001,
+      "output_time": 956.16,
+      "luma_correlation": 0.9999112771222788,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 132,
+      "source_time": 3281.040000000001,
+      "output_time": 975.28,
+      "luma_correlation": 0.9999283640016919,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 133,
+      "source_time": 3294.2400000000007,
+      "output_time": 988.24,
+      "luma_correlation": 0.9999176393611267,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 135,
+      "source_time": 3352.1200000000003,
+      "output_time": 1009.32,
+      "luma_correlation": 0.9999226827531356,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 136,
+      "source_time": 3378.76,
+      "output_time": 1035.72,
+      "luma_correlation": 0.9999117406243474,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 137,
+      "source_time": 3396.2800000000007,
+      "output_time": 1042.8,
+      "luma_correlation": 0.9999160027258964,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 138,
+      "source_time": 3432.3600000000006,
+      "output_time": 1064.76,
+      "luma_correlation": 0.9999094296010397,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 139,
+      "source_time": 3451.560000000001,
+      "output_time": 1073.6,
+      "luma_correlation": 0.9999091052480527,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 140,
+      "source_time": 3482.6000000000013,
+      "output_time": 1104.4,
+      "luma_correlation": 0.999915554597843,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 141,
+      "source_time": 3499.720000000002,
+      "output_time": 1120.4,
+      "luma_correlation": 0.9999086162973263,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 142,
+      "source_time": 3514.320000000001,
+      "output_time": 1134.76,
+      "luma_correlation": 0.9999097166037824,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 143,
+      "source_time": 3543.2800000000007,
+      "output_time": 1144.16,
+      "luma_correlation": 0.9999185518415794,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 144,
+      "source_time": 3563.3200000000006,
+      "output_time": 1163.96,
+      "luma_correlation": 0.9999186064021953,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 145,
+      "source_time": 3583.320000000001,
+      "output_time": 1183.72,
+      "luma_correlation": 0.9999102662966212,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 147,
+      "source_time": 3616.9800000000005,
+      "output_time": 1190.88,
+      "luma_correlation": 0.9999132511872805,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 148,
+      "source_time": 3632.980000000001,
+      "output_time": 1202.64,
+      "luma_correlation": 0.9999276858815253,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 149,
+      "source_time": 3650.9800000000005,
+      "output_time": 1214.4,
+      "luma_correlation": 0.9999173421978738,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 150,
+      "source_time": 3661.9800000000005,
+      "output_time": 1225.16,
+      "luma_correlation": 0.9999164193591091,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 151,
+      "source_time": 3668.9800000000005,
+      "output_time": 1231.92,
+      "luma_correlation": 0.9999563062024012,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 152,
+      "source_time": 3916.1200000000013,
+      "output_time": 1242.68,
+      "luma_correlation": 0.9999225040566989,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 154,
+      "source_time": 3961.44,
+      "output_time": 1252.6,
+      "luma_correlation": 0.9999255626464365,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 155,
+      "source_time": 3980.84,
+      "output_time": 1271.76,
+      "luma_correlation": 0.9999073250223365,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 156,
+      "source_time": 4008.3200000000006,
+      "output_time": 1299.0,
+      "luma_correlation": 0.9999059326552134,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 157,
+      "source_time": 4037.720000000001,
+      "output_time": 1309.24,
+      "luma_correlation": 0.9999012068744446,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 158,
+      "source_time": 4053.4800000000005,
+      "output_time": 1324.76,
+      "luma_correlation": 0.9999163258161344,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 159,
+      "source_time": 4068.76,
+      "output_time": 1339.8,
+      "luma_correlation": 0.9999120353135535,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 160,
+      "source_time": 4083.120000000001,
+      "output_time": 1353.92,
+      "luma_correlation": 0.999918572532275,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 161,
+      "source_time": 4097.6,
+      "output_time": 1368.16,
+      "luma_correlation": 0.9999271711894672,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 163,
+      "source_time": 4178.680000000001,
+      "output_time": 1378.4,
+      "luma_correlation": 0.9999237498734871,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 164,
+      "source_time": 4196.920000000001,
+      "output_time": 1396.4,
+      "luma_correlation": 0.9999081128041125,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 165,
+      "source_time": 4213.120000000001,
+      "output_time": 1412.36,
+      "luma_correlation": 0.9999203095582283,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 166,
+      "source_time": 4227.52,
+      "output_time": 1426.52,
+      "luma_correlation": 0.9999154745493188,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 169,
+      "source_time": 4278.4800000000005,
+      "output_time": 1441.28,
+      "luma_correlation": 0.9999097055938501,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 170,
+      "source_time": 4294.4400000000005,
+      "output_time": 1457.0,
+      "luma_correlation": 0.999915054041835,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 171,
+      "source_time": 4305.960000000002,
+      "output_time": 1468.28,
+      "luma_correlation": 0.999917980773637,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 172,
+      "source_time": 4314.64,
+      "output_time": 1476.72,
+      "luma_correlation": 0.9999202993421132,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 173,
+      "source_time": 4328.880000000001,
+      "output_time": 1490.72,
+      "luma_correlation": 0.9999100157114909,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 174,
+      "source_time": 4342.360000000001,
+      "output_time": 1503.96,
+      "luma_correlation": 0.9999128269882459,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 175,
+      "source_time": 4355.0,
+      "output_time": 1514.4,
+      "luma_correlation": 0.999927915470897,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 176,
+      "source_time": 4366.56,
+      "output_time": 1525.72,
+      "luma_correlation": 0.9999138883922398,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 177,
+      "source_time": 4382.400000000001,
+      "output_time": 1541.32,
+      "luma_correlation": 0.99991511227569,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 178,
+      "source_time": 4396.68,
+      "output_time": 1548.88,
+      "luma_correlation": 0.9999102804055965,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 179,
+      "source_time": 4409.080000000001,
+      "output_time": 1553.36,
+      "luma_correlation": 0.9999159489431473,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 180,
+      "source_time": 4420.240000000002,
+      "output_time": 1557.6,
+      "luma_correlation": 0.9999199593107168,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 181,
+      "source_time": 4433.9800000000005,
+      "output_time": 1567.8,
+      "luma_correlation": 0.999918069103201,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 182,
+      "source_time": 4442.68,
+      "output_time": 1576.24,
+      "luma_correlation": 0.9999130708350122,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 183,
+      "source_time": 4452.880000000001,
+      "output_time": 1586.2,
+      "luma_correlation": 0.9999084835500375,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 184,
+      "source_time": 4464.6,
+      "output_time": 1591.48,
+      "luma_correlation": 0.999910471322027,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 185,
+      "source_time": 4476.9800000000005,
+      "output_time": 1601.96,
+      "luma_correlation": 0.9999150383918621,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 186,
+      "source_time": 5395.9800000000005,
+      "output_time": 1613.72,
+      "luma_correlation": 0.9999171933780434,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 188,
+      "source_time": 5453.48,
+      "output_time": 1624.48,
+      "luma_correlation": 0.9999122673489408,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 189,
+      "source_time": 5473.52,
+      "output_time": 1644.28,
+      "luma_correlation": 0.9999130975340131,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 190,
+      "source_time": 5541.080000000001,
+      "output_time": 1683.88,
+      "luma_correlation": 0.9999205778045029,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 191,
+      "source_time": 5552.720000000001,
+      "output_time": 1695.28,
+      "luma_correlation": 0.9999126412692823,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 192,
+      "source_time": 5567.52,
+      "output_time": 1703.36,
+      "luma_correlation": 0.9999354617004791,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 193,
+      "source_time": 5584.4800000000005,
+      "output_time": 1720.08,
+      "luma_correlation": 0.9999168953203627,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 194,
+      "source_time": 5605.080000000002,
+      "output_time": 1740.44,
+      "luma_correlation": 0.9999210449523162,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 195,
+      "source_time": 5620.760000000001,
+      "output_time": 1755.88,
+      "luma_correlation": 0.9999165796389231,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 196,
+      "source_time": 5641.400000000001,
+      "output_time": 1768.28,
+      "luma_correlation": 0.9999068076106206,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 197,
+      "source_time": 5675.200000000001,
+      "output_time": 1776.52,
+      "luma_correlation": 0.9999115371906642,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 198,
+      "source_time": 5697.52,
+      "output_time": 1785.64,
+      "luma_correlation": 0.9999187374610536,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 199,
+      "source_time": 5713.560000000001,
+      "output_time": 1801.44,
+      "luma_correlation": 0.999909169546255,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 200,
+      "source_time": 5734.3200000000015,
+      "output_time": 1809.44,
+      "luma_correlation": 0.9999451141087046,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 207,
+      "source_time": 5957.960000000003,
+      "output_time": 1818.76,
+      "luma_correlation": 0.9999004024722193,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 208,
+      "source_time": 5983.120000000001,
+      "output_time": 1827.08,
+      "luma_correlation": 0.999913337400946,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 209,
+      "source_time": 6000.4400000000005,
+      "output_time": 1835.0,
+      "luma_correlation": 0.9999168149070037,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 210,
+      "source_time": 6019.000000000001,
+      "output_time": 1853.32,
+      "luma_correlation": 0.9999398118962896,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 211,
+      "source_time": 6047.240000000001,
+      "output_time": 1881.32,
+      "luma_correlation": 0.9999194376796733,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 212,
+      "source_time": 6087.960000000002,
+      "output_time": 1898.16,
+      "luma_correlation": 0.9999087312059259,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 213,
+      "source_time": 6102.760000000002,
+      "output_time": 1905.96,
+      "luma_correlation": 0.9999155332497298,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 214,
+      "source_time": 6114.880000000002,
+      "output_time": 1917.84,
+      "luma_correlation": 0.9999152292252195,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 215,
+      "source_time": 6126.800000000001,
+      "output_time": 1929.52,
+      "luma_correlation": 0.9999110243624648,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 216,
+      "source_time": 6138.4000000000015,
+      "output_time": 1940.88,
+      "luma_correlation": 0.9999160858945195,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 217,
+      "source_time": 6151.240000000001,
+      "output_time": 1953.48,
+      "luma_correlation": 0.99991974072371,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 218,
+      "source_time": 6162.640000000001,
+      "output_time": 1964.64,
+      "luma_correlation": 0.9999100502347135,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 219,
+      "source_time": 6178.000000000002,
+      "output_time": 1979.76,
+      "luma_correlation": 0.9999238935508541,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 220,
+      "source_time": 6195.480000000001,
+      "output_time": 1997.0,
+      "luma_correlation": 0.9999203209963844,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 221,
+      "source_time": 6293.920000000002,
+      "output_time": 2003.76,
+      "luma_correlation": 0.9998968461843575,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 222,
+      "source_time": 6319.280000000001,
+      "output_time": 2011.76,
+      "luma_correlation": 0.9999315280934546,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 223,
+      "source_time": 6338.240000000001,
+      "output_time": 2030.48,
+      "luma_correlation": 0.9999122154342251,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 226,
+      "source_time": 6429.680000000001,
+      "output_time": 2040.4,
+      "luma_correlation": 0.999897183007483,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 227,
+      "source_time": 6464.52,
+      "output_time": 2049.76,
+      "luma_correlation": 0.999904224588814,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 228,
+      "source_time": 6486.840000000002,
+      "output_time": 2071.84,
+      "luma_correlation": 0.9999065289188679,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 229,
+      "source_time": 6507.160000000001,
+      "output_time": 2091.92,
+      "luma_correlation": 0.9999196333000941,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 230,
+      "source_time": 6521.720000000001,
+      "output_time": 2102.64,
+      "luma_correlation": 0.999909698802675,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 231,
+      "source_time": 6540.84,
+      "output_time": 2121.52,
+      "luma_correlation": 0.9999160083736581,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 232,
+      "source_time": 6555.72,
+      "output_time": 2136.16,
+      "luma_correlation": 0.9999122169726437,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 233,
+      "source_time": 6575.08,
+      "output_time": 2155.28,
+      "luma_correlation": 0.9999153020159925,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 234,
+      "source_time": 6588.02,
+      "output_time": 2164.88,
+      "luma_correlation": 0.9999095655578699,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 235,
+      "source_time": 6628.76,
+      "output_time": 2175.64,
+      "luma_correlation": 0.9999133724715239,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 236,
+      "source_time": 6647.839999999999,
+      "output_time": 2179.88,
+      "luma_correlation": 0.9999072252823906,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 239,
+      "source_time": 6734.519999999998,
+      "output_time": 2215.64,
+      "luma_correlation": 0.9999069470692922,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 240,
+      "source_time": 6756.439999999998,
+      "output_time": 2237.32,
+      "luma_correlation": 0.9999146157949167,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 241,
+      "source_time": 6771.679999999999,
+      "output_time": 2252.32,
+      "luma_correlation": 0.9999155964448797,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 242,
+      "source_time": 6781.879999999999,
+      "output_time": 2262.28,
+      "luma_correlation": 0.9999086402221731,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 243,
+      "source_time": 6798.719999999999,
+      "output_time": 2278.88,
+      "luma_correlation": 0.9999120697549703,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 244,
+      "source_time": 6813.519999999998,
+      "output_time": 2293.44,
+      "luma_correlation": 0.9999108425257476,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 245,
+      "source_time": 6829.039999999997,
+      "output_time": 2308.72,
+      "luma_correlation": 0.9999226012148907,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 246,
+      "source_time": 6842.239999999996,
+      "output_time": 2321.68,
+      "luma_correlation": 0.9999123157740848,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 247,
+      "source_time": 6851.879999999997,
+      "output_time": 2331.08,
+      "luma_correlation": 0.9999148207710636,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 248,
+      "source_time": 6862.879999999997,
+      "output_time": 2341.84,
+      "luma_correlation": 0.9999084467278581,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 249,
+      "source_time": 6872.919999999997,
+      "output_time": 2351.64,
+      "luma_correlation": 0.9999157085227197,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 250,
+      "source_time": 6883.279999999997,
+      "output_time": 2361.76,
+      "luma_correlation": 0.9999204098323058,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 251,
+      "source_time": 6894.319999999996,
+      "output_time": 2372.56,
+      "luma_correlation": 0.9999198707108649,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 252,
+      "source_time": 6900.479999999996,
+      "output_time": 2378.48,
+      "luma_correlation": 0.9999178874021771,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 253,
+      "source_time": 6909.019999999997,
+      "output_time": 2384.88,
+      "luma_correlation": 0.9999097554334846,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 254,
+      "source_time": 6916.319999999996,
+      "output_time": 2391.92,
+      "luma_correlation": 0.9999317416422423,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 255,
+      "source_time": 6927.999999999997,
+      "output_time": 2403.36,
+      "luma_correlation": 0.9999347392917346,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 256,
+      "source_time": 6938.519999999995,
+      "output_time": 2407.6,
+      "luma_correlation": 0.9999095482536989,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 257,
+      "source_time": 6949.019999999995,
+      "output_time": 2417.84,
+      "luma_correlation": 0.9999143889843846,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 258,
+      "source_time": 6957.019999999995,
+      "output_time": 2425.6,
+      "luma_correlation": 0.9999268462382402,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 259,
+      "source_time": 6966.019999999995,
+      "output_time": 2434.36,
+      "luma_correlation": 0.9999189925567399,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 260,
+      "source_time": 6975.019999999993,
+      "output_time": 2443.12,
+      "luma_correlation": 0.9999219312751304,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 261,
+      "source_time": 6984.019999999995,
+      "output_time": 2451.88,
+      "luma_correlation": 0.9999164121316912,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 262,
+      "source_time": 6991.019999999993,
+      "output_time": 2458.64,
+      "luma_correlation": 0.9999384437521928,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 263,
+      "source_time": 7126.559999999994,
+      "output_time": 2463.4,
+      "luma_correlation": 0.9999002034567108,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 265,
+      "source_time": 7183.919999999993,
+      "output_time": 2494.6,
+      "luma_correlation": 0.9999059499190742,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 266,
+      "source_time": 7202.1999999999925,
+      "output_time": 2512.64,
+      "luma_correlation": 0.9999173183178209,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 267,
+      "source_time": 7223.639999999994,
+      "output_time": 2521.8,
+      "luma_correlation": 0.9999163680573101,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 268,
+      "source_time": 7255.9999999999945,
+      "output_time": 2548.52,
+      "luma_correlation": 0.9999180247923164,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 269,
+      "source_time": 7280.679999999993,
+      "output_time": 2563.08,
+      "luma_correlation": 0.9999000538463897,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 270,
+      "source_time": 7297.439999999991,
+      "output_time": 2570.24,
+      "luma_correlation": 0.9999173853575647,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 271,
+      "source_time": 7314.3599999999915,
+      "output_time": 2586.92,
+      "luma_correlation": 0.9999165159007214,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 272,
+      "source_time": 7329.999999999993,
+      "output_time": 2602.32,
+      "luma_correlation": 0.9999099972109771,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 273,
+      "source_time": 7379.399999999991,
+      "output_time": 2651.48,
+      "luma_correlation": 0.9999130134354499,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 274,
+      "source_time": 7393.51999999999,
+      "output_time": 2657.4,
+      "luma_correlation": 0.9999023261709905,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 275,
+      "source_time": 7407.3999999999905,
+      "output_time": 2671.04,
+      "luma_correlation": 0.9999161187709333,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 276,
+      "source_time": 7424.15999999999,
+      "output_time": 2678.0,
+      "luma_correlation": 0.9999172666853096,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 277,
+      "source_time": 7439.399999999991,
+      "output_time": 2693.0,
+      "luma_correlation": 0.9999108075214036,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 278,
+      "source_time": 7453.0199999999895,
+      "output_time": 2705.56,
+      "luma_correlation": 0.9999143841738068,
+      "source_frame_offset": 0.04
+    },
+    {
+      "shot_id": 279,
+      "source_time": 7464.679999999991,
+      "output_time": 2716.32,
+      "luma_correlation": 0.9999106847721168,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 280,
+      "source_time": 7478.23999999999,
+      "output_time": 2729.04,
+      "luma_correlation": 0.9999214083678127,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 281,
+      "source_time": 7494.879999999989,
+      "output_time": 2739.8,
+      "luma_correlation": 0.9999077262905992,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 282,
+      "source_time": 7506.719999999989,
+      "output_time": 2751.4,
+      "luma_correlation": 0.9999096215913362,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 283,
+      "source_time": 7520.959999999989,
+      "output_time": 2765.4,
+      "luma_correlation": 0.999913204286451,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 284,
+      "source_time": 7536.319999999989,
+      "output_time": 2780.52,
+      "luma_correlation": 0.9999138072230206,
+      "source_frame_offset": 0.0
+    },
+    {
+      "shot_id": 286,
+      "source_time": 7585.5199999999895,
+      "output_time": 2790.2,
+      "luma_correlation": 0.9999101883613963,
+      "source_frame_offset": 0.0
+    }
+  ]
+}
