@@ -51,6 +51,7 @@ from snooker_ai.pot_detection.depth_launch import scoring_depth_contact
 from snooker_ai.pot_detection.white_reacquisition import scoring_white_contact
 from snooker_ai.pot_detection.source_scores import cached_source_markers, scan_source_scores
 from snooker_ai.pot_detection.frame_context import frame_ranges, rack_cut_contact
+from snooker_ai.pot_detection.camera_return import recover_cut_contacts
 from snooker_ai.table_detection.localizer import TableLocalizer, TableObservation
 from snooker_ai.temporal_model.state_machine import ShotStateMachine
 from snooker_ai.tracking.tracker import BallTracker
@@ -349,10 +350,11 @@ class Analyzer:
             features = self.state_machine.label(features)
 
         review_ranges = []
-        if self.config.get("analysis.scoreboard_recall", True):
-            # Tiny proxy digits and missed-contact windows cannot cover every
-            # score change. Read the complete original overlay once, with a
-            # reusable pause-safe cache; visual checks still own each contact.
+        readings = []
+        score_recall = self.config.get("analysis.scoreboard_recall", True)
+        if score_recall:
+            # Read the original overlay once. Replay markers also apply to
+            # camera-return contacts, most importantly at the edge of inserts.
             readings = scan_source_scores(source, metadata.duration, self.config, self.job_dir,
                 progress=lambda p, msg: report(.912+.002*p, JobStatus.REFINING.value, msg))
             markers = cached_source_markers(source, metadata.duration, self.config, self.job_dir)
@@ -360,7 +362,29 @@ class Analyzer:
                 features = self._merge_feature_layers(features, [FrameFeatures(
                     **marker, observation_valid=False) for marker in markers])
                 self.replay_det.mark_candidates(candidates, features)
-            preliminary = self.segmenter.build(candidates, features, metadata.duration, mode)
+
+        has_native = any(f.observation_fps >= 20 for f in features)
+        preliminary = (self.segmenter.build(candidates, features, metadata.duration, mode)
+                       if score_recall or has_native else [])
+        if has_native:
+            # A discarded sparse proposal must not hide the real stroke around
+            # the camera switch. Compare with contacts that survived segmentation.
+            returned = recover_cut_contacts(features, preliminary, source)
+            if returned:
+                recovered = self._screen_new_contacts(
+                    source, candidates, returned, features, rack_reference, preparation_intervals
+                )
+                if recovered:
+                    candidates = self._deduplicate_candidates(
+                        [c for c in candidates
+                         if all(abs(c.timestamp-n.timestamp) >= .60 for n in recovered)] + recovered
+                    )
+                    if score_recall:
+                        preliminary = self.segmenter.build(candidates, features, metadata.duration, mode)
+                self._record_detection_stage('camera_return_recall', candidates, extra={
+                    'visually_confirmed': len(recovered),
+                })
+        if score_recall:
             accepted_contact_times = {shot.cue_strike for shot in preliminary}
             matched_updates = {}
             proposals = scoring_gap_proposals(readings, preliminary, metadata.duration,
@@ -400,7 +424,9 @@ class Analyzer:
                     'scoring_gaps_checked':len(proposals), 'visually_confirmed':len(recovered),
                 })
 
-        candidates = self._recover_frame_openings(candidates, features, rack_reference, metadata.duration)
+        candidates = self._recover_frame_openings(
+            candidates, features, rack_reference, metadata.duration, readings=readings
+        )
         report(0.92, JobStatus.SEGMENTING.value, "Building shot segments")
         shots = self.segmenter.build(candidates, features, metadata.duration, mode)
         tail_detector = VisualTailDetector(self.config)
@@ -509,12 +535,15 @@ class Analyzer:
         report(1.0, JobStatus.READY_FOR_REVIEW.value, f"Detected {len(shots)} shots")
         return result
 
-    def _recover_frame_openings(self, candidates, features, reference, duration):
+    def _recover_frame_openings(self, candidates, features, reference, duration, *, readings=()):
         """Retain native cross-camera break-offs even when they score no points."""
-        readings = [ScoreReading(**f.scoreboard_reading) for f in reference
-                    if f.scoreboard_reading and f.match_context_valid and not f.broadcast_replay]
+        frame_readings = {round(r.t, 6): r for r in readings}
+        for frame in reference:
+            if frame.scoreboard_reading and frame.match_context_valid and not frame.broadcast_replay:
+                reading = ScoreReading(**frame.scoreboard_reading)
+                frame_readings.setdefault(round(reading.t, 6), reading)
         recovered = []
-        for interval in frame_ranges(readings, duration):
+        for interval in frame_ranges(list(frame_readings.values()), duration):
             racks = [f.t for f in reference if interval.start <= f.t < interval.opening_end
                      and f.rack_observation_valid and f.red_rack_intact
                      and f.match_context_valid and not f.broadcast_replay and not f.table_handling]
@@ -556,6 +585,15 @@ class Analyzer:
 
     def _screen_scoring_contacts(self, source, existing, proposed, features,
                                  rack_reference, preparation_intervals):
+        recovered = self._screen_new_contacts(
+            source, existing, proposed, features, rack_reference, preparation_intervals
+        )
+        for candidate in recovered:
+            candidate.evidence['score_assisted_recovered'] = 1.
+        return recovered
+
+    def _screen_new_contacts(self, source, existing, proposed, features,
+                             rack_reference, preparation_intervals):
         recovered = [c for c in proposed if self.segmenter._candidate_supported(c)
                      and not any(lo <= c.timestamp <= hi for lo, hi in preparation_intervals)
                      and self._rack_candidate_supported(c, rack_reference)]
@@ -563,10 +601,7 @@ class Analyzer:
         # only new contacts erases earlier paired wipes and extends old clips.
         self.replay_det.mark_candidates(existing+recovered, features)
         promotions = PromotionDetector().detect(source, recovered, features)
-        recovered = [c for c in recovered if not c.possible_replay and c.timestamp not in promotions]
-        for candidate in recovered:
-            candidate.evidence['score_assisted_recovered'] = 1.
-        return recovered
+        return [c for c in recovered if not c.possible_replay and c.timestamp not in promotions]
 
     def _record_visual_tail_boundaries(
         self, candidates, shots, entries, duration: float, source_fps: float,
@@ -2258,7 +2293,7 @@ class Analyzer:
         """Final clips also depend on segmentation settings, unlike features."""
         payload = {
             "analysis": self._analysis_signature(source),
-            "result_policy_version": 69,
+            "result_policy_version": 70,
             "visual_tail": self.config.get("visual_tail", {}),
             "segmentation": {
                 key: self.config.get(key) for key in ("modes", "confidence", "importance")

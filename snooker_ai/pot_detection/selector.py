@@ -19,8 +19,8 @@ from snooker_ai.types import AnalysisResult, FrameFeatures, PotStatus, ShotRecor
 from snooker_ai.utils.persistence import atomic_text
 from snooker_ai.utils.video import open_capture, sampled_frames
 
-SELECTION_POLICY = 9
-_SCORE_SCAN_POLICY = 8  # Dim white outer-score glyph recovery.
+SELECTION_POLICY = 10
+_SCORE_SCAN_POLICY = 9  # Red turn arrows on paired score boxes.
 
 
 @dataclass
@@ -370,7 +370,8 @@ class PotSelector:
                 if candidate.possible_replay:
                     shot.possible_replay = True
                     shot.evidence.update(candidate.evidence)
-        readings = self.scan(result, progress)
+        readings = sorted(self.scan(result, progress), key=lambda reading: reading.t)
+        reading_times = [reading.t for reading in readings]
         # Frame openings can precede the first detected shot's OCR window.
         # Keep source observations already made by the whole-match pass.
         frame_readings = {round(r.t, 6): r for r in readings}
@@ -388,6 +389,8 @@ class PotSelector:
             shot.evidence.update(matched.get(shot.cue_strike_timestamp, {}))
         grace = float(self.settings.get("score_update_grace_seconds", 8))
         baseline = float(self.settings.get("baseline_seconds", 6))
+        max_baseline = float(self.settings.get("max_baseline_seconds", 25))
+        max_score_gap = max(0.8, 1.6 / max(0.5, float(self.settings.get("sample_fps", 2))))
         counts = {status.value: 0 for status in PotStatus}
         shots = sorted(result.shots, key=lambda shot: shot.cue_strike_timestamp)
         live = [s for s in shots if not s.possible_replay]
@@ -406,14 +409,19 @@ class PotSelector:
                 following,
                 self._outcome_deadline(shot),
             )
+            strike = shot.cue_strike_timestamp
+            baseline_seconds = max(
+                baseline, min(max_baseline, strike - (previous.cue_strike_timestamp + .2 if previous else 0))
+            )
+            window = readings[bisect_left(reading_times, strike - baseline_seconds):
+                              bisect_right(reading_times, end)]
             status, evidence = classify_shot(
                 shot,
-                readings,
+                window,
                 end,
-                baseline_seconds=max(baseline, min(float(self.settings.get("max_baseline_seconds", 25)), shot.cue_strike_timestamp-
-                    (previous.cue_strike_timestamp+.2 if previous else 0))),
+                baseline_seconds=baseline_seconds,
                 outcome_deadline=self._outcome_deadline(shot),
-                max_score_gap=max(0.8, 1.6 / max(0.5, float(self.settings.get("sample_fps", 2)))),
+                max_score_gap=max_score_gap,
             )
             if (
                 include_fouls

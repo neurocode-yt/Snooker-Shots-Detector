@@ -164,9 +164,8 @@ class ScoreboardReader:
         return None
 
     @staticmethod
-    def _pair(frame: np.ndarray):
-        h, w = frame.shape[:2]
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    def _pair(hsv: np.ndarray, h: int, top: int):
+        w = hsv.shape[1]
         bright = (
             ((hsv[:, :, 1] < 80) & (hsv[:, :, 2] > 170))
             | (
@@ -176,7 +175,7 @@ class ScoreboardReader:
                 & (hsv[:, :, 2] > 170)
             )
         ).astype(np.uint8) * 255
-        bright[: int(h * 0.72)] = 0
+        bright[: int(h * 0.72) - top] = 0
         bright[:, : int(w * 0.37)] = 0
         bright[:, int(w * 0.63) :] = 0
         horizontal = cv2.morphologyEx(
@@ -201,7 +200,7 @@ class ScoreboardReader:
         # Captions below the scores (for example Average Frame Time) can
         # contain bright text in both columns. Choose a band only after its
         # filled rectangular boxes have been verified.
-        candidates = list(reversed(bands)) if bands else [(0, h)]
+        candidates = list(reversed(bands)) if bands else [(0, len(bright))]
         for y0, y1 in candidates:
             candidate = bright.copy()
             candidate[:y0] = 0
@@ -209,7 +208,7 @@ class ScoreboardReader:
             candidate[:, round(w * 0.48) : round(w * 0.52)] = 0
             pair = ScoreboardReader._find_box_pair(candidate, h, w)
             if pair is not None:
-                return pair, hsv, candidate
+                return pair, candidate
         return None
 
     @staticmethod
@@ -240,9 +239,15 @@ class ScoreboardReader:
         return max(pairs, key=lambda pair: sum(box[2] * box[3] for box in pair))
 
     def read(self, frame: np.ndarray, t: float) -> ScoreReading | None:
-        found = self._pair(frame)
+        # All supported overlays live in the bottom 28%. Keep a small border
+        # for the original morphology and use full-image dimensions for gates.
+        h = frame.shape[0]
+        top = max(0, int(h * 0.72) - 4)
+        frame = frame[top:]
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        found = self._pair(hsv, h, top)
         if found is not None:
-            pair, hsv, bright = found
+            pair, bright = found
             readings = []
             for x, y, w, h in pair:
                 crop = frame[y : y + h, x : x + w]
@@ -269,6 +274,7 @@ class ScoreboardReader:
                     return None
                 readings.append(reading)
             indicators = []
+            arrows = []
             for side, (x, y, w, h) in enumerate(pair):
                 indicator_span = min(round(h * 1.2), round(frame.shape[1] * 0.023))
                 x0, x1 = (
@@ -286,11 +292,14 @@ class ScoreboardReader:
                     )
                 )
                 indicators.append(float(np.mean(colored)) if colored.size else 0.0)
+                arrows.append(self._red_turn_arrow(area, h, side))
             active = (
                 int(np.argmax(indicators))
                 if max(indicators) > 0.025 and abs(indicators[0] - indicators[1]) > 0.025
                 else None
             )
+            if active is None and sum(arrows) == 1:
+                active = arrows.index(True)
             return ScoreReading(
                 t,
                 readings[0][0],
@@ -299,19 +308,41 @@ class ScoreboardReader:
                 min(item[1] for item in readings),
                 "paired_boxes",
             )
-        return self._read_outer_scores(frame, t) or self._read_central_panel(frame, t)
+        return (self._read_outer_scores(frame, hsv, h, top, t)
+                or self._read_central_panel(frame, hsv, h, top, t))
 
-    def _read_central_panel(self, frame: np.ndarray, t: float) -> ScoreReading | None:
+    @staticmethod
+    def _red_turn_arrow(area, height, side):
+        if not area.size:
+            return False
+        red = (cv2.inRange(area, (0, 115, 55), (12, 255, 255))
+               | cv2.inRange(area, (165, 115, 55), (179, 255, 255)))
+        contours, _ = cv2.findContours(red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for contour in contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            if not (.20*height <= w <= .65*height and .28*height <= h <= .75*height
+                    and abs(y + h/2 - height/2) < .18*height
+                    and .32 <= cv2.contourArea(contour)/(w*h) <= .70):
+                continue
+            # The arrow points outwards. A red flag stripe or a rectangular
+            # sponsor graphic does not narrow toward that edge.
+            shape = red[y:y+h, x:x+w]
+            if side == 1:
+                shape = shape[:, ::-1]
+            third = max(1, w//3)
+            if np.count_nonzero(shape[:, :third]) < .62*np.count_nonzero(shape[:, -third:]):
+                return True
+        return False
+
+    def _read_central_panel(self, frame, hsv, h, top, t) -> ScoreReading | None:
         """White points flank a neutral frame-count panel on a dark name bar."""
-        h, w = frame.shape[:2]
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        w = frame.shape[1]
         neutral = cv2.inRange(hsv, (0, 0, 105), (179, 45, 225))
-        neutral[:round(h*.74)] = 0
+        neutral[:round(h*.74)-top] = 0
         neutral[:, :round(w*.42)] = 0
         neutral[:, round(w*.58):] = 0
         neutral = cv2.morphologyEx(neutral, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
         contours, _ = cv2.findContours(neutral, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         for contour in sorted(contours, key=cv2.contourArea, reverse=True):
             x, y, bw, bh = cv2.boundingRect(contour)
             if not (.045*w <= bw <= .13*w and .018*h <= bh <= .065*h
@@ -324,7 +355,7 @@ class ScoreboardReader:
             gap = max(1, round(bh*.06))
             for x0, x1 in ((max(0, x-round(bh*2.5)), x-gap),
                            (x+bw+gap, min(w, x+bw+round(bh*2.5)))):
-                crop = gray[y:y+bh, x0:x1]
+                crop = cv2.cvtColor(frame[y:y+bh, x0:x1], cv2.COLOR_BGR2GRAY)
                 reading = read_digits((crop > 180).astype(np.uint8)*255,
                                       min_confidence=self.min_confidence)
                 if reading is None:
@@ -347,17 +378,16 @@ class ScoreboardReader:
                                 min(item[1] for item in readings), 'central_panel')
         return None
 
-    def _read_outer_scores(self, frame: np.ndarray, t: float) -> ScoreReading | None:
+    def _read_outer_scores(self, frame, hsv, h, top, t) -> ScoreReading | None:
         """Older Eurosport layout: frame count in yellow, points outside it."""
-        h, w = frame.shape[:2]
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        w = frame.shape[1]
         yellow = (
             (hsv[:, :, 0] >= 18)
             & (hsv[:, :, 0] <= 40)
             & (hsv[:, :, 1] > 100)
             & (hsv[:, :, 2] > 170)
         ).astype(np.uint8) * 255
-        yellow[: int(h * 0.72)] = 0
+        yellow[: int(h * 0.72)-top] = 0
         contours, _ = cv2.findContours(yellow, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         for contour in contours:
             x, y, bw, bh = cv2.boundingRect(contour)

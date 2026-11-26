@@ -12,7 +12,7 @@
     const pending = settings.pending?.has(job.job_id);
     const actions = UI.actions(job), summary = job.pot_selection_summary || {};
     const oldFramePolicy = Number(summary.policy)>0 && Number(summary.policy)<6;
-    const oldScorePolicy = Number(summary.policy)>0 && Number(summary.policy)<9;
+    const oldScorePolicy = Number(summary.policy)>0 && Number(summary.policy)<10;
     const gaps = (Array.isArray(job.scoring_gaps_unresolved)?job.scoring_gaps_unresolved:[])
       .filter(gap=>Number.isFinite(gap.start)&&Number.isFinite(gap.end)&&gap.start>=0&&gap.end>gap.start);
     const count = Number.isFinite(summary.included) ? `${summary.included}${Number.isFinite(job.shots_detected)?` of ${job.shots_detected}`:''} shots selected`

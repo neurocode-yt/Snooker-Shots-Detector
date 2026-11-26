@@ -173,21 +173,22 @@ class TableInteractionDetector:
                 cv2.circle(hands, (int(d.cx*scale), int(d.cy*scale)),
                            max(1, int(d.radius*scale*0.85)), 0, -1)
         count, labels, stats, _ = cv2.connectedComponentsWithStats(hands)
-        accepted = []
+        hand_mask = None
         for i in range(1, count):
-            _, _, bw, bh, area = stats[i]
-            if area < 2.5 * np.pi * (diameter / 2) ** 2 or max(bw, bh) < 2.8 * diameter:
+            x, y, bw, bh, area = stats[i]
+            if area < 2.5 * np.pi * (diameter / 2) ** 2 or not 2.8*diameter <= max(bw, bh) <= 16*diameter:
                 continue
-            on_cloth = np.count_nonzero((labels == i) & (mask > 0))
-            neutral_fraction = np.count_nonzero((labels == i) & (glove > 0)) / max(area, 1)
+            roi = np.s_[y:y+bh, x:x+bw]
+            component = labels[roi] == i
+            on_cloth = np.count_nonzero(component & (mask[roi] > 0))
+            neutral_fraction = np.count_nonzero(component & (glove[roi] > 0)) / area
             # Skin-colour contact alone includes a player's bridge. A neutral
             # glove covering a coloured ball is stronger handling evidence;
             # bare hands remain unknown unless another detector proves pickup.
-            if neutral_fraction >= 0.65 and max(bw, bh) <= 16*diameter and on_cloth >= max(0.35*area, 0.8*diameter**2):
-                accepted.append(i)
-        hand_mask = np.isin(labels, accepted).astype(np.uint8)
-        radius = max(2, int(diameter * 0.8))
-        near = cv2.dilate(hand_mask, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2*radius+1, 2*radius+1)))
+            if neutral_fraction >= 0.65 and on_cloth >= max(0.35*area, 0.8*diameter**2):
+                if hand_mask is None:
+                    hand_mask = np.zeros_like(hands)
+                hand_mask[roi][component] = 1
         objects = [d for d in detections if d.label != "cue_ball" and d.shape_confidence >= 0.48]
         self.recent_objects = [(seen, d) for seen, d in self.recent_objects if t-seen <= 0.6]
         for d in objects:
@@ -195,11 +196,15 @@ class TableInteractionDetector:
                                    if np.hypot(previous.cx-d.cx, previous.cy-d.cy) > d.diameter_px]
             self.recent_objects.append((t, d))
         interacting = False
-        for _, d in self.recent_objects:
-            x, y = int(d.cx * scale), int(d.cy * scale)
-            if 0 <= x < near.shape[1] and 0 <= y < near.shape[0] and near[y, x]:
-                interacting = True
-                break
+        if hand_mask is not None and self.recent_objects:
+            radius = max(2, int(diameter * 0.8))
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2*radius+1, 2*radius+1))
+            near = cv2.dilate(hand_mask, kernel)
+            for _, d in self.recent_objects:
+                x, y = int(d.cx * scale), int(d.cy * scale)
+                if 0 <= x < near.shape[1] and 0 <= y < near.shape[0] and near[y, x]:
+                    interacting = True
+                    break
         continuous = self.last_t is not None and 0 < t - self.last_t <= 0.76
         if cue_visible:
             self.last_cue_address = t

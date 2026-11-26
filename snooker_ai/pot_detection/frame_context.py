@@ -80,17 +80,18 @@ def rack_cut_contact(features: list[FrameFeatures], rack_start: float):
     )
     for i in range(6, len(frames) - 4):
         before, launch = frames[i - 6 : i], frames[i]
-        after = next(
+        post_index = next(
             (
-                frames[j : j + 4]
+                j
                 for j in range(i + 1, min(i + 5, len(frames) - 3))
                 if all(f.cue_ball_quality for f in frames[j : j + 4])
             ),
-            [],
+            None,
         )
-        if len(after) != 4 or after[0].t - launch.t > 0.20:
+        if post_index is None or frames[post_index].t - launch.t > 0.20:
             continue
-        intervening = [f for f in frames if launch.t < f.t < after[0].t]
+        after = frames[post_index : post_index + 4]
+        intervening = frames[i + 1 : post_index]
         if any(
             not f.match_context_valid or f.broadcast_replay or f.table_handling for f in intervening
         ):
@@ -143,21 +144,37 @@ def rack_cut_contact(features: list[FrameFeatures], rack_start: float):
         center = np.median(rest, axis=0)
         if (
             np.max(np.linalg.norm(rest - center, axis=1)) > 0.12 * diameter
-            or max(f.cue_contact_score for f in before) < 0.6
             or sum(f.cue_tip_visible for f in before) < 3
         ):
             continue
         departure = (
             np.linalg.norm(np.array([launch.cue_ball_x, launch.cue_ball_y]) - center) / diameter
         )
-        if not 0.45 <= departure <= 3:
+        short_departure = departure < 0.45
+        if short_departure:
+            # A cut can interrupt the first few pixels of travel. Require a
+            # stiller origin and twice as many measured destination samples.
+            if (departure < .15 or np.max(np.linalg.norm(rest - center, axis=1)) > .035 * diameter
+                    or launch.cue_contact_score < .45 or not launch.cue_tip_visible):
+                continue
+            after = frames[post_index : post_index + 8]
+            if len(after) != 8 or any(
+                not f.observation_valid or not f.match_context_valid or f.broadcast_replay
+                or f.table_handling or f.camera_scene_id != after[0].camera_scene_id
+                or f.view_type is not CameraViewType.MAIN_TABLE or not f.table_full_view
+                or f.observation_fps < 20 or f.camera_motion_magnitude > 1.5
+                or not f.cue_ball_quality or f.cue_ball_track_confidence < .75
+                or f.cue_ball_x is None or f.cue_ball_y is None for f in after
+            ) or any(not 0 < b.t-a.t <= 1.6/fps for a,b in zip(after,after[1:])):
+                continue
+        elif departure > 3 or max(f.cue_contact_score for f in before) < .6:
             continue
         points = np.array([(f.cue_ball_x, f.cue_ball_y) for f in after])
         steps = np.linalg.norm(np.diff(points, axis=0), axis=1)
         d = float(after[0].cue_ball_image_diameter_px or after[0].ball_diameter_px)
         travel = np.linalg.norm(points[-1] - points[0])
         coherence = travel / max(float(sum(steps)), 1e-6)
-        if d <= 0 or np.min(steps) < 0.3 * d or travel < 1.5 * d or coherence < 0.98:
+        if d <= 0 or np.min(steps) < 0.3 * d or travel < (3 if short_departure else 1.5) * d or coherence < 0.98:
             continue
         return StrikeCandidate(
             timestamp=launch.t,
@@ -168,7 +185,8 @@ def rack_cut_contact(features: list[FrameFeatures], rack_start: float):
             evidence={
                 "frame_opening_cut_contact": 1.0,
                 "opening_rest_samples": 6.0,
-                "opening_post_samples": 4.0,
+                "opening_post_samples": float(len(after)),
+                "opening_short_departure": float(short_departure),
                 "opening_departure_diameters": float(departure),
                 "opening_post_travel_diameters": float(travel / d),
                 "opening_post_direction_consistency": float(coherence),
@@ -180,6 +198,31 @@ def rack_cut_contact(features: list[FrameFeatures], rack_start: float):
             },
         )
     return None
+
+
+def _verified_opening_launch(evidence):
+    if (evidence.get("cue_geometry_confirmed", 0) < .5
+            or evidence.get("observation_fps", 0) < 20
+            or evidence.get("pre_sample_count", 0) < 6):
+        return False
+    sustained = evidence.get("sustained_count", 0)
+    if sustained >= 6 and evidence.get("cue_ball_motion_confirmed", 0) >= .5:
+        return True
+    # A close-up can lose the white immediately after a forceful break-off.
+    # A shorter track still proves the launch when address and early travel
+    # are independently strong.
+    short_verified = (
+        sustained >= 4
+        and evidence.get("pre_cue_address_score", 0) >= .8
+        and evidence.get("initial_launch_displacement", 0) >= 1.5
+    )
+    return bool(
+        (sustained >= 6 or short_verified)
+        and evidence.get("dense_transition_confirmed", 0) >= .5
+        and evidence.get("pre_ball_quiet_ratio", 0) >= .9
+        and evidence.get("cue_displacement_diameters", 0) >= 1.5
+        and evidence.get("cue_direction_consistency", 0) >= .9
+    )
 
 
 class FrameContextDetector:
@@ -391,12 +434,11 @@ class FrameContextDetector:
                 # A low opening camera may never show a measurable intact
                 # rack. An independently verified native cue-ball launch in
                 # the zero-score episode remains a real first live contact.
-                opening = next((s for s in live if s.cue_strike < interval.opening_end
-                    and s.evidence.get('cue_geometry_confirmed', 0) >= .5
-                    and s.evidence.get('cue_ball_motion_confirmed', 0) >= .5
-                    and s.evidence.get('observation_fps', 0) >= 20
-                    and s.evidence.get('pre_sample_count', 0) >= 6
-                    and s.evidence.get('sustained_count', 0) >= 6), None)
+                opening = next(
+                    (s for s in live if s.cue_strike < interval.opening_end
+                     and _verified_opening_launch(s.evidence)),
+                    None,
+                )
                 if opening is None:
                     continue
             live = [s for s in live if s.cue_strike >= opening.cue_strike]
