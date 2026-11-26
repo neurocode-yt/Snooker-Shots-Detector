@@ -14,6 +14,18 @@ def colour(hue, sat, value):
     )[0, 0])
 
 
+@pytest.mark.parametrize(("cx", "cy"), [(24.1, 15.5), (0., 1.), (-2., 4.5), (-4.5, -4.5)])
+def test_cloth_surround_matches_visible_annulus(cx, cy):
+    cloth = np.random.default_rng(19).integers(0, 2, (25, 30), dtype=np.uint8) * 255
+    radius = 4.0
+    yy, xx = np.indices(cloth.shape)
+    squared_distance = (xx - cx) ** 2 + (yy - cy) ** 2
+    disc = squared_distance <= round(radius * .72) ** 2
+    annulus = (squared_distance <= round(radius * 1.9) ** 2) & ~disc
+    expected = np.mean(cloth[annulus] > 0) if disc.any() and annulus.any() else 0.0
+    assert ObjectDetector._cloth_surround(cloth, cx, cy, radius) == expected
+
+
 def test_shaded_ivory_ball_beside_bridge_and_black_seeds_closeup_scale(config):
     frame = np.full((240, 400, 3), colour(60, 180, 180), np.uint8)
     # The bridge and black ball occupy much of the white's outer annulus.

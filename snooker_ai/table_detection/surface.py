@@ -13,21 +13,25 @@ def playing_surface_mask(hsv: np.ndarray, mask: np.ndarray) -> np.ndarray:
     pixels = hsv[:, :, 2][mask > 0]
     if len(pixels) < 100:
         return mask
-    threshold, _ = cv2.threshold(pixels, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    dark = (mask > 0) & (hsv[:, :, 2] <= threshold)
-    bright = (mask > 0) & (hsv[:, :, 2] > threshold)
-    fraction = np.mean(pixels <= threshold)
+    threshold, bright_pixels = cv2.threshold(pixels, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    bright_count = cv2.countNonZero(bright_pixels)
+    dark_count = len(pixels) - bright_count
+    fraction = dark_count / len(pixels)
     if not 0.18 <= fraction <= 0.80:
         return mask
-    if float(np.mean(hsv[:, :, 2][bright]) - np.mean(hsv[:, :, 2][dark])) < 65:
+    # Otsu has already classified this compact array. Pixel sums are exact
+    # integers, so both mean brightnesses match the full-image masked means.
+    bright_sum = cv2.norm(pixels, cv2.NORM_L1, mask=bright_pixels)
+    dark_sum = cv2.sumElems(pixels)[0] - bright_sum
+    if bright_sum / bright_count - dark_sum / dark_count < 65:
         return mask
-    work = bright.astype(np.uint8) * 255
+    bright = cv2.inRange(hsv, (0, 0, int(threshold) + 1), (255, 255, 255))
+    work = cv2.bitwise_and(bright, bright, mask=mask)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     work = cv2.morphologyEx(work, cv2.MORPH_CLOSE, kernel, iterations=2)
     work = cv2.morphologyEx(work, cv2.MORPH_OPEN, kernel)
     contours, _ = cv2.findContours(work, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     h, w = mask.shape
-    dark_y = np.nonzero(dark)[0]
     for contour in sorted(contours, key=cv2.contourArea, reverse=True):
         area = cv2.contourArea(contour)
         if not 0.09 <= area / (h * w) <= 0.70:
@@ -42,8 +46,12 @@ def playing_surface_mask(hsv: np.ndarray, mask: np.ndarray) -> np.ndarray:
             or bw < w * 0.30
             or bh < h * 0.22
             or not 0.65 <= bw / bh <= 3.2
-            or np.mean(dark_y < y - 5) < 0.80
         ):
+            continue
+        # Only the number above the candidate matters. Avoid allocating a
+        # pair of full-image coordinate arrays for the dark backdrop.
+        rows = slice(0, max(0, y - 5))
+        if np.count_nonzero((mask[rows] > 0) & (bright[rows] == 0)) / dark_count < 0.80:
             continue
         perimeter = cv2.arcLength(hull, True)
         quad = hull

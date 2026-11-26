@@ -8,6 +8,7 @@ Commentary, applause, and cue audio do not affect selection or confidence.
 from __future__ import annotations
 
 from bisect import bisect_left, bisect_right
+from itertools import chain
 
 import numpy as np
 
@@ -183,13 +184,13 @@ class StrikeDetector:
         return first.camera_scene_id == second.camera_scene_id
 
     def _has_cue_kinematics(self, features: list[FrameFeatures]) -> bool:
-        reliable = sum(
-            1
-            for f in features
-            if self._track_conf(f) >= self.min_track_conf
-            and self._value(f, "ball_diameter_px") > 0.5
-        )
-        return reliable >= min(3, max(1, len(features) // 20))
+        needed = min(3, max(1, len(features) // 20))
+        for f in features:
+            if self._track_conf(f) >= self.min_track_conf and self._value(f, "ball_diameter_px") > 0.5:
+                needed -= 1
+                if not needed:
+                    return True
+        return False
 
     def _stationary_ratio(self, frames: list[FrameFeatures]) -> float:
         if not frames:
@@ -198,6 +199,8 @@ class StrikeDetector:
                      if f.cue_ball_stable_normalized_speed is not None
                      else self._cue_speed(f)) <= self.stationary_speed
                     for f in frames) / len(frames)
+        if ratio == 1.0:
+            return ratio
         points = [f for f in frames if f.cue_ball_x is not None and f.cue_ball_y is not None]
         if len(points) >= 3 and points[-1].t - points[0].t >= 0.15:
             xy = np.array([(f.cue_ball_x, f.cue_ball_y) for f in points])
@@ -216,7 +219,22 @@ class StrikeDetector:
             return arr
         result = np.zeros_like(arr, dtype=np.float64)
         half = max(1, window // 2)
-        for i in range(len(arr)):
+        width = 2 * half + 1
+        if width <= len(arr):
+            windows = np.lib.stride_tricks.sliding_window_view(arr, width)
+            # Percentile partitions a working copy. Bound that copy on long
+            # matches and retain NumPy's original linear interpolation.
+            batch_size = max(1, 65536 // width)
+            for start in range(0, len(windows), batch_size):
+                scales = np.percentile(windows[start:start + batch_size], 95, axis=1)
+                centers = slice(start + half, start + half + len(scales))
+                out = result[centers]
+                np.divide(arr[centers], scales, out=out, where=scales > 1e-8)
+                np.fmin(out, 1.0, out=out)
+            edges = chain(range(half), range(len(arr) - half, len(arr)))
+        else:
+            edges = range(len(arr))
+        for i in edges:
             lo, hi = max(0, i - half), min(len(arr), i + half + 1)
             scale = float(np.percentile(arr[lo:hi], 95))
             if scale > 1e-8:

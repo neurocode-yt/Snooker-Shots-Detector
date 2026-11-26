@@ -399,13 +399,14 @@ class SegmentBuilder:
             usable_handling = (f.table_handling and f.match_context_valid
                                and not f.broadcast_replay and f.view_type not in {
                                    CameraViewType.REPLAY, CameraViewType.SLOW_MOTION_REPLAY})
-            continuous = (previous is not None and 0 < f.t-previous.t <= .76
-                          and f.camera_scene_id == previous.camera_scene_id)
-            if handling_start is not None and (not usable_handling or not continuous):
-                if handling_confirmed:
-                    spans.append((handling_start, f.t, "ball_handling_clip_boundary"))
-                handling_start = None
-                handling_confirmed = False
+            if handling_start is not None:
+                continuous = (previous is not None and 0 < f.t-previous.t <= .76
+                              and f.camera_scene_id == previous.camera_scene_id)
+                if not usable_handling or not continuous:
+                    if handling_confirmed:
+                        spans.append((handling_start, f.t, "ball_handling_clip_boundary"))
+                    handling_start = None
+                    handling_confirmed = False
             if usable_handling:
                 if handling_start is None:
                     handling_start = f.t
@@ -529,6 +530,9 @@ class SegmentBuilder:
                              and f.view_type not in {
                                  CameraViewType.REPLAY, CameraViewType.SLOW_MOTION_REPLAY,
                              })
+            if start is None and not non_table:
+                previous = f
+                continue
             cadence = min(f.observation_fps, previous.observation_fps) if previous is not None else 0
             # A 25fps analysis sampled from a 30fps proxy alternates one- and
             # two-frame gaps. Both belong to the measured cadence; treating the

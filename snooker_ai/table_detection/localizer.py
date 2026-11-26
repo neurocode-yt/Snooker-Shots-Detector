@@ -33,8 +33,8 @@ _CANONICAL_CORNERS = np.array(
 )
 
 
-def _detach_border_attachment(source: np.ndarray, closed: np.ndarray,
-                              kernel: np.ndarray) -> np.ndarray:
+def _surface_contour(source: np.ndarray, closed: np.ndarray,
+                     kernel: np.ndarray) -> np.ndarray | None:
     """Do not join enclosed cloth to a separate green arena light by closing.
 
     Restore only an already measured dominant, enclosed component. A genuinely
@@ -42,16 +42,16 @@ def _detach_border_attachment(source: np.ndarray, closed: np.ndarray,
     """
     contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
-        return closed
+        return None
     dominant = max(contours, key=cv2.contourArea)
     h, w = source.shape
     x, y, bw, bh = cv2.boundingRect(dominant)
     margin = max(2, round(min(h, w)*.006))
     if x > margin and y > margin and x+bw < w-margin and y+bh < h-margin:
-        return closed
+        return dominant
     raw, _ = cv2.findContours(source, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not raw:
-        return closed
+        return dominant
     cloth = max(raw, key=cv2.contourArea)
     area = cv2.contourArea(cloth)
     x, y, bw, bh = cv2.boundingRect(cloth)
@@ -60,15 +60,17 @@ def _detach_border_attachment(source: np.ndarray, closed: np.ndarray,
             or x <= margin or y <= margin or x+bw >= w-margin or y+bh >= h-margin
             or bw < .25*w or bh < .20*h
             or area/max(1, cv2.contourArea(hull)) < .70):
-        return closed
+        return dominant
     quad = cv2.approxPolyDP(hull, .025*cv2.arcLength(hull, True), True)
     if len(quad) != 4:
-        return closed
+        return dominant
     region = np.zeros_like(source)
     cv2.drawContours(region, [cloth], -1, 255, -1)
     isolated = cv2.bitwise_and(source, region)
     isolated = cv2.morphologyEx(isolated, cv2.MORPH_CLOSE, kernel, iterations=2)
-    return cv2.morphologyEx(isolated, cv2.MORPH_OPEN, kernel)
+    isolated = cv2.morphologyEx(isolated, cv2.MORPH_OPEN, kernel)
+    contours, _ = cv2.findContours(isolated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    return max(contours, key=cv2.contourArea, default=None)
 
 
 class TableLocalizer:
@@ -93,11 +95,20 @@ class TableLocalizer:
         Contour masks contain only 0/255. Sum into one image, retaining ties for
         even histories (127.5 passes), and preserve checkpoint mask history.
         """
-        total = np.zeros(history[0].shape, dtype=np.uint32)
+        # The normal five-frame history fits in 16 bits. Accumulate unsigned
+        # bytes directly into the smaller image without temporary casts.
+        compact = (len(history) <= 257 and history[0].ndim == 2 and history[0].size > 1
+                   and all(mask.dtype == np.uint8 for mask in history))
+        total = np.zeros(history[0].shape, dtype=np.uint16 if compact else np.uint32)
         for mask in history:
             if mask.shape != total.shape:
                 raise ValueError("All table masks must have the same shape")
-            np.add(total, mask, out=total)
+            if compact:
+                cv2.add(total, mask, dst=total, dtype=cv2.CV_16U)
+            else:
+                np.add(total, mask, out=total)
+        if compact:
+            return cv2.compare(total, 127 * len(history), cv2.CMP_GT)
         return (total > 127 * len(history)).astype(np.uint8) * 255
 
     def reset(self) -> None:
@@ -140,9 +151,8 @@ class TableLocalizer:
             mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k, iterations=2)
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k, iterations=1)
 
-        mask = _detach_border_attachment(surface, mask, k)
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        if not contours:
+        contour = _surface_contour(surface, mask, k)
+        if contour is None:
             fb = self._fallback_mask(h, w)
             return TableObservation(
                 confidence=0.1,
@@ -150,7 +160,6 @@ class TableLocalizer:
                 area_ratio=float(np.count_nonzero(fb)) / float(h * w),
             )
 
-        contour = max(contours, key=cv2.contourArea)
         area = float(cv2.contourArea(contour))
         area_ratio = area / float(h * w)
 

@@ -31,6 +31,12 @@ _TABLE_VIEWS = {
     CameraViewType.BALL_CLOSEUP,
     CameraViewType.OTHER,  # scene classification is intentionally conservative
 }
+_EXCLUDED_VIEWS = frozenset({
+    CameraViewType.REPLAY,
+    CameraViewType.SLOW_MOTION_REPLAY,
+    CameraViewType.SCOREBOARD,
+    CameraViewType.ADVERTISEMENT,
+})
 
 
 @dataclass(frozen=True)
@@ -140,12 +146,7 @@ class BallStopDetector:
             return False
         if f.scene_cut_score >= 0.5:
             return False
-        if f.view_type in {
-            CameraViewType.REPLAY,
-            CameraViewType.SLOW_MOTION_REPLAY,
-            CameraViewType.SCOREBOARD,
-            CameraViewType.ADVERTISEMENT,
-        }:
+        if f.view_type in _EXCLUDED_VIEWS:
             return False
         if f.view_type not in _TABLE_VIEWS and f.table_confidence < 0.25:
             return False
@@ -256,8 +257,6 @@ class BallStopDetector:
         if getattr(f, "ambiguous_ball_motion", False):
             return True
         speed = self._normalised_speed(f)
-        activity = self._activity(f)
-        local_residual = self._get_float(f, "ball_residual_motion")
         moving_count = int(getattr(f, "moving_ball_count", 0) or 0)
         occluded_count = int(getattr(f, "occluded_ball_count", 0) or 0)
 
@@ -294,13 +293,13 @@ class BallStopDetector:
                 # conservatively by the occlusion gate above.
                 return False
             residual_threshold = self.residual_stop if already_moving else self.residual_start
-            return local_residual >= residual_threshold
+            return self._get_float(f, "ball_residual_motion") >= residual_threshold
 
         if already_moving:
             threshold = max(self.activity_stop, baseline * self.baseline_stop_factor)
         else:
             threshold = max(self.activity_start, baseline * self.baseline_start_factor)
-        return activity >= threshold
+        return self._activity(f) >= threshold
 
     # ------------------------------------------------------------------ main API
 
@@ -411,7 +410,7 @@ class BallStopDetector:
             scene_changed = previous_scene_id is not None and scene_id != previous_scene_id
             previous_scene_id = scene_id
             valid = self._is_valid_observation(f) and not scene_changed
-            full_table = self._is_full_table_observation(f) and not scene_changed
+            full_table = valid and getattr(f, "table_full_view", True)
 
             handling = bool(
                 getattr(f, "table_handling", False)

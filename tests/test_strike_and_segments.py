@@ -47,6 +47,21 @@ def test_audio_peaks_are_isolated_for_recovery_windows():
     assert peaks[0][1] == pytest.approx(0.70)
 
 
+@pytest.mark.parametrize(("length", "window"), [(0, 40), (5, 40), (41, 40), (140, 30), (2200, 41)])
+def test_local_normalization_matches_scalar_windows(length, window):
+    values = np.random.default_rng(7).random(length)
+    values[10:65] = 0.0
+    values[200:260] = 1e-10
+    values[::17] = 0.5
+    expected = np.zeros_like(values)
+    half = max(1, window // 2)
+    for i, value in enumerate(values):
+        scale = np.percentile(values[max(0, i-half):i+half+1], 95)
+        if scale > 1e-8:
+            expected[i] = min(1.0, value / scale)
+    assert StrikeDetector._local_normalize(values, window).tobytes() == expected.tobytes()
+
+
 def test_strike_detector_finds_peaks(config):
     feats = []
     for i in range(50):

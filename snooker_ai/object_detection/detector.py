@@ -158,10 +158,9 @@ class ObjectDetector:
 
     @staticmethod
     def _table_bbox(mask: np.ndarray) -> tuple[int, int, int, int]:
-        points = cv2.findNonZero(mask)
-        if points is None:
+        x, y, w, h = cv2.boundingRect(mask)
+        if not w:
             return 0, 0, mask.shape[1], mask.shape[0]
-        x, y, w, h = cv2.boundingRect(points)
         return x, y, x + w, y + h
 
     def _diameter_prior(self, table_w: int, table_h: int) -> float:
@@ -285,6 +284,7 @@ class ObjectDetector:
         )
         count, labels, stats, _ = cv2.connectedComponentsWithStats(foreground_components)
         foreground_ids = []
+        red_mask = None
         ball_area = np.pi * radius_prior * radius_prior
         for component in range(1, count):
             component_x, component_y, cw, ch, area = stats[component]
@@ -296,23 +296,30 @@ class ObjectDetector:
                 continue
             if area <= ball_area * 6:
                 continue
-            component_pixels = hsv[component_y:component_y+ch, component_x:component_x+cw][
-                labels[component_y:component_y+ch, component_x:component_x+cw] == component
-            ]
-            red = ((component_pixels[:, 0] < 15) | (component_pixels[:, 0] > 165)) & (component_pixels[:, 1] > 110)
-            if float(np.mean(red)) < 0.65:
+            if red_mask is None:
+                red_mask = cv2.inRange(hsv, (0, 111, 0), (14, 255, 255))
+                red_mask |= cv2.inRange(hsv, (166, 111, 0), (179, 255, 255))
+            bounds = np.s_[component_y:component_y+ch, component_x:component_x+cw]
+            reds = red_mask[bounds]
+            red_count = cv2.countNonZero(reds)
+            # All red pixels in the box are an upper bound on its component.
+            # Labels only matter for boxes that could contain a cluster of reds.
+            if red_count / area >= 0.65:
+                in_component = cv2.compare(labels[bounds], component, cv2.CMP_EQ)
+                red_count = cv2.countNonZero(cv2.bitwise_and(reds, in_component))
+            if red_count / area < 0.65:
                 foreground_ids.append(component)
         foreground = None
         if foreground_ids:
             # Connected-component ids are dense in [0, count). Indexed lookup
             # avoids building a general set-membership search for every pixel.
-            rejected = np.zeros(count, dtype=bool)
-            rejected[foreground_ids] = True
+            rejected = np.zeros(count, dtype=np.uint8)
+            rejected[foreground_ids] = 1
             foreground = rejected[labels]
         if foreground is not None:
             margin = max(1, int(round(diameter_prior * 0.35)))
             foreground = cv2.dilate(
-                foreground.astype(np.uint8),
+                foreground,
                 cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * margin + 1, 2 * margin + 1)),
             ) > 0
         # A light opening removes codec speckle without joining a cluster of reds.
@@ -572,7 +579,7 @@ class ObjectDetector:
                 continue
             circularity = 4 * np.pi * area / perimeter**2
             fill = area / max(1, np.pi * radius**2)
-            _, _, surround = self._colour_scores(hsv, cloth, cx, cy, radius)
+            surround = self._cloth_surround(cloth, cx, cy, radius)
             if circularity >= 0.55 and fill >= 0.40 and surround >= 0.70:
                 # A tiny specular highlight on a green/yellow ball can be more
                 # circular than the shaded white sphere. Prefer the large
@@ -603,7 +610,7 @@ class ObjectDetector:
         cap=np.mean((pixels[:,1]<145)&(pixels[:,2]>=200))
         if not (25<=hue<=55 and 35<=sat<=210 and value>=115 and cap>=.08):
             return False
-        return self._colour_scores(hsv,cloth,x,y,radius)[2]>=.50
+        return self._cloth_surround(cloth, x, y, radius) >= .50
 
     def _closeup_colour_spheres(self, hsv, mask):
         """A sharp coloured sphere supplies scale when the white is out of focus."""
@@ -636,7 +643,7 @@ class ObjectDetector:
                     or area/max(1,np.pi*radius**2) < .65
                     or mask[min(mask.shape[0]-1,round(y)),min(mask.shape[1]-1,round(x))] == 0):
                 continue
-            _, _, surround = self._colour_scores(hsv, cloth, x, y, radius)
+            surround = self._cloth_surround(cloth, x, y, radius)
             if surround >= .25:
                 spheres.append(_Proposal(x,y,radius,.80+.15*4*np.pi*hull_area/hull_perimeter**2,
                                          object_sphere_supported=True))
@@ -768,7 +775,7 @@ class ObjectDetector:
                         or distance > radius or abs(x-proposal.cx) > .35*radius
                         or distance+.5*radius > 1.1*r):
                     continue
-                _, _, surround = self._colour_scores(hsv, cloth, x, y, float(r))
+                surround = self._cloth_surround(cloth, x, y, float(r))
                 if surround >= .55:
                     choices.append((distance, replace(proposal,cx=x,cy=y,radius=float(r))))
         answer = min(choices,key=lambda item:item[0])[1] if choices else proposal
@@ -880,7 +887,7 @@ class ObjectDetector:
             plausible_colour = 15 <= hue <= 44 and 35 <= sat <= 125 and value >= 150
         if not plausible_colour or neutral_cap < 0.25:
             return proposals
-        _, _, surround = self._colour_scores(hsv, cloth, cx, cy, radius)
+        surround = self._cloth_surround(cloth, cx, cy, radius)
         red_occlusion = .10 <= surround < .30 and self._red_neighbors_occlude_sphere(hsv, cx, cy, radius)
         black_occlusion = .20 <= surround < .45 and self._black_neighbor_occludes_sphere(hsv, cx, cy, radius)
         colour_occlusion = .12 <= surround < .30 and self._round_colour_overlaps_sphere(hsv, cx, cy, radius)
@@ -959,7 +966,7 @@ class ObjectDetector:
         cap = np.mean((pixels[:, 1] < 110) & (pixels[:, 2] >= 210))
         if not (15 <= hue <= 44 and saturation <= 125 and value >= 150 and cap >= .25):
             return None
-        _, _, surround = self._colour_scores(hsv, cloth, cx, cy, radius)
+        surround = self._cloth_surround(cloth, cx, cy, radius)
         if not .04 <= surround < .45:
             return None
         if not self._round_colour_overlaps_sphere(hsv, cx, cy, radius, minimum_overlap=.08):
@@ -1195,20 +1202,28 @@ class ObjectDetector:
         white_score = float(np.sqrt(brightness * neutrality))
         cloth_patch = cloth_mask[y0:y1, x0:x1]
         deviation = float(np.count_nonzero((cloth_patch == 0) & disc) / max(1, np.count_nonzero(disc)))
-        # Annulus outside the candidate should be green cloth.  This strongly
-        # suppresses bright pocket jaws, rail bolts and scoreboard glyphs.
+        surround = ObjectDetector._cloth_surround(cloth_mask, cx, cy, radius)
+        return white_score, float(np.clip(deviation, 0, 1)), surround
+
+    @staticmethod
+    def _cloth_surround(cloth_mask: np.ndarray, cx: float, cy: float, radius: float) -> float:
+        """Fraction of the visible annulus covered by cloth, for a visible candidate disc."""
+        h, w = cloth_mask.shape
+        ix, iy = int(round(cx)), int(round(cy))
+        r = max(2, int(round(radius * 0.72)))
+        if not (0 <= ix < w and 0 <= iy < h):
+            nearest_x = min(max(ix, 0), w - 1)
+            nearest_y = min(max(iy, 0), h - 1)
+            if not w or not h or (nearest_x - cx) ** 2 + (nearest_y - cy) ** 2 > r * r:
+                return 0.0
         outer_r = max(r + 1, int(round(radius * 1.9)))
         ox0, ox1 = max(0, ix - outer_r), min(w, ix + outer_r + 1)
         oy0, oy1 = max(0, iy - outer_r), min(h, iy + outer_r + 1)
         oyy, oxx = np.ogrid[oy0:oy1, ox0:ox1]
         distance_squared = (oxx - cx) ** 2 + (oyy - cy) ** 2
         outer = distance_squared <= float(outer_r * outer_r)
-        inner = distance_squared <= float(max(r, 1) * max(r, 1))
+        inner = distance_squared <= float(r * r)
         annulus = outer & ~inner
         cloth_outer = cloth_mask[oy0:oy1, ox0:ox1]
-        surround = (
-            float(np.count_nonzero((cloth_outer > 0) & annulus) / np.count_nonzero(annulus))
-            if np.count_nonzero(annulus)
-            else 0.0
-        )
-        return white_score, float(np.clip(deviation, 0, 1)), float(np.clip(surround, 0, 1))
+        count = np.count_nonzero(annulus)
+        return float(np.count_nonzero((cloth_outer > 0) & annulus) / count) if count else 0.0
