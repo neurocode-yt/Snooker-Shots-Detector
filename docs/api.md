@@ -148,8 +148,8 @@ HTML review interface.
 `GET /api/capcut` reports `{available: true, version, executable, projects_dir}`
 or `{available: false, reason}`
 for the local Windows CapCut installation. The current draft adapter supports
-CapCut 9.5 and 9.6. Successful discovery remembers the verified executable locally;
-each request checks that the file still exists. Missing configured or registered
+CapCut 9.5 through 9.8. Successful discovery remembers the verified executable locally.
+Each request checks that the file still exists. Missing configured or registered
 paths fall back to other discovery sources, including the saved executable.
 Discovery runs outside the API event loop so other requests stay responsive.
 

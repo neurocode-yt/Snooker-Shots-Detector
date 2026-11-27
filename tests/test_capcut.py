@@ -134,7 +134,7 @@ def test_empty_selection_and_missing_source_fail_without_writing(config, capcut_
     assert not installation.projects_dir.exists()
 
 
-@pytest.mark.parametrize("version", ["9.8.0.1000", "9.70.0.1000", "10.0.0.1000"])
+@pytest.mark.parametrize("version", ["9.9.0.1000", "9.80.0.1000", "10.0.0.1000"])
 def test_unsupported_capcut_version_reports_reason(config, tmp_path, monkeypatch, version):
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
     apps = tmp_path / "CapCut" / "Apps"
@@ -156,8 +156,8 @@ def test_capcut_96_uses_native_launcher(config, tmp_path, monkeypatch):
     assert installation.executable == (apps / "CapCut.exe").resolve()
 
 
-@pytest.mark.parametrize("version", ["9.7.0.1000", "9.7.5.4135"])
-def test_capcut_97_creates_editable_draft_with_installed_version(
+@pytest.mark.parametrize("version", ["9.7.0.1000", "9.7.5.4135", "9.8.0.4213"])
+def test_capcut_creates_editable_draft_with_installed_version(
     config, capcut_case, tmp_path, monkeypatch, version,
 ):
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))

@@ -119,7 +119,7 @@ def test_incomplete_update_cannot_override_a_working_version_even_with_launcher(
     assert installation.version == "9.6.0.4097"
 
 
-@pytest.mark.parametrize("new_version", ["9.6.0.5000", "9.7.5.4135"])
+@pytest.mark.parametrize("new_version", ["9.6.0.5000", "9.7.5.4135", "9.8.0.4213"])
 def test_last_verified_installation_survives_missing_registration_and_detects_updates(
     config, tmp_path, monkeypatch, isolated_windows, new_version
 ):

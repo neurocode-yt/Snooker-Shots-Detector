@@ -73,7 +73,7 @@ space required for the whole processing job.
 
 ## Open in CapCut
 
-The editable-project integration supports Windows CapCut 9.5 and 9.6. Discovery
+The editable-project integration supports Windows CapCut 9.5 through 9.8. Discovery
 checks Local AppData, the registered Windows user folder, and CapCut's Windows
 installation and App Paths registrations for both per-user/machine and 32/64-bit registry views.
 Custom drive installations are supported without an AppData directory junction.

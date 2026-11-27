@@ -1,7 +1,7 @@
 """Editable, local CapCut Desktop projects built from the retained shot list.
 
 CapCut's private draft schema is version-specific. The bundled neutral Windows
-9.5 schema is used for the supported 9.5, 9.6 and 9.7 releases. No user's draft,
+9.5 schema is used for the supported 9.5, 9.6, 9.7 and 9.8 releases. No user's draft,
 effects, or account identifiers are copied.
 Media stays at its original path so trims can be extended without re-encoding.
 """
@@ -31,7 +31,7 @@ from snooker_ai.utils.persistence import atomic_text
 
 _store_lock = threading.Lock()
 _SCHEMA = Path(__file__).with_name("assets") / "capcut_9_5.json"
-_SUPPORTED_VERSIONS = ("9.5.", "9.6.", "9.7.")
+_SUPPORTED_VERSIONS = ("9.5.", "9.6.", "9.7.", "9.8.")
 _VERSION_PATTERN = r"\d+(?:\.\d+){2,3}"
 
 
@@ -211,7 +211,7 @@ def find_capcut(config: Config) -> CapCutInstallation:
     if not version.startswith(_SUPPORTED_VERSIONS):
         raise CapCutUnavailable(
             f"CapCut {version} uses an unverified project format. "
-            "This integration supports Windows 9.5, 9.6 and 9.7."
+            "This integration supports Windows 9.5 through 9.8."
         )
     # Respect CapCut's configured location when its local index records one.
     projects = root / "User Data" / "Projects" / "com.lveditor.draft"
