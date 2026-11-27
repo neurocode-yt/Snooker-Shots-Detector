@@ -1,0 +1,368 @@
+{
+  "name": "Un-Nooh vs Zak Surety source review of missed scoring windows",
+  "source_reviewed": true,
+  "selection": "pots_and_fouls",
+  "parent_job_id": "batch-13661242-01a6-4da4-bbca-54f35aa2658c",
+  "source_size_bytes": 1980558604,
+  "source_sha256": "ab8f1c5b8d3eacc25cb7ac5c70f36db40afadeaee34cb8ab9c059993aee9df03",
+  "parent_analysis_sha256": "75ad3c5b44e718d2397963fa164af34104d6605cc49ffdf77bf95255761ff2fc",
+  "source_duration_seconds": 12201.386667,
+  "additions": [
+    {
+      "review_id": "contact-241.00",
+      "contact_interval": [
+        241.0,
+        241.12
+      ],
+      "clip": [
+        239.0,
+        244.0
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 7,
+      "score_update_time": 243.52,
+      "ball": "black",
+      "reason": "The white departs during the dissolve and sends the black into the right corner."
+    },
+    {
+      "review_id": "contact-533.88",
+      "contact_interval": [
+        533.88,
+        534.0
+      ],
+      "clip": [
+        531.88,
+        537.04
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 7,
+      "score_update_time": 536.52,
+      "ball": "black",
+      "reason": "The first overhead frames show the white leaving the tip and the black rolling into the left corner."
+    },
+    {
+      "review_id": "contact-1237.92",
+      "contact_interval": [
+        1237.92,
+        1238.04
+      ],
+      "clip": [
+        1235.92,
+        1241.6
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 2,
+      "score_update_time": 1243.0,
+      "ball": "yellow",
+      "reason": "The white sends the yellow into the far left corner."
+    },
+    {
+      "review_id": "contact-1284.55",
+      "contact_interval": [
+        1284.55,
+        1284.67
+      ],
+      "clip": [
+        1282.55,
+        1289.04
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 6,
+      "score_update_time": 1289.0,
+      "ball": "pink",
+      "reason": "The close-up shows the white depart before the dissolve. The pink drops, leaving only the black."
+    },
+    {
+      "review_id": "contact-2892.55",
+      "contact_interval": [
+        2892.55,
+        2892.79
+      ],
+      "clip": [
+        2890.55,
+        2896.12
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 1,
+      "score_update_time": 2895.52,
+      "ball": "red",
+      "reason": "The close-up shows a short white departure and a red rolling into the near middle pocket."
+    },
+    {
+      "review_id": "contact-2953.31",
+      "contact_interval": [
+        2953.31,
+        2953.43
+      ],
+      "clip": [
+        2951.31,
+        2956.88
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 1,
+      "score_update_time": 2960.52,
+      "ball": "red",
+      "reason": "Surety uses the rest and the red drops into the near middle pocket."
+    },
+    {
+      "review_id": "contact-3395.91",
+      "contact_interval": [
+        3395.91,
+        3396.03
+      ],
+      "clip": [
+        3393.91,
+        3399.2
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 5,
+      "score_update_time": 3398.0,
+      "ball": "blue",
+      "reason": "The white moves as the broadcast returns to overhead and the blue drops into the right middle pocket."
+    },
+    {
+      "review_id": "contact-3463.19",
+      "contact_interval": [
+        3463.19,
+        3463.31
+      ],
+      "clip": [
+        3461.19,
+        3466.24
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 7,
+      "score_update_time": 3465.52,
+      "ball": "black",
+      "reason": "The white leaves the tip across the camera cut and the black drops in the right corner."
+    },
+    {
+      "review_id": "contact-5340.02",
+      "contact_interval": [
+        5340.02,
+        5340.14
+      ],
+      "clip": [
+        5338.02,
+        5342.88
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 7,
+      "score_update_time": 5352.0,
+      "ball": "black",
+      "reason": "The black leaves the lower left side and drops. The scoreboard adds seven when the overhead shot returns."
+    },
+    {
+      "review_id": "contact-5440.26",
+      "contact_interval": [
+        5440.26,
+        5440.5
+      ],
+      "clip": [
+        5438.26,
+        5444.08
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 7,
+      "score_update_time": 5444.0,
+      "ball": "black",
+      "reason": "The white leaves its rest position in the close-up and the black travels into the right corner after the cut."
+    },
+    {
+      "review_id": "contact-6357.86",
+      "contact_interval": [
+        6357.86,
+        6357.98
+      ],
+      "clip": [
+        6355.86,
+        6361.12
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 1,
+      "score_update_time": 6360.52,
+      "ball": "red",
+      "reason": "A short white departure sends a red into the near middle pocket in the close-up."
+    },
+    {
+      "review_id": "contact-7942.93",
+      "contact_interval": [
+        7942.93,
+        7943.05
+      ],
+      "clip": [
+        7940.93,
+        7947.12
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 6,
+      "score_update_time": 7946.52,
+      "ball": "pink",
+      "reason": "The white moves into the pink at close range. The pink drops at the far middle pocket."
+    },
+    {
+      "review_id": "contact-8963.68",
+      "contact_interval": [
+        8963.68,
+        8963.92
+      ],
+      "clip": [
+        8961.68,
+        8968.04
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 5,
+      "score_update_time": 8967.52,
+      "ball": "blue",
+      "reason": "The close-range stroke sends the blue toward the far left corner and it disappears before the score changes."
+    },
+    {
+      "review_id": "contact-9387.36",
+      "contact_interval": [
+        9387.36,
+        9387.6
+      ],
+      "clip": [
+        9385.36,
+        9391.04
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 1,
+      "score_update_time": 9390.52,
+      "ball": "red",
+      "reason": "The white and a red are in motion when the broadcast returns to overhead. The red drops in the near left corner."
+    },
+    {
+      "review_id": "contact-9771.84",
+      "contact_interval": [
+        9771.84,
+        9772.08
+      ],
+      "clip": [
+        9769.84,
+        9774.8
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 7,
+      "score_update_time": 9774.0,
+      "ball": "black",
+      "reason": "The white moves in the close-up and the black rolls into the left corner after the angle change."
+    },
+    {
+      "review_id": "contact-10086.28",
+      "contact_interval": [
+        10086.28,
+        10086.4
+      ],
+      "clip": [
+        10084.28,
+        10090.6
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 1,
+      "score_update_time": 10091.0,
+      "ball": "red",
+      "reason": "The white travels out of the cluster and a red drops at the near left corner."
+    },
+    {
+      "review_id": "contact-10215.84",
+      "contact_interval": [
+        10215.84,
+        10216.08
+      ],
+      "clip": [
+        10213.84,
+        10218.8
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 1,
+      "score_update_time": 10218.52,
+      "ball": "red",
+      "reason": "The white makes a short contact in the close-up and the red rolls into the right corner in the overhead view."
+    },
+    {
+      "review_id": "contact-11083.00",
+      "contact_interval": [
+        11083.0,
+        11083.12
+      ],
+      "clip": [
+        11081.0,
+        11086.48
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 1,
+      "score_update_time": 11085.52,
+      "ball": "red",
+      "reason": "The white departs in the close-up and a red drops in the left corner after the cut."
+    },
+    {
+      "review_id": "contact-11256.20",
+      "contact_interval": [
+        11256.2,
+        11256.32
+      ],
+      "clip": [
+        11254.2,
+        11259.6
+      ],
+      "status": "pot",
+      "included": true,
+      "points": 7,
+      "score_update_time": 11259.0,
+      "ball": "black",
+      "reason": "The white leaves the tip in the close-up before the broadcast shows the black traveling to the left corner."
+    },
+    {
+      "review_id": "contact-11323.72",
+      "contact_interval": [
+        11323.72,
+        11323.84
+      ],
+      "clip": [
+        11321.72,
+        11329.84
+      ],
+      "status": "foul",
+      "included": true,
+      "points": 4,
+      "score_update_time": 11330.52,
+      "ball": null,
+      "reason": "Un-Nooh plays the red. The white disappears and the referee intervenes before Surety receives four points."
+    }
+  ],
+  "updates": [
+    {
+      "shot_id": 24,
+      "strike": 547.88,
+      "status": "no_pot",
+      "included": true,
+      "reason": "The next live red attempt after the restored black. The red remains on the table, so it is included as context with no points."
+    }
+  ],
+  "removals": [
+    {
+      "shot_id": 25,
+      "strike": 577.68,
+      "reason": "The cue crosses the image as Surety stands, but the white and the reds remain stationary. The actual stroke follows at 584.24 s."
+    }
+  ]
+}

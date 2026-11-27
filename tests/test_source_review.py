@@ -142,6 +142,27 @@ def test_second_review_does_not_duplicate_previously_added_contact_events(review
     assert second.pot_selection_summary["source_review"]["added_contacts"] == 0
 
 
+def test_targeted_review_keeps_saved_frame_context_and_remaps_its_shot_ids(reviewed_case):
+    original, manifest = reviewed_case
+    original.shots[0].included = original.shots[-1].included = True
+    original.shots[0].evidence["frame_context"] = {"frame": 1, "first": True, "last": False}
+    original.shots[-1].evidence["frame_context"] = {"frame": 1, "first": False, "last": True}
+    original.pot_selection_summary["frames"] = [{
+        "frame": 1, "start": 0, "end": 90, "first_strike": 10, "last_strike": 70,
+        "first_shot_id": 1, "last_shot_id": 3,
+    }]
+    manifest.pop("frames")
+
+    result = apply_source_review(original, manifest)
+
+    assert result.shots[0].evidence["frame_context"]["first"]
+    assert result.shots[-1].evidence["frame_context"]["last"]
+    assert result.pot_selection_summary["frames"] == [{
+        **original.pot_selection_summary["frames"][0], "last_shot_id": 4,
+    }]
+    assert result.pot_selection_summary["non_scoring_context_shots"] == 2
+
+
 def test_highlights_review_can_retain_an_excluded_safety_for_the_all_shots_version(reviewed_case):
     original, manifest = reviewed_case
     manifest["additions"][0].update(status="no_pot", included=False)

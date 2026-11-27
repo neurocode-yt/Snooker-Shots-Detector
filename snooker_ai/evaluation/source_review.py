@@ -152,8 +152,9 @@ def apply_source_review(result: AnalysisResult, manifest: dict) -> AnalysisResul
         except KeyError as exc:
             raise ValueError("Missing reviewed frame bookend") from exc
 
-    for shot in reviewed.shots:
-        shot.evidence.pop("frame_context", None)
+    if frames:
+        for shot in reviewed.shots:
+            shot.evidence.pop("frame_context", None)
     for index, frame in enumerate(frames, 1):
         first, last = bookend(frame, "first"), bookend(frame, "last")
         if first.cue_strike > last.cue_strike or first.possible_replay or last.possible_replay:
@@ -189,6 +190,28 @@ def apply_source_review(result: AnalysisResult, manifest: dict) -> AnalysisResul
     for index, shot in enumerate(reviewed.shots, 1):
         shot.shot_id = index
         strike_to_id[shot.cue_strike] = index
+    frame_summary = []
+    if frames:
+        frame_summary = [
+            {
+                "frame": i,
+                "first_strike": first.cue_strike,
+                "last_strike": last.cue_strike,
+                "first_shot_id": first.shot_id,
+                "last_shot_id": last.shot_id,
+            }
+            for i, (first, last) in enumerate(resolved_frames, 1)
+        ]
+    else:
+        # Targeted repairs retain existing frame boundaries and their evidence.
+        # Insertions renumber shots, so previously saved bookends need remapping.
+        for frame in reviewed.pot_selection_summary.get("frames", []):
+            entry = dict(frame)
+            for role in ("first", "last"):
+                key = f"{role}_shot_id"
+                if key in entry:
+                    entry[key] = strike_to_id.get(prior_strikes.get(entry[key]))
+            frame_summary.append(entry)
     for shot in reviewed.shots:
         if shot.linked_live_shot_id in removed:
             shot.linked_live_shot_id = None
@@ -231,16 +254,7 @@ def apply_source_review(result: AnalysisResult, manifest: dict) -> AnalysisResul
             "removed_records": len(removed),
             "frames_reviewed": len(frames),
         },
-        "frames": [
-            {
-                "frame": i,
-                "first_strike": first.cue_strike,
-                "last_strike": last.cue_strike,
-                "first_shot_id": first.shot_id,
-                "last_shot_id": last.shot_id,
-            }
-            for i, (first, last) in enumerate(resolved_frames, 1)
-        ],
+        "frames": frame_summary,
         "frame_context_shots": sum(
             s.included
             and bool(
